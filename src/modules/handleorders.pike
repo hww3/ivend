@@ -227,6 +227,25 @@ if(note) {
   return;
 }
 
+string|int delete_order(string orderid, object id){
+
+array orders_to_archive;
+orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
+"'");
+foreach(orders_to_archive, mapping or){
+ array tables=({"orderdata", "shipments", "customer_info",
+	"payment_info", "lineitems"});
+ foreach(tables, string t){
+
+  catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id +
+	"'"));
+}
+catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
+perror("archived order " + or->id + "\n");
+}
+return 1;
+}
+
 string|int archive_order(string orderid, object id){
 string retval="";
 array orders_to_archive;
@@ -254,10 +273,10 @@ retval+="<order id=\"" + or->id + "\">\n"
   	}
     retval+="</record>\n";
           }
-catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
       
         }
     retval+="</order>\n";
+catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
 catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
 perror("archived order " + or->id + "\n");
      } 
@@ -305,10 +324,17 @@ string|mapping archive_orders(string mode, object id){
 #if constant(Protocols.SMTP.client)
 if(v->method=="Mail Archive" && v->email!=""){
  if(catch(
-  Protocols.SMTP.client("localhost")->simple_mail(v->email, 
+ object dns=Protocols.DNS.client();
+string server=dns->get_primary_mx(gethostname();
+if(!server) server="localhost";
+  Protocols.SMTP.client(server)->simple_mail(v->email, 
 	"Archive Orders " + (orders_to_archive*", "), "ivend@" +
 	gethostname(), retval)))
 	return retval;
+  foreach(orders_to_archive, mapping or){
+	delete_order(or->id, id);
+     } 
+
   return "Your orders have been mailed to " + v->email + ".<p>\n"
 	"<a href=./>Click here to continue.</a>\n";
 }
@@ -317,6 +343,9 @@ else {
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "order" +(sizeof(orders_to_archive)==1?("_"+
 orders_to_archive[0]->id):"") + ".xml");
+  foreach(orders_to_archive, mapping or){
+	delete_order(or->id, id);
+     } 
     return http_rxml_answer(retval, id, 0, "text/archive");
 #if constant(Protocols.SMTP.client)
     }

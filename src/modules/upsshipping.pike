@@ -330,6 +330,8 @@ string typename=id->misc->ivend->db->query("SELECT name FROM shipping_types "
   "WHERE type=" + id->variables->type )[0]->name;
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
+id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
+        + id->misc->ivend->SESSIONID + "' AND lineitem='shipping'"); 
 id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
   id->misc->ivend->SESSIONID + "', 'shipping', " + charge + ",'" +
   typename + "')");

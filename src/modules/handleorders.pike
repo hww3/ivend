@@ -254,6 +254,7 @@ string|mapping archive_orders(string mode, object id){
 retval+="<order id=\"" + or->id + "\">\n"
 	"<created>" + or->created + "</created>\n"
 	"<updated>" + or->updated + "</updated>\n"
+	"<status>" + or->status + "</status>\n"
 	"<notes>" + (or->notes||"") + "</notes>\n";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info", "lineitems"});

@@ -103,6 +103,55 @@ string note;
 note=Stdio.read_file(id->misc->ivend->config->root+"/notes/confirm.txt");
 if(note) {
 
+  string subject,sender, recipient;
+  sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
+  array r=s->query("SELECT " + recipient + " from customer_info WHERE "
+		   "orderid='"+id->misc->ivend->orderid+"' AND "
+		   "type=0");
+  recipient=r[0][recipient];
+  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
+  
+  object message=MIME.Message(note, (["MIME-Version":"1.0",
+				     "To":recipient,
+				     "Subject":subject
+				     ]));
+
+
+  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
+   perror("Error sending confirmation note for " +
+	id->misc->ivend->st + "!\n");
+
+}
+
+// do we send an order notification? if so, then do it.
+
+note=Stdio.read_file(id->misc->ivend->config->root+"/notes/notify.txt");
+if(note) {
+
+  string subject,sender, recipient;
+  sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
+
+  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
+  
+  object message=MIME.Message(note, (["MIME-Version":"1.0",
+				     "To":recipient,
+				     "Subject":subject
+				     ]));
+
+
+  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
+   perror("iVend: Error sending order notification for " 
+	+ id->misc->ivend->st + "!\n");
+
+}
+
+=======
+// do we send a confirmation note? if so, do it.
+
+string note;
+note=Stdio.read_file(id->misc->ivend->config->root+"/notes/confirm.txt");
+if(note) {
+
   perror("\n\nSENDING MESSAGE!\n");
 
   string subject,sender, recipient;
@@ -140,9 +189,7 @@ if(note) {
 
 }
 
-
-  return retval;
-
+return retval;
 }
 
 /*

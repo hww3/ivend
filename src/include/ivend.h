@@ -9,6 +9,7 @@
 #define CONFIG id->misc->ivend->config->general
 #define DB id->misc->ivend->db
 #define KEYS id->misc->ivend->keys
+#define T_O id->misc->ivend->this_object
 
 #if __VERSION__ >= 0.6
 import ".";

@@ -169,6 +169,7 @@ void get_dbinfo(mapping c){
 
 }
 
+
 mixed handle_path(string s, string p, object id) {
 
    string np=((p/"/")-({""}))[0];
@@ -340,53 +341,6 @@ mode=lower_case(mode);
 }
 
 
-mixed upsell_handler(string mode, object id){
-if(id->variables->action=="AddUpsell")
-  DB->query("INSERT INTO upsell VALUES('" + id->variables->id + "','" + 
-	id->variables->upsell + "')");
-else {
-
-  foreach(indices(id->variables), string vname)
-    if(id->variables[vname]=="Delete")
-      DB->query("DELETE FROM upsell WHERE id='" + id->variables->id + 
-	"' AND upsell='" + vname + "'"); 
-
-}
-
-string retval="<title>Upsell</title>\n"
-	"<body bgcolor=white text=navy>"
-	"<font face=helvetica, arial>";
-
-array r=DB->query("SELECT * FROM products WHERE " + KEYS->products + "='"
-	+ id->variables->id + "'");
-if(!r) return "Cannot Find Product " + id->variables->id + ".";
-  retval+= "Upsell: <b>" + r[0]->name + "</b><p>";
-
-  retval+="<form action= " + id->not_query + ">\n"
-	"<input type=hidden name=mode value=upsell>\n"
-	"<input type=hidden name=id value=" + id->variables->id + ">\n"
-	"<select name=upsell>\n";	
-  array r=DB->query("SELECT * FROM products ORDER BY " + KEYS->products);
-	foreach(r, mapping row)
-	  retval+="<option value=\"" + row[KEYS->products] + "\">"
-	    + row[KEYS->products] +": "+ row->name + "\n";
-  retval+="</select> <input type=submit value=AddUpsell name=action>"
-  "<p>Currently associated Upsells:<br>";
-
-  array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id='" +
-	id->variables->id + "' and upsell.upsell=products." + KEYS->products);
-  if(r)
-  foreach(r, mapping row)
-    retval+=row->name + "<input type=submit name=\"" + row->upsell
-	+ "\" value=Delete><br>";
-  else retval+="No Upsell Items Currently Assigned.";
-  retval+="</form>\n";
-
-return retval;
-
-}
-
-
 void start_store(string c){
 
    if(!paths[c]) paths[c]=([]);
@@ -398,7 +352,6 @@ void start_store(string c){
    register_path_handler(c, "cart", handle_cart);
 
 
-//   register_admin_handler(c, "upsell", upsell_handler);
 
 //   perror("Loading: modules ");
 perror(config[c]->general->config +"\n\n");
@@ -668,36 +621,6 @@ mixed container_icart(string name, mapping args, string contents, object id) {
   return retval;
 }
 
-
-
-string tag_upsell(string tag_name, mapping args,
-                  object id, mapping defines) {
-
-   string retval="";
-
-   array r=DB->query("SELECT upsell.id,products.* FROM upsell,products "
-                     "WHERE upsell.id='" + id->misc->ivend->page + 
-                     "' AND products.id=upsell.upsell");
-
-   if(sizeof(r)>0) {
-      retval+="<table width=220>\n"
-              "<tr><td colspan=2 bgcolor=black><font color=white>Must Have Accessories</td></tr>\n"
-              "<input type=hidden name=ADDITEM VALUE=1>\n";
-      foreach(r, mapping row) {
-         retval+="<tr><td><input type=checkbox value=\"ADDITEM\" name=\"" + 
-                 row->id + "\"></td><td>" 
-                 "<a href=\"/" + row->id + ".html\">"
-                 "<font size=-1>"+ row->name +"</a><br><font color=maroon>$" +
-                 row->price + "</td></tr>\n";
-      }
-         retval+="<tr><td colspan=2><font size=1>Check one or more of"
-                 "these great accessories to be added to your cart when order this item."
-                 "</td></tr>\n</table>";
-   }
-
-   return retval;
-
-}
 
 string tag_additem(string tag_name, mapping args,
                    object id, mapping defines) {
@@ -1338,6 +1261,10 @@ void background_session_cleaner(){
 
 mixed order_handler(string filename, object id, object this_object){
 
+if(id->not_query[sizeof(id->not_query)-1..]!="/")
+  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
+	(id->query?("?" + id->query):""), id);
+
    if(id->auth==0)
       return http_auth_required("iVend Store Orders",
                                 "Silly user, you need to login!"); 
@@ -1355,7 +1282,10 @@ mixed order_handler(string filename, object id, object this_object){
    " Orders</gtext><p>"
    "<font face=helvetica,arial size=+1>";
 if(!id->variables->print) retval+=
-   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
+   "<a href=../>Storefront</a> &gt; <a href=" + 
+	add_pre_state(id->misc->ivend->storeurl + "admin",
+(<"menu=main">)) +
+	">Admin</a> &gt; <a href=./>Orders</a><p>\n";
 
 
    mixed d=MODULES->order->show_orders(id, DB);
@@ -1462,18 +1392,21 @@ retval+="<SCRIPT LANGUAGE=javascript>"
 "\n"
 "function popup(name,location,w,h) {\n"
 "        mainWin=self;\n"
+"	if(h<1) h=300;\n"
+"	if(w<1) w=300;\n"
 "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
 "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
 "\n"
 "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
 "        palette=window.open(location,name,param);\n"
-"        window.open('',name,param);\n"
+// "        window.open('',name,param);\n"
 "        \n"
 "        if (palette!=null) palette.opener=mainWin; \n"
 "}\n"
 	"</SCRIPT>"
 	"<form target=" + lower_case(name) + 
-	" ACTION=\"" + location +"\">";
+	" ACTION=\"" + add_pre_state(id->not_query, (<lower_case(name)>))
+	+"\">";
 foreach(indices(options), string o){
 
   retval+="<input type=hidden name=\"" + o + "\" value=\"" + options[o] +
@@ -1481,7 +1414,9 @@ foreach(indices(options), string o){
 	}
 
 retval+="<input type=hidden name=mode value=\""  +mode + "\">"
-	"<input onclick=popup('" + lower_case(name) + "','',300,300) type=submit value=\"" + name + "\">"
+	"<input onclick=popup('" +lower_case(name) +"','" +
+	add_pre_state(id->not_query,
+(<lower_case(name)>))  + "',300,300) type=submit value=\"" + name + "\">"
 	"</form>"
 	"</TD></TR></TABLE>";
 
@@ -1489,6 +1424,17 @@ return retval;
 
 }
 
+
+
+string return_to_admin_menu(object id){
+
+return "<a href=\""  + 	   add_pre_state(id->not_query,
+             (<"menu=main">))+   "\">"
+         "Return to Store Administration</a>.\n";
+
+
+
+}
 
 mixed admin_handler(string filename, object id, object this_object){
 //   numsessions[STORE]--;
@@ -1622,13 +1568,13 @@ KEYS[type+"s"]);
 
       case "restartstore":
          start_store(STORE);
-         retval+="Store Restarted Successfully.<p><a href=\"./admin\">"
-         "Return to Store Administration</a>.\n";
-         break;
+         retval+="Store Restarted Successfully.<p>" +
+		return_to_admin_menu(id);
+ break;
       case "clearsessions":
          int r =clean_sessions(id);
-         retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p><a href=\"./admin\">"
-         "Return to Store Administration</a>.\n";
+         retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
+	  return_to_admin_menu(id);
          break;
 
       case "getmodify":
@@ -1729,11 +1675,12 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
          break;
 
          default:
-	 if(have_admin_handler(id->variables->mode, id)){
-	   retval=handle_admin_handler(id->variables->mode,id);
+
+	 if(have_admin_handler(mode, id)){
+	   retval=handle_admin_handler(mode,id);
 	 }
          else retval+= "<ul>\n"
-                  "<li><a href=\"orders\">Orders</a>\n"
+                  "<li><a href=\"../orders\">Orders</a>\n"
                   "</ul>\n"
                   "<ul>\n"
                   "<li>Groups\n"
@@ -1785,7 +1732,7 @@ add_pre_state(id->not_query,(<"dump=product">))
 ">Restart Store</a>\n"
                   "</ul>\n"
                   "<ul>\n"		
-                  "<li><a href=\"shipping\">Shipping Administration</a>\n"
+                  "<li><a href=\"../shipping\">Shipping Administration</a>\n"
 		  "</ul>\n"
 		  "<ul>\n"
 		  "<li><a href="
@@ -1946,7 +1893,6 @@ string|void container_ivml(string name, mapping args,
    mapping tags=    ([
                        "ivstatus":tag_ivstatus, 
                        "ivmg":tag_ivmg, 
-                       "upsell":tag_upsell,
                        "listitems":tag_listitems,
                        "generateviews":tag_generateviews
                      ]);

@@ -401,6 +401,36 @@ orders_to_archive[0]->id):"") + ".xml");
  return retval;
 }
 
+string view_activity_log(string mode, object id){
+  string retval="";
+  array r=DB->query("SELECT * FROM activity_log WHERE orderid='" + 
+	id->variables->orderid + "'");
+  if(sizeof(r)<1) retval+="Unable to find your order.";
+  else {
+
+  retval+="<table><tr><th>Date/Time</th><th>Subsystem</th><th>Message</th></tr>\n";
+
+
+  foreach(r, mapping m){
+
+  retval+="<tr><td>" + m->time_stamp + "</td><td>" + m->subsystem +
+	"</td><td><autoformat>" + m->message +
+	"</autoformat></td></tr>\n";
+
+  }
+
+  retval+="</table>\n";
+
+  }
+
+  retval+="<center>"
+	"<form action=''><input type=reset value='Close' "
+	"onClick='javascript:window.close()'></form>"
+	"</center>";
+
+  return retval;
+}
+
 string show_orders(string mode, object id){
 string retval="";
 string status="";
@@ -452,6 +482,8 @@ else {
        array r1=DB->query( 
 	"SELECT status FROM status WHERE name='In Progress' "
 	"AND tablename='orders'");
+	T_O->report_status("Changed order status to 'In Progress.'", 
+		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 r1[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
@@ -468,6 +500,8 @@ else {
 
    array r=DB->query(
        "SELECT status FROM status WHERE name='Error'");
+        T_O->report_status("Changed order status to 'Error.'",
+                id->variables->orderid || "NA", "handleorders", id); 
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
@@ -483,6 +517,8 @@ else {
        r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
    array r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
+        T_O->report_status("Changed order status to 'Cancelled.'",
+                id->variables->orderid || "NA", "handleorders", id); 
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
@@ -528,6 +564,10 @@ else {
        foreach(o, mapping l){
          shipped_some=1;
          shipped_any=1;
+        T_O->report_status("Shipped Item: "+ l->id + " Instance: " +
+		l->series + " Qty: " +
+		l->quantity,
+                id->variables->orderid || "NA", "handleorders", id); 
 	 string query="INSERT INTO shipments VALUES('" + id->variables->orderid
 	 +"','" + l->id + "'," + l->series + "," + l->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
@@ -550,6 +590,11 @@ else {
 
        foreach(r, mapping row){
          if(row->status=="Shipped") continue;
+        T_O->report_status("Shipped Item: "+ row->id + " Instance: " +
+		row->series + " Qty: " +
+		row->quantity,
+                id->variables->orderid || "NA", "handleorders", id); 
+
 	 string query="INSERT INTO shipments VALUES('" + id->variables->orderid
 	 +"','" + row->id + "'," + row->series + "," + row->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
@@ -577,6 +622,8 @@ else {
        array r=DB->query( 
 	"SELECT status FROM status WHERE name='Shipped' "
 	"AND tablename='orders'");
+	T_O->report_status("Order has been completely shipped. Order CLOSED.", 
+		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
@@ -623,6 +670,8 @@ else if(id->variables->orderid) {
 if(id->variables->print)
   ADMIN_FLAGS=NO_BORDER;
 
+
+
 if(!id->variables->print)
   retval+="<form action=\"./orders\" method=post>\n"
     "<input type=hidden name=orderid value=\"" + 
@@ -638,7 +687,8 @@ if(!id->variables->print)
 if(r && sizeof(r)>0 && r[0]->name!="Validated")
    retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
-    "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; ";
+    "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
+    "Authorization ID: <input type=text size=20 name=\"authorization_id\"> &nbsp; ";
 else if(sizeof(DB->query(
 	"SELECT id FROM orderdata WHERE orderid='" +    
 	id->variables->orderid + "' AND status !=" +status))>0)
@@ -647,7 +697,13 @@ retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
     "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
     "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; ";
 retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
-    "</obox></form>";
+    "</form>";
+retval+=T_O->open_popup( "View Activity Log",
+                                 id->not_query, "View_Activity_Log" ,
+                                (["orderid" : id->variables->orderid,
+				"height": 400, "width":550]) ,id);
+
+retval+="</obox>";
     }
 
 else {
@@ -753,6 +809,8 @@ string retval="";
        array r1=DB->query( 
 	"SELECT status FROM status WHERE name='In Progress' "
 	"AND tablename='orders'");
+	T_O->report_status("Changed order status to 'In Progress.'", 
+		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 r1[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
@@ -785,6 +843,9 @@ mixed register_admin(){
 
 return ({
 
+	([ "mode": "Orders.View_Activity_Log",
+		"handler": view_activity_log,
+		"security_level": 1 ]),
 	([ "mode": "menu.main.Orders.View_Orders",
 		"handler": show_orders,
 		"security_level": 1 ]),

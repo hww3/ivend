@@ -134,7 +134,9 @@ if(!args->field)
 mixed err;
 err=catch(good_email=Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]));
 if(err) {
-  id->misc->ivend->this_object->report_error("Error Running Check Address", id, err);
+ T_O->report_error("Error Running Check Address" + (err*"\n"),
+id->misc->ivend->orderid ||"NA",
+        "checkout", id); 
   return "<!-- An error occurred while checking the email address.-->";
 }
 else if(good_email)

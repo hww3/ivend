@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.245 1999-09-09 02:26:28 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.246 1999-09-10 21:50:30 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1833,15 +1833,17 @@ mixed open_popup(string name, string location, string mode, mapping
             "	if(w<1) w=300\n"
             "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200\n"
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130\n"
-            "\n"
-	"var idn=document.gentable."
+            "\n";
+if(options->type){
+retval+=	"var idn=document.gentable."
  + lower_case(KEYS[options->type+ "s"]) +
 		".value\n"
 	    " document.popupform" + id->misc->ivend->popup
 +".id.value=idn\n"
 	    " if(idn=='') { alert('You have not specified a " +
-		KEYS[options->type + "s"] + ".')\n return\n}\n"  
-            "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h\n"
+		KEYS[options->type + "s"] + ".')\n return\n}\n";
+}
+retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h\n"
             "        palette=window.open(location,name,param)\n"
             // "        window.open('',name,param)\n"
             "        \n"

@@ -243,7 +243,8 @@ if(note) {
 
 }      
 
-
+T_O->report_status("Sent Notification message: " + type,
+                id->variables->orderid || "NA", "handleorders", id);
   return;
 }
 

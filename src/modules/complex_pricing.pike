@@ -160,24 +160,21 @@ array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<table><tr>\n<td bgcolor=black><font color=white>"
-"<b>Quantity</b></td>\n";
+retval+="<header>Quantity</header>\n";
 
 for(int i=0; i<sizeof(r); i++){
   if(i==sizeof(r)-1)
-   retval+="<td align=center>" + r[i]->minimum_quantity + "+</td>\n";
+   retval+="<quantity>" + r[i]->minimum_quantity + "+</quantity>\n";
   else
-   retval+="<td align=center>" + r[i]->minimum_quantity + "-" +
-    ((int)(r[i+1]->minimum_quantity)-1) + "</td>\n";  
+   retval+="<quantity>" + r[i]->minimum_quantity + "-" +
+    ((int)(r[i+1]->minimum_quantity)-1) + "</quantity>\n";  
 }
-retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
- "<b>Price Each</b></td>\n";
+retval+="<header>Price Each</header>\n";
 foreach(r, mapping row){
-  retval+="<td> &nbsp; " + MONETARY_UNIT + sprintf("%.2f", (float)(row->price)) +
-" &nbsp; </td>\n";  
+  retval+="<price>" + MONETARY_UNIT + sprintf("%.2f", (float)(row->price))
++
+"</price>\n";  
 }
-
- retval+="</tr></table>\n";
 
 return retval;
 
@@ -235,17 +232,15 @@ array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<table><tr>\n<td bgcolor=black><font color=white>"
-"<b>Quantity</b></td>\n";
+retval+="<header>Quantity</header>\n";
 
 for(int i=0; i<sizeof(r); i++){
-   retval+="<td align=center>" + r[i]->quantity + "</td>\n";  
+   retval+="<quantity>" + r[i]->quantity + "</quantity>\n";  
 }
-retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
- "<b>Price Each</b></td>\n";
+retval+="<header>Price Each</header>\n";
 foreach(r, mapping row){
-  retval+="<td> &nbsp; " + MONETARY_UNIT + sprintf("%.2f", (float)(row->price)) +
-" &nbsp; </td>\n";  
+  retval+="<price>" + MONETARY_UNIT + sprintf("%.2f",
+(float)(row->price)) + "</price>\n";  
 }
 
  retval+="</tr></table>\n";
@@ -264,10 +259,10 @@ array r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + item +
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
 for(int i=0; i<sizeof(r); i++){
-  retval+="Buy " + r[i]->quantity_to_qualify + ", get " +
+  retval+="<offer>Buy " + r[i]->quantity_to_qualify + ", get " +
    r[i]->quantity_to_get + " " +
    ((float)(r[i]->price)==0.00?"Free":("for " + MONETARY_UNIT +
-   sprintf("%.2f",(float)(r[i]->price)))) + "<br>";
+   sprintf("%.2f",(float)(r[i]->price)))) + "</offer>";
 
 }
 return retval;
@@ -286,7 +281,8 @@ else foreach(r, mapping row){
 
 if(!catch(this_object()["getprice_"+ row->type]) &&
 functionp(this_object()["getprice_"+row->type]) )
- retval+=this_object()["getprice_" + row->type](id, args->item) + "<br>";
+ retval+=make_container(row->type, ([]), this_object()["getprice_" +
+	row->type](id, args->item));
 else retval+="<!-- Can't get pricing display for type " + row->type + ". -->\n";
  }
 

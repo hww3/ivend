@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.286 2003-09-15 19:02:25 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.287 2003-11-18 02:14:37 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -210,20 +210,16 @@ else {          // calculate the tax rate as sum of all matches.
     r=DB->query(query);
 
     if(sizeof(r)!=0) {
-	//perror("got something back on that one.\n");
 	taxrate+=(float)(r[0]->taxrate);
 	}
-    // else perror("got nothin'.\n");
     }
-//  perror("taxrate: " + taxrate + "\n");
   if(((float)taxrate)>0.00) {
      r=DB->query("SELECT SUM(value)*" + taxrate + " as totaltax "
         " FROM lineitems WHERE orderid='" + orderid + "' AND "
         "taxable='Y'");
 
         totaltax=(float)sprintf("%.2f", (float)r[0]->totaltax);
-//    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
-return (float)(sprintf("%.2f",totaltax));
+	return (float)(sprintf("%.2f",totaltax));
     }
 
   else return (0.00);

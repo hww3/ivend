@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.274 2000-12-16 17:59:58 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.275 2000-12-18 21:14:02 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -371,7 +371,7 @@ int have_path_handler(string s, string p){
 
 void register_path_handler(string c, string path, function f){
 
-    //   perror("registering path " + path + " for " + c + "...\n");
+       perror("registering path " + path + " for " + c + "...\n");
 
     if(functionp(f))
         paths[c][path]=f;
@@ -414,7 +414,7 @@ int had_warning(object id){
 
 void trigger_event(string event, object|void id, mapping|void args){
 
-    //   perror("triggering event " + event + "\n");
+       perror("triggering event " + event + "\n");
 
     if(id && STORE){
         if(library[STORE]->event[event])
@@ -430,7 +430,7 @@ void register_event(mapping config, mapping events){
         library[config->config]->event=([]);
 
     foreach(indices(events), string ename){
-//        perror("Registering event " + ename + "\n");
+        perror("Registering event " + ename + "\n");
         if(!library[config->config]->event[ename])
             library[config->config]->event[ename]=({});
         library[config->config]->event[ename]+=({events[ename]});
@@ -488,7 +488,7 @@ string|void container_procedure(string name, mapping args,
             footer="\n}";
         }
     }
-//    perror("Defining Procedure (" +type+"):  " + name + "\n");
+    perror("Defining Procedure (" +type+"):  " + name + "\n");
     contents=header+contents+footer;
     mixed err;
     err=catch(object p=(object)clone(compile_string(contents)));
@@ -727,7 +727,7 @@ void|string container_form(string name, mapping args,
 }
 
 mixed do_complex_items_add(object id, array items){
-//    perror("doing complex item add...\n");
+    perror("doing complex item add...\n");
     foreach(items, mapping i){
         array r;
 	catch(r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
@@ -2035,8 +2035,10 @@ string return_to_admin_menu(object id){
              }
 
              mixed admin_handler(string filename, object id){
+	       // perror("admin interface\n");
 if(CONFIG->admin_enabled=="No")
   return 0;
+
                  string mode, type;
 if(id->variables->logout){
    add_cookie(id, (["name":"admin_user",
@@ -2109,7 +2111,7 @@ if(!intp(r)){
                      mixed j=DB->addentry(id,id->referrer);
                      retval+="<br>";
                      if(!intp(j)){
-                         destruct(DB);
+		       //                         destruct(DB);
                          return retval+= "<p>The following errors occurred:<p><ul><li>" + (j*"<li>")
 				+"</ul><p>"
 	"Please return to the previous page to remedy this  "
@@ -2117,7 +2119,7 @@ if(!intp(r)){
                      }
                      else{
                          type=(id->variables->table-"s");
-                         destruct(DB);
+			 //                         destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
 		"id": id->variables[DB->keys[type + "s"]] ]) );
                        return (retval+"<br>"+capitalize(type)+" Added Sucessfully.")
@@ -2130,11 +2132,11 @@ if(!intp(r)){
                      mixed j=DB->modifyentry(id,id->referrer);
                      retval+="<br>";
                      if(stringp(j)){
-                         destruct(DB);
+		       //                         destruct(DB);
                          return retval+= "The following errors occurred:<p><li>" + (j*"<li>")
 				+"</body></html>";
                      }
-                     destruct(DB);
+//                     destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
 		"id": id->variables[DB->keys[type + "s"]] ]) );
 
@@ -2464,7 +2466,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
                          }
 			if(mappingp(rv)) {
-			  destruct(DB);
+			  //			  destruct(DB);
 			  return rv;
 			}
 
@@ -2549,7 +2551,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      break;
 
                  }
-                 destruct(DB);
+//		                  destruct(DB);
                  return retval;
 
              }
@@ -2613,8 +2615,9 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  id->misc->ivend->config->global=global;
                  mixed err;
                  if(!DB) {
-			perror("taking a db object in find_file() 1\n");
-perror("store: " + STORE + "\n");
+		      ("taking a db object in find_file() 1\n");
+
+if(STORE) 
                      DB=db[STORE]->handle();
 perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
 			}
@@ -2622,8 +2625,9 @@ perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
                      error(err[0] || config[STORE]->error, id);
                      return return_data(retval, id);
                  }
+
                  if(!DB || !DB->db_info_loaded) {
-				return return_data("This store is currently unavailable.", id);
+		   return return_data("This store is currently unavailable.", id);
 			}
                  MODULES=modules[STORE];
                  numrequests[STORE]+=1;
@@ -2638,10 +2642,11 @@ perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
                  if(!retval)
                      switch(request[0]) {
                      case "":
-string rx=replace((id->not_query + "/index.html" +
-	(id->query?("?"+id->query):"")),"//","/");
- perror("redirecting to: " + rx + "\n");
-return http_redirect(rx, id);
+		       string rx=replace((id->not_query + "/index.html" +
+					  (id->query?("?"+id->query):"")),"//","/");
+		       perror("redirecting to: " + rx + "\n");
+		       db[STORE]->handle(DB);
+		       return http_redirect(rx, id);
                      default:
                          retval=(handle_page(request*"/", id));
 
@@ -2966,8 +2971,9 @@ if(id->cookies->SESSIONID)
                              // werror("return_Data\n");
                              if(1) {
 			       perror("sending db back. 221\n");
-			       perror(sprintf("%O\n", DB));
-			       db[STORE]->handle(DB);
+			       perror(sprintf("%O\n", STORE));
+			       if(objectp(DB))
+				 db[STORE]->handle(DB);
 			       DB=0;
 			       perror(sprintf("%O\n", DB));
 			     }

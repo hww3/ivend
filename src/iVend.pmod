@@ -1135,15 +1135,13 @@ mapping local_settings=([]);
     void|object handle(void|object d)
     {
         LOCK();
-if(d)
-perror("DB.handle called.\n" + sprintf("%O\n", d->host) + "\n");
         int count;
         dbs -= ({0});
 	dbs-=({});
-	if(d && d->host) perror("Returning a DB to the stack.\n");
+	if(objectp(d)) perror("Returning a DB to the stack.\n");
 	else perror("Taking a DB from the stack.\n");
 
-        if(d&& (d->host)) {
+        if(d) {
 	  perror("Getting ready to return DB\n");
             if(search(dbs, d) == -1) {
                 if(sizeof(dbs)>(2*num_dbs)) {
@@ -1164,14 +1162,16 @@ perror("DB.handle called.\n" + sprintf("%O\n", d->host) + "\n");
         else {
             if(!sizeof(dbs)) {
                 werror("Handler: New DB created (none left).\n");
-                dbs[0] = db(host);
-		get_dbinfo();
+//                dbs[0] = db(host);
+//		get_dbinfo();
+create(host, num_dbs);
 		d=dbs[0];
+		dbs-=({d});
                 //d->set_timeout(60);
             } else {
                 d = dbs[0];
                 dbs -= ({d});
-                //werror("Handler -- ("+sizeof(dbs)+")\n");
+                werror("Handler -- ("+sizeof(dbs)+")\n");
             }
         }
         UNLOCK();

@@ -44,3 +44,13 @@ $varname=session_timeout
 $name=Session Timeout
 $type=int
 $description=Number of seconds before a session is cleared from database.
+
+$varname=config_user
+$name=Configuration Username
+$type=string
+$description=Username for Store Administration
+
+$varname=config_password
+$name=Configuration Password
+$type=password
+$description=Password for Store Administration

@@ -47,8 +47,6 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.103 1998-08-21 14:40:37 hww3 Exp $";
-
 array register_module(){
 
  string s="";
@@ -685,7 +683,7 @@ switch(page){
     break;
 
   default:
-
+  
   mixed fs;
   fs=stat_file(page,id);
 
@@ -696,6 +694,7 @@ switch(page){
     else if(fs[1]<=0) {
 //      perror("we've got a directory!\n"
 //	"trying " + page + "/index.html\n");
+page="/"+((page/"/") - ({""})) * "/";
       fs=stat_file(page+"/index.html",id);
 //  perror(sprintf("%O",fs));
 	
@@ -824,6 +823,8 @@ foreach(indices(config), string st){
       perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
          " sessions from database " + store->db + ".\n");
     }
+perror("returning db in background_session_cleaner\n");
+  db[st]->handle(d);
   }
 call_out(background_session_cleaner, 900);
 }
@@ -1244,7 +1245,6 @@ mixed err;
     err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
     if(err || config[id->misc->ivend->st]->error) { 
        error(err || config[id->misc->ivend->st]->error, id);
-	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
        return return_data(retval, id);
        }
 
@@ -1253,7 +1253,6 @@ mixed err;
 
   switch(request[0]) {
     case "":
-	
 	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
       return http_redirect(simplify_path(id->not_query +
         "/index.html")+"?SESSIONID="+getsessionid(id), id);
@@ -1321,14 +1320,15 @@ if(id->misc->ivend->st){
     ]->query_tag_callers();
   }
 };
-
+if(objectp(!id->misc->ivend->db))
     err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
 
   id->misc->ivend->modules=modules;
 contents=parse_rxml(contents,id);
  contents= "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
-db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+if(objectp(id->misc->ivend->db))
+  db[id->misc->ivend->st]->handle(id->misc->ivend->db);
 return contents;
 
 }
@@ -1442,7 +1442,6 @@ return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
 
 
 mixed get_image(string filename, object id){
-perror("** getting image " + filename + "\n");
 //perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
@@ -1593,7 +1592,7 @@ perror("iVend: Starting dbhandler for " + c->config + "\n");
 db[c->config]=iVend.db_handler(
 		    c->dbhost,
 		    c->db,
-		    2,
+		    4,
 		    c->dblogin,
 		    c->dbpassword
 		    );

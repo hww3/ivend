@@ -152,7 +152,6 @@ inherit "roxenlib";
 
 void create(mixed host, mixed db, mixed user, mixed password){
 
-perror("iVend.db: Create\n");
 ::create(host, db, user, password);
 
 }
@@ -165,7 +164,7 @@ mixed list_fields(string t) {
 
 mixed query(string q){
 
-  perror("iVend.db: Query\n");
+//  perror("iVend.db: Query\n");
   return ::query(q);
 
 }
@@ -821,9 +820,9 @@ class db_handler
       if(search(dbs, d) == -1) {
 //	d->select_table(0);
 	dbs += ({d});
-	werror("Handler ++ ("+sizeof(dbs)+")\n");
+//	werror("Handler ++ ("+sizeof(dbs)+")\n");
       } else {
-	werror("Handler: duplicate return: \n");
+//	werror("Handler: duplicate return: \n");
       }
       d = 0;
     } else {
@@ -834,7 +833,7 @@ class db_handler
       } else {
 	d = dbs[0];
 	dbs -= ({d});
-	werror("Handler -- ("+sizeof(dbs)+")\n");
+//	werror("Handler -- ("+sizeof(dbs)+")\n");
       }
     }
     UNLOCK();

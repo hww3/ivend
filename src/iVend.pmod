@@ -344,6 +344,14 @@ if(!id->variables->table) {
 	"Please go back and resubmit your request." });
   return errors;
   }
+string k=Array.filter((id->variables[lower_case(DB->keys[id->variables->table])]/""),Regexp("[_\-a-z0-9]")->match)*"";
+if(k!=id->variables[lower_case(DB->keys[id->variables->table])])
+{
+  errors+=({"You have entered incorrect characters in your " +
+	replace(DB->keys[id->variables->table],"_"," ")+ ". You may use "
+	"alpha numeric characters and _ or -." });
+  return errors;
+}
 array(mapping(string:mixed)) r=list_fields(id->variables->table);
         for (int i=0; i<sizeof(r); i++)
             r[i]->name=lower_case(r[i]->name);  // lower case it all...

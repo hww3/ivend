@@ -110,11 +110,46 @@ will generate a series of item listings that contain all products in group PRODG
 <LISTITEMS>
 
 Generates lists of items (product or group) formatted for display and browsing.
-listitems
+
+<A>...</
+
+This modified version of the <A>...</ tag handles session tracking and also provides some shortcuts to common iVend paths. The contents of the container will be contained within the <A>..</ container.
+
+ATTRIBUTES
+HREF Specifies the location of a file to be linked to. (Optional)
+PARSE If specified, the contents of HREF will be parsed. (Optional)
+EXTERNAL Specifies that session tracking be disabled for this link. (Optional)
+REFERER Specifies that the link will point back to previous page. Overrides HREF. (Optional)
+ADD Causes a link to be generated that will cause the current item to be added to the cart. (Optional)
+CART Generates a link to the current shopping cart. (Optional)
+CHECKOUT Generates a link to the checkout location. (Optional)
+TEMPLATE When link is to a product or group, specifies the template to use. (Optional)
+
+All other attributes are passed on to the browser.
+
+<LISTITEMS>
+
+ATTRIBUTES
+HEADLINEBGCOLOR
+HEADLINEFONTCOLOR
+LISTBGCOLOR
+LISTBGCOLOR2
+LISTFONTCOLOR
+FIELDS
+NAMES
+TYPE
+QUERY
+PARENT
+SHOW
+LIMIT
+ORDER
+QUIET
+TEMPLATE
+TITLE
+MODULO
+
 ivstatus
 ivmg
-
-a
 form
 ivindex
 category_output

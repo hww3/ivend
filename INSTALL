@@ -350,6 +350,8 @@ of the fieldname are surrounded by #s. Similar to formoutput in rxml. This
 container takes the following attributes:
 
   type=products|groups: required. selects what type of records to select.
+  showall: show all items, options other than random and order are
+    ignored.
   restriction=restriction: optional restriction on selection. example:
     restriction="manufacturer='kodak'" must follow sql format rules.
   random: optional, when used with formrotate, the template to be used 

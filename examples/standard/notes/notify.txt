@@ -4,7 +4,7 @@ A new order has arrived.
 A new order has arrived and is awaiting action. Please go to the following
 address:
 
-http://www.foo.com/ivend/test/orders?orderid=#orderid#
+<https://www.foo.com/(Orders.View_Orders)/ivend/test/admin/orders?orderid=#orderid#>
 
 to review and act on this information.
 

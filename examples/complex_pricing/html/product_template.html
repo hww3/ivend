@@ -2,15 +2,15 @@
 <page title="#name#">
 <additem>
 <itemoutput>
-<img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
-<gtext fg=maroon nfont=helvetica black>#name#</gtext><p>
+<h1>#name#</h1><p>
+<b>BROWSE:</b>
+<relatedgroups>
 <p>
 <autoformat>#description#</autoformat>
 <p>
 <ivmg field="image">
 <p>
-Price: #price#<br>
-Shipping: #shipping#
+<complex_pricing item="#id#">
 <p>
 <ul>
 <li><a add>Add to Shopping Cart.</a>
@@ -18,8 +18,5 @@ Shipping: #shipping#
 <li><a href="<storeurl>">Return to the home page.</a>
 </ul>
 <ivstatus>
-<hr>
-Please direct questions or comments to &lt; <a
-href="mailto:<adminemail>"><adminemail></a> &gt;.
 </itemoutput>
 </page>

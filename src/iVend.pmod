@@ -53,6 +53,15 @@ for(int i=0; i<sizeof(vars); i++){
     retval+="</select>";
     break;
 
+    case "password":
+    if(config)
+      retval+="<input type=\"password\" name=\""+(vars[i]||"")+"\" value=\""+
+      (config[vars[i]]||config_setup[vars[i]]->default_value ||"")+"\">";      
+    else
+      retval+="<input type=\"password\" name=\""+(vars[i]||"")+"\" value=\""+
+      (config_setup[vars[i]]->default_value ||"")+"\">";
+    break;
+
     case "string":
     default:
     if(config)

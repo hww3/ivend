@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.6 1998-01-05 00:43:47 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.7 1998-01-06 00:54:26 hww3 Exp $";
 
 /*
  *
@@ -132,6 +132,11 @@ mapping m;
 mixed handle_search(object id){
 
 return "";
+}
+
+int clean_sessions(int timeout){
+
+return 0;
 }
 
 array|int size_of_image(string filename){

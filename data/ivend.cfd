@@ -39,3 +39,8 @@ $varname=root
 $name=Store Root
 $type=string
 $description=Location (in real filesystem) of Store Datafiles.
+
+$varname=session_timeout
+$name=Session Timeout
+$type=int
+$description=Number of seconds before a session is cleared from database.

@@ -366,22 +366,23 @@ if(!r) return "Cannot Find Product " + id->variables->id + ".";
   retval+= "Upsell: <b>" + r[0]->name + "</b><p>";
 
   retval+="<form action= " + id->not_query + ">\n"
-	"<input type=hidden name=mode value=upsell>\n";
-	"<input type=hidden name=id value=" + id->variables->id + ">\n";
+	"<input type=hidden name=mode value=upsell>\n"
+	"<input type=hidden name=id value=" + id->variables->id + ">\n"
 	"<select name=upsell>\n";	
   array r=DB->query("SELECT * FROM products ORDER BY " + KEYS->products);
 	foreach(r, mapping row)
 	  retval+="<option value=\"" + row[KEYS->products] + "\">"
-	    + row->name + "\n";
+	    + row[KEYS->products] +": "+ row->name + "\n";
   retval+="</select> <input type=submit value=AddUpsell name=action>"
   "<p>Currently associated Upsells:<br>";
 
-  array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id=" +
-	id->variables->id + " and upsell.upsell=" + KEYS->products);
-
+  array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id='" +
+	id->variables->id + "' and upsell.upsell=products." + KEYS->products);
+  if(r)
   foreach(r, mapping row)
-    retval+=row->name + "<input type=submit name=\"" + row[KEYS->products]
-	+ " value=Delete><br>";
+    retval+=row->name + "<input type=submit name=\"" + row->upsell
+	+ "\" value=Delete><br>";
+  else retval+="No Upsell Items Currently Assigned.";
   retval+="</form>\n";
 
 return retval;
@@ -641,7 +642,10 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     "<table><tr><Td><input name=update type=submit value=\"" 
       + UPDATE_CART + "\"></form></td>\n";
   if(!id->misc->ivend->checkout){
-    retval+="<td> <form action=\""+ query("mountpoint") +
+    if(args->checkout_url)
+	retval+="<td><form action=\"" + args->checkout_url + "\">";
+    else
+      retval+="<td> <form action=\""+ query("mountpoint") +
       (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
        ?"": STORE+"/")+"checkout/?SESSIONID=" +
 	 id->misc->ivend->SESSIONID
@@ -664,8 +668,8 @@ string tag_upsell(string tag_name, mapping args,
                      "' AND products.id=upsell.upsell");
 
    if(sizeof(r)>0) {
-      retval+="<table>\n"
-              "<tr><td colspan=2 bgcolor=black><font color=white>Accessories</td></tr>\n"
+      retval+="<table width=220>\n"
+              "<tr><td colspan=2 bgcolor=black><font color=white>Must Have Accessories</td></tr>\n"
               "<input type=hidden name=ADDITEM VALUE=1>\n";
       foreach(r, mapping row) {
          retval+="<tr><td><input type=checkbox value=\"ADDITEM\" name=\"" + 
@@ -673,10 +677,10 @@ string tag_upsell(string tag_name, mapping args,
                  "<a href=\"/" + row->id + ".html\">"
                  "<font size=-1>"+ row->name +"</a><br><font color=maroon>$" +
                  row->price + "</td></tr>\n";
+      }
          retval+="<tr><td colspan=2><font size=1>Check one or more of"
                  "these great accessories to be added to your cart when order this item."
                  "</td></tr>\n</table>";
-      }
    }
 
    return retval;
@@ -1665,7 +1669,7 @@ mixed admin_handler(string filename, object id, object this_object){
       case "getmodify":
    retval+="&gt <b>Modify " + capitalize(id->variables->type)
    +"</b><br>\n";
-
+	if(DB->list_tables("upsell"))
 	 retval+=open_popup("Upsell",
 id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
 

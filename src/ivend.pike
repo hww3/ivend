@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.14 1998-02-02 04:15:23 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.15 1998-02-03 00:54:07 hww3 Exp $";
 
 /*
  *
@@ -44,19 +44,8 @@ string query_location()
    }
 
 
-/*
- *
- * create() sets up module configuration variables
- *
- */
-
 void create(){
 
-/*
- *
- * set up configurable variables.
- *
- */
    defvar("mountpoint", "/ivend/", "Mountpoint",
           TYPE_LOCATION,
           "This is where the module will be inserted in the "
@@ -78,38 +67,11 @@ void create(){
 	  "interface.");
 }
 
-
-/*
- *
- *  check_variable(): check validity of config variables...
- *
- */
-
 string|void check_variable(string variable, mixed set_to){
 
 return;
 
 }
-
-
-
-/*
- *
- *  stop(): close up shop...
- *
- */
-
-void stop(){
-
-
-}
-
-
-/*
- *
- *  status(): how's the module doing?
- *
- */
 
 string status(){
 
@@ -163,38 +125,54 @@ string|void container_ia(string name, mapping args,
                       string contents, object id)
 
 {
-if (catch(id->variables->SESSIONID)) return;
+if (catch(id->misc->ivend->SESSIONID)) return;
 
 if (args["_parsed"]) return;
 
 if (args->add) 
   return "<a _parsed=1 href=\""+query("mountpoint")
   +id->misc->ivend->st+"/"+id->misc->page+".ivml?SESSIONID="
-  +id->variables->SESSIONID+"&ADDITEM="+id->misc->page+
+  +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->page+
   "\">"+contents+"</a>";
 else if(args->cart)
   return "<a _parsed=1 href=\""+query("mountpoint")+
   id->misc->ivend->st+"/cart?SESSIONID="
-  +id->variables->SESSIONID+
+  +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->checkout)
   return "<a _parsed=1 href=\""+query("mountpoint")+
   id->misc->ivend->st+"/checkout?SESSIONID="
-  +id->variables->SESSIONID+
+  +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->href){
   int loc;
   if(loc=search(args->href,"?")==-1)
   return "<a _parsed=1 href=\""+args->href
-    +"?SESSIONID=" +(id->variables->SESSIONID)
+    +"?SESSIONID=" +(id->misc->ivend->SESSIONID)
     +"\">"+contents+"</a>";  
 
   else  return "<a _parsed=1 href=\""+args->href
-    +"&SESSIONID=" +(id->variables->SESSIONID)
+    +"&SESSIONID=" +(id->misc->ivend->SESSIONID)
     + "\">"+contents+"</a>";  
 
   }
 else return "HAHAHAHA";
+}
+
+void|string container_form(string name, mapping args,
+                      string contents, object id)
+{
+  if(args["_parsed"]) return;
+  contents="<input type=hidden name=SESSIONID value="+
+	id->misc->ivend->SESSIONID+">"+contents;
+  string formargs="";
+  string a;
+  foreach(indices(args),a)
+    formargs=formargs+a+"=\""+args[a]+"\" ";
+  formargs+="_parsed=1";
+
+  return "<form "+formargs+">"+contents+"</form>";
+
 }
 
 string container_icart(string name, mapping args,
@@ -210,12 +188,13 @@ if(id->variables->update) {
     for(int i=0; i< (int)id->variables->s; i++){
 
     if((int)id->variables["q"+(string)i]==0)
-	s->query("DELETE FROM sessions WHERE SESSIONID="+id->variables->SESSIONID+
+	s->query("DELETE FROM sessions WHERE SESSIONID="
+	+id->misc->ivend->SESSIONID+
 	  " AND id='"+id->variables["p"+(string)i]+"' AND series="+
 	  id->variables["s"+(string)i] );
     else
         s->query("UPDATE sessions SET quantity="+id->variables["q"+(string)i]+
-	  " WHERE SESSIONID="+id->variables->SESSIONID+" AND id='"+
+	  " WHERE SESSIONID="+id->misc->ivend->SESSIONID+" AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
 
     }
@@ -225,14 +204,15 @@ if(id->variables->update) {
   string field;
 
   string retval=lower_case(contents);
-  if(!id->variables->SESSIONID) return retval+"blah";
+  if(!id->misc->ivend->SESSIONID) return retval+"blah";
   else {
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
     object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
     if(!args->fields) return "Incomplete cart configuration!";
     array r= s->query("SELECT sessions.id,series,quantity,name,price,"+ 
 	args->fields+" FROM sessions,products "
-      "WHERE sessions.SESSIONID="+id->variables->SESSIONID+" AND sessions.id=products.id");
+      "WHERE sessions.SESSIONID="
+	+id->misc->ivend->SESSIONID+" AND sessions.id=products.id");
     if (sizeof(r)==0) return "Your Cart is Empty.\n";
     retval+="<tr><th bgcolor=maroon><font color=white>Code</th>\n"
 	"<th bgcolor=maroon><font color=white>Product</th>\n";
@@ -260,10 +240,10 @@ if(id->variables->update) {
 	+sprintf("$%.2f",r[i]->quantity*r[i]->price)+"</td></tr>\n";
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-	"<input type=hidden name=SESSIONID VALUE="+id->variables->SESSIONID+
-	"><input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";
-    return parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id);
-
+	"<input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";
+    return parse_rxml(parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id),id);
+ 
     }
   
 }
@@ -318,7 +298,8 @@ foreach(r,row){
   }
 
 retval+=html_table(titles, rows);
-    return parse_html(retval,([]),(["a":container_ia]),id);
+    return parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id);
 
     }
 
@@ -463,7 +444,8 @@ string retval;
 if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
   return handle_error(id->misc->ivend->config->root+"/cart.ivml",id);
  
-   return parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id);
+    return parse_rxml(parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id),id);
 
 }
 
@@ -532,8 +514,8 @@ config[id->misc->ivend->st]->db,
 	config[id->misc->ivend->st]->user, config[id->misc->ivend->st]->password);
 
 int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID="+
-  id->variables->SESSIONID+" AND id='"+item+"'"));
-string query="INSERT INTO sessions VALUES("+ id->variables->SESSIONID+
+  id->misc->ivend->SESSIONID+" AND id='"+item+"'"));
+string query="INSERT INTO sessions VALUES("+ id->misc->ivend->SESSIONID+
   ",'"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"')";
 perror(query+"\n");
@@ -569,8 +551,9 @@ switch(page){
     else retval=find_page(page, st, id);
   }
   if (!retval) return handle_error("Unable to find product "+page, id);
-    return parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id);
-
+    return parse_rxml(parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id),id);
+ 
 
 // return (string)(retval+" "+page+" "+dump_id(id));
 }
@@ -590,7 +573,9 @@ object c=clone(compile_file(id->misc->ivend->config->root+"/modules/"+
 	id->misc->ivend->config->checkout_module));
 retval=c->checkout(id);
 if(retval==-1) return handle_page("index.ivml",id->misc->ivend->st,id);
-else return parse_rxml(retval, id);
+else 
+    return parse_rxml(parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id),id); 
 }
 
 
@@ -934,7 +919,7 @@ switch(id->variables->mode){
     id->misc->ivend->config->password
     );
   retval+=s->gentable("products","./admin","groups", 
-	"product_groups", id->variables->SESSIONID);
+	"product_groups", id->misc->ivend->SESSIONID);
   break;
 
   case "addgroup":
@@ -944,7 +929,7 @@ switch(id->variables->mode){
     id->misc->ivend->config->user,
     id->misc->ivend->config->password
     );
-  retval+=s->gentable("groups","./admin",0,0,id->variables->SESSIONID);
+  retval+=s->gentable("groups","./admin",0,0,id->misc->ivend->SESSIONID);
   break;
 
   case "dodelete":
@@ -960,8 +945,7 @@ switch(id->variables->mode){
   else {
     mixed n=s->showdepends(id->variables->type, id->variables->id);
     if(n){ 
-    retval+="<form action=./admin>\n<input type=hidden value="+
-      id->variables->SESSIONID+ " NAME=SESSIONID>\n"
+    retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
       "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=hidden name=id value="+id->variables->id+">\n"
@@ -975,7 +959,6 @@ switch(id->variables->mode){
     case "delete":
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
-      "<input type=hidden name=SESSIONID value="+id->variables->SESSIONID+">\n"
       "ID to Delete: \n"
       "<input type=text size=10 name=id>\n"
       "&nbsp; <input type=radio name=type default value=product>\n"
@@ -1013,7 +996,9 @@ switch(id->variables->mode){
 
 }
 
-  return http_string_answer(parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id));
+  return http_string_answer(
+    parse_rxml(parse_html(retval,([]),
+        (["a":container_ia, "form":container_form]),id),id));
 
 }
 
@@ -1067,12 +1052,15 @@ retval="You must enter through a store!\n";
 	
 
 	if(!id->variables->SESSIONID) 
-return http_redirect(query("mountpoint")+
-	file_name+"?SESSIONID="+(hash((string)time(1)+(string)random(32201))));	
+	  id->misc->ivend->SESSIONID=
+        	(hash((string)time(1)+(string)random(32201)));	
+	else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
 
+	m_delete(id->variables,"SESSIONID");
 
 	if(request[0] && catch(request[1])) 
-		return http_redirect(query("mountpoint")+file_name+"/?SESSIONID="+id->variables->SESSIONID);
+		return http_redirect(query("mountpoint")+file_name+"/?SESSIONID="+
+	         id->misc->ivend->SESSIONID);
 
 	if(config[request[0]])
 	  {

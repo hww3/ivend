@@ -254,9 +254,9 @@ string|mapping archive_orders(string mode, object id){
 retval+="<order id=\"" + or->id + "\">\n"
 	"<created>" + or->created + "</created>\n"
 	"<updated>" + or->updated + "</updated>\n"
-	"<notes>" + or->notes + "</notes>\n";
+	"<notes>" + (or->notes||"") + "</notes>\n";
     array tables=({"orderdata", "shipments", "customer_info",
-	"payment_info"});
+	"payment_info", "lineitems"});
     foreach(tables, string t){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
@@ -270,9 +270,11 @@ retval+="<order id=\"" + or->id + "\">\n"
   	}
     retval+="</record>\n";
           }
+    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'");
       
         }
     retval+="</order>\n";
+    DB->query("DELETE FORM orders WHERE id='" + or->id + "'");
      } 
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "orders.xml");

@@ -335,10 +335,17 @@ ss=ss[0..sizeof(ss)-2];
 
 privs=Privs("iVend: Copying store files ");
 mkdir(v->root + "/private");
-privs=0;
 
 if(!file_stat(v->root +"/private/key.pub"))
   write_keys(v->root + "/private/key");
+
+#if efun(chmod)
+chmod(v->root + "/private/key.pub", 0400);
+chmod(v->root + "/private/key.priv", 0400);
+chmod(v->root + "/private", 0500);
+#endif
+
+privs=0;
 
 v->publickey=v->root+ "/private/key.pub";
 v->privatekey=v->root + "/private/key.priv";

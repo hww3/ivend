@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.262 2000-06-02 15:26:30 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.263 2000-06-05 20:18:15 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -376,6 +376,14 @@ void get_dbinfo(mapping c){
     if(sizeof(n)<1)
         // we're doing complex pricing
         local_settings[c->config]->pricing_model=COMPLEX_PRICING;
+    array n=s->list_fields("products", "handling_charge");
+    if(sizeof(n)>0)
+        // we're doing individual handling charges
+        local_settings[c->config]->handling_charge=PER_ITEM;
+    array n=s->list_fields("products", "handling_charge_aggregation");
+    if(sizeof(n)>0)
+        // we're doing aggregated handling charges
+        local_settings[c->config]->handling_charge_aggregate=TRUE;
 /*
     if(local_settings[c->config]->pricing_model==COMPLEX_PRICING)
         perror("We're doing complex pricing.\n");

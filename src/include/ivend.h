@@ -44,4 +44,7 @@ import ".";
 #define SIMPLE_PRICING	0
 #define COMPLEX_PRICING 1
 
+#define TRUE 1
+#define PER_ITEM 1
+
 #define _extra_heads id->misc->defines[" _extra_heads"]

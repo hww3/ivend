@@ -129,6 +129,19 @@ return 0;
 
 }
 
+float calculate_handlingcharge(string type, string orderid, object id){
+float handling_charge=0.00;
+
+  trigger_event("calculateHandlingCharge",id,(["type": type,
+	"orderid": orderid]));   
+
+  if(id->misc->ivend->handling_charge)
+        handling_charge+=(float)(id->misc->ivend->handling_charge);
+
+   return handling_charge;
+
+}
+
 string showmainmenu(object id)
 {
 string retval="";
@@ -337,6 +350,8 @@ if(!r){ perror("error getting shipping type " + type + "\n");
  -1.00; }
 
 else charge=handlers[r[0]->module]->calculate_shippingcost(type, orderid, id); 
+
+charge+=calculate_handlingcharge(type, orderid, id);
   
 return sprintf("%.2f", ((float)(charge)));
 
@@ -402,6 +417,24 @@ id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
 
 return "";
 
+}
+
+
+void event_calculateHandlingCharge(string event, object id, mapping args)
+{
+  float charge=0.00;
+
+  if(local_settings[c->config]->handling_charge==PER_ITEM) {
+	array r=DB->query("SELECT sum(products.handling_charge) as hc, "
+	  "sessions.id from products,sessions where sessions.sessionid='" 
+	  + args->orderid + "' and products." +
+	id->misc->ivend->keys->products + "=sessions.id");
+
+        if(r && sizeof(r)==1) charge=(float)(r[0]->hc);
+   }
+
+  id->misc->ivend->handling_charge=charge;
+  return;
 }
 
 string tag_shippingtypes (string tag_name, mapping args,
@@ -475,3 +508,9 @@ return
   ]);
 
 }
+
+mixed query_event_callers(){
+
+  return ([ "calculateHandlingCharge": event_calculateHandlingCharge ]);
+
+} 

@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.26 1998-02-21 23:08:13 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.27 1998-02-24 14:47:36 hww3 Exp $";
 
 /*
  *
@@ -273,6 +273,13 @@ return retval;
  
     }
   
+}
+
+string tag_sessionid(string tag_name, mapping args,
+                    object id, mapping defines) {
+
+return id->misc->ivend->SESSIONID;
+
 }
 
 
@@ -1103,7 +1110,10 @@ retval="You must enter through a store!\n";
 }
 
 
-else	switch(request[0]){
+else
+
+{
+	switch(request[0]){
 	
 		case "config":
 		return configuration_interface(request, id);
@@ -1118,7 +1128,7 @@ else	switch(request[0]){
 	
 	}
 	
-
+else {
 	if(!id->variables->SESSIONID) 
 	  id->misc->ivend->SESSIONID=
         	(hash((string)time(1)+(string)random(32201)));	
@@ -1172,6 +1182,7 @@ else	switch(request[0]){
 	    }
 	  }
 
+}
 	//
 	// send it all out the door: 
 	//
@@ -1228,7 +1239,7 @@ mapping query_container_callers()
 
 mapping query_tag_callers()
 {
-  return ([ ]); }
+  return ([ "sessionid" : tag_sessionid ]); }
 
 /*
 mapping query_container_callers()
@@ -1237,8 +1248,9 @@ mapping query_container_callers()
 
 mapping query_tag_callers()
 {
-  return ([ 
-"ivstatus":tag_ivstatus, "ivmg":tag_ivmg, "listitems":tag_listitems
- ])
-; }
+  return ([ 	"ivstatus":tag_ivstatus, 
+		"ivmg":tag_ivmg, 
+		"listitems":tag_listitems
+	 	]); 
+}
 */

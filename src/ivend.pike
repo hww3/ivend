@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.82 1998-07-22 18:55:46 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.83 1998-07-23 16:56:37 hww3 Exp $";
 
 array register_module(){
 
@@ -1551,7 +1551,8 @@ retval+="<HTML>\n"
 "	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+
 "ivend-image/statusselect.gif\" WIDTH=\"186\" HEIGHT=\"28\" BORDER=\"0\" ALT=\"/        Status        \\\"></A></TD>\n"
 "<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
-"</TR>\n";
+"</TR>\n"
+"<tr><td>THIS PAGE LEFT INTENTIONALLY BLANK.\n</td></tr>";
 		
 		break; 
 		

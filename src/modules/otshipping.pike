@@ -15,7 +15,10 @@ object db;
 
 if(catch(db=iVend.db(config->dbhost, config->db,
   config->dblogin, config->dbpassword)))
+  {
     perror("iVend: OTShipping: Error Connecting to Database.\n");
+    return;
+  }
 
 if((sizeof(db->list_tables("shipping_types")))==1 && 
   (sizeof(db->list_tables("shipping_ot")))==1)

@@ -86,13 +86,12 @@ CREATE TABLE orderdata (
 CREATE TABLE orders (
   id int(11) DEFAULT '0' NOT NULL auto_increment,
   status int(11) DEFAULT '0' NOT NULL,
-  tracking_code varchar(16),
   shipping_type int(11) DEFAULT '0' NOT NULL,
   updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   notes text,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
-);
+); 
 
 #
 # Dumping data for table 'orders'

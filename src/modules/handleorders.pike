@@ -405,10 +405,11 @@ string view_activity_log(string mode, object id){
   string retval="";
 
 if(id->variables->orderid){
+  array r;
   if(id->variables->orderlog=="")
-    array r=DB->query("SELECT * FROM activity_log ORDER BY time_stamp");
+    r=DB->query("SELECT * FROM activity_log ORDER BY time_stamp");
   else
-    array r=DB->query("SELECT * FROM activity_log WHERE orderid='" + 
+    r=DB->query("SELECT * FROM activity_log WHERE orderid='" + 
 	id->variables->orderid + "' ORDER BY time_stamp");
   if(sizeof(r)<1) retval+="Unable to find your order.";
   else {

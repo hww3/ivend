@@ -259,6 +259,7 @@ catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
         }
     retval+="</order>\n";
 catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
+perror("archived order " + or->id + "\n");
      } 
 
 return retval;
@@ -276,8 +277,8 @@ string|mapping archive_orders(string mode, object id){
 
  retval+="Archive all closed/cancelled orders more than "
 	"<input type=text size=3 name=days value=30> days old.<p>"; 
- retval+="Archive order #"
-	"<input type=text size=5 name=orderid>.";
+// retval+="Archive order #"
+//	"<input type=text size=5 name=orderid>.";
  retval+="<input type=submit value=\"Archive\"></form>\n";
  }
 
@@ -285,11 +286,11 @@ string|mapping archive_orders(string mode, object id){
 
   if(v->doit){
   array orders_to_archive;
-  if(v->orderid)
-   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
-	"(status.name='Shipped' or status.name='Cancelled') AND "
-	"id='" + v->orderid + "'");
-  else
+//  if(v->orderid)
+//   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+//	"(status.name='Shipped' or status.name='Cancelled') AND "
+//	"id='" + v->orderid + "'");
+//  else
    orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
 	+ " AND (status.name='Shipped' or status.name='Cancelled') "

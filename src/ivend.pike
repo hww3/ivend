@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.285 2002-11-12 06:06:40 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.286 2003-09-15 19:02:25 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1890,7 +1890,7 @@ int do_clean_sessions(object db){
 	catch(r=db->query(query));
     foreach(r,mapping record){
         foreach(({"customer_info","payment_info","lineitems",
-		"comments"}),
+		"comments", "orderdata"}),
                 string table)
         catch(db->query("DELETE FROM " + table + " WHERE orderid='"
                   + record->sessionid + "'"));
@@ -2067,7 +2067,8 @@ retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,m
                 "\">\n";
     }
 
-    retval+="<input type=hidden name=id>";
+    retval+="<input type=hidden name=id value=\"" +
+       id->variables[DB->keys[options->type + "s"]] + "\">";
     retval+="<input type=hidden name=mode value=\""  +mode + "\">"
             "<input onclick=\"popup_" + id->misc->ivend->popup + "('"
 		+name +"','" + add_pre_state(id->not_query,

@@ -101,7 +101,7 @@ and password.
 
 You should now have a functional iVend installation. At this point, you'll
 probably want to start adding stores. See the section "Setting Up a New
-Store" for more information.
+Store" below for more information.
 
 
 Setting Up a New Store
@@ -125,7 +125,12 @@ before you start.
   procedures required to do this. 
 
   Provide select/insert/delete access to a user so that iVend can connect
-  and use this db. Helpful tips for new MySQL users are located in
+  and use this db. This document does not attempt to make you a dba 
+  (database administrator). You must have a good grasp of db
+  administration and security techniques before you can properly set
+  up iVend in a production environment. Since you will be dealing
+  with sensitive information, please take this area of store setup
+  very seriously. Helpful tips for new MySQL users are located in
   Appendix E: Tips for New MySQL Users.
 
 *IMPORTANT NOTE* Please note that iVend uses database access permissions
@@ -139,7 +144,8 @@ before you start.
   a password.  This feature also allows multiple logins with access to a
   store, as well as read-only access to store admin features. While this
   may seem more complex at first, it allows much more flexible setup of
-  store administrators. 
+  store administrators. Be sure you know who (or what) has access to your
+  dbs at all times.
 
 2. Use the script create_store.sh to add a new store configuration. To do
   this, change directories to ivend/scripts and execute this command:
@@ -205,7 +211,6 @@ correct field to use at startup.
 indicate images to be stored with groups and products. You can have as
 many image fields as you like, such as thumbnails and fullsize images.
 
-
 Additionally, there are a number of tables that are required by iVend to
 operate. These tables are:
 
@@ -266,6 +271,16 @@ stores SQL database.
 From this interface, you can add, delete, and modify products and groups;
 set up shipping charges and rules; as well as view and process incoming
 orders. 
+
+If you want to use another program to add or manage your products, you
+have a few options: ODBC, exported data, or other client interfaces. ODBC
+allows compliant programs to access data from other database systems. You
+can use ODBC to access your store's products and orders through programs
+such as MS Access, Excel and so forth. You can also find scripts in the
+scripts directory that will export and import tab delimited text files
+from iVend. If you decide to "roll your own" administration interface, be
+sure to send a copy to hww3@riverweb.com so I can see what other ways are
+being used.
 
 
 Appendix A

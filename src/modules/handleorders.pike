@@ -87,7 +87,7 @@ string|int listorder(object id, object s){
 
   string retval="<table width=100%>\n";
 
-  array r=s->query("SELECT orderdata.*, products.1,status.name as status FROM "
+  array r=s->query("SELECT orderdata.*, products.name,status.name as status FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
 	   " AND products." + id->misc->ivend->keys->products +

@@ -36,7 +36,7 @@
 
 // add_item
 
-#define ADDED_SUCCESSFULLY "added successfully."
+#define ADDED_SUCCESSFULLY "has been added to your cart."
 
 #define UNABLE_TO_FIND_PRODUCT "Unable to find product or page" 
 

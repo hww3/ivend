@@ -39,7 +39,7 @@ else  return "0.00";
 
 }
 
-float|string calculate_shippingcost(float amt, mixed type, object id){
+float|string calculate_shippingcost(mixed type, mixed orderid, object id){
 
 if(!initialized) return "Uninitialized shipping module.";
 

@@ -146,7 +146,7 @@ array r;
 r=id->misc->ivend->db->query("SELECT "
   "SUM(sessions.price*sessions.quantity) as "
   "shippingtotal FROM sessions WHERE sessions.sessionid='" +
-  id->misc->ivend->SESSIONID + "'");
+  orderid + "'");
 
 if (sizeof(r)!=1) {
   perror( "Unable to calculate Order Subtotal.");
@@ -158,10 +158,10 @@ return (float)(r[0]->shippingtotal);
 }
 
 
-float|string calculate_shippingcost(mixed type, object id){
+float|string calculate_shippingcost(mixed type, mixed orderid, object id){
 
 array r;
-float amt=calculate_shippingtotal(id, type);
+float amt=calculate_shippingtotal(id, orderid, type);
 
 if(amt<0.00) {
   perror("Error Getting shipping total.!\n");

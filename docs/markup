@@ -58,7 +58,7 @@ To add item ABC123 and DEF456 to the cart, use the following:
 <form action="my_additem_page.html">
 <additem item="ABC123" quantity="1" noform silent>
 <additem item="DEF456" quantity="1" noform>
-</>form>
+</form>
 
 
 <IVENDLOGO>
@@ -218,27 +218,86 @@ EXTRAFIELDS Allows additional or calculated fields to be included for use in the
 
 Additionally, all attributes recognized by <FORMOUTPUT>..</> are available for use within this container.
 
-ivindex
 
-itemoptions
-shipping
-confirmemail
-confirmorder
-discount
+<IVINDEX>..</>
+
+<IVINDEX>..</> generates output for all configured Stores using the same facility as other Roxen <*OUTPUT>..</> containers. This tag is only available on the iVend Module Index Page ($IVENDROOT/data/index.html), and is displayed if the Appropriate Global Settings are enabled. The data fields available are the same as the variable names used in the Store configuration files located in $CONFIGDIR/.
+
+ATTRIBUTES
+
+This tag takes all attributes supported by the <FORMOUTPUT>..</> container.
+
+
+<ITEMOPTIONS>
+
+Lists the options available for an item using SELECT inputs. This tag should be used within a <FORM>..</> container with an <ADDITEM> tag. Option types will be presented in the order in which they were defined for an item. The order of individual options will be that which the items were originally defined for the item unless the ORDER attribute (see below) is used.
+
+ATTRIBUTES
+
+ITEM Sets the Product ID for which options will be displayed (Required)
+ORDER Sets the Order by which individual options will be displayed within an option type.
+
+
+complex_pricing 
+
+MARKUP AVAILABLE THROUGH THE UPSELL MODULE
+
+<UPSELL>
+
+This tag displays an "Upsell" dialog, which entices shoppers to select items that may be useful or handy to with an item on display. The items to upsell are added in the admin interface page for a particular item. This tag should be used within a form container that also contains an <ADDITEM> tag.
+
+ATTRIBUTES
+
+ITEM Sets the Product ID for which Upsell Items will be displayed. If not provided, the tag will guess the proper item. May not work properly if multiple items are used on one page. (Optional)
+
+
+MARKUP AVAILABLE THROUGH THE CHECKOUT MODULE
+
+
+<SHIPPINGCOST>
+
+This tag displays the shipping cost calculated for an order. If an order cannot be found, or if shipping has not been added, this tag returns "0.00".
+
+ATTRIBUTES
+
+ORDERID The order ID to display the shipping cost for. If not specified, the current session or orderid will be used. (Optional)
+
+
+<SHIPPINGCALC>
+
+ATTRIBUTES
+
+TYPE The numeric Shipping Type to calculate cost for. (Required)
+ORDERID The order ID to calculate the shipping cost for. If not specified, the current session or orderid will be used. (Optional)
+
+
+<SHIPPINGTYPE>
+
+This tag displays the selected shipping type for an order. If the shipping type has not yet been selected, an error will be returned.
+
+ATTRIBUTES
+
+ORDERID The order ID to display the shipping type for. If not specified, the current session or orderid will be used. (Optional)
+
+
+<SHIPPINGADD>
+<SHIPPINGTYPES>
+
+
+
+confirmemail 
+confirmorder 
+discount 
 salestax
-generateform
-addentry
-cardcheck
-subtotal
-grandtotal
+generateform 
+addentry 
+cardcheck 
+subtotal 
+grandtotal 
 showorder
-complex_pricing
-shippingcost
-shippingcalc
-shippingtype
-shippingadd
-shippingtypes
-upsell
+
+
+MARKUP AVAILABLE THROUGH PROCEDURES
 
 relatedgroups
 groupmap

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.256 2000-01-05 17:46:11 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.257 2000-01-13 21:36:25 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2599,7 +2599,9 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                  "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                                  "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup."
 				"<p>Logged in as " +
-				id->misc->ivend->admin_user + ". [ <a href=\"./?logout=1\">Logout</a> ]";
+				id->misc->ivend->admin_user + ". [ <a "
+"href=\"./?logout=1\">Logout</a> ] [ <a "
+"href=\"./?change_password=1\">Change Password</a> ]";
 
                      }
                      else retval+="Sorry, couldn't find handler.";

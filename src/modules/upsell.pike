@@ -94,7 +94,8 @@ string tag_upsell(string tag_name, mapping args,
    string retval="";
 
    array r=DB->query("SELECT upsell.id,products.* FROM upsell,products "
-                     "WHERE upsell.id='" + id->misc->ivend->page +
+                     "WHERE upsell.id='" +
+(args->item || id->misc->ivend->page) +
                      "' AND products.id=upsell.upsell");
 
    if(sizeof(r)>0) {

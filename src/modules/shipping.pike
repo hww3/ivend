@@ -294,7 +294,7 @@ array r=DB->query("SELECT value FROM lineitems WHERE "
 +
   "'");
 if(sizeof(r)>0) return sprintf("%.2f", (float)(r[0]->value));
-else  return "";
+else  return "0.00";
 
 }
 
@@ -305,13 +305,15 @@ string retval="";
 float charge=0.00;
 
 string type= (args->type || id->variables->type || "1");
+string orderid=(args->orderid || id->misc->ivend->orderid ||
+  id->misc->ivend->SESSIONID);
 
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); 
  return
  -1.00; }
 
-else charge=handlers[r[0]->module]->calculate_shippingcost(type, id); 
+else charge=handlers[r[0]->module]->calculate_shippingcost(type, orderid, id); 
   
 return sprintf("%.2f", ((float)(charge)));
 
@@ -352,10 +354,13 @@ string retval;
 
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
+string orderid=(args->orderid || id->misc->ivend->orderid ||
+id->misc->ivend->SESSIONID);
 if(!args->charge){
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); return ""; }
-else charge=handlers[r[0]->module]->calculate_shippingcost(type, id); 
+else charge=handlers[r[0]->module]->calculate_shippingcost(type, orderid, 
+id); 
 if(charge==-1.0)
   return "Error.";
 }

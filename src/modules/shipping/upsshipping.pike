@@ -204,7 +204,7 @@ id->variables->showtype + ">"
 }
 
 
-float calculate_shippingcost(mixed type, object id){
+float calculate_shippingcost(mixed type, mixed orderid, object id){
 
 array r;
 float rate;
@@ -229,11 +229,11 @@ if(r[0]->calctype=="T") {  // We calculate everything as if it were in a big box
 	+ shipping_weight + ") AS weight FROM products,sessions WHERE "
 	"products." + KEYS["products"] + 
 	"=sessions.id and sessions.sessionid='" + 
-	id->misc->ivend->SESSIONID + "'");
+	orderid + "'");
 
   float w=n[0]->weight;
   n=DB->query("SELECT zip_code from customer_info where orderid='" +
-	id->misc->ivend->SESSIONID + "' AND type=0");
+	orderid + "' AND type=0");
   if(sizeof(n)==0)
 	return -1.00;
   string zip=n[0]->zip_code;
@@ -249,14 +249,14 @@ else { // We calculate as though everything were in a seperate box.
 	" AS weight,sessions.quantity FROM "
 	"products,sessions WHERE products." + KEYS["products"] +
 	"=sessions.id AND"
-	" sessionid='" + id->misc->ivend->SESSIONID
+	" sessionid='" + orderid
 	+ "'");
 // perror("got " + sizeof(n) + " rows\n");
  foreach(n, mapping row){
 // perror(sprintf("%O\n", row));
   float w=row["weight"];
   n=DB->query("SELECT zip_code from customer_info where orderid='" +
-	id->misc->ivend->SESSIONID + "' AND type=0");
+	orderid + "' AND type=0");
   if(sizeof(n)==0)
 	return -1.00;
   string zip=n[0]->zip_code;

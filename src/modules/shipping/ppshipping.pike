@@ -131,7 +131,7 @@ string retval="<tr><td><b>Method:</b></td><td>Charge based on "
 return retval;
 }
 
-float|string calculate_shippingcost(mixed type, object id){
+float|string calculate_shippingcost(mixed type, mixed orderid, object id){
 
 array r;
 
@@ -142,7 +142,7 @@ if(sizeof(r)<1) return -1.00;
 string query="SELECT SUM(sessions.quantity*products." +
 	r[0]->fieldname + ") AS shipping FROM "
 	" products,sessions WHERE sessionid='" +
-	id->misc->ivend->SESSIONID + "' and products." +
+	orderid + "' and products." +
 	id->misc->ivend->keys->products + "=sessions.id";
 
 // perror(query);

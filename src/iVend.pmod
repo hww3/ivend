@@ -36,12 +36,12 @@ return 1;
 mapping scan_modules(string mtype, string moddir){
 mapping(string:string) m=([]);
 array d=get_dir(moddir);
-d-=({"CVS"});
 string name;
 string desc;
 string type;
 program p;
 foreach(d,name){
+  if(name=="CVS") continue;
   if(catch(p=compile_file(moddir+"/"+name)))
   { perror("iVend error: can't compile "+name+"\n");
   continue;

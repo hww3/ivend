@@ -10,6 +10,78 @@ inherit "roxenlib";
 constant module_name="Default Checkout Module";
 constant module_type="checkout";
 
+
+/*
+
+  currency_convert
+
+  v is price
+
+*/
+
+mixed currency_convert(mixed v, object id){
+  float exchange=3.0;
+  float customs=2.0;
+  float our_fee=3.0;
+
+  // calculate the exchange rate...
+  v=( exchange * (float)v);
+  v+=( (customs*(float)v) + (our_fee*(float)v) );
+  return v;
+}
+
+
+/*
+
+  calculate tax
+
+*/
+
+float calculate_tax(object id) {
+
+array r;		// result from query
+string query;		// the query
+float totaltax;		// totaltax
+string locality;	// fieldname of locality
+
+locality="state";
+
+  object s=Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+query=
+"select " + locality + " from customer_info where orderid='"+
+	id->misc->ivend->SESSIONID +"'";
+r=s->query(query);
+
+if(!r) perror("iVend: ERROR locating customerinfo!\n");
+
+else { 
+
+  query=
+  "select sessions.sessionid, SUM(products.price*sessions.quantity) "
+  "as grandtotaltaxable, taxrates.taxrate as taxrate, "
+  "SUM(products.price*sessions.quantity)*taxrates.taxrate as "
+  "salestax from sessions, products, taxrates where "
+  "(sessions.id=products.id and taxrates.locality='"+ r[0][locality]
+  +"' and SESSIONID='"+ id->misc->ivend->SESSIONID +"')";
+perror(query+"\n");
+  r=s->query(query);
+  if(sizeof(r)==1 && r[0]->salestax)
+    return r[0]->salestax;
+  else return (0.00);
+}
+
+return (0.00);
+
+}
+
+
+
 mixed checkout(object id){
 
 string retval="<title>checkout</title><body bgcolor=white text=navy>"
@@ -18,23 +90,23 @@ string retval="<title>checkout</title><body bgcolor=white text=navy>"
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
-    id->misc->ivend->config->user,
-    id->misc->ivend->config->password
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
     );
 
 int page;
 
  if(id->variables["_page"]=="5"){
 
-perror("check: "+id->variables->Card_Number+ " "+id->variables->Payment_Method+"\n");
-
+/*
 if(Commerce.CreditCard.cc_verify(id->variables->Card_Number,id->variables->Payment_Method)
     || !Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
 
 return "You have supplied improper credit card information!<p>"
 	"Please go back and correct this before continuing.";
 
-else {
+else */
+ {
 
   perror("reading "+id->misc->ivend->config->keybase+".pub");
   string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
@@ -49,7 +121,17 @@ else {
 	+j+"</ul>";
 
   retval+="<font size=+2>5. Confirm Order</font>\n"
-  	"<form action="+id->not_query+"><table>";
+  	"<form action="+id->not_query+"><table>\n"
+	"<tr><th>Quantity</th><th>Description</th>"
+	"<th>Unit Price</th><th>Subtotal</th></tr>"
+	"<orderlines>\n";	
+  
+
+
+  retval+="<tr></td></td><td></td><td></td><td>Sales Tax:</td><td>$" +
+	 sprintf("%.2f",(float)calculate_tax(id))+"</td></tr>"
+	"</table>\n";
+
   }
 }
 else if(id->variables["_page"]=="4"){
@@ -122,21 +204,3 @@ return retval;
 
 }
 
-/*
-
-  currency_convert
-
-  v is price
-
-*/
-
-mixed currency_convert(mixed v, object id){
-  float exchange=3.0;
-  float customs=2.0;
-  float our_fee=3.0;
-
-  // calculate the exchange rate...
-  v=( exchange * (float)v);
-  v+=( (customs*(float)v) + (our_fee*(float)v) );
-  return v;
-}

@@ -281,12 +281,30 @@ ORDERID The order ID to display the shipping type for. If not specified, the cur
 
 
 <SHIPPINGADD>
+
+Adds shipping charge to an order.
+
+ATTRIBUTES
+
+TYPE The integer shipping type identifier. Not required if this information is supplied as a form variable "type".
+ORDERID The order ID to operate on. If not specified, the current session or orderid will be used. (Optional)
+CHARGE The amount for shipping to add to the order. If not specified, the amount will be dynamically calculated using defined shipping rules. (Optional)
+
+
 <SHIPPINGTYPES>
 
+The <SHIPPINGTYPES> tag will query available shipping types and provide a
+list of valid options with radio buttons. This tag should be used on a
+page immediately before a <SHIPPINGADD> container.
+
+ATTRIBUTES
+
+This tag takes no attributes.
 
 
-confirmemail 
-confirmorder 
+<CONFIRMEMAIL>
+
+<CONFIRMORDER>
 discount 
 salestax
 generateform 

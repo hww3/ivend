@@ -360,7 +360,7 @@ void start_store(string c){
 
 
 void stop_store(string c){
-
+if(modules[c])
   foreach(indices(modules[c]), string m) {
     if(modules[c][m]->stop && functionp(modules[c][m]->stop)) 
 	modules[c][m]->stop();
@@ -2422,7 +2422,7 @@ perror(filen + "\n");
                            foreach((vars),v){
 
                            if(!global) global=(["general":([])]);
-                              global["general"][v]=id->variables[v];
+                              global["general"]+=([v : id->variables[v]]);
                            }
 
                            save_status=0;// we need to save.

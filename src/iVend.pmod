@@ -524,8 +524,8 @@ class db {
                        "</FONT></TD>\n"
                        "<TD>\n";
                if (record[r[i]->name])
-                  retval+="<img src=\"images/" + table + "/" + record[r[i]->name] 
-                          + "\"><br>";
+                  retval+="<img src=\"../images/" + table + "/" +
+		record[r[i]->name] + "\"><br>";
                retval+="<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
 
             }

@@ -5,9 +5,12 @@ constant module_type = "shipping";
 
 #define CONFIG id->misc->ivend->config
 #define DB id->misc->ivend->db
+#define KEYS id->misc->ivend->keys
+
 object u;	// The ups zone machine.
 
 int started;
+int initialized=0;
 
 int initialize_db(object db, mapping config) {
 
@@ -18,12 +21,14 @@ if(catch(db->query(
   " type int(11) DEFAULT '0' NOT NULL,"
   " charge float(5,2) DEFAULT '0.00' NOT NULL,"
   " chargetype char(1) DEFAULT 'C' NOT NULL,"
+  " field_name char(64) DEFAULT 'products.shipping_weight' NOT NULL, "
   " calctype char(1) DEFAULT 'T' NOT NULL, "
   " zonefile blob NOT NULL, "
   " ratefile blob NOT NULL, "
   " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
   " ) ")))
     return 0;
+initialized=1;
 return 0;
 
 }
@@ -38,15 +43,37 @@ if(!u->load_ratefile(row->ratefile))
 }
 
 void load_zones(object db, mapping config){
-
+if(started && initialized){
  array r=db->query("SELECT * FROM shipping_ups");
-    load_zone(r[0], config);
-
+ foreach(r, mapping row)
+    load_zone(row, config);
+}
   return;
 }
 
+
+mixed findrate(string zip, string weight, object id){
+
+  float rate;
+  rate=u->findrate((string)zip, weight);
+
+array r=DB->query("SELECT * FROM shipping_ups WHERE type="
+ + id->variables->showtype);
+
+string chargetype=r[0]->chargetype;
+
+if(chargetype=="C")
+  rate= rate + (float)r[0]->charge;
+else rate=rate + ((float)r[0]->charge*rate);
+
+return rate;
+
+}
+
+
 void start(mapping config){
 
+perror("Starting UPS Shipping...\n");
 object db;
 
 if(catch(db=iVend.db(config->general->dbhost, config->general->db,
@@ -54,13 +81,14 @@ if(catch(db=iVend.db(config->general->dbhost, config->general->db,
     perror("iVend: UPSShipping: Error Connecting to Database.\n");
     return;
   }
-if((sizeof(db->list_tables("shipping_ups")))==1);
+if((sizeof(db->list_tables("shipping_ups")))==1)
+ initialized=1;
 else
   initialize_db(db, config);
 
+started=1;
 u=Commerce.UPS.zone();
 load_zones(db, config);
-started=1;
 return;
 
 }
@@ -80,12 +108,14 @@ id->variables->showtype );
     }
 
   if(id->variables->doadd) {
-
+if(!initialized)
+  start(id->misc->ivend->config);
     mixed j=id->misc->ivend->db->query("INSERT INTO shipping_ups "
 				       "values(" + id->variables->type+
 				       ","+id->variables->charge +
 				       ",'"+id->variables->chargetype +
-"','" + id->variables->calctype + 
+"','" + id->variables->field_name + "','" +
+id->variables->calctype + 
 					"','" +
 DB->make_safe(id->variables->zonefile) + "','" +
 DB->make_safe(id->variables->ratefile) +
@@ -96,7 +126,7 @@ DB->make_safe(id->variables->ratefile) +
 
   array r=id->misc->ivend->db->query("SELECT * FROM shipping_ups WHERE type="
                                      + row->type + " ORDER BY type");
-  if(sizeof(r)<1)
+  if(sizeof(r)<1) {
     retval+="<ul><font size=2><b>This "
       "shipping type has not been set up yet.</b></font><table>\n"
   "<p><b>Set up Shipping Handler</b>"
@@ -107,29 +137,54 @@ DB->make_safe(id->variables->ratefile) +
 	"<input type=hidden name=type value=" + id->variables->showtype +">\n"
 	"UPS Zone File (CSV Format Only): <input type=file name=zonefile><br>\n"
 	"UPS Rate File (CSV Format Only): <input type=file name=ratefile><br>\n"
-	"Markup: <INPUT TYPE=TEXT SIZE=5 NAME=charge><br>\n"
+	"Markup: <INPUT TYPE=TEXT SIZE=5 NAME=charge> (Amount or Percent)<br>\n"
 	"Markup Type: <SELECT NAME=chargetype>\n"
 	"<OPTION VALUE=\"C\">Cash\n"
 	"<OPTION VALUE=\"P\">Percentage\n"
 	"</SELECT>\n<br>"
-	"Calculation Type: <SELECT NAME=calctype>\n"
+ 	"<SELECT NAME=\"field_name\">\n";
+
+  array f=DB->list_fields("products");
+  foreach(f, mapping field){
+    if(field->type=="integer" || field->type=="float" ||
+	field->type=="decimal")
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+
+  retval+="</SELECT><br>\nCalculation Type: <SELECT NAME=calctype>\n"
 	"<OPTION VALUE=\"T\">Use Total Shipping Weight\n"
 	"<OPTION VALUE=\"S\">Calculate Each Item Seperatly\n"
 	"</SELECT>\n<br>"
 	"<input type=hidden name=dosetup value=dosetup>\n"
 	"<input type=submit value=\"Set Up Shipper\">\n"
 	"</form>";
-  else foreach(r, mapping row) {
+}
+else foreach(r, mapping row) {
 
-    retval+="<b>Zone File:</b> <p><pre>" + 
-	(row->zonefile) + "</pre><br>" +
+    retval+="<p><form action=\"./\" method=post>\n"
+	"<input type=hidden name=mode value=showtype>"
+	"<input type=hidden name=dolookup value=dolookup>"
+	"<input type=hidden name=showtype value=" +
+	id->variables->showtype + ">"
+	"<b>Look up Shipping: <input type=text size=5 name=zip_code> "
+	"Zip Code <input type=text size=4 name=shipping_weight> "
+	"Shipping Weight <input type=submit value=LookUp>"
+	"</form></b><p>";
+
+if(id->variables->dolookup)
+  retval+="<b>Calculated Shipping cost: " +
+findrate((string)id->variables->zip_code,
+	id->variables->shipping_weight, id) + "</b><p>"; 
+  
+    retval+="<b>Zone File:</b> <p><pre>" +
+	(row->zonefile/"\n")[0] + "</pre><br>" +
 	"<b>Rate File:</b> " + ((row->ratefile/"\n")[0]) +
 	"<br><b>Markup:</b> " + row->charge + " (" +
 (row->chargetype=="C"?"Cash":"Percentage") + ")"
 	"<br><b>Calculation Type:</b> " + (row->calctype=="T"?
 		"Total all shipping weights":
 		"Calculate shipping for each item seperately");
-
 retval+="<p><form action=\"./\" method=post>\n"
 	"<input type=hidden name=mode value=showtype>"
 	"<input type=hidden name=dodelete value=dodelete>"
@@ -146,37 +201,73 @@ id->variables->showtype + ">"
 }
 
 
-float|string calculate_shippingcost(mixed type, object id){
+float calculate_shippingcost(mixed type, object id){
 
 array r;
+float rate;
+string shipping_weight;
+string chargetype;
+float charge;
 
-r=DB->query("SELECT * FROM shipping_ups WHERE type="
- + type);
 
 if(sizeof(r)!=1) {
   perror("ERROR GETTING SHIPPINGCOST!\n");
   return -1.00;
   }
 
-if(r[0]->calctype=="T") {
+shipping_weight=r[0]->field_name;
+chargetype=r[0]->chargetype;
+charge=(float)r[0]->charge;
+
+if(r[0]->calctype=="T") {  // We calculate everything as if it were in a big box.
 
   array n=DB->query("SELECT SUM(sessions.quantity * "
-	"products.shipping) AS weight FROM products,sessions WHERE "
-	"products.id=sessions.id and sessions.sessionid='" + 
+	+ shipping_weight + ") AS weight FROM products,sessions WHERE "
+	"products." + KEYS["products"] + 
+	"=sessions.id and sessions.sessionid='" + 
 	id->misc->ivend->SESSIONID + "'");
 
-  perror("total shipping weight: " + n[0]->weight + "\n");
   float w=n[0]->weight;
   n=DB->query("SELECT zip_code from customer_info where orderid='" +
 	id->misc->ivend->SESSIONID + "' AND type=0");
+  if(sizeof(n)==0)
+	return -1.00;
   string zip=n[0]->zip_code;
-  perror("zip code: " + zip + "\n");
 
-  mixed rate=u->findrate(zip, w);
-  perror(sprintf("%O",rate )+ "\n");
+  rate=u->findrate((string)zip, (string)w);
 
   }
 
-return 100.00;
+else { // We calculate as though everything were in a seperate box.
+ float ratecalc=0.00;
+
+ array n=DB->query("SELECT " + shipping_weight + 
+	" AS weight,sessions.quantity FROM "
+	"products,sessions WHERE products." + KEYS["products"] +
+	"=sessions.id AND"
+	" sessionid='" + id->misc->ivend->SESSIONID
+	+ "'");
+// perror("got " + sizeof(n) + " rows\n");
+ foreach(n, mapping row){
+// perror(sprintf("%O\n", row));
+  float w=row["weight"];
+  n=DB->query("SELECT zip_code from customer_info where orderid='" +
+	id->misc->ivend->SESSIONID + "' AND type=0");
+  if(sizeof(n)==0)
+	return -1.00;
+  string zip=n[0]->zip_code;
+
+  rate=u->findrate((string)zip, (string)w);
+  ratecalc+=((float)rate*(float)(row->quantity));
+  }
+ rate=ratecalc;
+ }
+
+if(chargetype=="C")
+  rate= rate + (float)charge;
+else rate=rate + ((float)charge*rate);
+
+return (float)rate;
 
 }
+

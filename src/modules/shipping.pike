@@ -281,19 +281,22 @@ else  return "";
 
 }
 
-string tag_shippingcalc (string tag_name, mapping args,
+float|string tag_shippingcalc (string tag_name, mapping args,
                     object id, mapping defines) {  
 
 string retval="";
-float charge;
+float charge=0.00;
 
 string type= (args->type || id->variables->type || "1");
 
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
-if(!r){ perror("error getting shipping type " + type + "\n"); return ""; }
+if(!r){ perror("error getting shipping type " + type + "\n"); 
+ return
+ -1.00; }
 
 else charge=handlers[r[0]->module]->calculate_shippingcost(type, id); 
-  return sprintf("%.2f", charge);
+  
+return sprintf("%.2f", ((float)(charge)));
 
 }
 

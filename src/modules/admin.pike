@@ -51,7 +51,7 @@ string tag_itemoptions(string tag_name, mapping args, object id, mapping
   array r=DB->query("SELECT * FROM item_options WHERE product_id='" +
 args->item + "' GROUP BY option_type ORDER BY option_type ASC");
 
-  if(!r || sizeof(r)<1) return "";
+  if(!r || sizeof(r)<1) return NO_OPTIONS_AVAILABLE;
 
 retval+="<input type=hidden name=options value=1>\n";
   foreach(r, mapping row){
@@ -61,7 +61,7 @@ retval+="<input type=hidden name=options value=1>\n";
       "' ORDER BY option_code ASC"), mapping row2)
         retval+="<option value=\"" + row2->option_code + "\">" +
 row2->description + 
-((float)(row2->surcharge)!=0.00? MONETARY_UNIT + (sprintf("%.2f",
+((float)(row2->surcharge)!=0.00? " " + MONETARY_UNIT + (sprintf("%.2f",
 (float)(row2->surcharge))) + " surcharge":"") + "\n"; 
  
   retval+="</select>\n";

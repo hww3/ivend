@@ -324,6 +324,9 @@ else return r[0]->extension;
 
 string tag_shippingadd (string tag_name, mapping args,
                     object id, mapping defines) {  
+if(id->variables["_backup"] || id->misc->ivend->skip_page ||
+id->misc->ivend->error_happened)
+  return "<!-- skipping cardcheck because of page jump. -->";
 
 if(id->variables->no_shipping_options)
 return "<!-- No shipping options were available. -->";

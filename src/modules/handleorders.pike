@@ -65,6 +65,21 @@ return create_panel("Payment Information", "maroon", retval);
 
 }
 
+string|void ordercomments(object id, object s) {
+string retval="";
+
+array r=DB->query("SELECT * FROM comments WHERE orderid='" +
+  id->variables->orderid + "'");
+if(r && sizeof(r)>0)
+  {
+  foreach(r, mapping row)
+    retval+="<autoformat>" + row->comments +
+"</autoformat><p>&nbsp;<p>\n";
+  return create_panel("Order Comments", "darkpurple", retval);
+  }
+else return "";
+}
+
 string|int gentable(object id, object s, string table, string ignore, void|int worrytype){
 string retval="";
 array r=DB->query("SELECT "+table+".*, type.name as type FROM "
@@ -858,6 +873,8 @@ retval+=gentable(id, s, "customer_info", "N/A", 1);
 retval+="<p>\n" + genpayment(id, s);
 
 retval+="<p>\n" + listorder(id, s);
+
+retval+="<p>\n" + ordercomments(id, s);
 }
 return retval;
 

@@ -27,6 +27,12 @@ mixed stop_error(object id){
     return (id->misc->ivend->error *"\n");
 }
 
+mixed error_happened(object id){
+  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
+    return 1;
+  if(id->misc->ivend->error_happened)
+    return 1;
+}
 
 mixed throw_error(string error, object id){
   id->misc->ivend->error+=({error});
@@ -115,6 +121,8 @@ string tag_shipping(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
   return "<!-- skipping shipping because of errors.-->";
+if(id->variables["_backup"] || id->misc->ivend->skip_page )
+  return "<!-- skipping cardcheck because of page jump. -->";
 
 string retval;
  if(!id->misc->ivend->lineitems) 
@@ -126,13 +134,20 @@ return retval;
 
 string tag_confirmemail(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(stop_error(id)) 
-  return "<!-- skipping confirmemail because of errors.-->";
+if(id->variables["_backup"] || id->misc->ivend->skip_page)
+   return "<!-- confirmemail skipped. -->\n";
+if(error_happened(id) || stop_error(id)) 
+  return "<!-- skipping email confirmation because of errors.-->";
+
 int good_email;
 if(!args->field) 
   return "";
 mixed err;
-err=catch(good_email=Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]));
+if(id->variables[lower_case(args->field)] &&
+id->variables[lower_case(args->field)]=="")
+  throw_error(INVALID_EMAIL_ADDRESS, id);
+ err=catch(good_email=Commerce.Sendmail.check_address(
+id->variables[lower_case(args->field)]));
 if(err) {
  T_O->report_error("Error Running Check Address" + (err*"\n"),
 id->misc->ivend->orderid ||"NA",
@@ -273,7 +288,7 @@ else {
 }
 // update customer info and payment info with new orderid
 
-foreach(({"customer_info","payment_info","lineitems"}), string t)
+foreach(({"customer_info","payment_info","lineitems", "comments"}), string t)
   DB->query("UPDATE " + t + " SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
@@ -557,11 +572,20 @@ return "";
 
 }
 
+string tag_checkouterror(string tag_name, mapping args,
+		     object id, mapping defines) {
+  if(id->misc->ivend->error_happened &&
+sizeof(id->misc->ivend->error_happened)>0)
+    return ("<checkout_error>"+(id->misc->ivend->error_happened *"\n")
++"</checkout_error>");
+else return "";
+}
 string tag_cardcheck(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
   return "<!-- skipping cardcheck because of errors.-->";
-
+if(id->variables["_backup"] || id->misc->ivend->skip_page )
+  return "<!-- skipping cardcheck because of page jump. -->";
 string card_number;
 string exp_date;
 string card_type;
@@ -570,8 +594,8 @@ card_number=id->variables[args->card_number] || id->variables->card_number;
 exp_date=id->variables[args->expdate] || id->variables->expiration_date;
 card_type=id->variables[args->cardtype] || id->variables->payment_method;
 
-perror("card_type: " + card_type + "\ncard_number: "+ card_number +
-"\nexp_date: " + exp_date + "\n");
+//perror("card_type: " + card_type + "\ncard_number: "+ card_number +
+//"\nexp_date: " + exp_date + "\n");
 
 if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
   {
@@ -606,6 +630,16 @@ id->misc->ivend->config->general->root +
   ".html" ;    
 
 retval=parse_rxml(retval,id);
+
+if(stop_error(id)){
+if(id->variables->_backup  && id->variables->_page)
+  id->variables->_page=(int)(id->variables->_page)+1;
+else id->variables->_page=(int)(id->variables->_page)-1;
+  if((int)(id->variables->_page) < 1) id->variables->_page=1;
+  id->misc->ivend->error_happened=id->misc->ivend->error;
+  m_delete(id->misc->ivend, "error");
+  return checkout(p, id);
+  }
 
 if(id->misc->ivend->skip_page) {
   m_delete(id->misc->ivend, "skip_page");
@@ -756,16 +790,25 @@ if(functionp(query_container_callers2))
 string h;
 
  id->misc->ivend->error=({});
-
+if(sizeof(DB->query("SELECT * FROM sessions WHERE sessionid='" +
+id->misc->ivend->SESSIONID + "'"))<1) {
+perror("CHECKOUT: SESSION EXPIRED.\n");
+return ("<checkout_error>Your session has expired. You must return to the "
+	"storefront to continue.</checkout_error>");
+}
+else DB->query("UPDATE session_time set timeout="  +(time(0)+
+                         (int)CONFIG->session_timeout)+ " WHERE sessionid='" 
+			+ id->misc->ivend->SESSIONID + "'"); 
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
 if(!args->quiet)
-contents="<form method=post action=\"" + id->not_query + "\">\n<input type=hidden name=_page "
+contents="<form name=checkoutform method=post action=\"" + id->not_query +
+"\">\n<input type=hidden name=_page "
   "value=" + (id->misc->ivend->next_page || "2") + ">\n"
   +contents+ "</form>\n";
 
 load_lineitems(id);
-
+// perror(contents);
 contents=parse_html(contents,
 		  tags,
 		  containers,
@@ -855,6 +898,7 @@ return (["showorder" : tag_showorder,
 	 "cardcheck" : tag_cardcheck,
 	  "addentry" : tag_addentry,
 	"generateform": tag_generateform,
+	"checkouterror": tag_checkouterror,
 	"skippage": tag_skippage
 	]);
 

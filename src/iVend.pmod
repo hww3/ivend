@@ -538,7 +538,7 @@ class db {
                        "</FONT></TD>\n"
                        "<TD>\n"
                        "<input type=checkbox name=taxable value=Y " +
-                       (record[r[i]->name]!="Y"?"":"CHECKED") +">\n";
+                       (record[r[i]->name]=="N"?"":"CHECKED") +">\n";
 
             }
 

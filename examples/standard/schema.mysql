@@ -23,6 +23,7 @@ CREATE TABLE groups (
   description text,
   image varchar(24),
   image2 varchar(24),
+  template varchar(16),
   status char(1) DEFAULT 'A' NOT NULL,
   PRIMARY KEY (id)
 )\g
@@ -83,7 +84,8 @@ CREATE TABLE products (
   cost decimal(10,2),
   price decimal(10,2),
   qualifiers varchar(24),
-  image varchar(12),
+  image varchar(24),
+  template varchar(16),
   taxable enum('Y','N') DEFAULT 'N',
   status char(1) DEFAULT 'A' NOT NULL,
   PRIMARY KEY (id)

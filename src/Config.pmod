@@ -12,13 +12,13 @@ string format_section(string section, mapping attributes){
   string s="";
   
   s+="\n[" + section + "]\n";
-  foreach(indices(attributes), string a)
-        if(stringp(attributes[a]))
-            s = s + a + "=" + (string)attributes[a] + "\n";
-        else if(arrayp(attributes[a]))
+  foreach(indices(attributes), string a) {
+//        perror("attribute " + a + ", value " +attributes[a] +" \n");
+       if(arrayp(attributes[a]))
             foreach(attributes[a], string v)
             s+=a + "=" + v + "\n";
-
+        else s = s + a + "=" + (string)attributes[a] + "\n";
+      }
   return s;
 
 }
@@ -54,6 +54,9 @@ string write(mapping config, array|void order){
     if(order) configs=order;
     else configs=indices(config);
     foreach(configs, string c){
+//      perror("formatting section " + c + "\n");
+//      perror("section values:\n " + sprintf("%O", config[c]) + "\n");
+
       s+= format_section(c, config[c]) +"\n";
     }
 
@@ -82,11 +85,19 @@ int write_section(string file, string section, mapping attributes){
 
   mapping cpy=read(Stdio.read_file(file));
 
+
   cpy[section]=attributes;
-perror("moving config file...\n");
+
+// perror("New config file::: \n " + sprintf("%O", cpy) + ".\n");
+
+
+// perror("moving config file...\n");
   mv(file, file+"~");
 
 //  array sections=get_section_names(contents);
+
+// perror("here it is...\n");
+// perror(write(cpy));
 
   Stdio.write_file(file, write(cpy));
   return 0;

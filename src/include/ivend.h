@@ -31,3 +31,6 @@ import ".";
 #define VARIABLE_STRING    3
 #define VARIABLE_MULTIPLE  4
 #define VARIABLE_UNAVAILABLE -1
+
+#define SIMPLE_PRICING	0
+#define COMPLEX_PRICING 1

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.191 1999-04-11 15:28:07 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.192 1999-05-04 19:48:51 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -49,6 +49,7 @@ mapping config=([]);
 mapping global=([]);
 mapping numsessions=([]);
 mapping numrequests=([]);
+mapping local_settings=([]);
 
 int num;
 int save_status=1;              // 1=we've saved 0=need to save.
@@ -177,8 +178,19 @@ void get_dbinfo(mapping c){
          }
          keys[c->config][t]=primary_key; 
       }  
+    }
+   if(!local_settings[c->config])
+    local_settings[c->config]=([]);
+   local_settings[c->config]->pricing_model=SIMPLE_PRICING;
+   if(sizeof(s->list_fields("products", "price"))==0)
+     // we're doing complex pricing
+    local_settings[c->config]->pricing_model=COMPLEX_PRICING;
 
-   }
+if(local_settings[c->config]->pricing_model==COMPLEX_PRICING)
+  perror("We're doing complex pricing.\n");
+else
+  perror("We're doing regular (simple) pricing.\n");
+
    db_info_loaded=1;
    return;
 
@@ -634,7 +646,7 @@ if(catch(  array r= DB->query(
       retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
     }
 
-    r[i]->price=convert((float)r[i]->price,id);
+//    r[i]->price=convert((float)r[i]->price,id);
     
     retval+="<td align=right>" + MONETARY_UNIT +
       sprintf("%.2f",(float)r[i]->price)+"</td>\n"
@@ -1135,11 +1147,13 @@ mixed additem(object id){
  if(id->variables->item)
         items+=({id->variables->item});          
 
+// we should add complex pricing models to this algorithm.
+
    foreach(items, string item){
       float price=DB->query("SELECT price FROM products WHERE " 
                             + KEYS->products +  "='" + item + "'")[0]->price;
 
-      price=convert((float)price,id);
+//      price=convert((float)price,id);
 
       int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
                                id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
@@ -1508,10 +1522,10 @@ foreach(indices(admin_handlers[STORE]), string h)
 		destruct(DB);
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
             }
-	if(!type){
+	else{
          type=(id->variables->table-"s");
 	destruct(DB);
-         return retval+type+" Added Sucessfully.";
+         return (retval+type+" Added Sucessfully.");
 	  
 	  }
          break;
@@ -2328,17 +2342,17 @@ perror(filen + "\n");
 		  config[c][m->module_name]=([]);
                 if(!config[c][m->module_name][pref[0]]){
                   config[c][m->module_name][pref[0]]= pref[4];
-	perror("found a new pref, so we need to save...\n");
+	perror("found a new pref (" + m->module_name + "/" + pref[0] + "), so we need to save...\n");
                   need_to_save=1;
 		  }
                 }
               if(need_to_save) {
+//                perror("writing config file " + config[c]->general->config + "\n");
 		object privs=Privs("iVend: Writing Config File " +
 			config[c]->general->config);
-     		Config.write_section(query("configdir")+
+Config.write_section(query("configdir")+
   			config[c]->general->config, m->module_name,
         		config[c][m->module_name]);
-		
 		privs=0;
                  }
               }

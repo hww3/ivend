@@ -17,6 +17,18 @@ inherit "wizard";
 #if __VERSION__ >= 0.6
 import ".";
 #endif
+#if __VERSION__ < 0.6
+int read_conf();          // Read the config data.
+void load_modules(string c);
+float convert(float value, object id);
+array|int size_of_image(string filename);
+void error(mixed error, object id);
+mapping configuration_interface(array(string) request, object id);
+void handle_sessionid(object id);
+mixed getglobalvar(string var);
+mixed return_data(mixed retval, object id);
+mixed get_image(string filename, object id);
+#endif
 
 int loaded;
 
@@ -29,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.76 1998-06-23 02:57:10 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.77 1998-06-25 18:05:44 hww3 Exp $";
 
 array register_module(){
 
@@ -56,6 +68,20 @@ string query_location()
 {
    return QUERY(mountpoint);
    }
+
+
+string getmwd(){
+
+ string mwd=combine_path(combine_path(getcwd(), backtrace()[-1][0]), "..");
+  catch { mwd=combine_path(combine_path(mwd, ".."), readlink(mwd)); };
+  mwd=combine_path(mwd, "../");
+
+  perror("getmwd(): "+mwd + "\n\n");
+
+  return mwd;
+}
+
+
 
 
 void create(){
@@ -91,27 +117,15 @@ void create(){
 
    defvar("config_password", roxen->query("ConfigurationPassword") ,
 	  "Configuration Password",
-	  TYPE_STRING,
+	  TYPE_PASSWORD,
 	  "The password to use when accessing the iVend Configuration "
 	  "interface.");
 
    defvar("lang", "en", "Default Language",
 	  TYPE_MULTIPLE_STRING, "Default Language for Stores",
 	  ({"en","si"})
-	  );
-}
+	  );}
 
-
-string getmwd(){
-
- string mwd=combine_path(combine_path(getcwd(), backtrace()[-1][0]), "..");
-  catch { mwd=combine_path(combine_path(mwd, ".."), readlink(mwd)); };
-  mwd=combine_path(mwd, "../");
-
-  perror("getmwd(): "+mwd + "\n\n");
-
-  return mwd;
-}
 
 void start(){
 
@@ -688,6 +702,301 @@ mixed getsessionid(object id) {
 
 }
 
+// Start of auth functions.
+
+
+int get_auth(object id, int|void i){
+if(i){	// we're login in to the main config interface.
+
+  array(string) auth=id->realauth/":";
+  if(auth[0]!=query("config_user")) return 0;
+  else if(crypt(auth[1], query("config_password")))
+        return 1;
+  else return 0;                   
+}
+  array(string) auth=id->realauth/":";
+  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
+  else if(crypt(auth[1],id->misc->ivend->config->config_password))
+        return 1;
+  else return 0;
+
+}
+
+
+// Start of admin functions
+
+
+int clean_sessions(object id){
+
+string query="DELETE FROM sessions WHERE timeout < "+time(0);
+id->misc->ivend->db->query(query);
+return 0;
+}
+
+
+mixed order_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Store Orders</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Orders</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
+
+
+ mixed
+d=id->misc->ivend->modules[id->misc->ivend->config->order_module]->show_orders(id, 
+   id->misc->ivend->db);
+ if(stringp(d))
+ retval+=d;
+
+
+return retval;
+
+}
+
+mixed shipping_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Shipping Administration</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Shipping</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
+  "href=shipping>Shipping</a><p>\n";
+
+
+ mixed d=id->misc->ivend->modules[
+	id->misc->ivend->config->shipping_module
+	]->shipping_admin(id);
+ if(stringp(d))
+ retval+=d;
+
+
+return retval;
+
+}
+
+mixed getmodify(string type, string pid, object id){
+
+string retval="";
+multiset gid=(<>);
+array record=id->misc->ivend->db->query("SELECT * FROM " + type + "s WHERE "
+ "id='" + pid +"'");
+if (sizeof(record)!=1)
+  return "Error Finding " + capitalize(type) + " ID " + pid + ".<p>";
+
+if(type=="product") {
+  array groups=id->misc->ivend->db->query("SELECT group_id from "
+    "product_groups where product_id='"+ pid + "'");
+  if(sizeof(groups)>0)
+    foreach(groups, mapping g)
+      gid[g->group_id]=1;
+  record[0]->group_id=gid;
+  }
+
+  retval+="&gt <b>Modify " + capitalize(id->variables->type)
++"</b><br>\n";
+
+if(id->variables->type=="product")
+  retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups",
+        "product_groups", id, record[0])+"</table>\n";
+  else if(id->variables->type=="group")
+
+retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id,
+record[0])+"</table>\n";
+ 
+return retval;
+
+}
+
+mixed admin_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Store Administration</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Administration</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
+
+switch(id->variables->mode){
+
+  case "doadd":
+  mixed j=id->misc->ivend->db->addentry(id,id->referrer);
+  retval+="<br>";
+  if(stringp(j))
+    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+
+
+  string type=(id->variables->table-"s");
+  return retval+type+" Added Sucessfully.";
+  break;
+
+  case "domodify":
+  mixed j=id->misc->ivend->db->modifyentry(id,id->referrer);
+  retval+="<br>";
+  if(stringp(j))
+    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+
+
+  string type=(id->variables->table-"s");
+  return retval + capitalize(type) + " Modified Sucessfully.";
+  break;
+
+  case "add":
+  retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
+
+  if(id->variables->type=="product")
+    retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups", 
+	"product_groups", id)+"</table>\n";
+  else if(id->variables->type=="group")
+    retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id)+"</table>\n";
+  break;
+
+  case "dodelete":
+//  perror("doing delete...\n");
+  object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+  if(id->variables->confirm){
+    if(id->variables->id==0 || id->variables->id=="") 
+      retval+="You must select an ID to act upon!<br>";
+    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
+  else {
+    if(id->variables->match) {
+    mixed n=s->showmatches(id->variables->type, id->variables->id);
+    if(n)
+      retval+="<form action=./admin>\n"
+        + n +
+        "<input type=hidden name=mode value=dodelete>\n"
+        "<input type=submit value=Delete>\n</form>";
+    else retval+="No " + capitalize(id->variables->type) + " found.";
+    }
+    else {
+      mixed n=s->showdepends(id->variables->type, id->variables->id);
+      if(n){ 
+        retval+="<form action=./admin>\n"
+          "<input type=hidden name=mode value=dodelete>\n"
+          "<input type=hidden name=type value="+id->variables->type+">\n"
+          "<input type=hidden name=id value="+id->variables->id+">\n"
+          "Are you sure you want to delete the following?<p>";
+          retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
+        }
+      else retval+="Couldn't find "+capitalize(id->variables->type) +" "
+        +id->variables->id+".<p>";
+      }
+
+    }
+
+    case "delete":
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=dodelete>\n"
+      +capitalize(id->variables->type) + " ID to Delete: \n"
+      "<input type=text size=10 name=id>\n"
+      "<input type=hidden name=type value=" + id->variables->type + ">\n"
+      "<br><font size=2>If using FindMatches, you may type any part of an ID"
+      " or Name to search for.<br></font>"
+      "<input type=submit name=match value=FindMatches> &nbsp; \n"
+      "<input type=submit value=Delete>\n</form>";
+  break;
+
+  case "clearsessions":
+  clean_sessions(id);	
+  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
+	"Return to Administration Menu.</a>\n";
+  break;
+
+  case "getmodify":
+
+  retval+=getmodify(id->variables->type, id->variables->id, id);
+
+  break;
+
+  case "modify":
+  retval+="&gt <b>Modify " + capitalize(id->variables->type)
+	+"</b><br>\n";
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=getmodify>\n"
+      + capitalize(id->variables->type) + " ID to Modify: \n"
+      "<input type=text size=10 name=id>\n"
+      "<input type=hidden name=type value="+id->variables->type+">\n"
+      "<input type=submit value=Modify>\n</form>";
+  break;
+
+  default:
+  retval+= "<ul>\n"
+    "<li><a href=\"orders\">Orders</a>\n"
+    "</ul>\n"
+    "<ul>\n"
+    "<li>Groups\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
+    "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
+    "(Beta Test)\n"
+    "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
+    "</ul>"
+    "<li>Products\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
+    "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
+    "(Beta Test)\n"
+    "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
+    "</ul>"
+    "</ul>\n"
+    "<ul>\n"
+    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
+    "</ul>\n"
+    "<ul>\n"
+    "<li><a href=\"shipping\">Shipping Administration</a>\n";
+
+
+
+  break;
+
+}
+
+return retval;  
+
+}
+
+
+
 mixed find_file(string file_name, object id){
 
   id->misc["ivend"]=([]);
@@ -991,301 +1300,6 @@ mixed return_data(mixed retval, object id){
   else return retval;
 
 }
-
-
-// Start of admin functions
-
-
-int clean_sessions(object id){
-
-string query="DELETE FROM sessions WHERE timeout < "+time(0);
-id->misc->ivend->db->query(query);
-return 0;
-}
-
-
-mixed order_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Orders",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Orders",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Store Orders</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Orders</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
-
-
- mixed
-d=id->misc->ivend->modules[id->misc->ivend->config->order_module]->show_orders(id, 
-   id->misc->ivend->db);
- if(stringp(d))
- retval+=d;
-
-
-return retval;
-
-}
-
-mixed shipping_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Shipping",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Shipping",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Shipping Administration</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Shipping</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
-  "href=shipping>Shipping</a><p>\n";
-
-
- mixed d=id->misc->ivend->modules[
-	id->misc->ivend->config->shipping_module
-	]->shipping_admin(id);
- if(stringp(d))
- retval+=d;
-
-
-return retval;
-
-}
-
-mixed getmodify(string type, string pid, object id){
-
-string retval="";
-multiset gid=(<>);
-array record=id->misc->ivend->db->query("SELECT * FROM " + type + "s WHERE "
- "id='" + pid +"'");
-if (sizeof(record)!=1)
-  return "Error Finding " + capitalize(type) + " ID " + pid + ".<p>";
-
-if(type=="product") {
-  array groups=id->misc->ivend->db->query("SELECT group_id from "
-    "product_groups where product_id='"+ pid + "'");
-  if(sizeof(groups)>0)
-    foreach(groups, mapping g)
-      gid[g->group_id]=1;
-  record[0]->group_id=gid;
-  }
-
-  retval+="&gt <b>Modify " + capitalize(id->variables->type)
-+"</b><br>\n";
-
-if(id->variables->type=="product")
-  retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups",
-        "product_groups", id, record[0])+"</table>\n";
-  else if(id->variables->type=="group")
-
-retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id,
-record[0])+"</table>\n";
- 
-return retval;
-
-}
-
-mixed admin_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Administration",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Administration",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Store Administration</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Administration</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
-
-switch(id->variables->mode){
-
-  case "doadd":
-  mixed j=id->misc->ivend->db->addentry(id,id->referrer);
-  retval+="<br>";
-  if(stringp(j))
-    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
-
-
-  string type=(id->variables->table-"s");
-  return retval+type+" Added Sucessfully.";
-  break;
-
-  case "domodify":
-  mixed j=id->misc->ivend->db->modifyentry(id,id->referrer);
-  retval+="<br>";
-  if(stringp(j))
-    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
-
-
-  string type=(id->variables->table-"s");
-  return retval + capitalize(type) + " Modified Sucessfully.";
-  break;
-
-  case "add":
-  retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
-
-  if(id->variables->type=="product")
-    retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups", 
-	"product_groups", id)+"</table>\n";
-  else if(id->variables->type=="group")
-    retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id)+"</table>\n";
-  break;
-
-  case "dodelete":
-//  perror("doing delete...\n");
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  if(id->variables->confirm){
-    if(id->variables->id==0 || id->variables->id=="") 
-      retval+="You must select an ID to act upon!<br>";
-    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
-  else {
-    if(id->variables->match) {
-    mixed n=s->showmatches(id->variables->type, id->variables->id);
-    if(n)
-      retval+="<form action=./admin>\n"
-        + n +
-        "<input type=hidden name=mode value=dodelete>\n"
-        "<input type=submit value=Delete>\n</form>";
-    else retval+="No " + capitalize(id->variables->type) + " found.";
-    }
-    else {
-      mixed n=s->showdepends(id->variables->type, id->variables->id);
-      if(n){ 
-        retval+="<form action=./admin>\n"
-          "<input type=hidden name=mode value=dodelete>\n"
-          "<input type=hidden name=type value="+id->variables->type+">\n"
-          "<input type=hidden name=id value="+id->variables->id+">\n"
-          "Are you sure you want to delete the following?<p>";
-          retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
-        }
-      else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-        +id->variables->id+".<p>";
-      }
-
-    }
-
-    case "delete":
-    retval+="<form action=./admin>\n"
-      "<input type=hidden name=mode value=dodelete>\n"
-      +capitalize(id->variables->type) + " ID to Delete: \n"
-      "<input type=text size=10 name=id>\n"
-      "<input type=hidden name=type value=" + id->variables->type + ">\n"
-      "<br><font size=2>If using FindMatches, you may type any part of an ID"
-      " or Name to search for.<br></font>"
-      "<input type=submit name=match value=FindMatches> &nbsp; \n"
-      "<input type=submit value=Delete>\n</form>";
-  break;
-
-  case "clearsessions":
-  clean_sessions(id);	
-  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
-	"Return to Administration Menu.</a>\n";
-  break;
-
-  case "getmodify":
-
-  retval+=getmodify(id->variables->type, id->variables->id, id);
-
-  break;
-
-  case "modify":
-  retval+="&gt <b>Modify " + capitalize(id->variables->type)
-	+"</b><br>\n";
-    retval+="<form action=./admin>\n"
-      "<input type=hidden name=mode value=getmodify>\n"
-      + capitalize(id->variables->type) + " ID to Modify: \n"
-      "<input type=text size=10 name=id>\n"
-      "<input type=hidden name=type value="+id->variables->type+">\n"
-      "<input type=submit value=Modify>\n</form>";
-  break;
-
-  default:
-  retval+= "<ul>\n"
-    "<li><a href=\"orders\">Orders</a>\n"
-    "</ul>\n"
-    "<ul>\n"
-    "<li>Groups\n"
-    "<ul>"
-    "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
-    "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
-    "(Beta Test)\n"
-    "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
-    "</ul>"
-    "<li>Products\n"
-    "<ul>"
-    "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
-    "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
-    "(Beta Test)\n"
-    "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
-    "</ul>"
-    "</ul>\n"
-    "<ul>\n"
-    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
-    "</ul>\n"
-    "<ul>\n"
-    "<li><a href=\"shipping\">Shipping Administration</a>\n";
-
-
-
-  break;
-
-}
-
-return retval;  
-
-}
-
-
-// Start of auth functions.
-
-
-int get_auth(object id, int|void i){
-if(i){	// we're login in to the main config interface.
-
-  array(string) auth=id->realauth/":";
-  if(auth[0]!=query("config_user")) return 0;
-  else if(query("config_password")==auth[1])
-        return 1;
-  else return 0;                   
-}
-  array(string) auth=id->realauth/":";
-  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
-  else if(crypt(auth[1],id->misc->ivend->config->config_password))
-        return 1;
-  else return 0;
-
-}
-
 
 
 // Start of config functions.

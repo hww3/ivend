@@ -163,7 +163,8 @@ if(note) {
   recipient=r[0][recipient];
   note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
   
-  object message=MIME.Message(note, (["MIME-Version":"1.0",
+  object message=MIME.Message(parse_rxml(note,id),
+				   (["MIME-Version":"1.0",
 				     "To":recipient,
 				     "Subject":subject
 				     ]));
@@ -185,7 +186,7 @@ if(note) {
 
   note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
   
-  object message=MIME.Message(note, (["MIME-Version":"1.0",
+  object message=MIME.Message(parse_rxml(note,id), (["MIME-Version":"1.0",
 				     "To":recipient,
 				     "Subject":subject
 				     ]));

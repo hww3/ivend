@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.12 1998-01-27 21:54:26 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.13 1998-01-28 22:37:59 hww3 Exp $";
 
 /*
  *
@@ -200,14 +200,34 @@ else return "HAHAHAHA";
 string container_icart(string name, mapping args,
                       string contents, object id)
 {
+    if(!id->misc->ivend->st) return "You can't access your cart from here.";
+    else string st=id->misc->ivend->st;
+
+if(id->variables->update) {
+
+  object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+
+    for(int i=0; i< (int)id->variables->s; i++){
+
+    if((int)id->variables["q"+(string)i]==0)
+	s->query("DELETE FROM sessions WHERE SESSIONID="+id->variables->SESSIONID+
+	  " AND id='"+id->variables["p"+(string)i]+"' AND series="+
+	  id->variables["s"+(string)i] );
+    else
+        s->query("UPDATE sessions SET quantity="+id->variables["q"+(string)i]+
+	  " WHERE SESSIONID="+id->variables->SESSIONID+" AND id='"+
+	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
+
+    }
+
+}
+
   string field;
 
   string retval=lower_case(contents);
   if(!id->variables->SESSIONID) return retval+"blah";
   else {
-    retval+="<form action=cart method=post>\n<table>\n";
-    if(!id->misc->ivend->st) return "You can't access your cart from here.";
-    else string st=id->misc->ivend->st;
+    retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
     object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
     if(!args->fields) return "Incomplete cart configuration!";
     array r= s->query("SELECT sessions.id,series,quantity,name,price,"+ 
@@ -439,24 +459,6 @@ mixed handle_cart(string st, object id){
 perror("iVend: handling cart for "+st+"\n");
 #endif
 
-if(id->variables->update) {
-
-  object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
-
-    for(int i=0; i< (int)id->variables->s; i++){
-
-    if((int)id->variables["q"+(string)i]==0)
-	s->query("DELETE FROM sessions WHERE SESSIONID="+id->variables->SESSIONID+
-	  " AND id='"+id->variables["p"+(string)i]+"' AND series="+
-	  id->variables["s"+(string)i] );
-    else
-        s->query("UPDATE sessions SET quantity="+id->variables["q"+(string)i]+
-	  " WHERE SESSIONID="+id->variables->SESSIONID+" AND id='"+
-	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
-
-    }
-
-}
 string retval;
 if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
   return handle_error(id->misc->ivend->config->root+"/cart.ivml",id);
@@ -889,12 +891,16 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
   
    }
 
-mixed admin_handler(string filename, object id){
+mixed 
+
+admin_handler(string filename, object id){
 
 if(id->auth==0)
-  return http_auth_required("iVend Store Configuration","Silly user, you need to login!"); 
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!"); 
 else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Configuration","Silly user, you need to login!");
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!");
 
 string retval="";
 retval+="<title>iVend Store Administration</title>"
@@ -976,6 +982,10 @@ switch(id->variables->mode){
       "Product &nbsp; <input type=radio name=type value=group>\n"
       "Group<p>"
       "<input type=submit value=Delete>\n</form>";
+  break;
+
+  case "orders":
+  retval+="Orders:\n";
   break;
 
   case "clearsessions":

@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.2 1997-12-16 17:35:20 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.3 1997-12-16 17:41:52 hww3 Exp $";
 
 /*
  *
@@ -168,12 +168,10 @@ string st=id->misc->ivend->st;
 object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
 array r;
 if(args->type=="groups") {
-perror("doin the group thing...\n");
   r=s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
   }
 else {
 
-perror("doing the product thing...\n");
   r=s->query("SELECT product_id AS pid,"+args->fields+
 	" FROM product_groups,products where group_id='"+id->misc->page+"'"
 	" AND products.id=product_id");
@@ -192,7 +190,7 @@ foreach(r,row){
   int n=0;
 // perror(indices(row)*" - ");
   foreach(titles, t){
-	perror(t);  
+//	perror(t);  
 
       if(n==0)
         thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</IA>");
@@ -226,7 +224,7 @@ string tag_ivmg(string tag_name, mapping args,
 string filename="";
 if(args->src!="") 
 filename=config[id->misc->ivend->st]->root+"/images/"+args->src+".gif";
-perror("getting image "+filename+"\n");
+// perror("getting image "+filename+"\n");
 
 array|int size=size_of_image(filename);
 
@@ -294,7 +292,6 @@ string container_icart(string name, mapping args,
 {
   string field;
 
-  perror("ivend: parsing icart tag...\n");
   string retval=lower_case(contents);
   if(!id->variables->SESSIONID) return retval+"blah";
   else {
@@ -373,7 +370,7 @@ for (int i=0; i<sizeof(config_file);i++){
 		}
 	else if(config_file[i]=="end") break;
 	else if(config_file[i][0..0]=="$"){
-perror("iVend: we've got a parameter...\n");
+// perror("iVend: we've got a parameter...\n");
 		array(mixed) current_line=config_file[i][1..]/"=";
 #ifdef MODULE_DEBUG
 // perror("iVend: config: "+current_config+" parameter: "+current_line[0]+" value: "+current_line[1]+"\n");
@@ -525,7 +522,7 @@ string retval;
 switch(page){
 
   case "index.ivml":
-perror("reading "+config[st]->root+"/index.ivml");
+// perror("reading "+config[st]->root+"/index.ivml");
     if(!(retval= Stdio.read_bytes(config[st]->root+"/index.ivml")) )
 return handle_error(id->misc->ivend->config->root+"/index.ivml",id->misc->ivend->st,id);
     break;
@@ -583,7 +580,7 @@ return http_redirect(query("mountpoint")+"config", id);
 }
 
 int get_auth(object id){
-perror(query("config_password")+" "+query("config_user")+"\n");
+// perror(query("config_password")+" "+query("config_user")+"\n");
   array(string) auth=id->realauth/":";
   if(auth[0]!=query("config_user")) return 0;
   else if(query("config_password")==auth[1])
@@ -652,7 +649,7 @@ else if(!get_auth(id))
 		case "global": {
 if(!catch(request[2]) && request[2]=="save")
 {
-perror("SAVING CHANGES...\n");
+// perror("SAVING CHANGES...\n");
 array(string) vars=indices(id->variables);
 string v;
 foreach((vars),v){
@@ -888,7 +885,7 @@ switch(id->variables->mode){
   break;
 
   case "dodelete":
-  perror("doing delete...\n");
+//  perror("doing delete...\n");
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
@@ -989,13 +986,13 @@ return http_redirect(query("mountpoint")+
             id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
 
 	    if(catch(request[1])) {
-	      perror("iVend: no product specified.\n");
+//	      perror("iVend: no product specified.\n");
 	      return http_string_answer(parse_rxml(handle_page("index.ivml", request[0], id),id));
 	    }
 	    else {
 
               id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
-perror(sprintf("%O",id));	
+// perror(sprintf("%O",id));	
 	      switch(request[1]) {
 		    case "":
 	        case "index.ivml":
@@ -1008,7 +1005,7 @@ perror(sprintf("%O",id));
 		  return get_image(restofrequest, id);
 		  break;
 		case "admin":
-		  perror("ADMIN!\n");
+//		  perror("ADMIN!\n");
 		  return admin_handler(restofrequest, id);
 		  break;
 		default:

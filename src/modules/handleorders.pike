@@ -252,7 +252,8 @@ string archive_orders(string mode, object id){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
 	o->orderid + "'");
-retval+="Records " + sizeof(r) + " from " + t + "<br>";
+retval+="Records " + sizeof(r) + " from " + t + " for " + o->orderid 
++ "<br>";
       array fl,dl=({});
       foreach(r, mapping row){	
         foreach(fields, mapping f){

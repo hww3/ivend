@@ -95,13 +95,6 @@ $type=string
 $endescription=Username for Store Administration
 $sidescription=Username for Store Administration
 
-$varname=config_password
-$enname=Configuration Password
-$siname=Configuration Password
-$type=password
-$endescription=Password for Store Administration
-$sidescription=Password for Store Administration
-
 $varname=privatekey
 $enname=RSA Private Key
 $siname=RSA Private Key

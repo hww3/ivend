@@ -41,22 +41,6 @@ then
   storedescription=$default
 fi
 
-default="ivend"
-echo -n Store Admin Username [$default]:
-read adminuser
-if [ -z $adminuser ]
-then 
-  adminuser=$default
-fi
-
-default="ivend"
-echo -n Store Admin Password [$default]:
-read adminpassword
-if [ -z $adminpassword ]
-then 
-  adminpassword=$default
-fi
-
 default="localhost"
 echo -n Database Host [$default]:
 read dbhost
@@ -88,8 +72,6 @@ if [ -z $dbpassword ]
 then 
   dbpassword=$default
 fi
-
-
 
 if [ ! -d $storedir ] 
 then 

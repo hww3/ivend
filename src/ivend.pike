@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.80 1998-07-16 03:34:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.81 1998-07-22 18:37:16 hww3 Exp $";
 
 array register_module(){
 
@@ -1500,7 +1500,7 @@ for(int i=0; i<sizeof(configs); i++){
 save_status=1;	// We've saved.
 perror("iVend: reloading all modules...\n");
 start();	// Reload all of the modules and crap.
-return http_redirect(query("mountpoint")+"config", id);
+return http_redirect(id->referer, id);
 
 }
 
@@ -1738,8 +1738,10 @@ id->variables[variables[i]]!=config[id->variables->config][variables[i]])
 			+(c->genform(config[request[1]],query("lang"),
 			  query("root")+"src/modules")
 			||"Error loading configuration definitions")+
-			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
-			"<p>"
+			"</TABLE><p><input type=submit value=\"Modify Configuration\"><p>";
+			if(save_status!=1)
+				retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A> &nbsp; ";
+			retval+=
 			"<A HREF=\""+ query("mountpoint")
 +"config/configs/"+ request[1]+"?config_delete=1\">Delete Configuration</A>"
 			"</FORM>"

@@ -77,6 +77,8 @@ string retval="<html><head><title>Item Options</title></head>\n"
 	"<font face=helvetica>";
 mapping v=id->variables;
 ADMIN_FLAGS=NO_BORDER;
+if(!v->id) retval+= "You have not specified a item ID number.";
+else {
 retval+="Options for " + v->id +"<p>";
 
 if(v->add) {
@@ -122,7 +124,26 @@ retval+="<tr><td><input type=text name=option_type size=10></td><td>"
   "<input type=text value=0.00 name=surcharge size=6</td><td><font size=2><input "
   "type=submit name=add value=add></font></td></tr>\n";
   retval+="</table>";
-retval+="</form>";
+retval+="</form>"
+  "<b>Instructions</b><br>"
+  "To add a new item option, complete the form above and click on 'Add'.<br>"
+  "To delete an item option, click on the 'Delete' link next to the "
+  "option you wish to remove.<p>";
+
+   retval+="<font size=0>"
+  "<b>Option Type</b> is the type of item option you are adding, for "
+  "example <i>SIZE</i>. Options will be displayed with others of the "
+  "same type.<br>"
+  "<b>Option Code</b> is the code for the individual option you are adding, "
+  "for example <i>XL</i>.<br>"
+  "<b>Option Name</b> is a description of the option you are adding, for "
+  "example, <i>Extra Large</i>. The Option Name of each option will be "
+  "displayed to the user.<br>"
+  "<b>Surcharge</b> is an additional charge for each unit of product "
+  "selected with this option. For example, a surcharge of <i>1.50</i> "
+  "will add 1.50 for each item for which the particular option is chosen."
+  "<p></font>\n";
+}
 retval+="<center><font size=-1>"
 	"<form><input type=reset onclick=window.close() value=Close></form>"
 	"</font></center>";

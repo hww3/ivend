@@ -138,7 +138,8 @@ if(v->deletedir=="Yes")
   retval+="<li>Delete the directory <i>" +
 id->misc->ivend->this_object->config[v->__name]->general->root + "</i>\n";
 if(v->deletedb=="Yes")
-  retval+="<li>Delete the Database <i>" + v->__name + "</i>"; 
+  retval+="<li>Delete the Database <i>" +
+id->misc->ivend->this_object->config[v->__name]->general->db + "</i>"; 
 retval+="</ul>";
 
 return retval;
@@ -162,7 +163,7 @@ object s;
 if(v->deletedb=="Yes"){
 
 catch(s->select_db(general->db));
-catch(s->query("REVOKE ALL ON " + general->db + " FROM " + v->__name));
+catch(s->query("REVOKE ALL ON " + general->db + " FROM " + v->dblogin));
 catch(s->query("REVOKE ALL ON " + general->db + " FROM " + v->__name +
 "admin"));
 if(catch(s->drop_db(general->db)))

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.232 1999-07-13 21:06:05 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.233 1999-07-28 21:00:53 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1731,31 +1731,29 @@ mixed open_popup(string name, string location, string mode, mapping
     if(!id->misc->ivend->popup) id->misc->ivend->popup=1;
     else id->misc->ivend->popup++;
 
-    retval+="<SCRIPT LANGUAGE=javascript>"
+    retval+="<SCRIPT>"
             "\n"
             "function popup_" + id->misc->ivend->popup
 		+ "(name,location,w,h) {\n"
-            " mainWin=self;\n"
-            "	if(h<1) h=300;\n"
-            "	if(w<1) w=300;\n"
-            "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
-            "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
+            " mainWin=self\n"
+            "	if(h<1) h=300\n"
+            "	if(w<1) w=300\n"
+            "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200\n"
+            "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130\n"
             "\n"
-	    "var id='';"
-		"id=document.gentable." + lower_case(
-KEYS[options->type
-+ "s"]) +
-		";\n"
+	"var idn=document.gentable."
+ + lower_case(KEYS[options->type+ "s"]) +
+		".value\n"
 	    " document.popupform" + id->misc->ivend->popup
-+".id.value=id.value;\n"
-	    " if(id.value==\"\") { alert('You have not specified a " +
-		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
-            "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
-            "        palette=window.open(location,name,param);\n"
-            // "        window.open('',name,param);\n"
++".id.value=idn\n"
+	    " if(idn=='') { alert('You have not specified a " +
+		KEYS[options->type + "s"] + ".')\n return\n}\n"  
+            "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h\n"
+            "        palette=window.open(location,name,param)\n"
+            // "        window.open('',name,param)\n"
             "        \n"
-            "        if (palette!=null) palette.opener=mainWin; \n"
-	    "document.popupform" + id->misc->ivend->popup + ".submit();\n"
+            "        if (palette!=null) palette.opener=mainWin \n"
+	    "document.popupform" + id->misc->ivend->popup + ".submit()\n"
             "}\n"
             "</SCRIPT>"
             "<form name=popupform" + id->misc->ivend->popup + " target=" +
@@ -1811,7 +1809,7 @@ if(id->variables->logout){
    add_cookie(id, (["name":"admin_auth",
                  "value":"", "seconds": 1]),([]));
    admin_user_cache[STORE][id->cookies->admin_user]="";
-return "You have logged out.<p><a href=./>Click here to continue.</a>";
+return "You have logged out.<p><a href=\"./\">Click here to continue.</a>";
 }
                  if(sizeof(id->prestate)==0) {
                      id->prestate=(<"menu=main">);
@@ -1840,7 +1838,7 @@ if(!intp(r)){
 */
 
                  string retval="";
-                 retval+="<title>iVend Store Administration</title>"
+                 retval+="<html><head><title>iVend Store Administration</title></head>"
                          "<body bgcolor=white text=navy>"
                          "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
                          "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
@@ -1848,9 +1846,9 @@ if(!intp(r)){
                          + CONFIG->name+
                          " Administration</gtext><p>"
                          "<font face=helvetica,arial size=+1>"
-                         "<a href=" +
-                         id->misc->ivend->storeurl + ">Storefront</a> &gt; <a href=" +
-                         add_pre_state(id->not_query, (<"menu=main">))+">Admin</a>\n";
+                         "<a href=\"" +
+                         id->misc->ivend->storeurl + "\">Storefront</a> &gt; <a href=\"" +
+                         add_pre_state(id->not_query, (<"menu=main">))+"\">Admin</a>\n";
 
 
                  if(id->prestate && sizeof(id->prestate)>0){
@@ -1883,14 +1881,16 @@ if(!intp(r)){
                      retval+="<br>";
                      if(!intp(j)){
                          destruct(DB);
-                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>")
+				+"</body></html>";
                      }
                      else{
                          type=(id->variables->table-"s");
                          destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
 		"id": id->variables[KEYS[type + "s"]] ]) );
-                       return (retval+"<br>"+capitalize(type)+" Added Sucessfully.");
+                       return (retval+"<br>"+capitalize(type)+" Added Sucessfully.")
+				+"</body></html>";
 
                      }
                      break;
@@ -1900,13 +1900,15 @@ if(!intp(r)){
                      retval+="<br>";
                      if(stringp(j)){
                          destruct(DB);
-                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>")
+				+"</body></html>";
                      }
                      destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
 		"id": id->variables[KEYS[type + "s"]] ]) );
 
-                     return retval +"<br>"+ capitalize(type) + " Modified Sucessfully.";
+                     return retval +"<br>"+ capitalize(type) + " Modified Sucessfully."
+				+"</body></html>";
                      break;
 
                  case "add":
@@ -1942,6 +1944,7 @@ if(!intp(r)){
                      else if(type=="group")
                          retval+="<table>\n"+
                                  DB->gentable("groups",add_pre_state(id->not_query,(<"doadd=group">)),0,0,id)+"</table>\n";
+			retval+="</body></html>";
                      break;
 
                  case "dodelete":
@@ -2039,7 +2042,8 @@ if(!intp(r)){
                      if(sizeof(valid_handlers))
                          retval+="</tr></table></obox>";
                      retval+=getmodify(type,
-                                       id->variables[KEYS[type+"s"]], id);
+                                       id->variables[KEYS[type+"s"]], id)
+				+"</body></html>";
 
                      break;
 
@@ -2157,7 +2161,7 @@ id->variables->__criteria + "%";
                                  retval+="<td>" + row[fld] + "</td>\n";
                              }
                              retval+="</tr>\n";
-                             retval+="</table>";
+                             retval+="</table></body></html>";
                          }
                          else retval+="Sorry, No Records were found.";
                      }
@@ -2184,7 +2188,7 @@ id->variables->__criteria + "%";
                          if(ADMIN_FLAGS==NO_BORDER) retval="";
                          else{ array mn=mode/".";
                              mode=mn[sizeof(mn)-1];
-                             retval+= " &gt; <b>" + (id->query?"<a href=./>":"") +
+                             retval+= " &gt; <b>" + (id->query?"<a href=\"./\">":"") +
                                       replace(mode,({"_"}),({" "}))
                                       + (id->query?"</a>":"") + "</b></font><p>";
                              if(ADMIN_FLAGS==NO_ACTIONS);
@@ -2221,35 +2225,35 @@ id->variables->__criteria + "%";
                              "<obox title=\"<font face=helvetica,arial>Groups</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
-                             "<li><a href="+
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"show=group">))
-                             +">Show Groups</a>\n"
-                             "<li><a href="+
+                             +"\">Show Groups</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"add=group">))
-                             +">Add New Group</a>\n"
-                             "<li><a href="+
+                             +"\">Add New Group</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"modify=group">))
-                             +">Modify a Group</a>\n"
-                             "<li><a href="+
+                             +"\">Modify a Group</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"delete=group">))
-                             +">Delete a Group</a>\n"
+                             +"\">Delete a Group</a>\n"
                              "</font>"
                              "</obox>"
                              "<obox title=\"<font face=helvetica,arial>Products</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
-                             "<li><a href="+
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"show=product">))
-                             +">Show Products</a>\n"
-                             "<li><a href="+
+                             +"\">Show Products</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"add=product">))
-                             +">Add New Product</a>\n"
-                             "<li><a href="+
+                             +"\">Add New Product</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"modify=product">))
-                             +">Modify a Product</a>\n"
-                             "<li><a href="+
+                             +"\">Modify a Product</a>\n"
+                             "<li><a href=\""+
                              add_pre_state(id->not_query,(<"delete=product">))
-                             +">Delete a Product</a>\n"
+                             +"\">Delete a Product</a>\n"
                              "</font>"
                              "</obox>"
                              "</ul>\n"
@@ -2272,8 +2276,8 @@ id->variables->__criteria + "%";
                              sort(valid_handlers);
                              foreach(valid_handlers, string hn)
                              if(search(hn, category)!=-1)
-                                 retval+="<li><a href=" + add_pre_state(id->not_query,
-                                                                        (<replace(hn, mode+"."+(type||"")+".","")>)) + ">"
+                                 retval+="<li><a href=\"" + add_pre_state(id->not_query,
+					(<replace(hn, mode+"."+(type||"")+".","")>)) + "\">"
                                          + replace(hn,({"_",mode + "." + (type||"") +"." +category
                                                         +"."}),({" ",""})) +
                                          "</a>\n";
@@ -2284,7 +2288,7 @@ id->variables->__criteria + "%";
                                  "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                                  "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup."
 				"<p>Logged in as " +
-				id->misc->ivend->admin_user + ". [ <a href=./?logout=1>Logout</a> ]";
+				id->misc->ivend->admin_user + ". [ <a href=\"./?logout=1\">Logout</a> ]";
 
                      }
                      else retval+="Sorry, couldn't find handler.";

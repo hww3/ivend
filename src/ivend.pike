@@ -683,7 +683,9 @@ string container_category_output(string name, mapping args,
 
    if(!args->type) return YOU_MUST_SUPPLY_A_CATEGORY_TYPE;
 if(lower_case(args->type)!="groups"){
-   query="SELECT * FROM " + lower_case(args->type) + ",product_groups ";
+   query="SELECT * FROM " + lower_case(args->type) ;
+if(!args->showall) {
+   query+=",product_groups ";
    query+=" WHERE product_groups.group_id='" +
 	id->misc->ivend->page + "' AND "
  + lower_case(args->type) + "." +
@@ -695,7 +697,7 @@ perror(query + "\n");
    if(args->restriction)
       query+=" AND " + args->restriction;
    if(args->order)
-      query+=" ORDER BY " + args->order;
+      query+=" ORDER BY " + args->order; }
 }
 else {
 

@@ -320,15 +320,6 @@ void get_entities(mapping c){
    library[c->config]->tag=([]);
    library[c->config]->container=([]);
    library[c->config]->event=([]);
-   foreach(indices(modules[c->config]), mixed n){
-      mixed o=modules[c->config][n];
-      if(functionp(o->query_tag_callers))
-         library[c->config]->tag+=o->query_tag_callers();
-      if(functionp(o->query_container_callers))
-         library[c->config]->container+=o->query_container_callers();
-      if(functionp(o->query_event_callers))
-         register_event(c, o->event_callers());
-   }
 
 }
 
@@ -353,20 +344,19 @@ void start_store(string c){
 
 
 
-//   perror("Loading: modules ");
-perror(config[c]->general->config +"\n\n");
+// perror(config[c]->general->config +"\n\n");
+
+   get_entities(config[c]->general);
    load_modules(config[c]->general->config);
-//   perror("db ");
+
    start_db(config[c]->general);
-//   perror("keys ");
    get_dbinfo(config[c]->general);
+
    numsessions[config[c]->general->config]=0;
    numrequests[config[c]->general->config]=0;
 
-//   perror("markup ");
-   get_entities(config[c]->general);
    load_library(config[c]->general);
-//   perror("done.\n");
+
 }
 
 
@@ -1195,7 +1185,7 @@ mixed m;
               auth[0],
               auth[1]
             ))) {
-      destruct(m);
+//      destruct(m);
       return 0;
       }
    else {
@@ -1298,6 +1288,10 @@ if(!id->variables->print) retval+=
 }
 
 mixed shipping_handler(string filename, object id, object this_object){
+
+if(id->not_query[sizeof(id->not_query)-1..]!="/")
+  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
+        (id->query?("?" + id->query):""), id);  
 
    if(id->auth==0)
       return http_auth_required("iVend Store Shipping",
@@ -1439,6 +1433,10 @@ return "<a href=\""  + 	   add_pre_state(id->not_query,
 mixed admin_handler(string filename, object id, object this_object){
 //   numsessions[STORE]--;
 //   numrequests[STORE]--;
+
+if(id->not_query[sizeof(id->not_query)-1..]!="/")
+  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
+        (id->query?("?" + id->query):""), id);  
 
 string mode, type;
 
@@ -1737,7 +1735,7 @@ add_pre_state(id->not_query,(<"dump=product">))
 		  "<ul>\n"
 		  "<li><a href="
 +add_pre_state(id->not_query,(<"addins">))+
-">Add-ins</a>\n"
+">Add-ins Manager</a>\n"
 		  "</ul>\n"
                   "<p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
@@ -2210,7 +2208,7 @@ mixed return_data(mixed retval, object id){
                mixed m;
 
             if(!modules[c]) modules[c]=([]);
-
+perror("loading module " + name + ".\n");
              
   err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
                                                       name)));
@@ -2234,7 +2232,15 @@ mixed return_data(mixed retval, object id){
             if(p)
                   foreach(indices(p), string np)
                   register_admin_handler(c, np, p[np]);
-                
+      mixed o=modules[c][m->module_type];
+
+      if(functionp(o->query_tag_callers))
+         library[c]->tag+=o->query_tag_callers();
+      if(functionp(o->query_container_callers))
+         library[c]->container+=o->query_container_callers();
+      if(functionp(o->query_event_callers))
+         register_event(config[c], o->event_callers());
+
                return 0;
 
             }
@@ -2265,9 +2271,14 @@ mixed return_data(mixed retval, object id){
                mixed err;
             if(!c) return;
             if(!config[c]) return;
-               foreach(({"upsell.pike", "shipping.pike",
-			"checkout.pike",
-			"handleorders.pike"}),string name) {
+            array mtl=({"shipping.pike",
+			"checkout.pike", "addins.pike",
+			"handleorders.pike"});
+            if(config[c]->addins)
+              foreach(indices(config[c]->addins), string miq)
+                 if(config[c]->addins[miq]=="load")
+                   mtl+=({miq});
+               foreach(mtl,string name) {
                   err=load_ivmodule(c,name);
                if(err) perror("iVend: The following error occured while loading the module "
                                  + name + "\n" +  describe_backtrace(err)); 
@@ -2295,13 +2306,13 @@ mixed return_data(mixed retval, object id){
             else active=global->configurations->active;
 
                foreach(({"global"}) + active, string confname){
-               if(confname=="global")
-                     config_file=Config.write(global);
-               else config_file=Config.write(config[confname]);
-
                   mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
-                  Stdio.write_file(query("configdir")+ confname, config_file);
-                  config_file="";
+               if(confname=="global")
+                    Stdio.write_file(query("configdir")+"global",
+			Config.write(global));
+               else 
+                    Stdio.write_file(query("configdir")+confname,
+			Config.write(config[confname]));
                }
                
 

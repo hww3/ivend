@@ -75,32 +75,19 @@ return sections;
 
 int write_section(string file, string section, mapping attributes){
 
+
   if(!(file || !section || !attributes))
     return -1;	// no information was provided.
-  object fd=Stdio.File(file, "rw");
-  string contents=fd->read();
-  if(!contents) {
-    werror("Couldn't read contents of " + file + ".\n");
-    return -1;
-    }
 
-  array sections=get_section_names(contents);
+  mapping cpy=read(Stdio.read_file(file));
 
-  if(search(sections, section)==-1) // we need to create a new section.
-    {
-    fd->write(format_section(section, attributes));
-    return 1;
-    }
+  cpy[section]=attributes;
 
-  else {  // we need to overwrite the existing section.
-    mapping m=read(contents);
-    m[section]=attributes;
-    array order=get_section_names(contents);
-    contents=write(m, order);
-    fd->seek(0);
-    fd->write(contents);
-    fd->close();
-  }
+  mv(file, file+"~");
 
-  return 1;
+//  array sections=get_section_names(contents);
+
+  Stdio.write_file(file, write(cpy));
+  return 0;
+
 }

@@ -29,7 +29,7 @@ if(id->variables->initialize)
 
 if(sizeof(DB->list_tables("upsell"))!=1)
   return "You have not configured the upsell handler."
-	"<p><a href=./?initialize=1",(<"upsell">))+">Click here</a>"
+	"<p><a href=./?initialize=1>Click here</a>"
 	" to do this now.";
 
 if(id->variables->action=="AddUpsell")

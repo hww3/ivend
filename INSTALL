@@ -126,7 +126,7 @@ before you start.
 
   Provide select/insert/delete access to a user so that iVend can connect
   and use this db. Helpful tips for new MySQL users are located in
-  Appendix C: MySQL tips.
+  Appendix E: Tips for New MySQL Users.
 
 *IMPORTANT NOTE* Please note that iVend uses database access permissions
   to determine who has permission to administer your iVend store. Because
@@ -147,19 +147,377 @@ before you start.
   sh create_store.sh
 
   The script will step you through various questions that are required for
-  creating a new store, including setting up database tables.
+  creating a new store, including setting up database tables. Below are
+  more detailed descriptions of the questions asked by the create_store
+  script:
 
->> INSERT MORE DETAILED INSTRUCTIONS HERE <<
+  Location of iVend configuration files
+    This is the location that iVend will save the generated configuration
+    file. This is normally the same as the directory you've specified in
+    the Roxen configuration interface.
+  
+  Directory of New Store
+    The directory where the store's html and image files will be kept. If
+    this directory doesn't already exist, the script will create if for
+    you. The script will populate this directory with basic templates and
+    files.
 
-4. Using the administration interface, provide the required information
-to activate the new store.
+  Store ID
+    This is the unique identifier for this store. This is one word,
+    alphanumeric characters are allowed. If you have numerous
+    stores, this store will be mounted on the directory /mountpoint/id.
 
-5. Add groups and products using the store's administration interface.
+  Store Description
+    A short (25 characters or less) description of your store.
+
+  Database Host
+    Host your database is located on. Ususally this is localhost.
+
+  Database Name
+    Name of the database that will contain the store's records.
+
+  Database User / Password
+    Username and password which has read/write access to the Database
+    listed in the previous question.
+ 
+After you answer these questions, you'll be given the opportunity to fine
+tune the database files to your specific needs. It's probably a good idea
+to start with the example schema and work from there. These tables can
+contain as  many and varied fields as you like, but at least the following
+must be  present:
+
+products and groups tables
+image* char
+price float
+
+The above fields are considered 'special' by iVend, and are expected to
+be present. The presence of additional fields is purely optional, however
+fields such as shipping wights and costs, product descriptions or
+inventory counts may also be useful. The tables "products" and "groups" 
+must each have a primary key in order for iVend to operate. By default,
+this field is called "id" but you may change it to anything that suits
+you, such as "sku" or "partnumber". iVend will automatically detect the
+correct field to use at startup.
+
+* field names that begin with image are considered special by iVend. They
+indicate images to be stored with groups and products. You can have as
+many image fields as you like, such as thumbnails and fullsize images.
 
 
+Additionally, there are a number of tables that are required by iVend to
+operate. These tables are:
+
+customer_info 
+  contains customer address and contact information.
+payment_info 
+  contains credit card payment information.
+orders 
+  master list of orders.
+orderdata 
+  list of products associated with each order.
+sessions 
+  current shopping cart sessions.
+taxrates 
+  tax rate calculation table.
+vstatus 
+  master list of order and status codes.
+shipments  
+  as orders are shipped, their status is stored in this table.
+shipping_*      
+  used internally by the various shipping modules.
+
+You can customize the information requested in the customer_info and
+payment_info fields. Note that the field that is to contain your
+customer's credit card numbers must be type char(255) in order to hold the
+encrypted card number data.
+
+4. After the create_store script has completed, go to the iVend store
+configuration page. This is located at /mountpoint/config. You'll be
+prompted for the iVend Store Admin username and password.
+
+5. You should be presented with a list of active stores. To load the new
+store, click on the link "Reload Configurations." Your new store should
+appear in the list.
+
+6. Click on the name of the new store. You will be presented with a
+configuration settings page. You should review this information, selecting
+the proper modules based upon your store's requirements. 
+
+7. After you are finished reviewing these settings, click on the "modify
+settings" button at the bottom of the page. iVend will make the requested
+changes and indicate that it is able to save the changes permanently by
+showing a link labelled "Save Changes". You should select this link to
+make your changes permanent.
+
+8. If this is the first time you have entered the configuration interface,
+you should also review the settings under the "Global" tab. After you've
+done this, click on the "modify settings" button, then save the changes to
+your global configurations using the "save changes" link.
+
+For more information about store and global settings, see Appendix A.
+
+9. At this point, you can enter the new store's administration interface.
+The administration interface is located at /mountpoint/storeid/admin.
+You'll be prompted for a username and password which has access to the
+stores SQL database.
+
+From this interface, you can add, delete, and modify products and groups;
+set up shipping charges and rules; as well as view and process incoming
+orders. 
+
+
+Appendix A
+----------
+
+Configuration Interface Settings
+
+
+Appendix B
+----------
+
+IVML Markup Tags
+
+The following tags are additions or modifications of existing HTML and 
+RXML tags. They are only available within the iVend system. Please note
+that checkout tags are discussed in a separate section, as they are
+independent of the main iVend engine.
+
+<ivml></ivml>  the grand daddy of the tags. surround all of your pages
+that are served by ivend with these tags, otherwise the following tags
+won't work. use in place of <html></html>.
+
+<a></a> has been modified to provide session tracking capabilities. 
+Additionally, the following attributes have been added:
+
+  cart: generates a link to the store's shopping cart page.
+  groups: generates a link to the store's group listing page.
+  checkout: generates a link to the store's checkout page.
+
+<ivstatus> when used on product pages, this tag will display information about
+additions to a user's shopping cart, and possibly other information from 
+the iVend system.
+
+<ivmg> is used to insert an image from a product or group stored in ivend's
+database. This tag takes the following attributes:
+
+  field: indicates the field that contains the image you want to display.
+
+<icart></icart> displays the store shopping cart for the current
+sessionid. This tag takes the following attributes:
+
+  fields: a comma separated list of fields to include in the cart.
+
+<form></form> has been modified to automatically handle session tracking.
+
+<listitems> generates a table of products which fall in a particular
+group. The following attributes affect this tag:
+
+  fields: a comma separated list of fields to include in the table.
+  names: a comma separated list of alternate names for fields included in
+     the table.
+
+<category_output></category_output> will repeat the contents the container
+once for each record found, replacing values of each field where instances
+of the fieldname are surrounded by #s. Similar to formoutput in rxml. This
+container takes the following attributes:
+
+  type=products|groups: required. selects what type of records to select.
+  restriction=restriction: optional restriction on selection. example:
+    restriction="manufacturer='kodak'" must follow sql format rules.
+  random: optional, when used with formrotate, the template to be used 
+    will be chosen at random from those provided.
+
+<formrotate></formrotate> is used within the category_output container. it
+provides multiple templates to rotate through while processing records. if
+you provide 2 formrotate containers, every odd record will be processed
+using the contents of the first container and every even record will be
+processed using the second container as the template.
+
+Checkout Tags
+-------------
+
+the subtotal is the sum of all taxable and nontaxable items ( including
+shipping if taxable ). discounts and salestax are calculated from the
+subtotal. All checkout tags function within the checkout container,
+<checkout></checkout>.
+
+generate_form		generate a form from the database
+  table=tablename	this is the table to get data for.
+  hide=field1,field2    hide these fields in the list.
+
+confirmemail
+  field=fieldname	name of field containing email address to check.
+
+salestax		added as a lineitem
+  locality=fieldname	name of field in billing address to determine
+			taxrate.
+
+discount
+  percent=percentage	percent discount of subtotal, which is then
+			removed from the subtotal.
+grandtotal
+			sum of all lineitems
+
+showorder		show all items in this order.
+
+shipping		show the shipping charges
+
+shippingtype		show the shipping type
+
+addentry		add the data from the previous form.
+  encrypt=field1,field2..  encrypt these fields using rsa.
+  noflush		don't remove preixisting db records
+			useful when table key is not unique.
+
+cardcheck		check credit card number
+  cardnumber=field	use this field name for card number
+  cardtype=field	use this field name for card type (AMEX,VISA,etc)
+  expdate=field		use this field name for expiration date
+
+Other Stuff
+-----------
+
+The database schema to use currently is located in examples/schema.mysql
+
+If the form generator finds an enum type (must be using patched mysql for
+this), it will look for values in a file called 
+	storeroot/db/tablename_fieldname.val ...
+
+
+Appendix C
+----------
+
+iVend Store Files
+
+These files are considered special to iVend and are located in the root of
+your iVend store directory.
+
+index.html -- the default page displayed upon arrival at the store.
+groups.html -- this page is used to display all available store groups.
+group_template.html -- template used to generate group listings.
+product_template.html -- template used to generate individual product listings.
+cart.ivml -- handles shopping cart functions.
+error.html -- custom error message for iVend errors (optional).
+
+examples of these files are located in the examples directory.
+
+Email Notification
+
+Automatic email messages are sent by iVend following certain events. iVend
+checks the "notes" directory of your store for the presence of text files.
+Here is a list of the text files that iVend looks for:
+
+  notify.txt: sent to the store administrator when a new order is confirmed.
+
+These messages are sent to the individual who places an order:
+
+  confirm.txt: sent after confirmation of a new order.
+  rejpay.txt: sent when payment information is rejected.
+  ship.txt: sent when all or part of an order is shipped.
+
+
+The iVend Main Index
+
+If you place a file called index.html in the iVend data directory (as
+specified in the roxen config interface), and change "CreateIndex" to yes
+in iVend's global variables, that file will be returned upon an access to
+the ivend root mountpoint (such as /ivend/). This is useful for providing
+a list of lists for all stores provided by a particular module. 
+
+To aid in the generation of a list of lists, a special container called
+<ivindex></ivindex> is available in this page. It works much like the 
+formoutput container in that field names from store configurations that
+are surrounded by #s like this: #name# will be replaced with that store's
+value. For a better example, see the file data/index.html.
+
+
+
+Appendix D
+----------
+
+Database Configuration
+
+
+Appendix E
+----------
+
+Tips for New MySQL Users
+
+
+SOME NOTES ABOUT MYSQL AND SETTING UP A DATABASE
+_________________________________________________________________________
+
+Step #1 ... Make sure mysql is installed and running on your server before 
+you compile and install roxen and pike.  Also make sure you have the full 
+Crypto version of Roxen and GMP installed. 
+
+Step #2 ... Changing root's mysql password for security reasons enter mysql
+with this command:
+
+mysql mysql
+
+Than enter this at the mysql prompt, change rootpass to whatever you want 
+roots password to be, make sure your logged in as root when doing all this. 
+(adjust as necessary):
+
+update user set password=password('rootpass') where user='root';
+
+Of coursse now you have to type mysql mysql --password=rootpass
+
+Step #2 ...  Creating the store's database, its a good idea to name dbname
+something relavant to the store's hostname like "wizstoredb" or something
+similar that you can remember it being a db .. wizstoredb = whatever you
+want it to be named .. you can use something like funkdb  or thetstoredatabase:
+
+mysqladmin create wizstoredb
+
+Step #3 ... Create a database admin for the store's database, enter the mysql 
+with:
+
+mysql mysql --password=rootpass
+
+Now type this while in the session:
+
+insert into user (host,user,password) values('localhost','wizstoreadmin',password('wizpass'));
+
+(Notice the user is a name relevant to the storesdb for easy remembering
+and wizpass = the password you chose for that user)
+
+Step #4 ... Now finally set the access rights for the db user you just 
+created so he has complete access to edit/modify that wizstoredb sql
+data.  Notice that the values of the localhost and the stores database
+name and the than WHO gets the rights to it.  6 'yes's means the user
+wizstoreadmin gets FULL complete rights to edit/add modify those records:
+
+insert into db values('localhost','wizstoredb','wizstoreadmin','Y','Y','Y','Y','Y','Y');
+
+Now type quit, to exit the mysql:
+
+quit
+
+Step #5 ... Go ahead and test it buddy! Enter at the prompt:
+
+mysqladmin reload --password=rootpass
+
+Than enter a session: 
+
+mysql -u htmlwizadmin -p wizstore
+
+(Enter your password next and yer in as a user!@)
+
+
+
+
+Now go setup your shop by running the create_store.sh script
+
+cd /usr/local/roxen/server/ivend/scripts
+sh ./create_store.sh
+
+
+Appendix F
+----------
 
 Notes about data security
--------------------------
 
 As with any application of this nature, one must be extremely sensitive
 when designing and implimenting electronic commerce solutions. Improperly
@@ -181,6 +539,7 @@ because the required private key would not be present.
 
 *NOTE* You should make sure that your RSA keyfiles are readable only by
 trusted users.
+
 
 
 14 august 1998

@@ -1,44 +1,3 @@
-
-3. Create data tables in that database for iVend to use. A sample schema 
-file is located in the examples directory called schema.mysql. It's
-probably a good idea to start with the example schema and work from
-there. These tables can contain as  many and varied fields as you like,
-but at least the following must be  present:
-
-product_groups
-group string		
-product string
-
-products and groups tables
-image* char
-price float
-
-The above fields are considered 'special' by iVend, and are expected to 
-be present. The presence of additional fields is purely optional, however 
-fields such as shipping wights and costs, product descriptions or 
-inventory counts may also be useful. The tables "products" and "groups"
-must each have a primary key in order for iVend to operate. By default,
-this field is called "id" but you may change it to anything that suits
-you, such as "sku" or "partnumber". iVend will automatically detect the
-correct field to use at startup.
-
-* field names that begin with image are considered special by iVend. They
-indicate images to be stored with groups and products. You can have as 
-many image fields as you like, such as thumbnails and fullsize images.
-
-Additionally, there are a number of tables that are required by iVend to
-operate. These tables are:
-
-customer_info: contains customer address and contact information.
-payment_info: contains credit card payment information.
-orders: master list of orders.
-orderdata: list of products associated with each order.
-sessions: current shopping cart sessions.
-taxrates: tax rate calculation table.
-status: master list of order and status codes. 
-shipments: as orders are shipped, their status is stored in this table.
-shipping_*
-
 4. Modify the iVend templates using standard HTML, RXML and additional 
 IVML (iVend markup language) tags. A listing of IVML tags can be found in 
 the section labelled IVML. The minimum files required by ivend to operate 
@@ -53,43 +12,6 @@ error.html -- custom error message for iVend errors (optional).
 
 examples of these files are located in the examples directory.
 
-5. Enter the iVend configuration interface by pointing your browser to
-http://virtualserver/ivend/config. You will pe prompted for the ivend config
-username and password.
-
-6. Click on 'New Store Configuration'. A form will be presented in which 
-you should provide the information requested. Note: some information may 
-not be nessecary ( such as database users and passwords, etc). When you
-are offered an option of one or more Modules (such as shipping or
-currency) , you may find the documentation in docs/ helpful.
-
-7. After completing the information, click on the 'Add' button. You should be
-returned to the main configuration screen. Click on the 'Save Changes' 
-link to save the configuration.
-
-8. You should now be able to point your browser to
-http://virtualserver/ivend/storeid where storeid is the id name of the 
-store you just created. You should be able to move around the various 
-options, although there won't be any groups or products to choose from.
-
-9. Point your browser to http://virtualserver/ivend/storeid/admin. This 
-will bring up the iVend Store Administration Page, from which you can add 
-and delete products and groups. This is also the central point for 
-monitoring orders and store status.
-
-10. Create some new groups, giving each a unique group id. It should be 
-noted that currently, groups and products cannot share the same id. You 
-can use your browser to add a graphic associated with that particular 
-group. Also, that graphic must be in gif format currently.
-
-11. After adding groups, you can add products, placing them in as many 
-groups as desired. After addition, products and groups will become 
-instantly available in the store.
-
-12. Use the make_key.pike script in the scripts directory to create an RSA
-keypair. Make a note of the filename you specified to save the key in.
-When you create a store, you'll be asked for this information (the name of
-the file containing your keypair).
 
 IVML
 

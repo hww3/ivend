@@ -12,13 +12,15 @@ echo
 if [ ! -d "../configurations" ]
 then
   default=$PWD
-  echo -n Location of iVend configuration files [$default]: 
-  read configdir
-  if [ -z "$configdir" ] 
-  then
+fi
+echo -n Location of iVend configuration files [$default]: 
+read configdir
+if [ -z "$configdir" ] 
+then
     configdir=$default
   fi
 else
+  echo $configdir not found. using ../configurations.
   configdir="../configurations"
 fi
 

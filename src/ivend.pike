@@ -864,7 +864,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
   string headlinebgcolor= args->headlinebgcolor || "navy";
   string headlinefontcolor= args->headlinefontcolor || "white";
   string listbgcolor= args->listbgcolor || "white";
-  string listbgcolor2= args->listbgcolor2 || "lightblue";
+  string listbgcolor2= args->listbgcolor2 || "lightlightblue";
   string listfontcolor= args->listfontcolor || "navy";
 
   if(!id->misc->ivend->page) 

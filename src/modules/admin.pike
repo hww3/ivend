@@ -129,10 +129,10 @@ id->variables->_module +
   if(id->variables->_action=="Cancel") {
 
   mapping z;
-
+object privs=Privs("iVend: Writing Config File ");
 z=Config.read(Stdio.read_file(id->misc->ivend->this_object->query("configdir")+
   CONFIG->config));
-
+privs=0;
 
 CONFIG_ROOT[id->variables->_module][id->variables->_varname]=z[id->variables->_module][id->variables->_varname];
 id->variables[id->variables->_varname]=CONFIG_ROOT[id->variables->_module][id->variables->_varname];
@@ -180,9 +180,11 @@ CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->v
 
   if(id->variables->_action=="Save" && !saved) {
 
-  Config.write_section(id->misc->ivend->this_object->query("configdir")+
+  object privs=Privs("iVend: Writing Config File ");
+Config.write_section(id->misc->ivend->this_object->query("configdir")+
   CONFIG->config, id->variables->_module,
 	CONFIG_ROOT[id->variables->_module]);
+privs=0;
   saved=1;
 
   }

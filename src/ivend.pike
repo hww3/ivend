@@ -377,13 +377,30 @@ void stop(){
 foreach(indices(config), string c)
   stop_store(c);
 
+paths=([]);// path registry
+admin_handlers=([]);
+library=([]);
+actions=([]);// action storage
+db=([]);// db cache
+keys=([]);// db keys cache
+modules=([]); // module cache
+config=([]);
+global=([]);
+numsessions=([]);
+numrequests=([]); 
+
 }
 
 int write_config_section(string store, string section, mapping attributes){
-
- return Config.write_section(query("configdir") + store, section,
+ mixed rv;
+ object privs=Privs("iVend: Writing Config File " + store);
+ rv=Config.write_section(query("configdir") + store, section,
 	attributes);
-
+#if efun(chmod)
+  chmod(query("configdir") + store, 0640);
+#endif
+ privs=0;
+ return rv;
 }
 
 void start(){
@@ -396,8 +413,10 @@ void start(){
 
    if(file_stat(query("datadir")+"ivend.cfd")==0) 
       return; 
-   else  read_conf();   // Read the config data.
-    
+   else {
+     perror("reading conf in start()\n");
+     read_conf();   // Read the config data.
+     }
    foreach(indices(config), string c) {
       start_store(c);
    }
@@ -2206,7 +2225,7 @@ mixed return_data(mixed retval, object id){
             }
 
             int read_conf(){          // Read the config data.
-
+object privs;
                string current_config="";
 
                c=iVend.config();
@@ -2214,10 +2233,11 @@ mixed return_data(mixed retval, object id){
             if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")));
             if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")));
                string config_file;
-
+privs=Privs("iVend: Reading Config File " +
+			config_file);
                config_file=Stdio.read_file(query("configdir") + "global");
                global=Config.read(config_file);
-
+privs=0;
             if(!global->configurations)
                   return 0;
 
@@ -2228,6 +2248,9 @@ mixed return_data(mixed retval, object id){
             if(!global->general)
                   global["general"]=([]);
                global->general->root=query("root");
+
+		privs=Privs("iVend: Reading Config Files");
+
                foreach(configfiles, string confname) {
                   // perror(confname + "\n");
                   config_file= Stdio.read_file(query("configdir") + confname);
@@ -2237,6 +2260,7 @@ mixed return_data(mixed retval, object id){
                      config[confname]=c;
                   config[confname]["global"]=global;
                }
+		privs=0;
                return 0;
             }
 
@@ -2275,7 +2299,7 @@ perror(filen + "\n");
             int need_to_save=0;
             if(functionp(modules[c][m->module_name]->query_preferences)){
               array pr=modules[c][m->module_name]->query_preferences(config[c]);
-	perror("got " + sizeof(pr) + " prefs...\n");
+//	perror("got " + sizeof(pr) + " prefs...\n");
               foreach(pr, array pref){
 		if(!config[c]) config[c]=([]);
 		if(!config[c][m->module_name])
@@ -2286,14 +2310,15 @@ perror(filen + "\n");
                   need_to_save=1;
 		  }
                 }
-              if(need_to_save)
-    
-			perror("moving backup...\n");
-                  mv(query("configdir")+ config[c]->general->config
-,query("configdir")+config[c]->general->config+"~");
- 		Config.write_section(query("configdir")+
+              if(need_to_save) {
+		object privs=Privs("iVend: Writing Config File " +
+			config[c]->general->config);
+     		Config.write_section(query("configdir")+
   			config[c]->general->config, m->module_name,
         		config[c][m->module_name]);
+		
+		privs=0;
+                 }
               }
 
             if(functionp(modules[c][m->module_name]->register_admin))
@@ -2375,23 +2400,29 @@ perror(filen + "\n");
                   active=({global->configurations->active});
             else active=global->configurations->active;
 
+	object privs=Privs("iVend: Writing Config Files");
+
                foreach(({"global"}) + active, string confname){
 			perror("moving backup...\n");
                   mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
                if(confname=="global")
                     Stdio.write_file(query("configdir")+"global",
 			Config.write(global));
-               else 
+		else
                     Stdio.write_file(query("configdir")+confname,
 			Config.write(config[confname]));
-               }
-               
+#if efun(chmod)
+  chmod(query("configdir") + confname, 0640);
+#endif
 
-
+		}
+		privs=0;
                save_status=1;// We've saved.
+
 		stop();
                start();// Reload all of the modules and crap.
-               return http_redirect(id->referer, id);
+               return http_redirect(query("mountpoint") + "config/", id);
+               
 
             }
 
@@ -2405,7 +2436,7 @@ perror(filen + "\n");
                                             "Silly user, you need to login!");
 
             if(!c) read_conf();
-
+// perror(sprintf("%O\n" , global));
                string retval="";
 
             if(catch(request[0])) return
@@ -2470,7 +2501,7 @@ perror(filen + "\n");
                            string v;
                            foreach((vars),v){
 
-                           if(!global) global=(["general":([])]);
+                           if(!global) global=([]);
                               global["general"]+=([v : id->variables[v]]);
                            }
 
@@ -2505,7 +2536,7 @@ perror(filen + "\n");
                           "<TABLE>" +
 
                           (g->genform(
-                             global || 0,
+                             global->general || 0,
                              query("lang"), 
                              query("root")+"src/modules")
                            ||"Error Loading Configuration Definitions!")+

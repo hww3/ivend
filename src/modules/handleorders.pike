@@ -506,12 +506,13 @@ array query_preferences(void|object id) {
 	fields
 	}) ,
 
-	({"manifestfield2s", "Manifest Fields", 
-	"Fields to be included in the order manifest listing.",
-	VARIABLE_UNAVAILABLE,
-	"name",
-	fields
-	}) 
+	({"showlines", "Number of orders to show", 
+	"Number of orders to show per page.",
+	VARIABLE_INTEGER,
+	12,
+	0
+	})
+
 
 	});
 

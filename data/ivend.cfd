@@ -27,14 +27,6 @@ $type=string
 $endescription=Hostname of SQL Database Server.
 $sidescription=Hostname of SQL Database Server (slovenian).
 
-$varname=currency_module
-$enname=Currency Module
-$siname=Currency Module
-$type=module
-$module_type=currency
-$endescription=Name of Currency Module to use. Normally the default module is the proper one to use.
-$sidescription=Name of Currency Module to use (slovenian).
-
 $varname=dbpassword
 $enname=DB Password
 $siname=DB Password
@@ -77,12 +69,3 @@ $siname=RSA Public Key
 $type=string
 $endescription=Pathname of RSA Public Key
 $sidescription=Pathname of RSA Public Key
-
-$varname=shipping_taxable
-$enname=Shipping Taxable?
-$siname=Shipping Taxable?
-$type=multiple
-$options=Yes|No
-$endescription=Should shipping charges be included in taxable goods?
-$sidescription=Should shipping charges be included in taxable goods?
-

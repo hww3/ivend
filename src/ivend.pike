@@ -1684,7 +1684,7 @@ mixed return_data(mixed retval, object id){
 // werror("return_Data\n");
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
-if(objectp(DB));
+if(objectp(DB) && STORE)
   db[STORE]->handle(DB);
 
   if(mappingp(retval))
@@ -1768,8 +1768,9 @@ if(err) {
 modules[c]+=([  m->module_type : m  ]);
 if(functionp(modules[c][m->module_type]->start))
   modules[c][m->module_type]->start(config[c]->general);
+mapping p;
 if(functionp(modules[c][m->module_type]->register_paths))
-  mapping p = modules[c][m->module_type]->register_paths();
+  p = modules[c][m->module_type]->register_paths();
 if(p)
   foreach(indices(p), string np)
   register_path_handler(c, np, p[np]);

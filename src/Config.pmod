@@ -10,8 +10,11 @@
 mapping read(string contents){
   mapping config=([]);
   string section,attribute,value;
-  array c=contents/"\n";
-  foreach(c, string line) {
+  array c;
+  if(contents)
+   c=contents/"\n";
+  else return ([]); 
+ foreach(c, string line) {
     if((line-" ")[0..0]=="[") { // We've got a section header
       sscanf(line,"%*s[%s]%*s",section);
       if(!config[section])

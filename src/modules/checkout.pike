@@ -577,8 +577,8 @@ string tag_checkouterror(string tag_name, mapping args,
   if(id->misc->ivend->error_happened &&
 sizeof(id->misc->ivend->error_happened)>0)
     return ("<checkout_error>"+(id->misc->ivend->error_happened *"\n")
-+"</checkout_error>");
-else return "";
++"</checkout_error><false>");
+else return "<true>";
 }
 string tag_cardcheck(string tag_name, mapping args,
 		     object id, mapping defines) {

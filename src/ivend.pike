@@ -14,6 +14,12 @@ inherit "roxenlib";
 inherit "module";
 inherit "wizard";
 
+#define MODULES id->misc->ivend->modules
+#define STORE id->misc->ivend->st
+#define CONFIG id->misc->ivend->config
+#define DB id->misc->ivend->db
+#define KEYS id->misc->ivend->keys
+
 #if __VERSION__ >= 0.6
 import ".";
 #endif
@@ -42,7 +48,7 @@ mapping db=([]);		// db cache
 mapping keys=([]);		// db keys cache
 int num;
 
-mapping(string:object) modules=([]);                    // module cache
+mapping(string:mapping) modules=([]); // module cache
 mapping config=([]);
 mapping global=([]);
 
@@ -154,7 +160,6 @@ if(catch(perror(query("datadir")))) return;
   foreach(indices(config), string c)
     get_dbkeys(config[c]);
 
-  perror(sprintf("%O", keys));
 
   call_out(background_session_cleaner, 900);
 
@@ -209,11 +214,11 @@ else if (args->add)
   +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page;
 else if(args->cart)
   arguments["href"]=query("mountpoint")+
-    (id->misc->ivend->moveup?"":id->misc->ivend->st+ "/")
+    (id->misc->ivend->moveup?"": STORE+ "/")
     +"cart?SESSIONID=" +id->misc->ivend->SESSIONID;
 else if(args->checkout)
   arguments["href"]=query("mountpoint")+
-    (id->misc->ivend->moveup?"":id->misc->ivend->st + "/")
+    (id->misc->ivend->moveup?"": STORE + "/")
     +"checkout/?SESSIONID=" +id->misc->ivend->SESSIONID;
 else if(args->href){
   int loc;
@@ -259,10 +264,8 @@ void|string container_form(string name, mapping args,
 mixed container_icart(string name, mapping args,
                       string contents, object id)
 {
-string st;
 string retval="";
 
-st=id->misc->ivend->st;
 
 string extrafields="";
 array ef=({});
@@ -285,12 +288,12 @@ if(id->variables->update) {
     for(int i=0; i< (int)id->variables->s; i++){
 
     if((int)id->variables["q"+(string)i]==0)
-	id->misc->ivend->db->query("DELETE FROM sessions WHERE SESSIONID='"
+	DB->query("DELETE FROM sessions WHERE SESSIONID='"
 	+id->misc->ivend->SESSIONID+
 	  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
 	  id->variables["s"+(string)i] );
     else
-   id->misc->ivend->db->query("UPDATE sessions SET "
+     DB->query("UPDATE sessions SET "
       "quantity="+(int)(id->variables["q"+(string)i])+
 	  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
@@ -305,14 +308,14 @@ if(id->variables->update) {
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
 
 //    if(!args->fields) return "Incomplete cart configuration!";
-    array r= id->misc->ivend->db->query(
-      "SELECT sessions." + keys[id->misc->ivend->st]->products +
+    array r= DB->query(
+      "SELECT sessions." + KEYS[STORE]->products +
 	",series,quantity,sessions.price "+ 
 	extrafields+" FROM sessions,products "
       	"WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions."+
-	keys[id->misc->ivend->st]->products+"=products." +
-	keys[id->misc->ivend->st]->products);
+	KEYS[STORE]->products+"=products." +
+	KEYS[STORE]->products);
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
 //	error(YOUR_CART_IS_EMPTY, id);
@@ -332,8 +335,8 @@ if(id->variables->update) {
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
 	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][
-	keys[id->misc->ivend->st]->products]+">&nbsp; \n"
-        +r[i][ keys[id->misc->ivend->st]->products]+" &nbsp;</TD>\n";
+	KEYS[STORE]->products]+">&nbsp; \n"
+        +r[i][ KEYS[STORE]->products]+" &nbsp;</TD>\n";
 
 	foreach(en, field){
 //		perror(field +"\n");
@@ -354,7 +357,8 @@ if(id->variables->update) {
 if(!id->misc->ivend->checkout){
 	retval+="<td> <form action=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
-        ?"":st+"/")+"checkout/?SESSIONID=" + id->misc->ivend->SESSIONID
+        ?"": STORE+"/")+"checkout/?SESSIONID=" +
+	id->misc->ivend->SESSIONID
 	+ "\">";
   retval+="<input name=update type=submit value=\" Check Out \"></form></td>";
 }
@@ -366,7 +370,7 @@ return retval;
 string tag_additem(string tag_name, mapping args,
                     object id, mapping defines) {
 if(!args->item) return "<!-- you must specify an item " +
-	keys[id->misc->ivend->st]->products +". -->\n";
+	KEYS[STORE]->products +". -->\n";
 string retval="<form action=" + id->not_query + ">";
 retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity ||
 "1") + " name=quantity> ";
@@ -429,7 +433,7 @@ contents=parse_html(contents,([]),
   if(args->order)
     query+=" ORDER BY " + args->order;
 
-  array r=id->misc->ivend->db->query(query);
+  array r=DB->query(query);
 
   if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
 
@@ -457,9 +461,9 @@ string tag_generateviews(string tag_name, mapping args,
 {
 
   string retval="";
-  array r = id->misc->ivend->db->query("SELECT " + args->field + " FROM "
+  array r = DB->query("SELECT " + args->field + " FROM "
 	+ args->type + ", product_groups WHERE product_groups.product_id="
-	+ args->type + "." +  keys[id->misc->ivend->st][args->type] +
+	+ args->type + "." +  KEYS[STORE][args->type] +
 	" AND product_groups.group_id= '" + id->misc->ivend->page + "' " 
 	" GROUP BY " + args->field);
 
@@ -486,7 +490,6 @@ string retval="";
 string query;
 
 if(!id->misc->ivend->page) return "no page!";
-string st=id->misc->ivend->st;
 string extrafields="";
 array ef=({});
 array en=({});
@@ -504,7 +507,7 @@ array en=({});
 
 array r;
 if(args->type=="groups") {
-  query="SELECT " + keys[id->misc->ivend->st]->groups + " AS pid " +
+  query="SELECT " + KEYS[STORE]->groups + " AS pid " +
 	extrafields+ " FROM groups";
   if(!args->show)
     query+=" WHERE status='A' ";
@@ -520,7 +523,7 @@ else {
   if(args->limit)
     query+=" AND " + args->limit;
  
-  query+=" AND products." +  keys[id->misc->ivend->st]->products +
+  query+=" AND products." + KEYS[STORE]->products +
 	"=product_id";
 
 }
@@ -528,7 +531,7 @@ else {
 if(args->order)
   query+=" ORDER BY " + args->order;
 
-  r=id->misc->ivend->db->query(query);
+  r=DB->query(query);
 
 if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
 
@@ -577,22 +580,22 @@ string tag_ivmg(string tag_name, mapping args,
                     object id, mapping defines)
 
 {
-string st=id->misc->ivend->st;
+
 string filename="";
 array r;
 if(args->field!=""){
-  r=id->misc->ivend->db->query("SELECT "+args->field+ " FROM "+ 
+  r=DB->query("SELECT "+args->field+ " FROM "+ 
     id->misc->ivend->type+"s WHERE "
-	" " +  keys[id->misc->ivend->st][id->misc->ivend->type+"s"]  +"='" 
+	" " +  KEYS[STORE][id->misc->ivend->type+"s"]  +"='" 
 	+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else if ((r[0][args->field]==0))
     return "<!-- No image for this record. -->\n";
-  else filename=config[id->misc->ivend->st]->root+"/images/"+
+  else filename=CONFIG->root+"/images/"+
     id->misc->ivend->type+"s/"+r[0][args->field];
   }  
 else if(args->src!="") 
-  filename=config[id->misc->ivend->st]->root+"/images/"+args->src;
+  filename=CONFIG->root+"/images/"+args->src;
 
 array|int size=size_of_image(filename);
 
@@ -604,13 +607,13 @@ if(size==-1)
 else if(size==0)	
 	return ("<IMG SRC=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
-	?"":st+"/")+"images/"
+	?"": STORE+"/")+"images/"
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\">");
 // it's a gif file
 else return ("<IMG SRC=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
 	?""
-	:st+"/")+"images/"
+	: STORE+"/")+"images/"
 
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\""
 	" HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
@@ -662,15 +665,15 @@ string item=(args->item || id->misc->ivend->page);
   string q="SELECT *" + (args->extrafields?"," +
         args->extrafields:"") +" FROM " +
 	type + "s WHERE " +
-        keys[id->misc->ivend->st][type + "s"] 
+        KEYS[STORE][type + "s"] 
 	+"='"+ item +"'";
 
-array r=  id->misc->ivend->db->query(q);
+array r=  DB->query(q);
 
   if(sizeof(r)==0)
     return 0;
 
-array desc=id->misc->ivend->db->list_fields(type +"s");
+array desc=DB->list_fields(type +"s");
 
 for(int i=0; i<sizeof(desc); i++){
 
@@ -691,13 +694,13 @@ perror(sprintf("%O",r));
 string get_type(string page, object id){
 
 array r;
-r=id->misc->ivend->db->query("SELECT * FROM groups WHERE " +
-        keys[id->misc->ivend->st]->groups +
+r=DB->query("SELECT * FROM groups WHERE " +
+        KEYS[STORE]->groups +
         "='"+page+"'");
 if (sizeof(r)==1) return "group";
 
-r=id->misc->ivend->db->query("SELECT * FROM products WHERE " +
-keys[id->misc->ivend->st]->products + "='" + page + "'");
+r=DB->query("SELECT * FROM products WHERE " +
+KEYS[STORE]->products + "='" + page + "'");
 
 if(sizeof(r)==1) return "product";
 else return "";
@@ -705,8 +708,9 @@ else return "";
 }
 
 mixed find_page(string page, object id){
+
 #ifdef MODULE_DEBUG
-// perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
+// perror("iVend: finding page "+ page+" in "+ ST +"\n");
 #endif
 
 string retval;
@@ -743,13 +747,13 @@ mixed additem(string item, object id){
     return 0;
     }
   
-  float price=id->misc->ivend->db->query("SELECT price FROM products WHERE " 
-	+ keys[id->misc->ivend->st]->products +  "='" + item + "'")[0]->price;
+  float price=DB->query("SELECT price FROM products WHERE " 
+	+ KEYS[STORE]->products +  "='" + item + "'")[0]->price;
 
   price=convert((float)price,id);
 
 
-int max=sizeof(id->misc->ivend->db->query("select id FROM sessions WHERE SESSIONID='"+
+int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
   id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
 string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
 
@@ -757,7 +761,7 @@ string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
 || 1)+","+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
 
-if(catch(id->misc->ivend->db->query(query) ))
+if(catch(DB->query(query) ))
 	id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n"); 
 else 
   id->misc["ivendstatus"]+=((id->variables->quantity || "1")+" " + ITEM
@@ -767,7 +771,7 @@ return 0;
 
 mixed handle_page(string page, object id){
 #ifdef MODULE_DEBUG
-// perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
+// perror("iVend: handling page "+ page+ " in "+ STORE +"\n");
 #endif
 
 
@@ -829,12 +833,8 @@ mapping ivend_image(array(string) request, object id){
 mixed handle_checkout(object id){
 mixed retval;
 
-werror("getting ready to handled_checkout from module...\n");
 
-retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
-
-werror("handled_checkout from module...\n");
-
+retval=MODULES->checkout->handle(id);
 
 if(retval==-1) 
   return handle_page("index.html",id);
@@ -872,7 +872,7 @@ int admin_auth(object id)
 
 {
   array(string) auth=id->realauth/":";
-  if(catch(id->misc->ivend->db=iVend.db(
+  if(catch(DB=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
     auth[0],
@@ -907,7 +907,7 @@ return sizeof(r);
 
 int clean_sessions(object id){
 
-int numsessions=do_clean_sessions(id->misc->ivend->db);
+int numsessions=do_clean_sessions(DB);
 return numsessions;
 
 }
@@ -958,9 +958,7 @@ retval+="<title>iVend Store Orders</title>"
   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
 
 
- mixed d=id->misc->ivend->modules[
-	id->misc->ivend->config->order_module]->show_orders(id, 
-   id->misc->ivend->db);
+ mixed d=MODULES->order->show_orders(id, DB);
  if(stringp(d))
  retval+=d;
 
@@ -991,9 +989,7 @@ retval+="<title>iVend Shipping Administration</title>"
   "href=shipping>Shipping</a><p>\n";
 
 
- mixed d=id->misc->ivend->modules[
-	id->misc->ivend->config->shipping_module
-	]->shipping_admin(id);
+ mixed d=MODULES->shipping->shipping_admin(id);
  if(stringp(d))
  retval+=d;
 
@@ -1006,14 +1002,14 @@ mixed getmodify(string type, string pid, object id){
 
 string retval="";
 multiset gid=(<>);
-array record=id->misc->ivend->db->query("SELECT * FROM " + type + "s WHERE "
-+  keys[id->misc->ivend->st][type +"s"]  + "='" + pid +"'");
+array record=DB->query("SELECT * FROM " + type + "s WHERE "
++  KEYS[STORE][type +"s"]  + "='" + pid +"'");
 if (sizeof(record)!=1)
   return "Error Finding " + capitalize(type) + " " +
-	keys[id->misc->ivend->st][type +"s"] + " " + pid + ".<p>";
+	KEYS[STORE][type +"s"] + " " + pid + ".<p>";
 
 if(type=="product") {
-  array groups=id->misc->ivend->db->query("SELECT group_id from "
+  array groups=DB->query("SELECT group_id from "
     "product_groups where product_id='"+ pid + "'");
   if(sizeof(groups)>0)
     foreach(groups, mapping g)
@@ -1025,11 +1021,11 @@ if(type=="product") {
 +"</b><br>\n";
 
 if(id->variables->type=="product")
-  retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups",
+  retval+="<table>\n"+DB->gentable("products","./admin","groups",
         "product_groups", id, record[0])+"</table>\n";
   else if(id->variables->type=="group")
 
-retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id,
+retval+="<table>\n"+DB->gentable("groups","./admin",0,0,id,
 record[0])+"</table>\n";
  
 return retval;
@@ -1059,7 +1055,7 @@ retval+="<title>iVend Store Administration</title>"
 switch(id->variables->mode){
 
   case "doadd":
-  mixed j=id->misc->ivend->db->addentry(id,id->referrer);
+  mixed j=DB->addentry(id,id->referrer);
   retval+="<br>";
   if(stringp(j))
     return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
@@ -1070,7 +1066,7 @@ switch(id->variables->mode){
   break;
 
   case "domodify":
-  mixed j=id->misc->ivend->db->modifyentry(id,id->referrer);
+  mixed j=DB->modifyentry(id,id->referrer);
   retval+="<br>";
   if(stringp(j))
     return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
@@ -1084,10 +1080,10 @@ switch(id->variables->mode){
   retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
 
   if(id->variables->type=="product")
-    retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups", 
+    retval+="<table>\n"+ DB->gentable("products","./admin","groups", 
 	"product_groups", id)+"</table>\n";
   else if(id->variables->type=="group")
-    retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id)+"</table>\n";
+    retval+="<table>\n"+ DB->gentable("groups","./admin",0,0,id)+"</table>\n";
   break;
 
   case "dodelete":
@@ -1095,13 +1091,13 @@ switch(id->variables->mode){
   if(id->variables->confirm){
     if(id->variables->id==0 || id->variables->id=="") 
       retval+="You must select an ID to act upon!<br>";
-    else retval+=id->misc->ivend->db->dodelete(id->variables->type,
-id->variables[ keys[id->misc->ivend->st][id->variables->type +"s"]],
-id->misc->ivend->keys[id->variables->type +"s"]); }
+    else retval+=DB->dodelete(id->variables->type,
+id->variables[ keys[STORE][id->variables->type +"s"]],
+KEYS[id->variables->type +"s"]); }
   else {
     if(id->variables->match) {
-    mixed n=id->misc->ivend->db->showmatches(id->variables->type,
-      id->variables->id, id->misc->ivend->keys[id->variables->type+"s"]);
+    mixed n=DB->showmatches(id->variables->type,
+      id->variables->id, KEYS[id->variables->type+"s"]);
     if(n)
       retval+="<form action=./admin>\n"
         + n +
@@ -1110,21 +1106,21 @@ id->misc->ivend->keys[id->variables->type +"s"]); }
     else retval+="No " + capitalize(id->variables->type +"s") + " found.";
     }
     else {
-      mixed n=id->misc->ivend->db->showdepends(id->variables->type,
-        id->variables[  keys[id->misc->ivend->st][id->variables->type+"s"]
-], keys[id->misc->ivend->st][id->variables->type+"s"],
-(id->variables->type=="group"?keys[id->misc->ivend->st]->products:0));
+      mixed n= DB->showdepends(id->variables->type,
+        id->variables[KEYS[STORE]][id->variables->type+"s"]
+], KEYS[STORE][id->variables->type+"s"],
+(id->variables->type=="group"?KEYS[STORE]->products:0));
       if(n){ 
         retval+="<form action=./admin>\n"
           "<input type=hidden name=mode value=dodelete>\n"
           "<input type=hidden name=type value="+id->variables->type+">\n"
           "<input type=hidden name=id value="+id->variables[
-		keys[id->misc->ivend->st][id->variables->type+"s"] ]+">\n"
+		KEYS[STORE][id->variables->type+"s"] ]+">\n"
           "Are you sure you want to delete the following?<p>";
           retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
         }
       else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-        +id->variables[ keys[id->misc->ivend->st][ 
+        +id->variables[ KEYS[STORE][ 
 	id->variables->type+"s"]]+".<p>";
       }
 
@@ -1134,12 +1130,12 @@ id->misc->ivend->keys[id->variables->type +"s"]); }
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
       +capitalize(id->variables->type) + " "+
-	keys[id->misc->ivend->st][id->variables->type +"s"] + " to Delete:\n"
+	KEYS[STORE][id->variables->type +"s"] + " to Delete:\n"
       "<input type=text size=10 name=\"" +
-	keys[id->misc->ivend->st][id->variables->type+"s"] + "\">\n"
+	KEYS[STORE][id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value=" + id->variables->type + ">\n"
       "<br><font size=2>If using FindMatches, you may type any part of an "
-	+ keys[id->misc->ivend->st][id->variables->type+"s"] +
+	+ KEYS[STORE][id->variables->type+"s"] +
       " or Name to search for.<br></font>"
       "<input type=submit name=match value=FindMatches> &nbsp; \n"
       "<input type=submit value=Delete>\n</form>";
@@ -1154,8 +1150,7 @@ id->misc->ivend->keys[id->variables->type +"s"]); }
   case "getmodify":
 
   retval+=getmodify(id->variables->type,
-	id->variables[keys[ 
-	id->misc->ivend->st][id->variables->type+"s"]], id);
+	id->variables[KEYS[STORE]][id->variables->type+"s"]], id);
 
   break;
 
@@ -1167,9 +1162,9 @@ id->misc->ivend->keys[id->variables->type +"s"]); }
       "<input type=hidden name=type value="+ id->variables->type + ">\n"
       "<table><tr><td><input type=submit value=Show></td><td>\n";
       retval+="<td><b>Show fields:</b> ";
-    array f=id->misc->ivend->db->list_fields(id->variables->type+"s");
+    array f=DB->list_fields(id->variables->type+"s");
 array k;
-catch(k=id->misc->ivend->db->query("SHOW INDEX FROM " + 
+catch(k=DB->query("SHOW INDEX FROM " + 
 	id->variables->type + "s"));
 
     string primary_key;
@@ -1205,7 +1200,7 @@ catch(k=id->misc->ivend->db->query("SHOW INDEX FROM " +
 
       query=query[0..(sizeof(query)-3)] + " FROM " + id->variables->type
 	  + "s";
-      array r=id->misc->ivend->db->query(query);
+      array r=DB->query(query);
       if(sizeof(r)>0) {
         retval+="<table>\n<tr><td></td>\n";
         foreach(fields, string f)
@@ -1236,9 +1231,9 @@ catch(k=id->misc->ivend->db->query("SHOW INDEX FROM " +
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=getmodify>\n"
       + capitalize(id->variables->type) + " "+
-keys[id->misc->ivend->st][id->variables->type+"s"] + " to Modify: \n"
+	KEYS[STORE][id->variables->type+"s"] + " to Modify: \n"
       "<input type=text size=10 name=\"" +
-	keys[id->misc->ivend->st][id->variables->type+"s"] + "\">\n"
+	KEYS[STORE][id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=submit value=Modify>\n</form>";
   break;
@@ -1286,7 +1281,6 @@ return retval;
 mixed find_file(string file_name, object id){
 
   id->misc["ivend"]=([]);
-  id->misc->ivend->modules=modules;
   id->misc["ivendstatus"]="";
   string retval;
   id->misc->ivend->error=({});
@@ -1313,7 +1307,7 @@ mixed find_file(string file_name, object id){
 
 
   if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") {
-    id->misc->ivend->st=indices(config)[0];
+    STORE=indices(config)[0];
     id->misc->ivend->moveup=1;
 }
   else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
@@ -1324,30 +1318,22 @@ mixed find_file(string file_name, object id){
     else  retval="you must enter through a store!\n";
     }
   else {
-    id->misc->ivend->st=request[0];
+    STORE=request[0];
     request=request[1..];
     }
 
   if(retval) return return_data(retval, id);
-
-/*
-if(config[id->misc->ivend->st]->error)
-    error(config[id->misc->ivend->st]->error, id);
-    return return_data("An error has prevented iVend from servicing your request.", id);
-*/	
-
-  else if(!config[id->misc->ivend->st]) {
-
+  else if(!config[STORE]) {
     return return_data("NO SUCH STORE!", id);
     }
-
   else if(catch(request[0])) {
     request+=({""});
 
     }
 // load id->misc->ivend with the good stuff...
-  id->misc->ivend->config=config[id->misc->ivend->st];	
-  id->misc->ivend->keys=keys[id->misc->ivend->st];
+  CONFIG=config[STORE];	
+  MODULES=modules[STORE];	
+  KEYS=keys[STORE];
 mixed err;
 
   switch(request[0]) {
@@ -1355,28 +1341,28 @@ mixed err;
     break;
     case "admin":
     retval=admin_handler(request*"/", id);
-     if(objectp(id->misc->ivend->db))
-    destruct(id->misc->ivend->db);
+     if(objectp(DB))
+    destruct(DB);
     return return_data(retval,id);
     break;
     case "orders":
     retval=order_handler(request*"/", id);
-     if(objectp(id->misc->ivend->db))
-    destruct(id->misc->ivend->db);
+     if(objectp(DB))
+    destruct(DB);
     return return_data(retval,id);
     break;
     case "shipping":
     retval=shipping_handler(request*"/", id);
-     if(objectp(id->misc->ivend->db))
-    destruct(id->misc->ivend->db);
+     if(objectp(DB))
+    destruct(DB);
     return return_data(retval,id);
     break;
     default:
     werror("requesting db object in find_file... " + request[0] + "\n");
-    if(!objectp(id->misc->ivend->db))
-      err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
-    if(err || config[id->misc->ivend->st]->error) { 
-       error(err || config[id->misc->ivend->st]->error, id);
+    if(!objectp(DB))
+      err=catch(DB=db[STORE]->handle());
+    if(err || config[STORE]->error) { 
+       error(err || config[STORE]->error, id);
        return return_data(retval, id);
        }
 
@@ -1385,8 +1371,8 @@ mixed err;
 
   switch(request[0]) {
     case "":
-      if(objectp(id->misc->ivend->db))
-	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+      if(objectp(DB))
+	db[STORE]->handle(DB);
       return http_redirect(simplify_path(id->not_query +
         "/index.html")+"?SESSIONID="+getsessionid(id), id);
     break;
@@ -1394,7 +1380,7 @@ mixed err;
     retval=(handle_page("index.html", id));
     break;
     case "cart":
-    retval=(handle_cart(id->misc->ivend->st,id));
+    retval=(handle_cart(STORE,id));
     break;
     case "checkout":
 werror("request: checkout\n");
@@ -1439,37 +1425,30 @@ if(args->extrafields)
 	"itemoutput":container_itemoutput
     ]);
 catch {
-if(id->misc->ivend->st){
-  if(functionp( modules[id->misc->ivend->config->checkout_module
-    ]->query_container_callers))
-    containers+=  modules[id->misc->ivend->config->checkout_module
-    ]->query_container_callers();
 
-  if(functionp( modules[id->misc->ivend->config->checkout_module
-    ]->query_tag_callers))
-    tags+=  modules[id->misc->ivend->config->checkout_module
-    ]->query_tag_callers();
+ if(STORE){
+  if(functionp(MODULES->checkout->query_container_callers))
+    containers+=MODULES->checkout->query_container_callers();
 
-  if(functionp( modules[id->misc->ivend->config->shipping_module
-    ]->query_container_callers))
-    containers+= modules[id->misc->ivend->config->shipping_module
-    ]->query_container_callers();
+  if(functionp(MODULES->checkout->query_tag_callers))
+    tags+=  MODULES->checkout->query_tag_callers();
 
-  if(functionp( modules[id->misc->ivend->config->shipping_module
-    ]->query_tag_callers))
-    tags+=modules[id->misc->ivend->config->shipping_module
-    ]->query_tag_callers();
+  if(functionp(MODULES->shipping->query_container_callers))
+    containers+= MODULES->shipping->query_container_callers();
+
+  if(functionp(MODULES->shipping->query_tag_callers))
+    tags+=MODULES->shipping->query_tag_callers();
   }
 };
-if(objectp(!id->misc->ivend->db))
-    err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
+if(!objectp(DB))
+    err=catch(DB=db[STORE]->handle());
 
  contents= "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
-  id->misc->ivend->modules=modules;
+  MODULES=modules[STORE];
 contents=parse_rxml(contents,id);
-if(objectp(id->misc->ivend->db))
-  db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+if(objectp(DB))
+  db[STORE]->handle(DB);
 return contents;
 
 }
@@ -1489,11 +1468,8 @@ mapping query_tag_callers()
 
 float convert(float value, object id){
 
-if(functionp(id->misc->ivend->modules[
-	id->misc->ivend->config->currency_module
-	]->currency_convert))
-	  value=id->misc->ivend->modules[id->misc->ivend->config->currency_module
-	  ]->currency_convert(value,id);
+if(functionp(MODULES->currency->currency_convert))
+	  value=MODULES->currency->currency_convert(value,id);
 
 else ;
 
@@ -1524,7 +1500,7 @@ array|int size_of_image(string filename){
 
 mixed stat_file( mixed f, mixed id )  {
 
-if(! id->misc->ivend->config) 
+if(!CONFIG) 
 	return ({ 33204,0,time(),time(),time(),0,0 });
 //  perror("iVend: statting "+id->misc->ivend->config->root+"/"+f+"\n");
 
@@ -1563,9 +1539,9 @@ void error(mixed error, object id){
 mixed handle_error(object id){
 string retval;
 
-if(id->misc->ivend->st && id->misc->ivend->config)
+if(STORE && CONFIG)
   retval=Stdio.read_file(
-    id->misc->ivend->config->root+"/error.html");
+    CONFIG->root+"/error.html");
 
 // perror("error: " + retval + "\n");
 
@@ -1584,7 +1560,7 @@ return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
 
 mixed get_image(string filename, object id){
 
-//perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
+//perror("** "+ CONFIG[STORE]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
 	id->misc->ivend->config->root+"/"+filename);
@@ -1616,8 +1592,8 @@ mixed return_data(mixed retval, object id){
 werror("return_Data\n");
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
-if(objectp(id->misc->ivend->db));
-  db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+if(objectp(DB));
+  db[STORE]->handle(DB);
 
   if(mappingp(retval))
 	return retval;
@@ -1715,15 +1691,17 @@ mixed load_ivmodule(string c, string name){
 mixed err;
 mixed m;
 
+modules[c]=([]);
+
     err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
     name)));
 if(err) {
 
   return (err);
   }
-modules+=([ name : m  ]);
-if(objectp(modules[name]) && functionp(modules[name]->start))
-  modules[name]->start(config[c]);
+modules[c]+=([  m->module_type : m  ]);
+if(functionp(modules[c][m->module_type]->start))
+  modules[c][m->module_type]->start(config[c]);
 return 0;
 
 }
@@ -1776,14 +1754,13 @@ return;
 
 void load_modules(string c){
 
-// perror("iVend: running load_modules() for " + c + "\n");
 
 mixed err;
 if(!c) return;
 if(!config[c]) return;
+
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
-//      perror("iVend: loading module " + config[c][n] + "\n");
       err=load_ivmodule(c, config[c][n]);
       if(err) {
         perror("iVend: The following error occured while loading the module "

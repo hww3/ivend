@@ -21,6 +21,7 @@ import ".";
 int read_conf();          // Read the config data.
 void load_modules(string c);
 void start_db(mapping c);
+void get_dbkeys(mapping c);
 void background_session_cleaner();
 float convert(float value, object id);
 array|int size_of_image(string filename);

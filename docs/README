@@ -122,7 +122,9 @@ instantly available in the store.
 IVML
 
 The following tags are additions or modifications of existing HTML and 
-RXML tags. They are only available within the iVend system.
+RXML tags. They are only available within the iVend system. Please note
+that checkout tags are discussed in a separate section, as they are
+independent of the main iVend engine.
 
 <ivml></ivml>  the grand daddy of the tags. surround all of your pages
 that are served by ivend with these tags, otherwise the following tags
@@ -157,3 +159,23 @@ group. The following attributes affect this tag:
   fields: a comma separated list of additional fields to include in the table.
 
 
+Notes about data security
+-------------------------
+
+As with any application of this nature, one must be extremely sensitive
+when designing and implimenting electronic commerce solutions. Improperly
+implimented designs and security can open holes through which data, such
+as account numbers or addresses might be compromised. 
+
+iVend was written with this in mind, and therefore will use, if available,
+the cryptography toolkit built into pike to secure sensitive data.
+Sensitive data is never stored in the clear in databases or transmitted in
+the clear over unsecure lines. 
+
+The encryption methods used by iVend include RSA public key encryption.
+This means that access to data encrypted with an entity's public key must
+be made through the corresponding private key. For this reason, it is
+*highly* recommended that the two keys be kept in separate directories,
+preferably on different systems. This way, if the system running iVend is
+compromised, it would not be possible to decrypt secured information
+because the required private key would not be present.

@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.27 1998-02-24 14:47:36 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.28 1998-02-25 03:38:36 hww3 Exp $";
 
 /*
  *
@@ -1102,7 +1102,8 @@ mixed find_file(string file_name, object id){
 
 
 if(file_name==""){
-	  if (config->global->create_index=="yes")
+	  if(!catch(config->global->create_index) 
+		&& config->global->create_index=="yes")
 	    retval=create_index(id);
 	  else 
 retval="You must enter through a store!\n";
@@ -1110,9 +1111,8 @@ retval="You must enter through a store!\n";
 }
 
 
-else
-
-{
+else {
+  
 	switch(request[0]){
 	
 		case "config":
@@ -1128,10 +1128,10 @@ else
 	
 	}
 	
-else {
+ 
 	if(!id->variables->SESSIONID) 
 	  id->misc->ivend->SESSIONID=
-        	(hash((string)time(1)+(string)random(32201)));	
+		"S"+(string)hash((string)time(1)+(string)random(32201));	
 	else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
 
 	m_delete(id->variables,"SESSIONID");
@@ -1181,8 +1181,8 @@ else {
 
 	    }
 	  }
-
-}
+	}
+	
 	//
 	// send it all out the door: 
 	//

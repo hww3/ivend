@@ -1,28 +1,78 @@
-# mysql Dump
+# MySQL dump 4.0
 #
-
-# Host: localhost    Database: ivtest
+# Host: bay.riverweb.com    Database: ivtest
 #--------------------------------------------------------
 
+#
+# Table structure for table 'customer_info'
+#
+CREATE TABLE customer_info (
+  orderid int(11) DEFAULT '0' NOT NULL,
+  First_Name char(32) DEFAULT '' NOT NULL,
+  Last_Name char(32) DEFAULT '' NOT NULL,
+  Company char(32),
+  Address_1 char(64) DEFAULT '' NOT NULL,
+  Address_2 char(64),
+  City char(64) DEFAULT '' NOT NULL,
+  State char(4) DEFAULT '' NOT NULL,
+  ZIP_Code char(10) DEFAULT '' NOT NULL,
+  Daytime_Phone char(32) DEFAULT '' NOT NULL,
+  Evening_Phone char(32),
+  FAX char(32),
+  EMail_Address char(64) DEFAULT '' NOT NULL,
+  updated timestamp(14) DEFAULT '',
+  type int(11) DEFAULT '0' NOT NULL
+);
 
 #
 # Table structure for table 'groups'
 #
 CREATE TABLE groups (
-  id varchar(12) NOT NULL,
-  name varchar(64) NOT NULL,
-  description blob,
+  id varchar(12) DEFAULT '' NOT NULL,
+  name varchar(64) DEFAULT '' NOT NULL,
+  description text,
   image varchar(12),
+  image2 varchar(24),
   PRIMARY KEY (id)
 );
 
+#
+# Table structure for table 'orderdata'
+#
+CREATE TABLE orderdata (
+  orderid int(11) DEFAULT '0' NOT NULL,
+  id varchar(12) DEFAULT '0' NOT NULL,
+  quantity int(11) DEFAULT '0' NOT NULL,
+  series int(11) DEFAULT '0' NOT NULL,
+  qualifier varchar(24),
+  status int(11) DEFAULT '0' NOT NULL
+);
 
 #
-# Dumping data for table 'groups'
+# Table structure for table 'orders'
 #
+CREATE TABLE orders (
+  id int(11) DEFAULT '0' NOT NULL auto_increment,
+  status int(11) DEFAULT '0' NOT NULL,
+  tracking_code varchar(16),
+  shipping_type int(11) DEFAULT '0' NOT NULL,
+  updated timestamp(14) DEFAULT '',
+  notes text,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  PRIMARY KEY (id)
+);
 
-INSERT INTO groups VALUES ('1000','Smoke Shifters','Standard devices for shifting smoke,',NULL);
-INSERT INTO groups VALUES ('2000','Round Tuits','Perfect for when you run out of things to do.',NULL);
+#
+# Table structure for table 'payment_info'
+#
+CREATE TABLE payment_info (
+  Payment_Method enum('MasterCard','VISA','AMEX') DEFAULT 'MasterCard' NOT NULL,
+  Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
+  Card_Number varchar(255) DEFAULT '' NOT NULL,
+  Expiration_Date varchar(10) DEFAULT '' NOT NULL,
+  orderid varchar(12) DEFAULT '' NOT NULL,
+  PRIMARY KEY (orderid)
+);
 
 #
 # Table structure for table 'product_groups'
@@ -32,21 +82,13 @@ CREATE TABLE product_groups (
   product_id char(12)
 );
 
-
-#
-# Dumping data for table 'product_groups'
-#
-
-INSERT INTO product_groups VALUES ('1000','2450E');
-INSERT INTO product_groups VALUES ('1000','2450C');
-
 #
 # Table structure for table 'products'
 #
 CREATE TABLE products (
-  id varchar(12) NOT NULL,
-  name varchar(64) NOT NULL,
-  description blob,
+  id varchar(12) DEFAULT '' NOT NULL,
+  name varchar(64) DEFAULT '' NOT NULL,
+  description text,
   onhand int(11),
   onhand_date datetime,
   units varchar(24),
@@ -59,27 +101,42 @@ CREATE TABLE products (
   PRIMARY KEY (id)
 );
 
-
-#
-# Dumping data for table 'products'
-#
-
-INSERT INTO products VALUES ('2450E','Smoke Shifter, RH','For the person who has everything... A right handed smoke shifter',4,'1997-11-04 11:23:04','Single Unit','Wigetco',4.50,5.23,10.00,NULL,'2450e');
-INSERT INTO products VALUES ('2450C','Smoke Shifter, LH','For the person who has everything... A left handed smoke shifter',2,'1997-11-04 11:20:43','Single Unit','Wigetco',4.25,5.14,10.00,NULL,'2450c');
-
 #
 # Table structure for table 'sessions'
 #
 CREATE TABLE sessions (
-  sessionid int(11) NOT NULL DEFAULT '0',
-  id varchar(12) NOT NULL DEFAULT '0',
-  quantity int(11) NOT NULL DEFAULT '0',
-  series int(11) NOT NULL DEFAULT '0',
-  qualifier varchar(24)
+  sessionid int(11) DEFAULT '0' NOT NULL,
+  id varchar(12) DEFAULT '0' NOT NULL,
+  quantity int(11) DEFAULT '0' NOT NULL,
+  series int(11) DEFAULT '0' NOT NULL,
+  qualifier varchar(24),
+  timeout bigint(21)
 );
 
+#
+# Table structure for table 'status'
+#
+CREATE TABLE status (
+  status int(11) DEFAULT '0' NOT NULL,
+  name char(24) DEFAULT '' NOT NULL,
+  PRIMARY KEY (status)
+);
 
 #
-# Dumping data for table 'sessions'
+# Table structure for table 'taxrates'
 #
+CREATE TABLE taxrates (
+  locality char(4) DEFAULT '' NOT NULL,
+  taxrate float(10,2) DEFAULT '0.00' NOT NULL,
+  PRIMARY KEY (locality)
+);
+
+#
+# Table structure for table 'test'
+#
+CREATE TABLE test (
+  t enum('One','Two','Three') DEFAULT 'One',
+  z int(11) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (z)
+);
 

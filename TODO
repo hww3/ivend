@@ -1,5 +1,10 @@
-Add support for multiple datasources per store.
+iVend todo list
+---------------
 
-"point and shoot" configuration of ordering process.
+Add support for multiple datasources per store. (2/15/98)
 
-Multiple language support [started]
+Multiple language support (2/15/98) [started]
+
+"point and shoot" configuration of ordering process. (2/20/98) [started]
+
+add hooks for image processing (2/23/98)

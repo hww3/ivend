@@ -29,7 +29,7 @@ werror("Crypto not present! Doing dummy encrypt!\n");
 #endif /* constant(_Crypto) && constant(Crypto.rsa) */
 
   s=MIME.encode_base64(s);     
-  return s;
+  return "iVEn" + s;
 
 
 
@@ -37,6 +37,9 @@ werror("Crypto not present! Doing dummy encrypt!\n");
 
 string|int decrypt(string s, string key){
 
+if(s[0..3]!="iVEn")
+  return(0);
+else s=s[4..];
   s=MIME.decode_base64(s);
 
 #if !constant(_Crypto) || !constant(Crypto.rsa)

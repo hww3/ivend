@@ -574,10 +574,13 @@ if(exclude)
 for(int i=0; i<sizeof(exclude); i++)
   exclude[i]=lower_case(exclude[i]);
 else exclude=({""});
+if(pulldown) {
 for(int i=0; i<sizeof(pulldown); i++)
-if(pulldown)
-  pulldown[i]=lower_case(pulldown[i]);
+  pulldown[i]=lower_case(pulldown[i]-" ");
+  perror("pulldown!\n");
+}
 else pulldown=({""});
+perror(sprintf("%O", pulldown)+"\n");
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 
 if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
@@ -587,6 +590,7 @@ if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
 if(search(exclude,lower_case(r[i]->name))!=-1) continue;
 
 if(search(pulldown,lower_case(r[i]->name))!=-1) {
+perror("doing the pulldown thing...\n");
     retval+="<tr>\n"
 	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
 	+replace(r[i]->name,"_"," ")+

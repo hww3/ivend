@@ -16,7 +16,9 @@ string create_panel(string name, string color, string contents){
 
 string|int genpayment(object id, object s){
 string retval="";
-
+string key="";
+if(id->misc->ivend->config->private_key)
+  key=Stdio.read_file(id->misc->ivend->config->private_key);
 array r=s->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -31,7 +33,11 @@ retval="<table width=100%>";
  foreach(f, mapping field){
      if(field->name=="updated" || field->name=="type" || field->name=="orderid") continue;
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
-     +"</font>\n</td>\n<td>";
+     +"</font>\n</td>\n<td>"+
+  (r[0][field->name][0..3]=="iVEn"?
+    (Commerce.Security.decrypt(r[0][field->name],key)+"*"):r[0][field->name])
+  	+"</td></tr>\n";
+ 
    }
 
 

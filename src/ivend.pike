@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.78 1998-07-06 19:41:57 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.79 1998-07-10 19:49:52 hww3 Exp $";
 
 array register_module(){
 
@@ -953,6 +953,54 @@ id->variables->id); }
 
   break;
 
+  case "show":
+  retval+="&gt <b>Show " + capitalize(id->variables->type)
+	+"</b><br>\n";
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=show>\n"
+      "<input type=hidden name=type value="+ id->variables->type + ">\n"
+      "<table><tr><td><input type=submit value=Show></td><td>\n";
+      retval+="<td><b>Show fields:</b> ";
+    array f=id->misc->ivend->db->list_fields(id->variables->type+"s");
+
+    foreach(f, mapping field)
+      retval+="<input type=checkbox name=\"show-" + field->name +
+	"\" value=\"yes\"" + ((id->variables["show-" +
+	field->name]=="yes")?" CHECKED ":"") + ">"
+	"&nbsp;" + field->name +" &nbsp; \n"; 
+
+    retval+="</td></tr></table></form>"; 
+
+    string query="SELECT ";
+    array fields=({});
+    foreach(f, mapping v)
+      if(id->variables["show-" + v->name])
+        fields+=({v->name});     
+      if(sizeof(fields) > 0) {
+        foreach(fields, string field)
+          query+=field + ", ";
+
+      query=query[0..(sizeof(query)-3)] + " FROM " + id->variables->type
+	  + "s";
+      array r=id->misc->ivend->db->query(query);
+      if(sizeof(r)>0) {
+        retval+="<table>\n<tr>\n";
+        foreach(fields, string f)
+          retval+="<td><b><font face=helvetica,arial>" + f + "</b></td>\n";
+        retval+="</tr>";
+        foreach(r, mapping row){
+          retval+="<tr>\n";
+          foreach(fields, string fld)
+            retval+="<td>" + row[fld] + "</td>\n";              
+            }  
+          retval+="</tr>\n";
+       retval+="</table>";   
+	}
+     else retval+="Sorry, No Records were found.";
+      }
+
+  break;
+
   case "modify":
   retval+="&gt <b>Modify " + capitalize(id->variables->type)
 	+"</b><br>\n";
@@ -967,10 +1015,11 @@ id->variables->id); }
   default:
   retval+= "<ul>\n"
     "<li><a href=\"orders\">Orders</a>\n"
-    "</ul>\n"
+   "</ul>\n"
     "<ul>\n"
     "<li>Groups\n"
     "<ul>"
+    "<li><a href=\"admin?mode=show&type=group\">Show Groups</a>\n"
     "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
     "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
     "(Beta Test)\n"
@@ -978,6 +1027,7 @@ id->variables->id); }
     "</ul>"
     "<li>Products\n"
     "<ul>"
+    "<li><a href=\"admin?mode=show&type=product\">Show Products</a>\n"
     "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
     "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
     "(Beta Test)\n"

@@ -1937,7 +1937,7 @@ string|void generic_container_handler(string name, mapping args,
 string|void container_ivml(string name, mapping args,
                            string contents, object id)
 {
-
+   if(args->_parsed) return;
    if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 
    if(args->extrafields)
@@ -1973,7 +1973,7 @@ string|void container_ivml(string name, mapping args,
              library[STORE]->container), string n)
    c[n]=generic_container_handler;
 
-   contents= (!args->quiet?"<html>":"")+parse_html(contents,
+   contents= (!args->quiet?"<html _parsed=\"1\">":"")+parse_html(contents,
                                  t + tags, 
                                  c + containers, id)
              +(!args->quiet?"</html>":"");
@@ -1988,7 +1988,7 @@ string|void container_ivml(string name, mapping args,
 
 mapping query_container_callers()
 {
-   return ([ "ivml": container_ivml ]); }
+   return ([ "ivml": container_ivml, "html": container_ivml ]); }
 
 mapping query_tag_callers()
 {

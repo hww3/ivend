@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.25 1998-02-21 04:32:50 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.26 1998-02-21 23:08:13 hww3 Exp $";
 
 /*
  *
@@ -1208,8 +1208,13 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
 	load_ivmodule(id);
 
-containers+= modules[id->misc->ivend->config->checkout_module]->query_container_callers();
-tags+= modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
+if(functionp(modules[id->misc->ivend->config->checkout_module]->query_container_callers))
+containers+= 
+  modules[id->misc->ivend->config->checkout_module]->query_container_callers();
+
+if(functionp(modules[id->misc->ivend->config->checkout_module]->query_tag_callers))
+tags+= 
+  modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
 
 
  return "<html>"+parse_html(contents,

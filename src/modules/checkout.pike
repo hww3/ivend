@@ -11,6 +11,9 @@ constant module_name="Default Checkout Module";
 constant module_type="checkout";
 
 
+mapping query_tag_callers2();
+mapping query_container_callers2();
+
 /*
 
   currency_convert
@@ -44,7 +47,7 @@ string query;		// the query
 float totaltax;		// totaltax
 string locality;	// fieldname of locality
 
-locality="state";
+locality=(args->locality||"state");
 
   object s=Sql.sql(
     id->misc->ivend->config->dbhost,
@@ -95,6 +98,83 @@ return ("0.00");
 
 }
 
+string tag_generateform(string tag_name, mapping args,
+		     object id, mapping defines) {
+ object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+string retval="";
+if(!args->table) return "";
+
+ retval+=s->generate_form_from_db(args->table,
+    ((args->exclude-"")/",")||({}),id)+
+        "<input type=hidden name=table value=\""+args->table+"\">";
+return retval;
+}
+
+string tag_addentry(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+ object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+mixed j;
+
+ if(args->encrypt){
+object encryptedid = id;
+
+  perror("reading "+id->misc->ivend->config->keybase+".pub");
+  string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
+
+array e=(args->encrypt-" ")/",";
+ for(int i=0; i<sizeof(e); i++){
+
+
+  encryptedid->variables[e[i]]=
+    Commerce.Security.encrypt(id->variables[e[i]],key);
+ }
+
+ j=s->addentry(encryptedid);
+
+ }
+
+else
+  j=s->addentry(id);
+    
+if(j!=1) id->misc->ivend->error+= "<font size=+2>Error!</font>\n"
+	   "<br><b>Please correct the following before continuing:<p></b><ul>"
+	+j+"</ul>";
+
+return "";
+
+
+}
+
+string tag_cardcheck(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+if(Commerce.CreditCard.cc_verify(
+    id->variables[args->cardnumber] ||
+    id->variables->Card_Number,
+    id->variables[args->cartype] ||
+    id->variables->Payment_Method)
+    || !Commerce.CreditCard.expdate_verify(id->variables[args->expdate]
+	      || id->variables->Expiration_Date))
+
+id->misc->ivend->error+=
+  "You have supplied improper credit card information!<p>"
+  "Please go back and correct this before continuing.";
+
+return "";
+}
 
 mixed checkout(object id){
 
@@ -112,108 +192,82 @@ int page;
 
  if(id->variables["_page"]=="5"){
 
-/*
-if(Commerce.CreditCard.cc_verify(id->variables->Card_Number,id->variables->Payment_Method)
-    || !Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
-
-return "You have supplied improper credit card information!<p>"
-	"Please go back and correct this before continuing.";
-
-else */
- {
-
-  perror("reading "+id->misc->ivend->config->keybase+".pub");
-  string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
-  id->variables->Card_Number=
-    Commerce.Security.encrypt(id->variables->Card_Number,key);
-}
-
   {
-  mixed j=s->addentry(id);
-    if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
-	   "<br><b>Please correct the following before continuing:<p></b><ul>"
-	+j+"</ul>";
 
-  retval+="<font size=+2>5. Confirm Order</font>\n"
-  	"<form action="+id->not_query+"><table>\n"
-	"<tr><th align=left>Quantity</th><th align=left>Product Name</th>"
-	"<th align=left>Unit Price</th><th align=left>Subtotal</th></tr>"
-	"<showorder convert>\n";	
-  
-
-
-  retval+="<tr></td></td><td></td><td></td><td align=right>"
+  retval+="\n<checkout>\n<addentry encrypt=\"Card_Number\">\n"
+    "<font size=+2>5. Confirm Order</font>\n"
+    "<table>\n"
+    "<tr><th align=left>Quantity</th><th align=left>Product Name</th>"
+    "<th align=left>Unit Price</th><th align=left>Subtotal</th></tr>"
+    "<showorder convert>\n"	
+    "<tr></td></td><td></td><td></td><td align=right>"
     "Subtotal:</td><td align=right><subtotal convert></td></tr>\n"
     "<tr></td></td><td></td><td></td><td align=right>"
     "Sales Tax:</td><td align=right><salestax convert></td></tr>\n"
     "<tr></td></td><td></td><td></td><td align=right>"
     "Grand Total:</td><td align=right><grandtotal convert>"
-	"</table>\n";
+	"</table></checkout>\n";
   }
 }
 else if(id->variables["_page"]=="4"){
    if((string)id->variables->shipsame=="1");
-   else { mixed j=s->addentry(id);
-   if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
-	   "<br><b>Please correct the following before continuing:<p></b><ul>"
-	+j+"</ul>";
+   else {
+     retval+="<addentry>\n";
 	}
   retval+="<font size=+2>4. Payment Information</font>\n"
-  	"<form action="+id->not_query+"><table>";
-  retval+=s->generate_form_from_db("payment_info",
-    ({"orderid","type"}),id);
+  	"<checkout><table><generateform table=payment_info exclude=\""
+    "orderid,type\">";
 
   retval+="</table>\n"
-        "<input type=hidden name=table value=payment_info>"
+
 	"<input type=submit value=\" >> \">"
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-	"<input type=hidden name=_page value=5></form>\n";
+	"</checkout>\n";
 
  }
 
 else if(id->variables["_page"]=="3"){
 
-  mixed j=s->addentry(id);
-   if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
-	   "<br><b>Please fix the following before continuing:<p></b><ul>"+
-	j+"</ul>";
-  retval+="<font size=+2>3. Shipping Address</font>\n"
-  	"<form action="+id->not_query+">";
-  retval+="Is this order to be shipped to the Billing address?\n"
-	"<select name=shipsame>"
-	"<option value=1>Yes\n<option value=0>No\n</select>"
-	"<p>If not, complete the following information:<br><table>\n";
-  retval+=s->generate_form_from_db("customer_info",
-    ({"orderid","type","updated", "fax","daytime_phone",
-	"evening_phone", "email_address"}),id);
-  retval+="</table>"
-        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
+
+  retval+=
+
+    "<checkout>"
+    "<addentry>"
+    "<font size=+2>3. Shipping Address</font>\n"
+    "Is this order to be shipped to the Billing address?\n"
+    "<select name=shipsame>"
+    "<option value=1>Yes\n<option value=0>No\n</select>"
+    "<p>If not, complete the following information:<br><table>\n"
+    "<generateform table=customer_info "
+    "exclude=\"orderid,type,updated,fax,daytime_phone,evening_phone,"
+    "email_address\"></table>"
+    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=1>"
-        "<input type=hidden name=table value=customer_info>"
-	"<input type=submit value=\"  >> \">"
-	"<input type=hidden name=_page value=4></form>\n";
+    	"<input type=submit value=\"  >> \">"
+	"</checkout>\n";
 
   }
 
 else if(id->variables["_page"]=="2"){
   retval+="<font size=+2>2. Billing Address</font>\n";
-  retval+="<form action="+id->not_query+"><table>\n";
-  retval+=s->generate_form_from_db("customer_info",
-({"orderid","type","updated"}),id);
-  retval+="</table>"
+  retval+="<checkout><table>\n";
+  retval+="<generateform table=customer_info exclude=\""
+    "orderid,type,updated\">"
+    "</table>"
+    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=0>"	
-        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-       "<input type=hidden name=table value=customer_info>" 
        "<input type=submit value=\" >> \">"
-	"<input type=hidden name=_page value=3></form>\n";
+	"</checkout>\n";
   }
 
-else {
-  retval+="<font size=+2>1. Confirm Cart</font>\n";
-  retval+="<icart fields=\"qualifier\"></icart>"
-	"<form action=checkout><input type=hidden name=_page value=2>"
-	"<input type=submit value=\" >> \"></form>";
-  }
+else
+
+  retval+="<title>Checkout</title>\n"
+    "<font size=+2>1. Confirm Cart</font>\n"
+    "<icart fields=\"qualifier\"></icart>"
+    "<checkout>"
+    "<input type=submit value=\" >> \"></checkout>";
+
 retval="<ivml>"+retval+"</ivml>";
 retval=parse_rxml(retval,id);
 
@@ -307,28 +361,65 @@ return retval;
 }
 
 
+string|void container_checkout(string name, mapping args,
+                      string contents, object id)
+{
+
+if(functionp(query_tag_callers2))
+ mapping tags=query_tag_callers2();
+if(functionp(query_container_callers2))
+  mapping containers=query_container_callers2();
+string h;
+
+if(id->variables["_page"])
+    id->misc->ivend->next_page= (int)id->variables["_page"]+1;
+
+contents="<form action=\"" + id->not_query + "\">\n<input type=hidden name=_page "
+  "value=" + (id->misc->ivend->next_page || "2") + ">\n"
+  +contents+ "</form>\n";
+
+contents=parse_html(contents,
+		  tags,
+		  containers,
+		  id);
+
+ if(id->misc->ivend->error) return  (id->misc->ivend->error[1..]);
+else return contents;
+}
 
 
 
-mapping query_tag_callers() {
+
+mapping query_tag_callers2() {
 
 return (["showorder" : tag_showorder,
 	"grandtotal" : tag_grandtotal,
-	"subtotal" : tag_subtotal,
-	  "salestax" : tag_salestax 
+  	  "subtotal" : tag_subtotal,
+	  "salestax" : tag_salestax, 
+	 "cardcheck" : tag_cardcheck,
+	  "addentry" : tag_addentry,
+	"generateform": tag_generateform
 	]);
+
+}
+
+mapping query_container_callers2(){
+
+  return ([]);
+
+}
+
+mapping query_tag_callers(){
+
+  return ([]);
 
 }
 
 mapping query_container_callers() {
 
-return ([]);
+return ([ "checkout" : container_checkout]);
 
 }
-
-
-
-
 
 
 

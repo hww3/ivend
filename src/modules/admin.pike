@@ -5,6 +5,12 @@ inherit "roxenlib";
 constant module_name = "Admin Handler Funx";
 constant module_type = "handler";
 
+void start(mapping config){
+
+  perror("starting admin handler...\n");
+  
+}
+
 string return_to_admin_menu(object id){
 
 return "<a href=\""  +     add_pre_state(id->not_query,
@@ -101,12 +107,15 @@ if(!id->variables->_varname) {
 	id->variables->_module + "</font>\"><font face=helvetica,arial>";
     foreach(p, array pref){
 
-      retval+="<a href=\"./?_module=" + id->variables->_module +
-		"&_varname=" + pref[0] + "\">" + pref[1] + "</a>: "
+      retval+=(pref[3]!=VARIABLE_UNAVAILABLE?"<a href=\"./?_module=" +
+id->variables->_module +
+		"&_varname=" + pref[0] + "\">" + pref[1] + "</a>:" :
+"<font color=gray>" + pref[0] +"</font>: ")
 	+ (CONFIG_ROOT[id->variables->_module]?
 (arrayp(CONFIG_ROOT[id->variables->_module][pref[0]])? 
 (CONFIG_ROOT[id->variables->_module][pref[0]]*", ")
-: CONFIG_ROOT[id->variables->_module][pref[0]]):"") + 
+:CONFIG_ROOT[id->variables->_module][pref[0]]):"")
++ 
 	"<br>";
 
     }
@@ -190,6 +199,9 @@ CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->v
     retval+=(pton[id->variables->_varname][2] ||"") + "<br>";
 
     switch(pton[id->variables->_varname][3]){
+      case VARIABLE_UNAVAILABLE:
+        retval+="This option is currently unavailable.";
+      break;
 
       case VARIABLE_INTEGER:
 	retval+="<input type=hidden name=\"_" +id->variables->_varname

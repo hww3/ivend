@@ -30,4 +30,4 @@ import ".";
 #define VARIABLE_FLOAT     2
 #define VARIABLE_STRING    3
 #define VARIABLE_MULTIPLE  4
-
+#define VARIABLE_UNAVAILABLE -1

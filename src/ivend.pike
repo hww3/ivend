@@ -2268,6 +2268,22 @@ perror(filen + "\n");
             if(p)
                   foreach(indices(p), string np)
                   register_path_handler(c, np, p[np]);
+            int need_to_save=0;
+            if(functionp(modules[c][m->module_name]->query_preferences)){
+              array pr=modules[c][m->module_name]->query_preferences(config[c]);
+	perror("got " + sizeof(pr) + " prefs...\n");
+              foreach(pr, array pref){
+                if(!config[c][m->module_name][pref[0]]){
+                  config[c][m->module_name][pref[0]]= pref[4];
+	perror("found a new pref, so we need to save...\n");
+                  need_to_save=1;
+		  }
+                }
+              if(need_to_save)
+     		Config.write_section(query("configdir")+
+  			config[c]->general->config, m->module_name,
+        		config[c][m->module_name]);
+              }
 
             if(functionp(modules[c][m->module_name]->register_admin))
                   p = modules[c][m->module_name]->register_admin();
@@ -2313,13 +2329,14 @@ perror(filen + "\n");
                mixed err;
             if(!c) return;
             if(!config[c]) return;
-            array mtl=({"shipping.pike", "admin.pike",
-			"checkout.pike", "addins.pike",
-			"handleorders.pike"});
+            array mtl=({});
             if(config[c]->addins)
               foreach(indices(config[c]->addins), string miq)
                  if(config[c]->addins[miq]=="load")
                    mtl+=({miq});
+	     mtl+=({"shipping.pike",
+			"checkout.pike", "addins.pike",
+			"handleorders.pike", "admin.pike"});
                foreach(mtl,string name) {
                   err=load_ivmodule(c,name);
                if(err) perror("iVend: The following error occured while loading the module "

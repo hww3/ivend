@@ -488,9 +488,9 @@ return ([
 
 }
 
-array query_preferences(object id) {
+array query_preferences(void|object id) {
 
-  if(sizeof(fields)<=0) {
+  if(!catch(DB) && sizeof(fields)<=0) {
 
      array f2=DB->list_fields("products");
      foreach(f2, mapping m)
@@ -501,6 +501,13 @@ array query_preferences(object id) {
 	({"manifestfields", "Manifest Fields", 
 	"Fields to be included in the order manifest listing.",
 	VARIABLE_MULTIPLE,
+	"name",
+	fields
+	}) ,
+
+	({"manifestfield2s", "Manifest Fields", 
+	"Fields to be included in the order manifest listing.",
+	VARIABLE_UNAVAILABLE,
 	"name",
 	fields
 	}) 

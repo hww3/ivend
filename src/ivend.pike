@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.277 2000-12-21 00:36:56 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.278 2000-12-22 00:35:10 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -666,7 +666,7 @@ void|string container_ia(string name, mapping args,
     mapping arguments=([]);
 
     arguments["_parsed"]="1";
-    if(args->parse) args->href=parse_rxml(args->href, id);
+    if(args->parse) args->href=parse_rxml(args->href, id, 0, id->misc->defines);
     if (args->external)
         arguments["href"]=args->href;
     else if (args->referer)
@@ -2560,7 +2560,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
 
              mixed find_file(string file_name, object id){
-// perror("request: " + file_name + "\n");
+perror("REQUEST find_file: " + file_name + "\n");
                  id->misc["ivend"]=([]);
                  id->misc["ivendstatus"]="";
                  mixed retval;
@@ -2636,7 +2636,7 @@ if(STORE)
                                            (id->misc->ivend->moveup?"": STORE+ "/");
 
 
-                 handle_sessionid(id);
+       //          handle_sessionid(id);
                  if(request*"/" && have_path_handler(STORE, request*"/"))
                      retval= handle_path(STORE, request*"/" , id);
 
@@ -2699,6 +2699,8 @@ if(STORE)
              string|void container_ivml(string name, mapping args,
                                         string contents, object id)
              {
+// perror("ivml!\n");
+
 		mixed err;
                  if(args->_parsed) return;
                  if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
@@ -2726,10 +2728,6 @@ if(STORE)
                  mapping t=([]);
 if(STORE){
 
-/*                  if(!DB) { */
-/* 			perror("taking a db object in container_ivml()\n"); */
-/*                      err=catch(DB=db[STORE]->handle()); */
-/* 			} */
                  foreach(indices(
                              library[STORE]->tag), string n)
                  t[n]=generic_tag_handler;
@@ -2739,21 +2737,18 @@ if(STORE){
                  c[n]=generic_container_handler;
 }
 
-                 contents= (!args->quiet?"<html _parsed=\"1\">":"")+parse_html(contents,
-                           t + tags,
-                           c + containers, id)
-                           +(!args->quiet?"</html>":"");
+// perror("CONTAINERS: " + sprintf("%O\n", (c+containers)));
+// perror("TAGS: " + sprintf("%O\n", (t+tags)));
 
+                 contents= parse_html(contents,
+                           t + tags,
+                           c + containers, id);
+mapping defines=id->misc->defines;
+// perror("DEFINES container_ivml 1: " + sprintf("%O\n", defines));
 if(STORE)
                  MODULES=modules[STORE];
-                 contents=parse_rxml(contents,id);
-
-/* perror("finished parsing. 123\n" + sprintf("%O", indices(DB)) + "\n"); */
-/*  if(1) { */
-/*    perror("We have a DB. Returning.\n"); */
-/*    DB=db[STORE]->handle(DB); */
-/*    DB=0; */
-/*  } */ 
+                 contents=parse_rxml(contents,id, 0, defines);
+// perror("DEFINES container_ivml 2: " + sprintf("%O\n", id->misc->defines));
                  return contents;
 
              }
@@ -2964,39 +2959,45 @@ if(id->cookies->SESSIONID)
 
              }
 
-             mixed return_data(mixed retval, object id){
-                              werror("return_Data\n");
-                             if(sizeof(id->misc->ivend->error)>0 &&
-					!id->misc->ivend->handled_error)
-                                 retval=handle_error(id);
-                             // werror("return_Data\n");
-                             if(1) {
-//			       perror("sending db back. 221\n");
-			 //      perror(sprintf("%O\n", STORE));
-			       if(objectp(DB)) {
-//			perror("sending db back.\n");	
-			 db[STORE]->handle(DB);
-				}
-//			       DB=0;
-			 //      perror(sprintf("%O\n", DB));
-			     }
-                             if(mappingp(retval))
-                                 return retval;
+mixed return_data(mixed retval, object id){
+perror("DEFINES return_data start: " + sprintf("%O\n", id->misc->defines));
+	if(sizeof(id->misc->ivend->error)>0 && !id->misc->ivend->handled_error)
+		retval=handle_error(id);
+	if(objectp(DB)) {
+		db[STORE]->handle(DB);
+		}
+	if(mappingp(retval)) {
+		perror("RETURN return_data: got mapping.\n");
+		return retval;
+	}
 
-                             if(stringp(retval)){
-                                 if(id->conf->type_from_filename(id->realfile || "index.html")
-                                             =="text/html")
-                                     retval=parse_rxml(retval, id);
+	if(stringp(retval)){
+		if(id->conf->type_from_filename(id->realfile || "index.html")
+			=="text/html") {
+perror("DEFINES return_data preparse: " + sprintf("%O\n", id->misc->defines));
+perror("PARSE return_data: parsing rxml\n");
+			retval=parse_rxml(retval, id, 0, id->misc->defines);
+perror("PARSE return_data: done\n");
+}
+perror("DEFINES return_data end: " + sprintf("%O\n", id->misc->defines));
+perror("RETURN return_data: returning a custom answer.\n");
+int errno=200;
+if(id->misc->defines && id->misc->defines[" _error"]) errno=id->misc->defines[" _error"];
 
+ return
+    ([
+      "error" : errno,
+      "data"  : retval,
+      "len"   : strlen( retval ),
+      "type"  : id->conf->type_from_filename(id->realfile || "index.html")
 
-                                 return http_string_answer(retval,
-					id->conf->type_from_filename(id->realfile|| "index.html"), id);
+      ]);
 
-                             }
+	}
 
-                             else return retval;
+	else { perror("RETURN return_data: fell through\n"); return retval;}
 
-                         }
+}
 
 
                          // Start of config functions.

@@ -573,7 +573,7 @@ id->misc->ivend->config->general->root +
   "/html/checkout/checkout_"+ (id->variables["_page"] || "1") + 
   ".html" ;    
 
-retval=parse_rxml(retval,id);
+retval=parse_rxml(retval,id,0,id->misc->defines);
 
 if(stop_error(id)){
 if(id->variables->_backup  && id->variables->_page)

@@ -90,16 +90,34 @@ perror("Building searchwords database.\n");
 
 }
 
+#define _stat defines[" _stat"]
+#define _error defines[" _error"]
+#define _extra_heads defines[" _extra_heads"]
+#define _rettext defines[" _rettext"]
+#define _ok     defines[" _ok"]
+
+
+
 string tag_searchresults(string tag_name, mapping args,
-                  object id, mapping defines) {
+                  object id, object file, mapping defines) {
+defines=([]);
 string results="";
 if(!id->variables->q || !id->variables->stype)
 	return "<!-- Incorrectly configured search query or no query -->";
 if(id->variables->stype==DB->keys->products){
 	if(sizeof(DB->query("SELECT " + DB->keys->products + " FROM products "
 	" WHERE " + DB->keys->products + "='" + (id->variables->q-" ") + "'"))==1)
-	return "<redirect to=\"http://jabba.mtp.intersil.com:81/" +  T_O->query("mountpoint")+
-                          (id->misc->ivend->moveup?"": STORE+ "/") + id->variables->q + ".html\">";
+
+{
+
+
+  string r = (T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + id->variables->q + ".html");
+
+  results=("<redirect to=\"" + r + "\">"
+	"<!-- should have been a redirect to " + r + ". -->" + sprintf("<pre>%O</pre>\n", mkmapping(indices(id),values(id))));
+//perror(sprintf("<pre>%O</pre>\n", defines));
+
+}
 else results="No " + replace(DB->keys->products, "_", " ") + " " + upper_case(id->variables->q) + " found.";
 }
 else {

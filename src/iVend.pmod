@@ -1,5 +1,5 @@
 #include "include/messages.h"
-
+// #define perror(X) werror(X)
 // for translations
 
 class config {
@@ -150,6 +150,27 @@ string password;
 
 inherit "roxenlib";
 
+void create(mixed host, mixed db, mixed user, mixed password){
+
+perror("iVend.db: Create\n");
+::create(host, db, user, password);
+
+}
+
+mixed list_fields(string t) {
+
+  perror("iVend.db: List_fields\n");
+  return ::list_fields(t);
+}
+
+mixed query(string q){
+
+  perror("iVend.db: Query\n");
+  return ::query(q);
+
+}
+
+
 
 string make_safe(string s){
 if(!s || !stringp(s)) return s;
@@ -172,10 +193,10 @@ mixed showmatches(string type, string id) {
 
 string retval;
 
-string query="SELECT id,name FROM " + type + "s WHERE name like '%" 
+string q="SELECT id,name FROM " + type + "s WHERE name like '%" 
   + id + "%' or id like '%" + id + "%' group by id";
 
-array r=::query(query);
+array r=query(q);
 
 if(sizeof(r)==0) return 0; 
 
@@ -194,14 +215,14 @@ return retval;
 
 mixed addentry(object id, string referrer){
 array errors=({});
-array(mapping(string:mixed)) r=::list_fields(id->variables->table);
+array(mapping(string:mixed)) r=list_fields(id->variables->table);
 
 if(id->misc->ivend->clear_oldrecord){	// get rid of existing record.
-array index=::query("SHOW INDEX FROM " + id->variables->table );
+array index=query("SHOW INDEX FROM " + id->variables->table );
 
 if(sizeof(index)==1 && index[0]->Non_unique=="0") {
   perror("UNIQUE KEY ON " + id->variables->table + "\n");
-  ::query("DELETE FROM " + id->variables->table + " WHERE " +
+  query("DELETE FROM " + id->variables->table + " WHERE " +
 	index[0]->Column_name + "='" +
 	id->variables[lower_case(index[0]->Column_name)] + "'");
   }
@@ -216,14 +237,14 @@ else if(sizeof(index)>1)	// we've got keys in this table!
   for(int i=1; i<sizeof(index); i++)
      q+="AND " + index[i]->Column_name + "='" + 
 	id->variables[lower_case(index[i]->Column_name)] + "' ";
-  ::query(q);
+  query(q);
   }
 
 else perror("Got NON-UNIQUE SINGLE FIELD KEY on " + id->variables->table +
 "\n");
 }
 
-string query="INSERT INTO "+id->variables->table+" VALUES(";
+string q="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 	r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
@@ -244,11 +265,11 @@ if(file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table));
 else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
 Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
-    query+="'"+filename+"',";
+    q+="'"+filename+"',";
 }
 else perror("ARGH! Can't get image's original filename from browser!\n");
     }
-  else query+="NULL,";
+  else q+="NULL,";
   }
 
  else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
@@ -257,25 +278,25 @@ else perror("ARGH! Can't get image's original filename from browser!\n");
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
 	stringp(r[i]->name)
-	) query+="'"+make_safe(id->variables[r[i]->name])+"',";
+	) q+="'"+make_safe(id->variables[r[i]->name])+"',";
 
 
-  else query+=(id->variables[r[i]->name]||"NULL")+",";
+  else q+=(id->variables[r[i]->name]||"NULL")+",";
 
   }
-query=query[0..sizeof(query)-2]+")";
+q=q[0..sizeof(q)-2]+")";
 if (sizeof(errors)>0) return errors;
-::query(query);
+query(q);
  if(id->variables->jointable) {
  array jointable;
 catch(jointable=id->variables[id->variables->jointable]/"\000");
 if(jointable)
  for(int i=0; i<sizeof(jointable); i++){
-    query="REPLACE INTO "
+    q="REPLACE INTO "
       + id->variables->joindest +" VALUES('"+
 	jointable[i]+ "','"
         +id->variables->id+"')";
-    ::query(query);
+    query(q);
     }
  }
 return 1;
@@ -284,8 +305,8 @@ return 1;
 
 mixed modifyentry(object id, string referrer){
 array errors=({});
-array(mapping(string:mixed)) r=::list_fields(id->variables->table);
-string query="UPDATE "+id->variables->table+" SET ";
+array(mapping(string:mixed)) r=list_fields(id->variables->table);
+string q="UPDATE "+id->variables->table+" SET ";
 for (int i=0; i<sizeof(r); i++){
 	r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
@@ -313,7 +334,7 @@ Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 id->misc->ivend->config->root + "/images/" + id->variables->table + "/" +
 filename + 
 ".\n");
-    query+=r[i]->name+"='"+filename+"',";
+    q+=r[i]->name+"='"+filename+"',";
 }
 else perror("ARGH! Can't get image's original filename from browser!\n");
     }
@@ -325,29 +346,29 @@ else perror("ARGH! Can't get image's original filename from browser!\n");
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
 	stringp(r[i]->name)
-	) query+=r[i]->name+"='"+make_safe(id->variables[r[i]->name])+"',";
+	) q+=r[i]->name+"='"+make_safe(id->variables[r[i]->name])+"',";
 
 
-  else query+=r[i]->name+"="+(id->variables[r[i]->name]||"NULL")+",";
+  else q+=r[i]->name+"="+(id->variables[r[i]->name]||"NULL")+",";
 
   }
-query=query[0..sizeof(query)-2]+" WHERE id='" + id->variables->id + "'";
+q=q[0..sizeof(q)-2]+" WHERE id='" + id->variables->id + "'";
 if (sizeof(errors)>0) return errors;
-::query(query);
+query(q);
  if(id->variables->jointable) {
  array jointable;
 catch(jointable=id->variables[id->variables->jointable]/"\000");
 perror(id->variables[id->variables->jointable]+"\n\n");
- ::query("DELETE FROM " + id->variables->joindest + " WHERE " +
+ query("DELETE FROM " + id->variables->joindest + " WHERE " +
 (id->variables->table-"s") +"_id='" + id->variables->id
 + "'");
 if(jointable && sizeof(jointable)>0)
  for(int i=0; i<sizeof(jointable); i++){
-    query="REPLACE INTO "
+    q="REPLACE INTO "
       + id->variables->joindest +" VALUES('"+
 	jointable[i]+ "','"
         +id->variables->id+"')";
-    ::query(query);
+    query(q);
     }
  }
 return 1;
@@ -357,28 +378,28 @@ return 1;
 string generate_query(mapping data, string table, object s){
 
 array(mapping(string:mixed)) r=s->list_fields(table);
-string query="REPLACE INTO "+table+" VALUES(";
+string q="REPLACE INTO "+table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
  if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
 	stringp(r[i]->name)
-	) query+="'"+make_safe(data[r[i]->name])+"',";
+	) q+="'"+make_safe(data[r[i]->name])+"',";
 
 
-  else query+=(data[r[i]->name]||"NULL")+",";
+  else q+=(data[r[i]->name]||"NULL")+",";
 
   }
-query=query[0..sizeof(query)-2]+")";
+q=q[0..sizeof(q)-2]+")";
 
-return query;
+return q;
 
 }
 
 string|int gentable(string table, string return_page, 
     string|void jointable,string|void joindest , object|void id, mapping|void record){
 string retval="";
-array(mapping(string:mixed)) r=::list_fields(table);
+array(mapping(string:mixed)) r=list_fields(table);
 array vals;
 
 retval+="<FORM ACTION=\""+return_page+"\" "
@@ -500,7 +521,7 @@ retval+="</TD>\n"
 
 if(jointable){
 
-  array j=::query("SELECT name,id FROM "+jointable);
+  array j=query("SELECT name,id FROM "+jointable);
   retval+="<tr><td valign=top align=right><font "
     "face=helvetica,arial size=-1>"+jointable+"</td><td>"
     "<select multiple size=5 name="+jointable+">\n";
@@ -526,22 +547,22 @@ return retval;
 }
 
 string|int showdepends(string type, string id){
-string query="";
+string q="";
 if(type=="" || id=="")
 return DELETE_UNSUCCESSFUL +"\n";
 string retval="";
 
 if(type=="group"){
-  query="SELECT * FROM groups WHERE id='"+id+"'";
-  array j=::query(query);
+  q="SELECT * FROM groups WHERE id='"+id+"'";
+  array j=query(q);
   if(sizeof(j)!=1) return 0;
   else {
     retval+= GROUP + j[0]->id+" ( "+j[0]->name+" ) " + IS_LINKED +
       PRODUCTS +":<p>";
-    query="SELECT product_groups.product_id,products.name FROM "
+    q="SELECT product_groups.product_id,products.name FROM "
 	"products,product_groups WHERE product_groups.group_id='"
         +id+"' AND products.id=product_groups.product_id";
-    j=::query(query);
+    j=query(q);
     if(sizeof(j)==0) retval+="<blockquote>"+ NO_PRODUCTS +"</blockquote>";
     else {
       retval+="<blockquote>\n";
@@ -552,8 +573,8 @@ if(type=="group"){
   }
 
 else if(type=="product") {
-  query="SELECT id,name FROM products WHERE id='"+id+"'";
-  array j=::query(query);
+  q="SELECT id,name FROM products WHERE id='"+id+"'";
+  array j=query(q);
   if(sizeof(j)!=1) return 0;
   else retval+="<blockquote>"+j[0]->id+" ( "+j[0]->name+" )<br>\n";
   }
@@ -562,29 +583,27 @@ retval+="</blockquote>\n";
 return retval; 
 }
 string dodelete(string type, string id){
-string query="";
+string q="";
 
 if(type=="" || id=="")
 return DELETE_UNSUCCESSFUL+"\n";
 
 if(type=="group") {
-  query="DELETE FROM groups WHERE id='"+id+"'";
-  ::query(query);
-  query="DELETE FROM product_groups WHERE group_id='"+id+"'";
-  ::query(query);
+  q="DELETE FROM groups WHERE id='"+id+"'";
+  query(q);
+  q="DELETE FROM product_groups WHERE group_id='"+id+"'";
+  query(q);
   }
 
 else if(type="product") {
-  query="DELETE FROM products WHERE id='"+id+"'";
-  ::query(query);
-  query="DELETE FROM product_groups WHERE product_id='"+id+"'";
-  ::query(query);
+  q="DELETE FROM products WHERE id='"+id+"'";
+  query(q);
+  q="DELETE FROM product_groups WHERE product_id='"+id+"'";
+  query(q);
   }
 return capitalize(type)+" "+id+ DELETED_SUCCESSFULLY +"\n";
 
 }
-
-
 
 
 string generate_form_from_db(string table, array|void exclude,
@@ -597,7 +616,8 @@ if(!table) return "";
 
 if(!record) record=([]);
 
-array(mapping(string:mixed)) r=::list_fields(table);
+
+array(mapping(string:mixed)) r=list_fields(table);
 if(exclude)
 for(int i=0; i<sizeof(exclude); i++)
   exclude[i]=lower_case(exclude[i]);
@@ -760,6 +780,64 @@ return retval;
 
 }
 
+}
 
+#if constant(thread_create)
+static inherit Thread.Mutex;
+#define THREAD_SAFE
+#define LOCK() do { object key; catch(key=lock())
+#define UNLOCK() key=0; } while(0)
+#else
+#undef THREAD_SAFE
+#define LOCK() do {
+#define UNLOCK() } while(0)
+#endif
 
+class db_handler
+{
+#ifdef THREAD_SAFE
+  static inherit Thread.Mutex;
+#endif
+  array (object) dbs = ({});
+  string db_name, db_user, db_password, host;
+  
+  void create(string|void _host, string _db, int num, string|void _user,
+	string|void _password) {
+    db_name = _db;
+    host = _host;
+    db_user = _user;
+    db_password = _password;
+    for(int i = 0; i < num; i++) {
+      dbs += ({ db(host, db_name, db_user, db_password) });
+    }
+  }
+  
+  void|object handle(void|object db)
+  {
+    LOCK();
+    int count;
+    dbs -= ({0});
+    if(objectp(db)) {
+      if(search(dbs, db) == -1) {
+//	db->select_table(0);
+	dbs += ({db});
+	werror("Handler ++ ("+sizeof(dbs)+")\n");
+      } else {
+	werror("Handler: duplicate return: \n");
+      }
+      db = 0;
+    } else {
+      if(!sizeof(dbs)) {
+	werror("Handler: New DB created (none left).\n");
+	db = db(host, db_name, db_user, db_password);
+//	db->set_timeout(60);
+      } else {
+	db = dbs[0];
+	dbs -= ({db});
+	werror("Handler -- ("+sizeof(dbs)+")\n");
+      }
+    }
+    UNLOCK();
+    return db;
+  }
 }

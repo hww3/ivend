@@ -36,6 +36,8 @@ int loaded;
 object c;                       // configuration object
 object g;                       // global object   
 
+mapping db=([]);		// db cache
+
 int num;
 
 mapping(string:object) modules=([]);                    // module cache
@@ -44,7 +46,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.94 1998-08-17 02:21:13 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.95 1998-08-17 21:54:04 hww3 Exp $";
 
 array register_module(){
 
@@ -114,8 +116,7 @@ void create(){
 
    defvar("config_user", roxen->query("ConfigurationUser") ,
 	  "Configuration User",
-	  TYPE_STRING,
-	  "This is the username to use when accessing the iVend Configuration "
+	  TYPE_STRING,	  "This is the username to use when accessing the iVend Configuration "
 	  "interface.");
 
    defvar("config_password", roxen->query("ConfigurationPassword") ,
@@ -146,6 +147,9 @@ if(catch(perror(query("datadir")))) return;
   
   foreach(indices(config), string c)
     load_modules(config[c]->config);
+
+  foreach(indices(config), string c)
+    start_db(config[c]);
 
   call_out(background_session_cleaner, 900);
 
@@ -658,8 +662,9 @@ mixed handle_page(string page, object id){
 // perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
 #endif
 
-id->misc->ivend["page"]=page-".html";
+
 if(id->variables->ADDITEM) additem(id->variables->ADDITEM,id);
+
 mixed retval;
 
 switch(page){
@@ -675,12 +680,12 @@ switch(page){
 
   default:
 
-    if(retval=Stdio.read_bytes(id->misc->ivend->config->root+
-	    "/"+page )) { 
+    if(!stat_file(page, id)) {
+      id->misc->ivend["page"]=page-".html";
+      return find_page(page,id);
+      }
+    else retval=Stdio.read_file(id->misc->ivend->config->root + "/" + page);
 	id->realfile=id->misc->ivend->config->root+"/"+page;
-	break;
-	}
-    else retval=find_page(page, id);
   }
   if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
   return retval;
@@ -782,23 +787,18 @@ return numsessions;
 
 void background_session_cleaner(){
 
-object db;
+object d;
 mixed err;
 
 foreach(indices(config), string st){
   mapping store=config[st];
-  err=catch(db=iVend.db(
-    store->dbhost,
-    store->db,
-    store->dblogin,
-    store->dbpassword
-    ));
+  err=catch(d=db[st]->handle());
  if(err)
    perror("iVend: BackgroundSessionCleaner failed."
 	+ describe_backtrace(err) + "\n");    
     
  else { 
-    int numsessions=do_clean_sessions(db);
+    int numsessions=do_clean_sessions(d);
     if(numsessions)
       perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
          " sessions from database " + store->db + ".\n");
@@ -829,8 +829,8 @@ retval+="<title>iVend Store Orders</title>"
   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
 
 
- mixed
-d=id->misc->ivend->modules[id->misc->ivend->config->order_module]->show_orders(id, 
+ mixed d=id->misc->ivend->modules[
+	id->misc->ivend->config->order_module]->show_orders(id, 
    id->misc->ivend->db);
  if(stringp(d))
  retval+=d;
@@ -1220,12 +1220,7 @@ mixed err;
     return return_data(shipping_handler(request*"/", id),id);
     break;
     default:
-    err=catch(id->misc->ivend->db=iVend.db(
-      id->misc->ivend->config->dbhost,
-      id->misc->ivend->config->db,
-      id->misc->ivend->config->dblogin,
-      id->misc->ivend->config->dbpassword
-    ));
+    err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
     if(err || config[id->misc->ivend->st]->error) { 
        error(err || config[id->misc->ivend->st]->error, id);
        return return_data(retval, id);
@@ -1358,14 +1353,31 @@ array|int size_of_image(string filename){
 
 
 mixed stat_file( mixed f, mixed id )  {
-if(! id->misc->ivend) 
+
+if(! id->misc->ivend->conf) 
 	return ({ 33204,0,time(),time(),time(),0,0 });
-array fs;
-#ifdef MODULE_DEBUG
-//  perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
+  perror("iVend: statting "+id->misc->ivend->config->root+"/"+f+"\n");
+
+  array fs;
+  if(!id->pragma["no-cache"] &&
+     (fs=cache_lookup("stat_cache", id->misc->ivend->config->root +f)))
+    return fs[0];  
+
+object privs;
+
+
+
+  fs = file_stat(
+	id->misc->ivend->config->root + f);  
+	/* No security currently in this function */
+
+#ifndef THREADS
+  privs = 0;
 #endif
-fs=file_stat(id->misc->ivend->root+"/"+f);
-return fs;
+
+  cache_set("stat_cache", id->misc->ivend->config->root +f, ({fs}));
+  return fs;    
+
 }
 
 
@@ -1434,7 +1446,7 @@ mixed return_data(mixed retval, object id){
     if(id->conf->type_from_filename(id->realfile || "index.html")
 =="text/html")
     retval=parse_rxml(retval, id);
-
+db[id->misc->ivend->st]->handle(id->misc->ivend->db);
     return http_string_answer(retval,
       id->conf->type_from_filename(id->realfile|| "index.html"));
 // return retval;  
@@ -1533,6 +1545,24 @@ if(objectp(modules[name]) && functionp(modules[name]->start))
 return 0;
 
 }
+
+
+void start_db(mapping c){
+
+perror("iVend: Starting dbhandler for " + c->config + "\n");
+
+db[c->config]=iVend.db_handler(
+		    c->dbhost,
+		    c->db,
+		    2,
+		    c->dblogin,
+		    c->dbpassword
+		    );
+
+return;
+
+}
+
 
 void load_modules(string c){
 

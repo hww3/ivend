@@ -216,6 +216,8 @@ return retval;
 mixed addentry(object id, string referrer){
 array errors=({});
 array(mapping(string:mixed)) r=list_fields(id->variables->table);
+for (int i=0; i<sizeof(r); i++)
+	r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
 if(id->misc->ivend->clear_oldrecord){	// get rid of existing record.
 array index=query("SHOW INDEX FROM " + id->variables->table );
@@ -356,7 +358,8 @@ q=q[0..sizeof(q)-2]+" WHERE " +
 	id->misc->ivend->keys[id->variables->table] 
 +"='" + id->variables[id->misc->ivend->keys[id->variables->table]] +
 	"'";
-if (sizeof(errors)>0) return errors;
+// if (sizeof(errors)>0) return errors;
+perror("running query\n" + q);
 query(q);
  if(id->variables->jointable) {
  array jointable;
@@ -381,6 +384,9 @@ return 1;
 string generate_query(mapping data, string table, object s){
 
 array(mapping(string:mixed)) r=s->list_fields(table);
+for (int i=0; i<sizeof(r); i++)
+	r[i]->name=lower_case(r[i]->name);  // lower case it all...
+
 string q="REPLACE INTO "+table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
@@ -403,6 +409,7 @@ string|int gentable(string table, string return_page,
     string|void jointable,string|void joindest , object|void id, mapping|void record){
 string retval="";
 array(mapping(string:mixed)) r=list_fields(table);
+
 array vals;
 
 retval+="<FORM ACTION=\""+return_page+"\" "
@@ -415,9 +422,13 @@ retval+="<FORM ACTION=\""+return_page+"\" "
         "<TABLE>\n";
 
 if(!record) record=([]);
-
+perror(sprintf("%O",record));
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
-if(lower_case(r[i]->name[0..4])=="image"){
+if(record[r[i]->name]) record[lower_case(r[i]->name)]=record[r[i]->name];
+r[i]->name=lower_case(r[i]->name);
+perror("existing data for " + r[i]->name +": " + record[r[i]->name] +
+"\n");
+if(r[i]->name[0..4]=="image"){
     retval+="<TR>\n"
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
     +replace(r[i]->name,"_"," ")+
@@ -460,8 +471,7 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
     "<TD>\n"
     "<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+
     " MAXLEN="+r[i]->length+" VALUE=\"" 
-	+ (record[r[i]->name] ||"");
-    retval+="\">\n";
+	+ (record[r[i]->name] ||"") +"\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+ REQUIRED +"\n";
@@ -505,13 +515,12 @@ else if(r[i]->type=="var string"){
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
     +replace(r[i]->name,"_"," ")+
     "</FONT></TD>\n"
-    "<TD>\n";
+    "<TD><!-- var string -->\n";
 
 
     retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
       "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+" VALUE=\""
-	+( record[r[i]->name]||"");
-    retval+= "\">\n";
+	+( record[r[i]->name]||"") + "\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+REQUIRED+"\n";
@@ -522,7 +531,7 @@ else if(r[i]->type=="string"){
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
     +replace(r[i]->name,"_"," ")+
     "</FONT></TD>\n"
-    "<TD>\n";
+    "<TD><!-- string -->\n";
       
    if(r[i]["default"]=="N")
    retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"N\">"
@@ -537,9 +546,19 @@ else if(r[i]->type=="string"){
 
 else if(r[i]->type=="long" && r[i]->flags["not_null"]){
     retval+="<TR>\n"
-    "<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD>\n";
+    "<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD><!-- long / not null -->\n";
     retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+
       "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=\"NULL\">\n";
+
+        }
+else if(r[i]->type=="long"){
+    retval+="<TR>\n"
+    "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
+    +replace(r[i]->name,"_"," ")+
+    "</FONT></TD>\n<td><!-- long -->"  ;
+    retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
+      "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" value=\"" 
+      + (record[r[i]->name] ||"") +"\">\n";
 
         }
  
@@ -669,6 +688,9 @@ if(!record) record=([]);
 
 
 array(mapping(string:mixed)) r=list_fields(table);
+for (int i=0; i<sizeof(r); i++)
+	r[i]->name=lower_case(r[i]->name);  // lower case it all...
+
 if(exclude)
 for(int i=0; i<sizeof(exclude); i++)
   exclude[i]=lower_case(exclude[i]);
@@ -726,7 +748,7 @@ else if(r[i]->name == id->misc->ivend->keys[table]) {
         lower_case(r[i]->name)+"\" SIZE="
           +
         (r[i]->length)
-        +"  VALUE=\""+ (record[r[i]->name]||"") + "\">\n")) +
+        +"  VALUE=\""+  record[r[i]->name]||"" + "\">\n")) +
 	"</td></tr>\n" ;
 	}
 else if(r[i]->type=="blob"){
@@ -738,7 +760,7 @@ else if(r[i]->type=="blob"){
 
 	retval+="<TEXTAREA NAME=\""
 	+lower_case(r[i]->name)+"\" COLS=70 ROWS=5>"+
-	(record[r[i]->name]||"")
+	record[r[i]->name]||""
 	+"</TEXTAREA>\n";
 	}
 
@@ -753,8 +775,7 @@ else if(r[i]->type=="var string"){
 	lower_case(r[i]->name)+"\" SIZE="
 	  +
 	(r[i]->length)
-	+"  VALUE=\""+ 	(record[r[i]->name]||"");
-	retval+= "\">\n";
+	+"  VALUE=\""+ 	(record[r[i]->name]||"") + "\">\n";
 	if(r[i]->flags->not_null) 
 	  retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I>"+REQUIRED+"\n";	
 	}
@@ -866,13 +887,14 @@ class db_handler
 #endif
   array (object) dbs = ({});
   string db_name, db_user, db_password, host;
-  
+  int num_dbs;  
   void create(string|void _host, string _db, int num, string|void _user,
 	string|void _password) {
     db_name = _db;
     host = _host;
     db_user = _user;
     db_password = _password;
+    num_dbs=num;
     for(int i = 0; i < num; i++) {
      catch( dbs += ({ db(host, db_name, db_user, db_password) }));
     }
@@ -884,15 +906,25 @@ class db_handler
     int count;
     dbs -= ({0});
     if(objectp(d)) {
+werror("returning a db object...\n");
       if(search(dbs, d) == -1) {
-//	d->select_table(0);
-	dbs += ({d});
-//	werror("Handler ++ ("+sizeof(dbs)+")\n");
-      } else {
-//	werror("Handler: duplicate return: \n");
+        if(sizeof(dbs)>(2*num_dbs)) {
+          werror("Dropping db because of inventory...\n");
+//          destruct(d);
+          }
+        else {
+	  dbs += ({d});
+	werror("Handler ++ ("+sizeof(dbs)+")\n");
+	}
+        }
+      else {
+	werror("Handler: duplicate return: \n");
       }
-      d = 0;
-    } else {
+//      destruct(d);
+    } 
+
+else {
+werror("requesting a db object...\n");
       if(!sizeof(dbs)) {
 	werror("Handler: New DB created (none left).\n");
 	d = db(host, db_name, db_user, db_password);
@@ -900,10 +932,11 @@ class db_handler
       } else {
 	d = dbs[0];
 	dbs -= ({d});
-//	werror("Handler -- ("+sizeof(dbs)+")\n");
+	werror("Handler -- ("+sizeof(dbs)+")\n");
       }
     }
     UNLOCK();
     return d;
   }
 }
+

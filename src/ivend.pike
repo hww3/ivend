@@ -425,6 +425,8 @@ contents=parse_html(contents,([]),
 
   if(args->restriction)
     query+=args->restriction;
+  if(args->order)
+    query+=" ORDER BY " + args->order;
 
   array r=id->misc->ivend->db->query(query);
 
@@ -446,6 +448,31 @@ contents=parse_html(contents,([]),
 
     }
 
+  return retval;
+}
+
+string tag_generateviews(string tag_name, mapping args,
+                    object id, mapping defines)
+{
+
+  string retval="";
+  array r = id->misc->ivend->db->query("SELECT " + args->field + " FROM "
+	+ args->type + ", product_groups WHERE product_groups.product_id="
+	+ args->type + "." +  keys[id->misc->ivend->st][args->type] +
+	" AND product_groups.group_id= '" + id->misc->ivend->page + "' " 
+	" GROUP BY " + args->field);
+
+  if(sizeof(r) == 0)
+    r=({([])});
+    foreach(r, mapping row) {
+      if(row[args->field]){ retval+="<h2>" + row[args->field] + "</h2>";
+	args->limit=args->field + "='" + (string)row[args->field] +"'";
+	}
+    else
+	args->limit=args->field + " IS NULL";
+	retval+=make_tag("listitems", args);
+	"<!-- Listitems: " + row[args->field] + " -->\n";
+   }
   return retval;
 }
 
@@ -489,7 +516,9 @@ else {
 	     id->misc->ivend->page+"'";
 
   if(!args->show)
-    query+=" and status='A' ";
+    query+=" AND status='A' ";
+  if(args->limit)
+    query+=" AND " + args->limit;
  
   query+=" AND products." +  keys[id->misc->ivend->st]->products +
 	"=product_id";
@@ -525,7 +554,9 @@ foreach(r,row){
   p++;
   }
 
-retval+=html_table(en, rows);
+if(args->title) retval+="<h2>" + args->title + "</h2>\n";
+
+retval+=html_table(en, rows, args);
 return retval;
 
     }
@@ -551,27 +582,31 @@ if(args->field!=""){
 	" " +  keys[id->misc->ivend->st]->products  +"='" 
 	+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
+  else if ((r[0][args->field]==0))
+    return "<!-- No image for this record. -->\n";
   else filename=config[id->misc->ivend->st]->root+"/images/"+
     id->misc->ivend->type+"s/"+r[0][args->field];
   }  
 else if(args->src!="") 
-filename=config[id->misc->ivend->st]->root+"/images/"+args->src;
+  filename=config[id->misc->ivend->st]->root+"/images/"+args->src;
 
 array|int size=size_of_image(filename);
 
 
 // file doesn't exist
-if(size==-1) return "<!-- couldn't find the image: "+filename+"... -->";
+if(size==-1) 
+  return "<!-- couldn't find the image: "+filename+"... -->";
 // it's not a gif file
 else if(size==0)	
-	return ("<IMG SRC=\""+query("mountpoint")+
+	return ("<IMG SRC=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
 	?"":st+"/")+"images/"
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\">");
 // it's a gif file
-else return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"+
+else return ("<IMG SRC=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
-	?"":st+"/")+"images/"
+	?""
+	:st+"/")+"images/"
 
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\""
 	" HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
@@ -768,8 +803,11 @@ mapping ivend_image(array(string) request, object id){
 mixed handle_checkout(object id){
 mixed retval;
 
+werror("getting ready to handled_checkout from module...\n");
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
+
+werror("handled_checkout from module...\n");
 
 
 if(retval==-1) return 
@@ -1290,16 +1328,24 @@ mixed err;
     case "images":
     break;
     case "admin":
-    return return_data(admin_handler(request*"/", id),id);
+    retval=admin_handler(request*"/", id);
+    destruct(id->misc->ivend->db);
+    return return_data(retval,id);
     break;
     case "orders":
-    return return_data(order_handler(request*"/", id),id);
+    retval=order_handler(request*"/", id);
+    destruct(id->misc->ivend->db);
+    return return_data(retval,id);
     break;
     case "shipping":
-    return return_data(shipping_handler(request*"/", id),id);
+    retval=shipping_handler(request*"/", id);
+    destruct(id->misc->ivend->db);
+    return return_data(retval,id);
     break;
     default:
-    err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
+    werror("requesting db object in find_file... " + request[0] + "\n");
+    if(!objectp(id->misc->ivend->db))
+      err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
     if(err || config[id->misc->ivend->st]->error) { 
        error(err || config[id->misc->ivend->st]->error, id);
        return return_data(retval, id);
@@ -1310,6 +1356,7 @@ mixed err;
 
   switch(request[0]) {
     case "":
+      if(objectp(id->misc->ivend->db))
 	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
       return http_redirect(simplify_path(id->not_query +
         "/index.html")+"?SESSIONID="+getsessionid(id), id);
@@ -1321,7 +1368,9 @@ mixed err;
     retval=(handle_cart(id->misc->ivend->st,id));
     break;
     case "checkout":
+werror("request: checkout\n");
     retval=(handle_checkout(id));
+werror("returned from handle_checkout.\n");
     break;
     case "images":
     return get_image(request*"/", id);
@@ -1343,7 +1392,8 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
  mapping tags=    ([
 	"ivstatus":tag_ivstatus, 
 	"ivmg":tag_ivmg, 
-	"listitems":tag_listitems
+	"listitems":tag_listitems,
+	"generateviews":tag_generateviews
     ]);
 
 
@@ -1529,10 +1579,11 @@ void handle_sessionid(object id) {
 }
 
 mixed return_data(mixed retval, object id){
-
+werror("return_Data\n");
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
-db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+if(objectp(id->misc->ivend->db));
+  db[id->misc->ivend->st]->handle(id->misc->ivend->db);
 
   if(mappingp(retval))
 	return retval;

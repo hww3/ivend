@@ -466,6 +466,38 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
       "SIZE=-1><I> "+ REQUIRED +"\n";
         }
 
+else if(stat_file(id->misc->ivend->config->root + "/db/" +
+	lower_case(table) + 
+	"_" + lower_case(r[i]->name) + ".val"))
+
+{
+    retval+="<TR>\n"
+    "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
+    +replace(r[i]->name,"_"," ")+
+    "</FONT></TD>\n"
+    "<TD>\n";
+
+    retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
+
+  array vals;
+   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
+	vals-=({""});
+    if(sizeof(vals)>0) {
+	for(int j=0; j<sizeof(vals); j++)
+	  retval+="<option " +((record &&
+		record[r[i]->name]==vals[j])?"SELECTED":"")+ // this is the one.
+		" value=\""+vals[j]+"\">"+vals[j]+"\n";
+	}
+    else retval+="<option>" + NO_OPTIONS_AVAILABLE + "\n";
+   
+	}
+    else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
+    retval+="</select></td></tr>";
+
+
+}
+
 
 else if(r[i]->type=="var string"){
     retval+="<TR>\n"

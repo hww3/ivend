@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.250 1999-11-12 20:21:03 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.251 1999-11-12 20:42:43 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1246,9 +1246,9 @@ string tag_ivstatus(string tag_name, mapping args,
                     object id, mapping defines)
 {
 
-    return replace("<status>" + (((id->misc->ivendstatus || "")
+    return "<status>" + (((id->misc->ivendstatus || "")
 	/"\n")*"</status><status>") +
-		"</status>");
+		"</status>";
 
 }
 string tag_ivmg(string tag_name, mapping args,

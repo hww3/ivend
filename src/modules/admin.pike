@@ -750,10 +750,10 @@ mixed register_admin(){
 return ({
 	([ "mode": "menu.main.Store_Maintenance.User_Admin",
 		"handler": action_useradmin,
-		"security_level": 0 ]),
+		"security_level": 8 ]),
 	([ "mode": "menu.main.Store_Maintenance.Clean_Stale_Sessions",
 		"handler": action_cleansessions,
-		"security_level": 0 ]),
+		"security_level": 1 ]),
 	([ "mode": "menu.main.Store_Maintenance.Reload_Store",
 		"handler": action_reloadstore,
 		"security_level": 9 ]),

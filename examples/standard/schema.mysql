@@ -1,5 +1,5 @@
 CREATE TABLE customer_info (
-  orderid char(16) DEFAULT '' NOT NULL,
+  orderid char(64) DEFAULT '' NOT NULL,
   First_Name char(32) DEFAULT '' NOT NULL,
   Last_Name char(32) DEFAULT '' NOT NULL,
   Company char(32),
@@ -18,7 +18,7 @@ CREATE TABLE customer_info (
 )\g
 
 CREATE TABLE groups (
-  id varchar(12) DEFAULT '' NOT NULL,
+  id varchar(24) DEFAULT '' NOT NULL,
   parent varchar(12) DEFAULT '',
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
@@ -30,17 +30,17 @@ CREATE TABLE groups (
 )\g
 
 CREATE TABLE lineitems (
-  orderid char(16) DEFAULT '' NOT NULL,
-  lineitem char(12) DEFAULT '' NOT NULL,
+  orderid char(64) DEFAULT '' NOT NULL,
+  lineitem char(24) DEFAULT '' NOT NULL,
   value float(10,2) DEFAULT '0.00' NOT NULL,
-  extension char(24),
+  extension char(36),
   taxable char(1) default 'Y',
   KEY key1 (orderid,lineitem)
 )\g
 
 CREATE TABLE orderdata (
   orderid int(11) DEFAULT '0' NOT NULL,
-  id varchar(12) DEFAULT '0' NOT NULL,
+  id varchar(24) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   options varchar(24),
@@ -64,19 +64,19 @@ CREATE TABLE payment_info (
   Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
   Card_Number varchar(255) DEFAULT '' NOT NULL,
   Expiration_Date varchar(10) DEFAULT '' NOT NULL,
-  orderid varchar(16) DEFAULT '' NOT NULL,
+  orderid varchar(64) DEFAULT '' NOT NULL,
   status int(11) DEFAULT '3' NOT NULL,
   Authorization char(24) DEFAULT '',
   PRIMARY KEY (orderid)
 )\g
 
 CREATE TABLE product_groups (
-  group_id char(12),
-  product_id char(12)
+  group_id char(24),
+  product_id char(24)
 )\g
 
 CREATE TABLE products (
-  id varchar(12) DEFAULT '' NOT NULL,
+  id varchar(24) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
   onhand int(11),
@@ -95,12 +95,12 @@ CREATE TABLE products (
 )\g
 
 CREATE TABLE session_time (
-sessionid varchar(16) DEFAULT '' NOT NULL,
+sessionid varchar(64) DEFAULT '' NOT NULL,
 timeout bigint(21)
 )\g
 
 CREATE TABLE sessions (
-  sessionid varchar(16) DEFAULT '' NOT NULL,
+  sessionid varchar(64) DEFAULT '' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
@@ -112,8 +112,8 @@ CREATE TABLE sessions (
 )\g
 
 CREATE TABLE shipments (
-  orderid char(16) DEFAULT '' NOT NULL,
-  item char(12) DEFAULT '' NOT NULL,
+  orderid char(64) DEFAULT '' NOT NULL,
+  item char(24) DEFAULT '' NOT NULL,
   series int(11) DEFAULT '1' NOT NULL,
   quantity int(11) DEFAULT '1' NOT NULL,
   tracking_id char(24),
@@ -152,7 +152,7 @@ INSERT INTO status VALUES (10,'Error','An error has occurred during order proces
 INSERT INTO status VALUES (11,'Cancelled','Order has been cancelled.','orders')\g
 
 CREATE TABLE item_options (
-  product_id  VARCHAR(16) NOT NULL,
+  product_id  VARCHAR(24) NOT NULL,
   option_type VARCHAR(6) NOT NULL,
   option_code VARCHAR(6) NOT NULL,
   description CHAR(36),
@@ -169,7 +169,7 @@ CREATE TABLE admin_users (
 
 CREATE TABLE activity_log (
   subsystem CHAR(16) not null,
-  orderid CHAR(12) not null,
+  orderid CHAR(64) not null,
   severity int(1) not null default 1,
   time_stamp datetime,
   message blob,

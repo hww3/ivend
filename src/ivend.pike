@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.258 2000-02-04 16:53:22 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.259 2000-02-17 20:27:15 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1820,16 +1820,25 @@ admin_user_cache[STORE][upper_case(id->variables->user)]="";
 	"<body bgcolor=white text=navy>\n"
 	"<h1>iVend Login</h1>"
 	"<b>Invalid Login.</b>"
-	"<form action=./ method=post>"
+	"<form action=./ method=post name=\"ivendloginform\">"
 	"<input type=hidden name=" + time() + ">"
 	"<table><tr><td rowspan=2><img src=\"" +
-	query("mountpoint")+"ivend-image/auth.gif\">&nbsp;&nbsp;</td><th>Username:</th>\n"
-	"<td><input type=text size=15 name=user></td></tr>\n"
+	 query("mountpoint") + "ivend-image/auth.gif\">&nbsp;&nbsp; "
+	"</td><th>Username:</th>\n"
+	"<td><input type=text size=15 name=user "
+	"onChange=this.form.password.focus()></td></tr>\n"
 	"<tr><th>Password:</th>\n"
-	"<td><input type=password size=15 name=password></td></tr>\n"
+	"<td><input type=password size=15 name=password "
+	"onChange=this.form.submit()></td></tr>\n"
 	"<tr><td> &nbsp; </td><td><input type=submit value=\"Login\">"
 	"</td></tr></table>\n"
-	"</form><p>Copyright 1999 Bill Welliver</body></html>";
+	"</form>\n"
+	"<script language=\"JavaScript\">\n"
+	"<!-- \n"
+	"document.ivendloginform.user.focus(); \n"
+	"// -->\n"
+	"</script>\n"
+	"<p>Copyright 1999 Bill Welliver</body></html>";
 
 		}
 		id->misc->ivend->admin_user=r[0]->username;
@@ -1859,16 +1868,25 @@ admin_user_cache[STORE][upper_case(id->variables->user)]="";
 	"<body bgcolor=white text=navy>\n"
 	"<h1>iVend Login</h1>"+
 	(id->variables->user?"<b>Invalid Login.</b>":"")+
-	"<form action=./ method=post>"
+	"<form action=./ method=post name=\"ivendloginform\">"
 	"<input type=hidden name=" + time() + ">"
 	"<table><tr><td rowspan=2><img src=\"" +
-	query("mountpoint") +"ivend-image/auth.gif\">&nbsp;&nbsp;</td><th>Username:</th>\n"
-	"<td><input type=text size=15 name=user></td></tr>\n"
+	 query("mountpoint") + "ivend-image/auth.gif\">&nbsp;&nbsp; "
+	"</td><th>Username:</th>\n"
+	"<td><input type=text size=15 name=user "
+	"onChange=this.form.password.focus()></td></tr>\n"
 	"<tr><th>Password:</th>\n"
-	"<td><input type=password size=15 name=password></td></tr>\n"
+	"<td><input type=password size=15 name=password "
+	"onChange=this.form.submit()></td></tr>\n"
 	"<tr><td> &nbsp; </td><td><input type=submit value=\"Login\">"
 	"</td></tr></table>\n"
-	"</form><p>Copyright 1999 Bill Welliver</body></html>";
+	"</form>\n"
+	"<script language=\"JavaScript\">\n"
+	"<!-- \n"
+	"document.ivendloginform.user.focus(); \n"
+	"// -->\n"
+	"</script>\n"
+	"<p>Copyright 1999 Bill Welliver</body></html>";
 
 }
 
@@ -2469,7 +2487,10 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                          row[id->variables->primary_key] + "\">Delete</a></td>";
                                  foreach(fields, string fld)
                                  retval+="<td>" + row[fld] + "</td>\n";
-                             }
+				if(type=="group"){
+					retval+="<td>Show Items</td>\n";
+				} 
+                            }
                              retval+="</tr>\n";
                              retval+="</table></form></body></html>";
                          }
@@ -2967,12 +2988,22 @@ mapping to=id->misc->defines[" _extra_heads"];
                  return;
              }
 
+string generate_sessionid(object id){
+ object md5 = Crypto.md5();
+    md5->update(id->remoteaddr);
+    md5->update(sprintf("%d", roxen->increase_id()));
+    md5->update(sprintf("%d", time(1)));
+    string SessionID = Crypto.string_to_hex(md5->digest());
+
+return SessionID;
+}
+
              void handle_sessionid(object id) {
 
 // perror("handle_sessionid\n");
                  if(!id->cookies->SESSIONID && !id->variables->SESSIONID) {
                      id->misc->ivend->SESSIONID=
-                         "S" + (string)hash((string)time(1))+num;
+                         generate_sessionid(id);
                      num+=1;
                      numsessions[STORE]+=1;
              trigger_event("newsessionid", id, (["sessionid" :
@@ -3175,26 +3206,31 @@ Config.write_section(query("configdir")+
 
                              catch(object s=db[c->config]->handle());
                              if(s) {
+
 perror("Checking tables...\n");
 
-perror("Checking comments table...");
 if(sizeof(s->list_tables("comments"))!=1) {
-  perror("adding.\n");
   s->query("CREATE TABLE comments ("
-    "orderid varchar(24) DEFAULT '' NOT NULL,"
+    "orderid varchar(64) DEFAULT '' NOT NULL,"
     "comments blob)");
 }
 
-perror("Checking payment_info table for Authorization...");
 if(sizeof(s->list_fields("payment_info","Authorization"))!=1) {
-  perror("adding.\n");
   s->query("alter table payment_info add Authorization char(24)");
   }
-else perror("have it.\n");
+
+  s->query("alter table sessions change sessionid sessionid char(64)");
+  s->query("alter table activity_log change orderid orderid char(64) not null");
+  s->query("alter table customer_info change orderid orderid char(64) not null");
+  s->query("alter table payment_info change orderid orderid char(64) not null");
+  s->query("alter table lineitems change orderid orderid char(64) not null");
+  s->query("alter table session_time change sessionid sessionid char(64)");
+  s->query("alter table shipments change orderid orderid char(64) not null");
 
 
 if(sizeof(s->list_fields("sessions","autoadd"))!=1)
   s->query("alter table sessions add autoadd integer");
+
 
 if(sizeof(s->list_fields("sessions","taxable"))!=1)
   s->query("alter table sessions add taxable char(1) default 'Y'");
@@ -3219,7 +3255,7 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
   perror("adding activity_log table...\n");
 	s->query("CREATE TABLE activity_log ("
 		"subsystem char(16) not null, "
-		"orderid char(12) not null, "
+		"orderid char(64) not null, "
 		"severity int(1) not null, "
 		"time_stamp datetime, "
 		"message blob,"

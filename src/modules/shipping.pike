@@ -27,7 +27,7 @@ catch(m=(object)clone(compile_file(moddir+"/"+module)));
 if(m && objectp(m)) {
   m->start(config);
   perror("DONE\n");
-  perror(sprintf("%O\n", mkmapping(indices(m), values(m))));
+//  perror(sprintf("%O\n", mkmapping(indices(m), values(m))));
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -168,7 +168,23 @@ string addtypemenu(object id)
 	"\nAvailability:"
     "<textarea name=\"availability\" cols=60 rows=6></textarea><br>"
     "<input type=hidden name=mode value=doaddtype>\n"
-    "<input type=submit name=doaddtype value=AddShippingType>\n</form>";
+    "<input type=submit name=doaddtype value=AddShippingType>\n</form>"
+    "<b>Shipping Type</b>: This is the name of the shipping type that "
+    "will be displayed as an option to the user.<p>"
+    "<b>Calculation Method</b>: This is the method used to calculate "
+    "the shipping charge for this type of shipping.<p>"
+    "<b>Description</b>: A short discription describing the shipping "
+    "method. This information is displayed to the user when choosing "
+    "a shipping type.<p>"
+    "<b>Availability Query</b>: The Availability Query allows you to "
+    "control when a shipping type is made available for selection. "
+    "The query is a SQL statement that returns zero or more rows "
+    "based upon the current Session ID and other criteria such as "
+    "shipping or billing addresses. The Session ID is inserted into "
+    "the query using <i>#sessionid#</i>. If the query returns one or "
+    "more rows, the shipping type will be made available. Otherwise, "
+    "the shipping type will not be displayed as an option.";
+
   return retval;
 }
 

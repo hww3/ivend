@@ -143,7 +143,7 @@ if(error_happened(id) || stop_error(id))
    return "<!-- skipping email confirmation because of errors.-->";
   }
 int good_email;
-<<<<<<< checkout.pike
+
 if(!args->field && !args->email) 
   return "";
 mixed err;
@@ -182,7 +182,7 @@ int orderid;
 if(sizeof(DB->list_tables("orderid_list"))!=1) {
   perror("adding table orderid_list...\n");
   if(catch(DB->query("CREATE TABLE orderid_list ("
-    "orderid CHAR(16) NOT NULL PRIMARY KEY, "
+    "orderid CHAR(64) NOT NULL PRIMARY KEY, "
     "timestmp timestamp )"))) {
       throw_error("An error occurred while reserving your order id.", id);
       return -1;
@@ -415,7 +415,7 @@ if(stop_error(id))
 
 
 return (string)(sprintf("%.2f",T_O->get_tax(id, (args->orderid ||
-is->misc->ivend->orderid || id->misc->ivend->SESSIONID))));
+id->misc->ivend->orderid || id->misc->ivend->SESSIONID))));
 
 }
 

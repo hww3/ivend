@@ -5,7 +5,7 @@
  *
  */
 
-constant cvs_version="";
+string cvs_version = "$Id: ivend.pike,v 1.191 1999-04-11 15:28:07 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"

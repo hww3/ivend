@@ -83,7 +83,7 @@ int write_section(string file, string section, mapping attributes){
   mapping cpy=read(Stdio.read_file(file));
 
   cpy[section]=attributes;
-
+perror("moving config file...\n");
   mv(file, file+"~");
 
 //  array sections=get_section_names(contents);

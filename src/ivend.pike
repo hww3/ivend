@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.22 1998-02-18 01:27:30 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.23 1998-02-19 02:01:13 hww3 Exp $";
 
 /*
  *
@@ -114,8 +114,8 @@ string st=id->misc->ivend->st;
 object s=Sql.sql(
 	config[st]->dbhost, 
 	config[st]->db, 
-	config[st]->user, 
-	config[st]->password
+	config[st]->dblogin, 
+	config[st]->dbpassword
 	);
 string query="DELETE FROM sessions WHERE timeout < "+time(0);
 s->query(query);
@@ -201,7 +201,8 @@ string container_icart(string name, mapping args,
 
 if(id->variables->update) {
 
-  object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+  object s=Sql.sql(config[st]->dbhost, config[st]->db, 
+	config[st]->dblogin, config[st]->dbpassword);
 
     for(int i=0; i< (int)id->variables->s; i++){
 
@@ -225,7 +226,8 @@ if(id->variables->update) {
   if(!id->misc->ivend->SESSIONID) return retval+"blah";
   else {
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
-    object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+    object s=Sql.sql(config[st]->dbhost, config[st]->db, 
+	config[st]->dblogin, config[st]->dbpassword);
     if(!args->fields) return "Incomplete cart configuration!";
     array r= s->query("SELECT sessions.id,series,quantity,name,price,"+ 
 	args->fields+" FROM sessions,products "
@@ -285,7 +287,8 @@ string retval="";
 if(!id->misc->page) return "no page!";
 string st=id->misc->ivend->st;
 
-object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+object s=Sql.sql(config[st]->dbhost, config[st]->db, 
+	config[st]->dblogin, config[st]->dbpassword);
 array r;
 if(args->type=="groups") {
   r=s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
@@ -345,7 +348,8 @@ string st=id->misc->ivend->st;
 string filename="";
 array r;
 if(args->field!=""){
-  object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+  object s=Sql.sql(config[st]->dbhost, config[st]->db, 
+	config[st]->dblogin, config[st]->dbpassword);
   r=s->query("SELECT "+args->field+ " FROM "+id->misc->ivend->type+"s WHERE "
 	" id='"+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
@@ -395,11 +399,17 @@ string value;
 c=iVend.config();
 if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
    perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
-
+else 
+   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
 #ifdef MODULE_DEBUG
 // perror("iVend: reading configuration file "+query("datadir")+"ivend.cnf\n");
 #endif
-array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n";
+catch(array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n");
+if(!config_file) {
+   perror("iVend: ERROR- NONEXISTANT ivend.cfg!\n");
+   return 0;
+
+   }
 
 for (int i=0; i<sizeof(config_file);i++){
 
@@ -522,7 +532,7 @@ perror("iVend: finding page "+ page+" in "+st+"\n");
 
 string retval;
 object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->user, config[st]->password);
+	config[st]->dblogin, config[st]->dbpassword);
 
 page=page-".ivml";	// get to the core of the matter.
 id->misc->ivend->id=page;
@@ -556,8 +566,9 @@ return parse_page(retval, r, f, id);
 mixed additem(string item, object id){
 
 object s=Sql.sql(config[id->misc->ivend->st]->dbhost, 
-config[id->misc->ivend->st]->db, 
-	config[id->misc->ivend->st]->user, config[id->misc->ivend->st]->password);
+	config[id->misc->ivend->st]->db, 
+	config[id->misc->ivend->st]->dblogin, 
+	config[id->misc->ivend->st]->dbpassword);
 
 int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID="+
   id->misc->ivend->SESSIONID+" AND id='"+item+"'"));
@@ -682,6 +693,8 @@ if(id->auth==0)
   return http_auth_required("iVend Configuration","Silly user, you need to login!"); 
 else if(!get_auth(id,1)) 
   return http_auth_required("iVend Configuration","Silly user, you need to login!");
+
+if(!c) read_conf(); 
 
 	string retval="";
 	if(catch(request[1])) return http_redirect(query("mountpoint")+"config/configs",id);
@@ -826,7 +839,10 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 	"New Configuration</FONT><P>\n"
 	"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/new\">\n<table>"+
-	(c->genform(0,query("lang"), query("datadir")+"/modules")
+	(c->genform(
+	0,
+	query("lang"), 
+	query("datadir")+"/modules")
 	  ||"Error Loading Configuration Definitions!")+
 	"</table><p><input type=submit value=\"Add New Store\"></form>"
 	"</TD></TR>";
@@ -955,8 +971,8 @@ switch(id->variables->mode){
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
-    id->misc->ivend->config->user,
-    id->misc->ivend->config->password
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
     );
   mixed j=s->addentry(id,id->referrer);
 //  return http_redirect(id->referrer, id);
@@ -967,8 +983,8 @@ switch(id->variables->mode){
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
-    id->misc->ivend->config->user,
-    id->misc->ivend->config->password
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
     );
   retval+=s->gentable("products","./admin","groups", 
 	"product_groups", id);
@@ -978,8 +994,8 @@ switch(id->variables->mode){
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
-    id->misc->ivend->config->user,
-    id->misc->ivend->config->password
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
     );
   retval+=s->gentable("groups","./admin",0,0,id);
   break;
@@ -989,8 +1005,8 @@ switch(id->variables->mode){
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
-    id->misc->ivend->config->user,
-    id->misc->ivend->config->password
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
     );
   if(id->variables->confirm){
     retval+=s->dodelete(id->variables->type, id->variables->id);  }

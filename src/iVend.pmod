@@ -54,11 +54,12 @@ if(desc && type==mtype)
 return m;
 }
 
-string|int genform(void|mapping config, string|void lang, void|string moddir){
+string|int genform(void|mapping config, void|string lang, void|string moddir){
 if(!lang) lang="en";
+if(!config) config=([]);
 perror("language: "+lang+"\n");
 string retval="";
-if(sizeof(config_setup)<1) return 0;
+if(sizeof(config_setup)<1){perror("config setup < 1\n"); return 0;}
 array vars=sort(indices(config_setup));
 for(int i=0; i<sizeof(vars); i++){
   write(vars[i]);
@@ -110,7 +111,8 @@ for(int i=0; i<sizeof(vars); i++){
     default:
     if(!stringp(config))
       retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
-      (config[vars[i]]||config_setup[vars[i]]->default_value ||"")+"\">";      
+      ( config[vars[i]] ||
+	config_setup[vars[i]]->default_value ||"")+"\">";      
     else
       retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
       (config_setup[vars[i]]->default_value ||"")+"\">";

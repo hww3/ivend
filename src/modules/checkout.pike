@@ -283,7 +283,7 @@ else {
 
   r=id->misc->ivend->db->query(query);
   if(sizeof(r)==1) {
-    if(id->misc->ivend->config->general->shipping_taxable=="Yes")
+    if(CONFIG_ROOT[module_name]->shipping_taxable=="Yes")
       totaltax=(float)r[0]->taxrate *
         (float)((id->misc->ivend->lineitems->taxable +
          id->misc->ivend->lineitems->shipping) || 0.00);
@@ -597,3 +597,11 @@ return ([ "checkout" : checkout ]);
 
 
 
+array query_preferences(object id){
+
+return ({"shipping_taxable", "Tax Shipping?", "Some governments require "
+  "that shipping charges be included in sales tax calculations. If your "
+  "government requires this, this should be set to 'Yes.'", 
+  VARIABLE_SELECT, "No", ({"Yes", "No"})});
+
+}

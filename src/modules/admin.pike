@@ -226,6 +226,7 @@ CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->v
       break;
 
       case VARIABLE_MULTIPLE:
+      case VARIABLE_SELECT:
 
 	retval+="<input type=hidden name=\"_" + id->variables->_varname
 	  + "\" value=\"" + 
@@ -235,7 +236,10 @@ CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->v
 "\000"):CONFIG_ROOT[id->variables->_module][id->variables->_varname])
                 || "~BLANK_VALUE~" ) + "\">\n";
 
-	retval+="<SELECT MULTIPLE SIZE=5 NAME=\"" +
+	retval+="<SELECT " + 
+	  (pton[id->variables->_varname][3]==VARIABLE_MULTIPLE? 
+		"MULTIPLE SIZE=5":"") +
+          " NAME=\"" +
 	  id->variables->_varname + "\">";
 	array selected_options=({});
 

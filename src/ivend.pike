@@ -22,7 +22,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.61 1998-04-29 04:06:30 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.62 1998-04-29 04:42:35 hww3 Exp $";
 
 array register_module(){
 
@@ -1103,8 +1103,8 @@ else if(!get_auth(id))
 string retval="";
 retval+="<title>iVend Store Orders</title>"
   "<body bgcolor=white text=navy>"
-  "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mointpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
   +id->misc->ivend->config->name+
   " Orders</gtext><p>"
@@ -1134,8 +1134,8 @@ else if(!get_auth(id))
 string retval="";
 retval+="<title>iVend Shipping Administration</title>"
   "<body bgcolor=white text=navy>"
-  "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
   +id->misc->ivend->config->name+
   " Shipping</gtext><p>"
@@ -1171,8 +1171,8 @@ else if(!get_auth(id))
 string retval="";
 retval+="<title>iVend Store Administration</title>"
   "<body bgcolor=white text=navy>"
-  "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
   +id->misc->ivend->config->name+
   " Administration</gtext><p>"
@@ -1207,7 +1207,7 @@ switch(id->variables->mode){
     );
   retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
 
-  if(id->variables->type="product")
+  if(id->variables->type=="product")
     retval+="<table>\n"+s->gentable("products","./admin","groups", 
 	"product_groups", id)+"</table>\n";
   else if(id->variables->type=="group")

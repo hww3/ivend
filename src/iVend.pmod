@@ -203,6 +203,7 @@ for (int i=0; i<sizeof(r); i++){
     {
 
 string f=	id->variables[ r[i]->name+".filename"];
+if(f){
 string e= extension(f);
     string filename=id->variables->id+
 	r[i]->name[5..]+"."+e;
@@ -213,6 +214,8 @@ string e= extension(f);
 Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
     query+="'"+filename+"',";
+}
+else perror("ARGH! Can't get image's original filename from browser!\n");
     }
   else query+="NULL,";
   }

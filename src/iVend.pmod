@@ -225,7 +225,9 @@ query=query[0..sizeof(query)-2]+")";
 if (errors!="") return errors;
 ::query(query);
  if(id->variables->jointable) {
- array jointable=id->variables[id->variables->jointable]/"\000";
+ array jointable;
+catch(jointable=id->variables[id->variables->jointable]/"\000");
+if(jointable)
  for(int i=0; i<sizeof(jointable); i++){
     query="INSERT INTO "
       + id->variables->joindest +" VALUES('"+

@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.51 1998-04-15 01:13:03 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.52 1998-04-20 16:02:14 hww3 Exp $";
 
 array register_module(){
 
@@ -297,6 +297,19 @@ return retval;
   
 }
 
+string tag_additem(string tag_name, mapping args,
+                    object id, mapping defines) {
+if(!args->item) return "<!-- you must specify an item id. -->\n";
+string retval="<form action=" + id->not_query + ">";
+retval+="Quantity: <input type=text size=2 value=" + (args->quantity ||
+"1") + " name=quantity> ";
+retval+="<input type=submit value=\"Add to Cart\">\n";
+retval+="<input type=hidden name=ADDITEM value=\""+args->item+"\">\n";
+retval+="</form>\n";
+return retval;
+
+}
+
 string tag_ivendlogo(string tag_name, mapping args,
                     object id, mapping defines) {
 
@@ -341,8 +354,10 @@ contents=parse_html(contents,([]),
 
   array r=id->misc->ivend->db->query(query);
 
+  if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
+
   if(!id->misc->fr)
-    retval+=do_output_tag( args, r, contents, id );  
+    retval+=do_output_tag( args, r||({}), contents, id );  
 
   else {
     int n=0;
@@ -651,6 +666,11 @@ return parse_page(retval, r, f, id);
 
 mixed additem(string item, object id){
 
+  if((int)id->variables->quantity==0) {
+    id->misc->ivstatus="You must select a quantity greater than zero.";
+    return 0;
+    }
+  
   float price=id->misc->ivend->db->query("SELECT price FROM products WHERE id='" 
   + item + "'")[0]->price;
 
@@ -660,7 +680,9 @@ mixed additem(string item, object id){
 int max=sizeof(id->misc->ivend->db->query("select id FROM sessions WHERE SESSIONID='"+
   id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
 string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
-  "','"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
+
+"','"+item+"',"+(id->variables->quantity 
+|| 1)+","+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
 perror(query+"\n");
 if(catch(id->misc->ivend->db->query(query) ))
@@ -1363,7 +1385,7 @@ mixed find_file(string file_name, object id){
 
   if(sizeof(config)==1 && getglobalvar("move_onestore")=="yes") 
     id->misc->ivend->st=indices(config)[0];
-  else if(sizeof(request)==0 || (sizeof(request)==1 && !config[request[0]])) 
+  else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
 
     { 
     if(getglobalvar("create_index")=="yes")
@@ -1502,6 +1524,6 @@ mapping query_container_callers()
 
 mapping query_tag_callers()
 {
-  return ([ "ivendlogo" : tag_ivendlogo,
+  return ([ "ivendlogo" : tag_ivendlogo, "additem" : tag_additem,
 	"sessionid" : tag_sessionid ]); }
 

@@ -22,7 +22,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.60 1998-04-29 03:42:29 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.61 1998-04-29 04:06:30 hww3 Exp $";
 
 array register_module(){
 
@@ -1207,10 +1207,10 @@ switch(id->variables->mode){
     );
   retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
 
-  if(id->variables->type="group")
+  if(id->variables->type="product")
     retval+="<table>\n"+s->gentable("products","./admin","groups", 
 	"product_groups", id)+"</table>\n";
-  else if(id->variables->type=="product")
+  else if(id->variables->type=="group")
     retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
   break;
 

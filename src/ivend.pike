@@ -685,18 +685,17 @@ string container_category_output(string name, mapping args,
 
    query="SELECT * FROM " + lower_case(args->type);
 
-   if(!args->show)
-      query+=" WHERE status='A' ";
+   query+=" WHERE " + KEYS[lower_case(args->type)] + "='" +
+	id->misc->ivend->page + "' ";
 
-   else if(args->show && args->restriction)
-      query+=" WHERE ";
-   if(!args->show && args->restriction)
-      query+=" AND ";
+   if(!args->show)
+      query+=" AND status='A' ";
 
    if(args->restriction)
-      query+=args->restriction;
+      query+=" AND " + args->restriction;
    if(args->order)
       query+=" ORDER BY " + args->order;
+
 
    array r=DB->query(query);
 

@@ -25,6 +25,11 @@ NAMES	A comma seperated list of names to use as column headers in the cart displ
 CONT	If specified, the cart will display a button labeled "Continue" with the value of this attribute as the destination.	(Optional)
 CHECKOUT_URL	If specified, the cart will display a button labelled "Check Out" with the value of this attribute as the destination.	(Optional)
 
+<PROCEDURE>
+
+Defines a procedure event, tag or container in pike. For more information,
+see the iVend Programmer's Manual.
+
 
 <ADDITEM>
 
@@ -293,9 +298,7 @@ CHARGE The amount for shipping to add to the order. If not specified, the amount
 
 <SHIPPINGTYPES>
 
-The <SHIPPINGTYPES> tag will query available shipping types and provide a
-list of valid options with radio buttons. This tag should be used on a
-page immediately before a <SHIPPINGADD> container.
+The <SHIPPINGTYPES> tag will query available shipping types and provide a list of valid options with radio buttons. This tag should be used on a page immediately before a <SHIPPINGADD> container.
 
 ATTRIBUTES
 
@@ -304,29 +307,117 @@ This tag takes no attributes.
 
 <CONFIRMEMAIL>
 
-Checks a given email address for validity. Contacts the remote SMTP server
-and attempts to validate the address. This tag runs only in the forward
-direction of the checkout.
+This tag will verify the validity of an email address by contacting the user's remote mail service and performing an identity check. This tag may return false positives depending on the configuration of the remote mail host.
 
 ATTRIBUTES
-Note: One of the following attributes is requred.
 
-ADDRESS This is the actual address to be checked (Optional).
-FIELD This is the field name containing the address to check (Optional). 
+One of the following attributes is required.
+
+FIELD The name of the form field that will contain the email address. All letters in the field name must be lower case. (Optional)
+EMAIL The value of this attribute is the email address to verify. (Optional)
 
 
 <CONFIRMORDER>
-discount 
-salestax
-generateform 
-addentry 
-cardcheck 
-subtotal 
-grandtotal 
-showorder
+
+This tag will confirm the customer's session information and place it as a new incoming order into the iVend system. This tag is responsible for sending confirmation email messages as follows:
+
+	notes/confirm.txt is sent to the customer.
+	notes/notify.txt should be sent to individual(s) responsible for checking new orders.
+
+ATTRIBUTES
+
+This tag takes no attributes.
+
+
+<SALESTAX>
+
+The <SALESTAX> tag will calculate salestax for the order based upon the taxable flag set for each item and rules set in the Sales Tax Administration interface. The tag will accept an order id as an attribute, or in the absence of this attribute, will use the current session or order identifier.
+
+ATTRIBUTES
+
+ORDERID Use this orderid to calculate salestax. (Optional)
+
+
+<GENERATEFORM>
+
+This tag will generate an HTML form based upon the design of a table in the store database. This tag is useful for creating input forms for checkout steps like shippig and billing address collection. This tag may also be used to generate a form that may then be modified to suit the particular design of a store. This tag will generate a form compatibile with the <ADDENTRY> tag.
+
+ATTRIBUTES
+
+TABLE The table to use as the basis of the generated form. (Required)
+AUTOFILL If specified, this will cause the form to be filled with data already in the table for a given session or order identifier. This attribute may be used with the ORDERID and TYPE attributes. (Optional)
+ORDERID The order ID to operate on. If not specified, the current session or orderid will be used. (Optional)
+TYPE If a table may have more than one record for a given identifier, this attribute may be included to specify a secondary key "type" which must be present in the specified table. (Optional)
+EXCLUDE If specified, this comma separated list of fieldnames will be excluded from the generated field. The excluded fields must not be mandatory, though. (Optional)
+HIDE If specified, this comma separated list of fieldnames will be hidden from the form (using hidden input fields). (Optional)
+PULLDOWN If specified, this comma separated list of fieldnames will be created as pulldown menus, using options specified using the "Dropdown Menu Administrator." (Optional)
+
+
+<ADDENTRY>
+
+This tag will insert the data collected by the <GENERATEFORM> tag into the specified table. This tag should appear on a page immediately following a page containing <GENERATEFORM>.
+
+ATTRIBUTES
+
+NOFLUSH Do not delete any old records for this identifier and table. The default behavior is to remove any records already present before  the insert takes place. (Optional)
+
+ 
+<CARDCHECK>
+
+This tag will verify a credit card number's checksum using a LOG10 algorithm. Default values for this tag will work with the supplied default store configurations.
+
+ATTRIBUTES
+
+CARD_NUMBER the HTML field name containing the card account number. (Optional)
+EXPDATE the HTML field name containing the card's expiration date. (Optional)
+CARDTYPE the HTML field name containing the card type. (Optional)
+
+
+<SUBTOTAL>
+
+The <SUBTOTAL> tag will calculate subtotal for the order based upon the sum of taxable and nontaxable items selected for purchase. The tag will accept an order id as an attribute, or in the absence of this attribute, will use the current session or order identifier.
+
+ATTRIBUTES
+
+ORDERID Use this orderid to calculate the subtotal. (Optional)
+
+
+<GRANDTOTAL>
+
+The <GRANDTOTAL> tag will calculate the grand total for the order based upon the sum of subtotal, other lineitems such as shipping, and salestax. The tag will accept an order id as an attribute, or in the absence of this attribute, will use the current session or order identifier.
+
+ATTRIBUTES
+
+ORDERID Use this orderid to calculate the subtotal. (Optional)
+
+
+<SHOWORDER>
+
+The <SHOWORDER> tag will list the items selected for purchase as an HTML table. The tag will accept an order id as an attribute, or in the absence of this attribute, will use the current session or order identifier.
+
+ATTRIBUTES
+
+FIELDS A comma separated list of fields to include in the table. Valid fields include those in the sessions or products table. (Required)
+NAMES A comma separated list of names to display as headers at the top of the HTML table. If not included, the field names will be substituted. (Optional)
+ORDERID Use this orderid to retrieve data for. (Optional)
 
 
 MARKUP AVAILABLE THROUGH PROCEDURES
 
-relatedgroups
-groupmap
+<RELATEDGROUPS>
+
+This tag lists groups (with links) that an item is included in. This tag
+is defined in the file library/standard_tags.
+
+ATTRIBUTES
+
+ITEM If specified, use this item id. If not specified, the item of the current page will be used. (Optional) 
+
+
+<GROUPMAP>
+
+This tag lists the groups (with links) that are parents of the current group. This tag is defined in the file library/standard_tags.
+
+ATTRIBUTES
+
+ITEM If specified, use this item/group id. If not specified, the item of the current page will be used. (Optional) 

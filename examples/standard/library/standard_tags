@@ -4,7 +4,7 @@
 //
 array r=DB->query("SELECT product_groups.group_id,groups.name FROM "
   "groups,product_groups WHERE product_id='"
-  + id->misc->ivend->page + "' AND groups.id=product_groups.group_id");
+  + (args->item || id->misc->ivend->page) + "' AND groups.id=product_groups.group_id");
 if(!r) return "";
 string retval="| ";
 foreach(r, mapping row)
@@ -19,7 +19,7 @@ return retval;
 //
 string retval="";
 string parent;
-array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + id->misc->ivend->page +"'");
+array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + (args->item || id->misc->ivend->page) +"'");
 if(r && sizeof(r)>0) {
 retval+="<a href=\"" + r[0]->id + ".html\">" + r[0]->name + "</a>";
 parent=r[0]->parent;

@@ -143,17 +143,20 @@ if(error_happened(id) || stop_error(id))
    return "<!-- skipping email confirmation because of errors.-->";
   }
 int good_email;
-string addr;
-if(args->address)
- addr=args->address;
-else if(args->field) 
- addr=id->variables[lower_case(args->field)];
-else
+<<<<<<< checkout.pike
+if(!args->field && !args->email) 
   return "";
 mixed err;
-if(addr=="")
+
+if(args->field && id->variables[lower_case(args->field)] &&
+id->variables[lower_case(args->field)]=="")
   throw_error(INVALID_EMAIL_ADDRESS, id);
- err=catch(good_email=Commerce.Sendmail.check_address(addr));
+
+else if(args->email && args->email=="")
+  throw_error(INVALID_EMAIL_ADDRESS, id);
+
+ err=catch(good_email=Commerce.Sendmail.check_address(
+(args->email || id->variables[lower_case(args->field)])));
 if(err) {
  T_O->report_error("Error Running Check Address" + (err*"\n"),
 id->misc->ivend->orderid ||"NA",
@@ -162,12 +165,12 @@ id->misc->ivend->orderid ||"NA",
   }
 }
 else if(good_email){
-  perror("done\n");
+ // perror("done\n");
   return "";
   }
  else 
 	throw_error(INVALID_EMAIL_ADDRESS, id);
-perror("done\n");
+// perror("done\n");
 
 return "";
 
@@ -369,7 +372,7 @@ if(note) {
  T_O->report_status("Order confirmed successfully." ,
    id->misc->ivend->orderid ||"NA", "checkout", id);
 
-return retval;
+return "<TRUE>" + retval;
 }
 
 
@@ -412,7 +415,7 @@ if(stop_error(id))
 
 
 return (string)(sprintf("%.2f",T_O->get_tax(id, (args->orderid ||
-id->misc->ivend->SESSIONID))));
+is->misc->ivend->orderid || id->misc->ivend->SESSIONID))));
 
 }
 
@@ -427,8 +430,9 @@ if(!args->table) return "";
 if(args->autofill) {
  array r;
  r=DB->query("SELECT * FROM " + lower_case(args->table) + " WHERE "
-	"orderid='" + id->misc->ivend->SESSIONID + "'" +
- (args->type?" AND type='"+ args->type + "'":"") ) ;
+	"orderid='" + (args->orderid || id->misc->ivend->orderid || 
+	id->misc->ivend->SESSIONID) + "'" + (args->type?" AND type='"+
+	args->type + "'":"") ) ;
 
  if(r && sizeof(r)==1){
   record=r[0];
@@ -517,6 +521,7 @@ sizeof(id->misc->ivend->error_happened)>0)
 +"</checkout_error><false>");
 else return "<true>";
 }
+
 string tag_cardcheck(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
@@ -635,14 +640,7 @@ if(stop_error(id))
 float taxable=0.00;
 float nontaxable=0.00;
 string retval="";
-/*
- object s=Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-*/
+
 string extrafields="";
 array ef=({});
 array en=({});
@@ -664,7 +662,8 @@ string query="SELECT sessions.quantity, "
   "sessions.taxable " + extrafields +
   " FROM sessions,products WHERE products." +
 id->misc->ivend->keys->products + "=sessions.id AND "
-  "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
+  "sessions.sessionid='" + (args->orderid ||
+id->misc->ivend->orderid || id->misc->ivend->SESSIONID) + "'";
 
 array r=DB->query(query);
  for(int i=0; i < sizeof(r); i++) {

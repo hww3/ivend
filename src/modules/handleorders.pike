@@ -270,6 +270,25 @@ if(id->variables->orderid) status=DB->query(
 
  } 
 
+ if(id->variables->docancel && id->variables->orderid){
+   DB->query(
+     "UPDATE payment_info SET Card_Number='',Expiration_Date='' WHERE orderid='" +
+     id->variables->orderid +"'");
+
+   array r=DB->query(
+       "SELECT status FROM status WHERE name='Cancelled'");
+   DB->query("UPDATE payment_info SET status=" + 
+       r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
+   array r=DB->query(
+       "SELECT status FROM status WHERE name='Cancelled'");
+   DB->query("UPDATE orders SET status=" + 
+       r[0]->status + " WHERE id='" + id->variables->orderid+"'");
+
+	id->misc->ivend->this_object->trigger_event("cancelorder",id,
+		(["orderid": id->variables->orderid]));
+
+ }
+
  if(id->variables->doship && id->variables->orderid){
 
    array r=DB->query(

@@ -123,8 +123,8 @@ string showtype(object id, mapping row){
       "Charge</td></tr>\n";
     foreach(r, mapping row) {
       retval+="<tr><td>" + row->min + "</td><td>"+ row->max + "</td><td>"
-	+ row->charge + " <font size=2 face=helvetica>(<a href=./?mode=showtype&showtype=" + type;
-      retval+="&id=" +row->id + "&dodelete=1>Delete</a>)</font></td></tr>";
+	+ row->charge + " <font size=2 face=helvetica>(<a href=\"./?mode=showtype&showtype=" + type;
+      retval+="&id=" +row->id +"&dodelete=1\">Delete</a>)</font></td></tr>";
     }
 
 

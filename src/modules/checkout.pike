@@ -37,7 +37,7 @@ void load_lineitems(object id){
 
 id->misc->ivend->lineitems=([]);
 
-  array r=id->misc->ivend->db->query("SELECT lineitem,value from lineitems "
+  array r=DB->query("SELECT lineitem,value from lineitems "
     "WHERE orderid='" + (id->misc->ivend->orderid ||
 	id->misc->ivend->SESSIONID) + "'");
 
@@ -150,7 +150,7 @@ return "";
 
 mixed getorderid(object id){
 int orderid;
-// perror("doing getorderid.\n");
+ perror("doing getorderid.\n");
 if(sizeof(DB->list_tables("orderid_list"))!=1) {
   perror("adding table orderid_list...\n");
   if(catch(DB->query("CREATE TABLE orderid_list ("
@@ -162,9 +162,9 @@ if(sizeof(DB->list_tables("orderid_list"))!=1) {
   }
 if(catch(DB->query("LOCK TABLES orderid_list WRITE")))
   perror(STORE + ": Our DB doesn't support LOCK TABLES...\n");
-array r=DB->query("SELECT MAX(orderid) AS max FROM orderid_list");
+array r=DB->query("SELECT MAX(orderid +1) AS max FROM orderid_list");
 if(r && sizeof(r)>0)
-  orderid=(int)(r[0]->max) + 1;
+  orderid=(int)(r[0]->max);
 else orderid=1;
 perror(orderid + "\n");
 DB->query("INSERT INTO orderid_list VALUES('" + orderid + "',NOW())");
@@ -190,7 +190,7 @@ string type;
 array s;
 
 
-s=id->misc->ivend->db->query("SELECT * FROM sessions WHERE sessionid='"
+s=DB->query("SELECT * FROM sessions WHERE sessionid='"
 	+ id->misc->ivend->SESSIONID + "'");
 
 if(sizeof(s)==0) {
@@ -219,7 +219,7 @@ if(stop_error(id))
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
 
-catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type," 
+catch(typer=DB->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
 "lineitems.lineitem='shipping' "
@@ -227,13 +227,20 @@ catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type,"
 
 if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
-  id->misc->ivend->db->query("INSERT INTO orders VALUES(" +
+if(catch(DB->query("INSERT INTO orders VALUES(" +
     id->misc->ivend->orderid + ",0," +
-    type + ",NOW(),NULL,NOW())");
+    type + ",NOW(),NULL,NOW())")))
+{
+ T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
+	"checkout", id);
+  throw_error( UNABLE_TO_CONFIRM + "<br>" 
+	+ (error*"<br>"), id);
+  return "An error occurred while moving your order to confirmed status.\n";
 
+}
 // get the order from sessions
 
-  array r=id->misc->ivend->db->query(
+  array r=DB->query(
 	"SELECT sessions.*,sessions.price, products.taxable from sessions,products  WHERE sessionid='"
 	+id->misc->ivend->SESSIONID+ "' and products." +
 	id->misc->ivend->keys->products + "=sessions.id");
@@ -248,13 +255,12 @@ for(int i=0; i<sizeof(r); i++){
     r[i]->status=0;
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
-    query=id->misc->ivend->db->generate_query(r[i], "orderdata",
-id->misc->ivend->db);
-    id->misc->ivend->db->query(query);
+    query=DB->generate_query(r[i], "orderdata", DB);
+    DB->query(query);
   }
  } ;
 if(!error)
-id->misc->ivend->db->query(
+  DB->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
@@ -267,7 +273,7 @@ else {
 // update customer info and payment info with new orderid
 
 foreach(({"customer_info","payment_info","lineitems"}), string t)
-  id->misc->ivend->db->query("UPDATE " + t + " SET orderid='"+
+  DB->query("UPDATE " + t + " SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
@@ -286,7 +292,7 @@ if(note) {
   recipient=parse_rxml(recipient, id);
   subject=parse_rxml(subject, id);
   note=parse_rxml(note, id);
-  array r=id->misc->ivend->db->query("SELECT " + recipient + " from customer_info WHERE "
+  array r=DB->query("SELECT " + recipient + " from customer_info WHERE "
 		   "orderid='"+id->misc->ivend->orderid+"' AND "
 		   "type=0");
   recipient=r[0][recipient];
@@ -488,7 +494,7 @@ if(args->autofill) {
   }
 }
 
- retval+=id->misc->ivend->db->generate_form_from_db(args->table,
+ retval+=DB->generate_form_from_db(args->table,
     ((
  
       (( (args->exclude||" ")-" ")/",")
@@ -541,7 +547,7 @@ mixed j;
    m_delete(id->variables, "aeexclude");
  }
 
-  j=id->misc->ivend->db->addentry(id);
+  j=DB->addentry(id);
     
 if(arrayp(j)) id->misc->ivend->error+=j;
 
@@ -635,10 +641,10 @@ string item;
    grandtotal+=i;
    if(item=="shipping");
    else {
-     id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
+     DB->query("DELETE FROM lineitems WHERE orderid='"
 				+id->variables->orderid+"' AND lineitem='"
 				+item +"'");
-     id->misc->ivend->db->query("REPLACE INTO lineitems VALUES('"+ 
+     DB->query("REPLACE INTO lineitems VALUES('"+ 
 			   id->variables->orderid + 
 			   "','" + item + "',"+ i + ",NULL)");
    }
@@ -680,13 +686,14 @@ array en=({});
  }     
 
 string query="SELECT sessions.quantity, "
-  "products.price, " 
-  "sessions.quantity*products.price AS linetotal, taxable " + extrafields +
+  "sessions.price, " 
+  "sessions.quantity*sessions.price AS linetotal, taxable " + extrafields
++
   " FROM sessions,products WHERE products." +
 id->misc->ivend->keys->products + "=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
 
-array r=id->misc->ivend->db->query(query);
+array r=DB->query(query);
  for(int i=0; i < sizeof(r); i++) {
    retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n";
    foreach(en, string name)

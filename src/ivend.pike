@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.228 1999-07-07 17:38:41 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.229 1999-07-07 21:01:29 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -509,8 +509,9 @@ string|void container_ia(string name, mapping args,
         arguments["href"]= (id->variables->referer || ((id->referer*"")-
                             "ADDITEM=1") || "");
     else if (args->add)
-        arguments["href"]="./"+id->misc->ivend->page+".html?SESSIONID="
-                          +id->misc->ivend->SESSIONID+"&ADDITEM=1&"
+	arguments["href"]=( args->href ||("./"+id->misc->ivend->page+".html")) +
+			"?SESSIONID="
+           		+id->misc->ivend->SESSIONID+"&ADDITEM=1&"
                           +id->misc->ivend->item+"=ADDITEM";
     else if(args->cart)
         arguments["href"]=query("mountpoint")+
@@ -638,8 +639,7 @@ int do_low_additem(object id, mixed item, mixed quantity, mixed
     string query="INSERT INTO sessions VALUES('"+
                  id->misc->ivend->SESSIONID+
                  "','"+item+"',"+ quantity +","+(max+1)+",'" +
-		(args->options||"") + "','"+(time(0)+
-                         (int)CONFIG->session_timeout)+"'," + price +
+		(args->options||"") + "'," + price +
                  "," + (args->autoadd||0) +"," + (args->lock||0) +")";
 
     if(catch(
@@ -1566,7 +1566,7 @@ add_cookie(id, (["name":"logging_in",
 
 int do_clean_sessions(object db){
 
-    string query="SELECT sessionid FROM sessions WHERE timeout < "+time(0);
+    string query="SELECT sessionid FROM session_time WHERE timeout < "+time(0);
     array r=db->query(query);
     foreach(r,mapping record){
         foreach(({"customer_info","payment_info","orderdata","lineitems"}),
@@ -1574,8 +1574,11 @@ int do_clean_sessions(object db){
         db->query("DELETE FROM " + table + " WHERE orderid='"
                   + record->sessionid + "'");
 
+	db->query("DELETE FROM sessions WHERE sessionid='" +
+		record->sessionid + "'");
+	db->query("DELETE FROM session_time WHERE sessionid='" +
+		record->sessionid + "'");
     }
-    string query="DELETE FROM sessions WHERE timeout < "+time(0);
 
     db->query(query);
 
@@ -2613,7 +2616,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 
              void handle_sessionid(object id) {
 
-
+// perror("handle_sessionid\n");
                  if(!id->cookies->SESSIONID && !id->variables->SESSIONID) {
                      id->misc->ivend->SESSIONID=
                          "S" + (string)hash((string)time(1))+num;
@@ -2621,6 +2624,11 @@ mapping to=id->misc->defines[" _extra_heads"];
                      numsessions[STORE]+=1;
              trigger_event("newsessionid", id, (["sessionid" :
                                                          id->misc->ivend->SESSIONID]) );
+
+			DB->query("INSERT INTO session_time VALUES('" +
+		id->misc->ivend->SESSIONID + "',"  +(time(0)+
+                         (int)CONFIG->session_timeout)+ ")");
+
                  }
 
                  else if(id->cookies->SESSIONID)

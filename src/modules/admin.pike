@@ -310,7 +310,7 @@ string action_cleansessions(string mode, object id){
 
           string retval="";
 
-         int r =do_clean_sessions(DB);
+         int r =T_O->do_clean_sessions(DB);
          retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
           return_to_admin_menu(id);
 

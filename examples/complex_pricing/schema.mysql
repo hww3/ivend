@@ -91,13 +91,17 @@ CREATE TABLE products (
   PRIMARY KEY (id)
 )\g
 
+CREATE TABLE session_time (
+sessionid varchar(16) DEFAULT '' NOT NULL,
+timeout bigint(21)
+)\g
+
 CREATE TABLE sessions (
   sessionid varchar(16) DEFAULT '' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   options varchar(24),
-  timeout bigint(21),
   price float(10,2) DEFAULT '0.00' NOT NULL,
   autoadd integer,
   locked integer

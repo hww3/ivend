@@ -1,16 +1,13 @@
-# iVend reference database schema
-# 
-# You may edit this file to your heart's content.
-# Do not alter the "required" fields listed in the README
-# document located in the docs directory.
+# MySQL dump 4.0
 #
+# Host: bay.riverweb.com    Database: ivtest
 #--------------------------------------------------------
 
 #
 # Table structure for table 'customer_info'
 #
 CREATE TABLE customer_info (
-  orderid int(11) DEFAULT '0' NOT NULL,
+  orderid char(16) DEFAULT '' NOT NULL,
   First_Name char(32) DEFAULT '' NOT NULL,
   Last_Name char(32) DEFAULT '' NOT NULL,
   Company char(32),
@@ -24,7 +21,8 @@ CREATE TABLE customer_info (
   FAX char(32),
   EMail_Address char(64) DEFAULT '' NOT NULL,
   updated timestamp(14),
-  type int(11) DEFAULT '0' NOT NULL
+  type int(11) DEFAULT '0' NOT NULL,
+  KEY key1 (orderid,type)
 );
 
 #
@@ -53,10 +51,11 @@ CREATE TABLE groups (
 # Table structure for table 'lineitems'
 #
 CREATE TABLE lineitems (
-  orderid char(12) DEFAULT '' NOT NULL,
+  orderid char(16) DEFAULT '' NOT NULL,
   lineitem char(12) DEFAULT '' NOT NULL,
   value float(10,2) DEFAULT '0.00' NOT NULL,
-  extension char(24)
+  extension char(24),
+  KEY key1 (orderid,lineitem)
 );
 
 #
@@ -109,7 +108,7 @@ CREATE TABLE payment_info (
   Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
   Card_Number varchar(255) DEFAULT '' NOT NULL,
   Expiration_Date varchar(10) DEFAULT '' NOT NULL,
-  orderid varchar(12) DEFAULT '' NOT NULL,
+  orderid varchar(16) DEFAULT '' NOT NULL,
   status int(11) DEFAULT '3' NOT NULL,
   PRIMARY KEY (orderid)
 );
@@ -130,6 +129,7 @@ CREATE TABLE product_groups (
 #
 # Dumping data for table 'product_groups'
 #
+
 
 #
 # Table structure for table 'products'
@@ -160,7 +160,7 @@ CREATE TABLE products (
 # Table structure for table 'sessions'
 #
 CREATE TABLE sessions (
-  sessionid varchar(12) DEFAULT '' NOT NULL,
+  sessionid varchar(16) DEFAULT '' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE sessions (
 # Table structure for table 'shipments'
 #
 CREATE TABLE shipments (
-  orderid char(12) DEFAULT '' NOT NULL,
+  orderid char(16) DEFAULT '' NOT NULL,
   item char(12) DEFAULT '' NOT NULL,
   series int(11) DEFAULT '1' NOT NULL,
   quantity int(11) DEFAULT '1' NOT NULL,
@@ -191,6 +191,38 @@ CREATE TABLE shipments (
 # Dumping data for table 'shipments'
 #
 
+
+#
+# Table structure for table 'shipping_ot'
+#
+CREATE TABLE shipping_ot (
+  type int(11) DEFAULT '0' NOT NULL,
+  charge float(5,2) DEFAULT '0.00' NOT NULL,
+  min float(5,2) DEFAULT '0.00' NOT NULL,
+  max float(5,2) DEFAULT '0.00' NOT NULL,
+  id int(11) DEFAULT '0' NOT NULL auto_increment,
+  PRIMARY KEY (id)
+);
+
+#
+# Dumping data for table 'shipping_ot'
+#
+
+#
+# Table structure for table 'shipping_pp'
+#
+CREATE TABLE shipping_pp (
+  type int(11) DEFAULT '0' NOT NULL,
+  fieldname char(16) DEFAULT '' NOT NULL,
+  id int(11) DEFAULT '0' NOT NULL auto_increment,
+  PRIMARY KEY (id)
+);
+
+#
+# Dumping data for table 'shipping_pp'
+#
+
+INSERT INTO shipping_pp VALUES (1,'shipping',1);
 
 #
 # Table structure for table 'shipping_types'
@@ -242,6 +274,7 @@ CREATE TABLE taxrates (
 # Dumping data for table 'taxrates'
 #
 
+INSERT INTO taxrates VALUES ('PA',0.06);
 
 #
 # Table structure for table 'type'

@@ -812,32 +812,32 @@ class db_handler
     }
   }
   
-  void|object handle(void|object db)
+  void|object handle(void|object d)
   {
     LOCK();
     int count;
     dbs -= ({0});
-    if(objectp(db)) {
-      if(search(dbs, db) == -1) {
-//	db->select_table(0);
-	dbs += ({db});
+    if(objectp(d)) {
+      if(search(dbs, d) == -1) {
+//	d->select_table(0);
+	dbs += ({d});
 	werror("Handler ++ ("+sizeof(dbs)+")\n");
       } else {
 	werror("Handler: duplicate return: \n");
       }
-      db = 0;
+      d = 0;
     } else {
       if(!sizeof(dbs)) {
 	werror("Handler: New DB created (none left).\n");
-	db = db(host, db_name, db_user, db_password);
-//	db->set_timeout(60);
+	d = db(host, db_name, db_user, db_password);
+//	d->set_timeout(60);
       } else {
-	db = dbs[0];
-	dbs -= ({db});
+	d = dbs[0];
+	dbs -= ({d});
 	werror("Handler -- ("+sizeof(dbs)+")\n");
       }
     }
     UNLOCK();
-    return db;
+    return d;
   }
 }

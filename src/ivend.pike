@@ -46,7 +46,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.95 1998-08-17 21:54:04 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.96 1998-08-17 22:47:56 hww3 Exp $";
 
 array register_module(){
 
@@ -1223,6 +1223,7 @@ mixed err;
     err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
     if(err || config[id->misc->ivend->st]->error) { 
        error(err || config[id->misc->ivend->st]->error, id);
+	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
        return return_data(retval, id);
        }
 
@@ -1231,6 +1232,8 @@ mixed err;
 
   switch(request[0]) {
     case "":
+	
+	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
       return http_redirect(simplify_path(id->not_query +
         "/index.html")+"?SESSIONID="+getsessionid(id), id);
     case "index.html":
@@ -1243,13 +1246,13 @@ mixed err;
     retval=(handle_checkout(id));
     break;
     case "images":
+	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
     return get_image(request*"/", id);
     break;
     default:
     retval=(handle_page(request*"/", id));
 
     }
-
   return return_data(retval, id);
 
 }
@@ -1297,10 +1300,15 @@ if(id->misc->ivend->st){
     ]->query_tag_callers();
   }
 };
+
+    err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
+
   id->misc->ivend->modules=modules;
 contents=parse_rxml(contents,id);
- return "<html>"+parse_html(contents,
+ contents= "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
+db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+return contents;
 
 }
 
@@ -1441,12 +1449,14 @@ mixed return_data(mixed retval, object id){
 
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
+db[id->misc->ivend->st]->handle(id->misc->ivend->db);
 
   if(stringp(retval)){ 
     if(id->conf->type_from_filename(id->realfile || "index.html")
 =="text/html")
     retval=parse_rxml(retval, id);
-db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+
+
     return http_string_answer(retval,
       id->conf->type_from_filename(id->realfile|| "index.html"));
 // return retval;  

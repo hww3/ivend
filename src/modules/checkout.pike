@@ -318,14 +318,13 @@ mixed j;
  if(args->encrypt){
 object encryptedid = id;
 
-  string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
+  string key=Stdio.read_file(id->misc->ivend->config->keybase);
 
   if(!key) {
     perror("iVend: Could't Load Public Key! Will save data in the clear\n");
     j=id->misc->ivend->db->addentry(id);
 
-    }
-  else{
+    }  else{
     array e=(args->encrypt-" ")/",";
      for(int i=0; i<sizeof(e); i++){
 

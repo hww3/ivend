@@ -14,6 +14,8 @@ inherit "module";
 inherit "roxenlib";
 inherit "wizard";
 
+import "./";
+
 mapping(string:mapping(string:mixed)) config=([]);
 mapping(string:mixed) global=([]) ;
 object c;			// configuration object
@@ -22,7 +24,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.64 1998-05-04 02:26:33 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.65 1998-05-14 01:56:21 hww3 Exp $";
 
 array register_module(){
 
@@ -60,13 +62,18 @@ void create(){
 
    defvar("root", "/home/roxen/share/ivend/" , "iVend Root Location",
           TYPE_DIR,
-          "This is location where the iVend program files are located "
+          "This is the root directory of the iVend distribution. "
           );
 
    defvar("datadir", query("root")+"data" , "iVend Data Location",
           TYPE_DIR,
           "This is location where iVend will store "
-          "data and configuration files nessecary for operation.");
+          "data files nessecary for operation.");
+
+   defvar("configdir", query("root")+"configurations" , "Configuration Directory",
+          TYPE_DIR,
+          "This is location where iVend will keep Store "
+          "configuration files nessecary for operation.");
 
    defvar("config_user", "ivend", "Configuration User",
 	  TYPE_STRING,
@@ -511,37 +518,46 @@ if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
    perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
 else 
    perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
-catch(array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n");
-if(!config_file) {
-   perror("iVend: ERROR NONEXISTANT ivend.cfg!\n");
-   return 0;
 
-   }
+array|int configfiles=get_dir(query("configdir"));
 
-for (int i=0; i<sizeof(config_file);i++){
+if(intp(configfiles)) return 0;	// no config directory.
 
-	if(config_file[i][0..4]=="start"){
+configfiles-=({"CVS",".",".."});
+
+for(int i=0; i<sizeof(configfiles); i++){
+
+  if(search(configfiles[i], "~")>0) {
+#ifdef MODULE_DEBUG
+    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
+#endif
+    continue;
+    }
+
+  catch(array(string) config_file= read_file(query("configdir")+ 
+	configfiles[i])/"\n");
 
 #ifdef MODULE_DEBUG
- perror("iVend: parsing section "+config_file[i][6..]+"\n");
+ perror("iVend: parsing configuration "+configfiles[i]+"\n");
 #endif
 
-		current_config=config_file[i][6..];		
-		}
-	else if(config_file[i]=="end") break;
-	else if(config_file[i][0..0]=="$"){
-		array(mixed) current_line=config_file[i][1..]/"=";
-	attribute=current_line[0];
-	value=current_line[1];
-	if(!config[current_config])
-		config[current_config]= ([attribute:value]);
-	else config[current_config][attribute]=value;
+  current_config=configfiles[i];
 
-		}
-	}
+  for(int j=0; j<sizeof(config_file);j++)
+	if(config_file[j][0..0]=="$"){
+	  array(mixed) current_line=config_file[j][1..]/"=";
+	  attribute=current_line[0];
+	  value=current_line[1];
+	  if(!config[current_config])
+	    config[current_config]= ([attribute:value]);
+	  else config[current_config][attribute]=value;
+          }
+  }
+
 perror("moving globals...\n");
 global=config["global"];
 m_delete(config,"global");
+return 0;
 }
 
 
@@ -568,9 +584,9 @@ if(!config[c]) return;
 void start(){
 
  add_include_path(query("root") + "include");
-perror("added include path: "+query("root")+"/include\n"); 
-add_module_path(query("root"));
-perror("added path: "+query("root")+"\n"); 
+perror("added include path: "+query("root")+"include\n"); 
+add_module_path(query("root")+"src");
+perror("added module path: "+query("root")+"src\n"); 
 
   loaded=1;
 
@@ -775,12 +791,11 @@ string config_file="";
 array(string) configs= indices(config);
 configs+=({"global"});
 array(string) this_config;
-for(int i=0; i<sizeof(configs); i++){
-	
-  config_file+="start "+ configs[i] +"\n";
+for(int i=0; i<sizeof(configs); i++){	
   if(configs[i]=="global") {
     perror("GLOBAL!\n");
-    this_config= indices(global);
+    if(!global) this_config=({});
+    else this_config= indices(global);
     }
   else
     this_config= indices(config[configs[i]]);
@@ -796,12 +811,13 @@ for(int i=0; i<sizeof(configs); i++){
       }
     }
   config_file+="\n";
+  mv(query("configdir")+configs[i],query("configdir")+configs[i]+"~");
+  write_file(query("configdir")+configs[i], config_file);
+  config_file="";
   }
 	
-config_file+="end\n";
 
-mv(query("datadir")+"ivend.cfg",query("datadir")+"ivend.cfg.back");
-write_file(query("datadir")+"ivend.cfg", config_file);
+
 save_status=1;	// We've saved.
 perror("iVend: reloading all modules...\n");
 start();	// Reload all of the modules and crap.
@@ -924,7 +940,7 @@ retval+=
 	(g->genform(
 	global || 0,
 	query("lang"), 
-	query("root")+"/modules")
+	query("root")+"src/modules")
 	  ||"Error Loading Configuration Definitions!")+
 
 
@@ -982,7 +998,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	(c->genform(
 	0,
 	query("lang"), 
-	query("root")+"/modules")
+	query("root")+"src/modules")
 	  ||"Error Loading Configuration Definitions!")+
 	"</table><p><input type=submit value=\"Add New Store\"></form>"
 	"</TD></TR>";
@@ -1020,11 +1036,13 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			
 	else {		// OK, we know what we have in mind...
 
-			if(id->variables->config_delete=="1") {
+	if(id->variables->config_delete=="1") {
 perror("DELETING " + request[1] + "\n");
-				config=m_delete(config,request[1]);
-				save_status=0;
-				return http_redirect(query("mountpoint")+"config/configs?"+time(),id);				
+	config=m_delete(config,request[1]);
+	save_status=0;
+  mv(query("configdir")+ request[1], query("configdir") + request[1] + "~");
+
+	return http_redirect(query("mountpoint")+"config/configs?"+time(),id);				
 
 				}			
 
@@ -1056,7 +1074,7 @@ id->variables[variables[i]]!=config[id->variables->config][variables[i]])
 			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[1]+"/config_modify\">\n"
 			"<TABLE>"
 			+(c->genform(config[request[1]],query("lang"),
-			  query("root")+"/modules")
+			  query("root")+"src/modules")
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
 			"<p>"

@@ -27,7 +27,7 @@ if(sizeof(r)==0) return create_panel("Payment Information", "maroon",
 	      "Unable to find Payment Info for Order ID " + 
 		   id->variables->orderid);
 
-string key=Stdio.read_file(id->misc->ivend->config->keybase+".priv");
+string key=Stdio.read_file(id->misc->ivend->config->keybase);
 
 retval="<table width=100%>";
  foreach(f, mapping field){

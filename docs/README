@@ -141,9 +141,9 @@ groups as desired. After addition, products and groups will become
 instantly available in the store.
 
 12. Use the make_key.pike script in the scripts directory to create an RSA
-keypair. Use the base filename that you specified to the script as your 
-keybase in the configuration interface (the keybase is the path to the 
-keypair without the extension on the file).
+keypair. Make a note of the filename you specified to save the key in.
+When you create a store, you'll be asked for this information (the name of
+the file containing your keypair).
 
 IVML
 
@@ -223,6 +223,8 @@ preferably on different systems. This way, if the system running iVend is
 compromised, it would not be possible to decrypt secured information
 because the required private key would not be present.
 
+*NOTE* Currently both private and public keys are held in the same file.
+You should make sure that this file is readable only a trusted user.
 
 Other Ramblings
 ---------------

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.209 1999-05-29 03:57:01 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.210 1999-05-29 04:06:10 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -733,7 +733,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
     }
 // madechange=0;
     if(madechange==1){
-        array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd "
+        array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd, locked "
                           " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");
         // perror(sprintf("%O", r));
         if(r && sizeof(r)>0) {
@@ -744,7 +744,8 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
                 if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
 		 continue;
 items+=({ (["item": row->id, "quantity": row->quantity, "options":
-            row->qualifier, "series": row->series ]) });
+            row->qualifier, "series": row->series, "locked": row->locked,
+"autoadd": row->autoadd ]) });
             }
 //            perror(sprintf("%O", items));
             do_additems(id, items);

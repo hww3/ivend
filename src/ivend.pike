@@ -20,6 +20,7 @@ import ".";
 #if __VERSION__ < 0.6
 int read_conf();          // Read the config data.
 void load_modules(string c);
+void start_db(mapping c);
 void background_session_cleaner();
 float convert(float value, object id);
 array|int size_of_image(string filename);
@@ -46,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.96 1998-08-17 22:47:56 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.97 1998-08-17 23:43:03 hww3 Exp $";
 
 array register_module(){
 
@@ -1236,6 +1237,7 @@ mixed err;
 	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
       return http_redirect(simplify_path(id->not_query +
         "/index.html")+"?SESSIONID="+getsessionid(id), id);
+    break;
     case "index.html":
     retval=(handle_page("index.html", id));
     break;
@@ -1246,7 +1248,6 @@ mixed err;
     retval=(handle_checkout(id));
     break;
     case "images":
-	db[id->misc->ivend->st]->handle(id->misc->ivend->db);
     return get_image(request*"/", id);
     break;
     default:
@@ -1459,7 +1460,7 @@ db[id->misc->ivend->st]->handle(id->misc->ivend->db);
 
     return http_string_answer(retval,
       id->conf->type_from_filename(id->realfile|| "index.html"));
-// return retval;  
+
 }
 
   else return retval;

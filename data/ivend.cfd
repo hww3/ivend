@@ -1,56 +1,79 @@
 iVcd
 $varname=name
-$name=Store Name
+$enname=Store Name
+$siname=Store Name
 $type=string
-$description=Short Description of Store.
+$endescription=Short Description of Store.
+$sidescription=Short Description of Store (slovenian).
 
 $varname=config
-$name=Store ID
+$enname=Store ID
+$siname=Store ID
 $type=string
-$description=One word used to describe this store.
+$endescription=One word used to describe this store.
+$sidescription=One word used to describe this store (slovenian).
 
 $varname=user
-$name=DB User
+$enname=DB User
+$siname=DB User
 $type=string
-$description=Username with access permissions to Database.
+$endescription=Username with access permissions to Database.
+$sidescription=Username with access permissions to Database (slovenian).
 
 $varname=dbhost
-$name=DB Host
+$enname=DB Host
+$siname=DB Host
 $type=string
-$description=Hostname of SQL Database Server.
+$endescription=Hostname of SQL Database Server.
+$sidescription=Hostname of SQL Database Server (slovenian).
 
 $varname=checkout_module
-$name=Checkout Module
+$enname=Checkout Module
+$siname=Checkout Module
 $type=module
 $module_type=checkout
-$description=Name of Checkout Module to Use.
+$endescription=Name of Checkout Module to Use.
+$sidescription=Name of Checkout Module to Use (slovenian).
 
 $varname=password
-$name=DB Password
+$enname=DB Password
+$siname=DB Password
 $type=password
-$description=Password for DB User
+$endescription=Password for DB User.
+$sidescription=Password for DB User (slovenian).
 
 $varname=db
-$name=DB Name
+$enname=DB Name
+$siname=DB Name
 $type=string
-$description=Name of the Database containing Store data.
+$endescription=Name of the Database containing Store data.
+$sidescription=Name of the Database containing Store data (slovenian).
 
 $varname=root
-$name=Store Root
+$enname=Store Root
+$siname=Store Root
 $type=string
-$description=Location (in real filesystem) of Store Datafiles.
+$endescription=Location (in real filesystem) of Store Datafiles.
+$sidescription=Location (in real filesystem) of Store Datafiles (slovenian).
 
 $varname=session_timeout
-$name=Session Timeout
+$enname=Session Timeout
+$siname=Session Timeout
 $type=int
-$description=Number of seconds before a session is cleared from database.
+$endescription=Number of seconds before a session is cleared from database.
+$sidescription=Number of seconds before a session is cleared from database.
 
 $varname=config_user
-$name=Configuration Username
+$enname=Configuration Username
+$siname=Configuration Username
 $type=string
-$description=Username for Store Administration
+$endescription=Username for Store Administration
+$sidescription=Username for Store Administration
 
 $varname=config_password
-$name=Configuration Password
+$enname=Configuration Password
+$siname=Configuration Password
 $type=password
-$description=Password for Store Administration
+$endescription=Password for Store Administration
+$sidescription=Password for Store Administration
+

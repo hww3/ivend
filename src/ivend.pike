@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.19 1998-02-11 21:39:56 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.20 1998-02-12 03:31:46 hww3 Exp $";
 
 /*
  *
@@ -66,6 +66,11 @@ void create(){
 	  TYPE_STRING,
 	  "The password to use when accessing the iVend Configuration "
 	  "interface.");
+
+   defvar("lang", "en", "Default Language",
+	  TYPE_MULTIPLE_STRING, "Default Language for Stores",
+	  ({"en","si"})
+	  );
 }
 
 string|void check_variable(string variable, mixed set_to){
@@ -571,7 +576,6 @@ mixed retval;
 switch(page){
 
   case "index.ivml":
-// perror("reading "+config[st]->root+"/index.ivml");
     retval= Stdio.read_bytes(config[st]->root+"/index.ivml"); 
     break;
 
@@ -813,10 +817,9 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 	"New Configuration</FONT><P>\n"
 	"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/new\">\n<table>"+
-	(c->genform()||"Error Loading Configuration Definitions!")+
+	(c->genform(0,query("lang"))||"Error Loading Configuration Definitions!")+
 	"</table><p><input type=submit value=\"Add New Store\"></form>"
 	"</TD></TR>";
-
 			
 			}
 			
@@ -875,18 +878,19 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 				}
 
 			else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
-			+config[request[2]]->name+"</FONT><P>\n"
+			"<a href=\""+
+			query("mountpoint")+
+			"/"+request[2]+"\">"
+			+config[request[2]]->name+"</a></FONT><P>\n"
 			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[2]+"/config_modify\">\n"
 			"<TABLE>"
-			+(c->genform(config[request[2]])
+			+(c->genform(config[request[2]],query("lang"))
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
+			"<p>"
+			"<A HREF=\""+ query("mountpoint") +"config/configs/"+ request[2]+"?config_delete=1\">Delete Configuration</A>"
 			"</FORM>"
 			"</TD></TR>";
-
-
-			"<A HREF=\""+ query("mountpoint") +"config/configs/"+ request[2]+"?config_delete=1\">Delete Configuration</A>";
-
 			
 			}
 		
@@ -1131,7 +1135,6 @@ perror("finding request...\n");
 		  return admin_handler(restofrequest, id);
 		  break;
 		default:
-perror("doing the default thing...\n");
 		  return http_string_answer(handle_page(request[1], request[0], id));
 		}
 	    }

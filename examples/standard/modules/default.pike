@@ -1,5 +1,5 @@
 /*
- * harris.pike: checkout module for iVend.
+ * default.pike: checkout module for iVend.
  *
  * Bill Welliver <hww3@riverweb.com>
  *
@@ -7,7 +7,7 @@
 
 inherit "roxenlib";
 
-constant module_name="Harris Checkout Module";
+constant module_name="Default Checkout Module";
 constant module_type="checkout";
 
 mixed checkout(object id){
@@ -24,17 +24,41 @@ string retval="<title>checkout</title><body bgcolor=white text=navy>"
 
 int page;
 
- if(id->variables["_page"]=="4"){
+ if(id->variables["_page"]=="5"){
+
+  if(Commerce.CreditCard.cc_verify(id->variables->Card_Number))
+ retval+="card number okay...<p>";
+
+   if( Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
+ retval+="expdate okay...<p>";
+
+  {
+ //  mixed j=s->addentry(id);
+ //  if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
+//	   "<br><b>Please correct the following before continuing:<p></b><ul>"
+//	+j+"</ul>";
+
+  retval+="yay...";
+  }
+}
+else if(id->variables["_page"]=="4"){
    if((string)id->variables->shipsame=="1");
    else { mixed j=s->addentry(id);
    if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
 	   "<br><b>Please correct the following before continuing:<p></b><ul>"
 	+j+"</ul>";
 	}
-	retval+="<form action=./>";
+  retval+="<font size=+2>4. Payment Information</font>\n"
+  	"<form action="+id->not_query+"><table>";
+  retval+=s->generate_form_from_db("payment_info",
+    ({"orderid","type"}),id);
 
-retval+=s->generate_form_from_db("test",({"orderid","type","updated"}),id);
- retval+="</form>End of the line!";
+  retval+="</table>\n"
+        "<input type=hidden name=table value=customer_info>"
+	"<input type=submit value=Continue>"
+        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
+	"<input type=hidden name=_page value=5></form>\n";
+
  }
 
 else if(id->variables["_page"]=="3"){
@@ -49,7 +73,9 @@ else if(id->variables["_page"]=="3"){
 	"<select name=shipsame>"
 	"<option value=1>Yes\n<option value=0>No\n</select>"
 	"<p>If not, complete the following information:<br><table>\n";
-  retval+=s->generate_form_from_db("customer_info",({"orderid","type","updated"}),id);
+  retval+=s->generate_form_from_db("customer_info",
+    ({"orderid","type","updated", "fax","daytime_phone",
+	"evening_phone", "email_address"}),id);
   retval+="</table>"
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=1>"

@@ -52,15 +52,16 @@ if(desc && type==mtype)
 return m;
 }
 
-string|int genform(void|mapping config){
-
+string|int genform(void|mapping config, string|void lang){
+if(!lang) lang="en";
+perror("language: "+lang+"\n");
 string retval="";
 if(sizeof(config_setup)<1) return 0;
 array vars=sort(indices(config_setup));
 for(int i=0; i<sizeof(vars); i++){
   write(vars[i]);
   retval+="<tr>\n<td>";
-  retval+=config_setup[vars[i]]->name+" &nbsp \n</td><td>";
+  retval+=config_setup[vars[i]][lang+"name"]+" &nbsp \n</td><td>";
   switch(config_setup[vars[i]]->type){
 
     case "multiple":
@@ -114,7 +115,7 @@ for(int i=0; i<sizeof(vars); i++){
     }
   retval+="</td>\n</tr>\n"
           "<tr>\n<td colspan=2><i><font size=-1 face=helvetica,arial>\n"
-          +(config_setup[vars[i]]->description||"")
+          +(config_setup[vars[i]][lang+"description"]||"")
           +"</i></font>\n<p></td></tr>\n";
 
   }
@@ -471,12 +472,16 @@ else if(r[i]->type=="enum"){
 
     retval+="<select name=\""+r[i]->name+"\">\n";
 
-  array vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	"db/"+table+"_"+r[i]->name+".val")/"\n";
+  array vals;
+   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	"db/"+table+"_"+r[i]->name+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {
 	for(int j=0; j<sizeof(vals); j++)
 	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	}
+    else retval+="<option>No Options Available\n";
+   
 	}
     else retval+="<option>No Options Available\n";
     retval+="</select></td></tr>";

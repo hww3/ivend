@@ -371,6 +371,8 @@ if(note) {
 
  T_O->report_status("Order confirmed successfully." ,
    id->misc->ivend->orderid ||"NA", "checkout", id);
+id->misc->ivend->this_object->trigger_event("postconfirmorder", id,
+(["orderid": id->misc->ivend->orderid]));
 
 return "<TRUE>" + retval;
 }

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.259 2000-02-17 20:27:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.260 2000-03-14 20:43:16 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1639,8 +1639,11 @@ mixed additem(object id){
     array items=({});
     foreach(indices(id->variables), string v){
         if(id->variables[v]=="ADDITEM") {
-            int quantity=(id->variables[v+"quantity"]
-                          ||id->variables->quantity || 1);
+		int quantity=0;
+		if(id->variables[v+"quantity"])
+			quantity=(int)(id->variables[v+"quantity"]);
+            else quantity=((int)(id->variables->quantity) || 1);
+if(quantity>0)
 items+=({ (["item" : v , "quantity" : quantity]) });
         }
     }

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.218 1999-06-08 14:04:18 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.219 1999-06-08 17:48:17 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1672,14 +1672,16 @@ if(CONFIG->admin_enabled=="No")
 
 
                  string mode, type;
+                     err=catch(DB=db[STORE]->handle());
 
+/*
                  if(id->auth==0)
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!");
                  else if(!admin_auth(id))
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!");
-
+*/
                  string retval="";
                  retval+="<title>iVend Store Administration</title>"
                          "<body bgcolor=white text=navy>"
@@ -2202,7 +2204,6 @@ id->variables->__criteria + "%";
                  }
 
                  handle_sessionid(id);
-
                  if(request*"/" && have_path_handler(STORE, request*"/"))
                      retval= handle_path(STORE, request*"/" , id);
 
@@ -2432,8 +2433,14 @@ id->variables->__criteria + "%";
 
              }
 
-             void add_header(mapping to, string name, string value)
-             {
+             void add_header(object id, string name, string value)
+             {   
+                 if(!id->misc->defines)
+                     id->misc->defines=([]);
+                 if(!id->misc->defines[" _extra_heads"])
+                     id->misc->defines[" _extra_heads"]=([]);
+
+mapping to=id->misc->defines[" _extra_heads"];
                  if(to[name])
                      if(arrayp(to[name]))
                          to[name] += ({ value });
@@ -2444,14 +2451,8 @@ id->variables->__criteria + "%";
                  return;
              }
 
-#define _extra_heads id->misc->defines[" _extra_heads"]
-
              void add_cookie( object id, mapping m, mapping defines)
              {
-                 if(!id->misc->defines)
-                     id->misc->defines=([]);
-                 if(!id->misc->defines[" _extra_heads"])
-                     id->misc->defines[" _extra_heads"]=([]);
                  string cookies;
                  int    t;     //time
 
@@ -2478,7 +2479,7 @@ id->variables->__criteria + "%";
                  //obs! no check of the parameter's usability
                  cookies += "; path=" +(m->path||"/");
 
-                 add_header(_extra_heads, "Set-Cookie", cookies);
+                 add_header(id, "Set-Cookie", cookies);
 
                  return;
              }

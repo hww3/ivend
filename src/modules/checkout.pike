@@ -13,7 +13,7 @@ inherit iVend.error;
 #include <ivend.h>
 #include <messages.h>
 
-constant module_name="Default Checkout Module";
+constant module_name="Checkout";
 constant module_type="checkout";
 
 int initialized;
@@ -184,7 +184,8 @@ if(sizeof(DB->list_tables("orderid_list"))!=1) {
   if(catch(DB->query("CREATE TABLE orderid_list ("
     "orderid CHAR(64) NOT NULL PRIMARY KEY, "
     "timestmp timestamp )"))) {
-      throw_error("An error occurred while reserving your order id.", id);
+      throw_error(ERROR_RESERVING_ORDERID, id);
+      report_critical_error(ERROR_RESERVING_ORDERID,id);
       return -1;
     }
   }
@@ -194,7 +195,7 @@ array r=DB->query("SELECT MAX(orderid +1) AS max FROM orderid_list");
 if(r && sizeof(r)>0)
   orderid=(int)(r[0]->max);
 else orderid=1;
-perror(orderid + "\n");
+// perror(orderid + "\n");
 DB->query("INSERT INTO orderid_list VALUES('" + orderid + "',NOW())");
 catch(DB->query("UNLOCK TABLES"));
 
@@ -222,8 +223,7 @@ s=DB->query("SELECT * FROM sessions WHERE sessionid='"
 	+ id->misc->ivend->SESSIONID + "'");
 
 if(sizeof(s)==0) {
- throw_error("Your order appears to have been confirmed already, "
-		"or your shopping session has expired." , id);
+ throw_error(ERROR_ORDERID_ALREADY_EXISTS, id);
  return "";
   }
 

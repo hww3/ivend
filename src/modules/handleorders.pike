@@ -452,7 +452,9 @@ if((int)i%numlines) numpages ++;
     row->status])||1 )+ " of " + 
 numpages +
 "<br></font></i>";
-  retval+="<table cellspacing=0 cellpadding=2>\n<tr><td bgcolor=navy><font color=white "
+  retval+="<table cellspacing=2 cellpadding=0>\n<tr>"
+	"<td></td>\n"
+	"<td bgcolor=navy><font color=white "
     " face=helvetica> <b>Order ID</b> </font></td>\n"
 //    "<td bgcolor=navy><font color=white "
 //    "face=helvetica><b>Status</font></td>\n"
@@ -463,9 +465,11 @@ numpages +
 
   foreach(r, mapping row){
     retval+="<tr>\n";
-    retval+="<td bgcolor=gray align=center><a href=\"./?orderid="
+    retval+="<td> <imgsrc=\"" + 
+	query("mountpoint")+ "ivend-image/rbutton.gif\"> "
+	"</td><td bgcolor=gray align=center> <a href=\"./?orderid="
 	+row->id+"\">"+
-	row->id+"</a></td>";
+	row->id+"</a> </td>";
 //    retval+="<td>"+ r[i]->status+" </td>\n";
     retval+="<td> "+(row->updated)+" </td><td> " + (row->notes||"") +
  " </td>\n"

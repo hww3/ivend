@@ -109,14 +109,6 @@ Setting Up a New Store
 
 For each store you set up you'll need to do the following:
 
-There is a script called create_store.sh in the scripts directory which
-may be helpful for creating new stores. It makes certain assumptions about
-your setup (such as the use of mySQL), but if you don't deviate too much
-from the standard, you should have good results. The create_store.sh
-script assumes that you have already created a database and have a
-username and password that has create/update permissions for that database
-before you start. 
-
 1. Create a database where iVend will store all store related
   transactions. mysSQL users can use the 'mysqladmin create dbname'
   command, where dbname is the name of the database you're creating.
@@ -147,26 +139,11 @@ before you start.
   store administrators. Be sure you know who (or what) has access to your
   dbs at all times.
 
-2. Use the script create_store.sh to add a new store configuration. To do
-  this, change directories to ivend/scripts and execute this command:
+2. Use the iVend Configuration interface to add a new store. The process
+of adding a new store is wizard based and should be fairly straitforward.
 
-  sh create_store.sh
-
-  The script will step you through various questions that are required for
-  creating a new store, including setting up database tables. Below are
-  more detailed descriptions of the questions asked by the create_store
-  script:
-
-  Location of iVend configuration files
-    This is the location that iVend will save the generated configuration
-    file. This is normally the same as the directory you've specified in
-    the Roxen configuration interface.
-  
-  Directory of New Store
-    The directory where the store's html and image files will be kept. If
-    this directory doesn't already exist, the script will create if for
-    you. The script will populate this directory with basic templates and
-    files.
+The wizard will even create and populate the store directory and set up
+the proper tables in your database.
 
   Store ID
     This is the unique identifier for this store. This is one word,
@@ -186,7 +163,7 @@ before you start.
     Username and password which has read/write access to the Database
     listed in the previous question.
  
-After you answer these questions, you'll be given the opportunity to fine
+After you create the store, you can use standard SQL statements to fine
 tune the database files to your specific needs. It's probably a good idea
 to start with the example schema and work from there. These tables can
 contain as  many and varied fields as you like, but at least the following
@@ -238,32 +215,28 @@ payment_info fields. Note that the field that is to contain your
 customer's credit card numbers must be type char(255) in order to hold the
 encrypted card number data.
 
-4. After the create_store script has completed, go to the iVend store
-configuration page. This is located at /mountpoint/config. You'll be
-prompted for the iVend Store Admin username and password.
-
-5. You should be presented with a list of active stores. To load the new
+4. You should be presented with a list of active stores. To load the new
 store, click on the link "Reload Configurations." Your new store should
 appear in the list.
 
-6. Click on the name of the new store. You will be presented with a
+5. Click on the name of the new store. You will be presented with a
 configuration settings page. You should review this information, selecting
 the proper modules based upon your store's requirements. 
 
-7. After you are finished reviewing these settings, click on the "modify
+6. After you are finished reviewing these settings, click on the "modify
 settings" button at the bottom of the page. iVend will make the requested
 changes and indicate that it is able to save the changes permanently by
 showing a link labelled "Save Changes". You should select this link to
 make your changes permanent.
 
-8. If this is the first time you have entered the configuration interface,
+7. If this is the first time you have entered the configuration interface,
 you should also review the settings under the "Global" tab. After you've
 done this, click on the "modify settings" button, then save the changes to
 your global configurations using the "save changes" link.
 
 For more information about store and global settings, see Appendix A.
 
-9. At this point, you can enter the new store's administration interface.
+8. At this point, you can enter the new store's administration interface.
 The administration interface is located at /mountpoint/storeid/admin.
 You'll be prompted for a username and password which has access to the
 stores SQL database.

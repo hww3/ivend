@@ -1,11 +1,3 @@
-# MySQL dump 4.0
-#
-# Host: bay.riverweb.com    Database: ivtest
-#--------------------------------------------------------
-
-#
-# Table structure for table 'customer_info'
-#
 CREATE TABLE customer_info (
   orderid char(16) DEFAULT '' NOT NULL,
   First_Name char(32) DEFAULT '' NOT NULL,
@@ -25,14 +17,6 @@ CREATE TABLE customer_info (
   KEY key1 (orderid,type)
 );
 
-#
-# Dumping data for table 'customer_info'
-#
-
-
-#
-# Table structure for table 'groups'
-#
 CREATE TABLE groups (
   id varchar(12) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
@@ -43,14 +27,6 @@ CREATE TABLE groups (
   PRIMARY KEY (id)
 );
 
-#
-# Dumping data for table 'groups'
-#
-
-
-#
-# Table structure for table 'lineitems'
-#
 CREATE TABLE lineitems (
   orderid char(16) DEFAULT '' NOT NULL,
   lineitem char(12) DEFAULT '' NOT NULL,
@@ -59,14 +35,6 @@ CREATE TABLE lineitems (
   KEY key1 (orderid,lineitem)
 );
 
-#
-# Dumping data for table 'lineitems'
-#
-
-
-#
-# Table structure for table 'orderdata'
-#
 CREATE TABLE orderdata (
   orderid int(11) DEFAULT '0' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
@@ -78,14 +46,6 @@ CREATE TABLE orderdata (
   taxable enum('Y','N') DEFAULT 'Y'
 );
 
-#
-# Dumping data for table 'orderdata'
-#
-
-
-#
-# Table structure for table 'orders'
-#
 CREATE TABLE orders (
   id int(11) DEFAULT '0' NOT NULL auto_increment,
   status int(11) DEFAULT '0' NOT NULL,
@@ -96,14 +56,6 @@ CREATE TABLE orders (
   PRIMARY KEY (id)
 );
 
-#
-# Dumping data for table 'orders'
-#
-
-
-#
-# Table structure for table 'payment_info'
-#
 CREATE TABLE payment_info (
   Payment_Method enum('MasterCard','VISA','AMEX') DEFAULT 'MasterCard' NOT NULL,
   Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
@@ -114,27 +66,11 @@ CREATE TABLE payment_info (
   PRIMARY KEY (orderid)
 );
 
-#
-# Dumping data for table 'payment_info'
-#
-
-
-#
-# Table structure for table 'product_groups'
-#
 CREATE TABLE product_groups (
   group_id char(12),
   product_id char(12)
 );
 
-#
-# Dumping data for table 'product_groups'
-#
-
-
-#
-# Table structure for table 'products'
-#
 CREATE TABLE products (
   id varchar(12) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
@@ -153,14 +89,6 @@ CREATE TABLE products (
   PRIMARY KEY (id)
 );
 
-#
-# Dumping data for table 'products'
-#
-
-
-#
-# Table structure for table 'sessions'
-#
 CREATE TABLE sessions (
   sessionid varchar(16) DEFAULT '' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
@@ -171,14 +99,6 @@ CREATE TABLE sessions (
   price float(5,2) DEFAULT '0.00' NOT NULL
 );
 
-#
-# Dumping data for table 'sessions'
-#
-
-
-#
-# Table structure for table 'shipments'
-#
 CREATE TABLE shipments (
   orderid char(16) DEFAULT '' NOT NULL,
   item char(12) DEFAULT '' NOT NULL,
@@ -189,61 +109,6 @@ CREATE TABLE shipments (
   ship_group int(11) DEFAULT '1' NOT NULL
 );
 
-#
-# Dumping data for table 'shipments'
-#
-
-
-#
-# Table structure for table 'shipping_ot'
-#
-CREATE TABLE shipping_ot (
-  type int(11) DEFAULT '0' NOT NULL,
-  charge float(5,2) DEFAULT '0.00' NOT NULL,
-  min float(5,2) DEFAULT '0.00' NOT NULL,
-  max float(5,2) DEFAULT '0.00' NOT NULL,
-  id int(11) DEFAULT '0' NOT NULL auto_increment,
-  PRIMARY KEY (id)
-);
-
-#
-# Dumping data for table 'shipping_ot'
-#
-
-#
-# Table structure for table 'shipping_pp'
-#
-CREATE TABLE shipping_pp (
-  type int(11) DEFAULT '0' NOT NULL,
-  fieldname char(16) DEFAULT '' NOT NULL,
-  id int(11) DEFAULT '0' NOT NULL auto_increment,
-  PRIMARY KEY (id)
-);
-
-#
-# Dumping data for table 'shipping_pp'
-#
-
-INSERT INTO shipping_pp VALUES (1,'shipping',1);
-
-#
-# Table structure for table 'shipping_types'
-#
-CREATE TABLE shipping_types (
-  type int(11) DEFAULT '0' NOT NULL auto_increment,
-  name varchar(32) DEFAULT '' NOT NULL,
-  description blob,
-  PRIMARY KEY (type)
-);
-
-#
-# Dumping data for table 'shipping_types'
-#
-
-
-#
-# Table structure for table 'status'
-#
 CREATE TABLE status (
   status int(11) DEFAULT '0' NOT NULL,
   name char(24) DEFAULT '' NOT NULL,
@@ -252,10 +117,6 @@ CREATE TABLE status (
   PRIMARY KEY (status)
 );
 
-#
-# Dumping data for table 'status'
-#
-
 INSERT INTO status VALUES (0,'Unprocessed','Indicates an order awating initial processing.','orders');
 INSERT INTO status VALUES (1,'Shipped','Indicates an order that has been shipped.','orders');
 INSERT INTO status VALUES (2,'PShipped','Indicates an order that has not completely shipped.','orders');
@@ -263,24 +124,12 @@ INSERT INTO status VALUES (3,'Unprocessed','Indicates unprocessed payment inform
 INSERT INTO status VALUES (4,'Validated','Indicates validated payment information','payment_info');
 INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info');
 
-#
-# Table structure for table 'taxrates'
-#
 CREATE TABLE taxrates (
   locality char(4) DEFAULT '' NOT NULL,
   taxrate float(10,2) DEFAULT '0.00' NOT NULL,
   PRIMARY KEY (locality)
 );
 
-#
-# Dumping data for table 'taxrates'
-#
-
-INSERT INTO taxrates VALUES ('PA',0.06);
-
-#
-# Table structure for table 'type'
-#
 CREATE TABLE type (
   type int(11) DEFAULT '0' NOT NULL,
   name char(24),
@@ -289,10 +138,5 @@ CREATE TABLE type (
   PRIMARY KEY (type)
 );
 
-#
-# Dumping data for table 'type'
-#
-
 INSERT INTO type VALUES (0,'Billing Address','Customer Billing Address','customer_info');
 INSERT INTO type VALUES (1,'Shipping Address','Customer Shipping Address if different than Billing Address','customer_info');
-

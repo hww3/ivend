@@ -236,10 +236,10 @@ class db {
 
       }
 
-      mixed list_fields(string t) {
+      mixed list_fields(string t, void|string f) {
 
 //         perror("iVend.db: List_fields\n");
-         return ::list_fields(t);
+         return ::list_fields(t, f);
       }
 
       mixed query(string q){

@@ -284,10 +284,10 @@ s->query("GRANT SELECT, INSERT, UPDATE, DELETE on " +
 host):"") ); 
 
 s->query("SET PASSWORD FOR " + v->config + (v->secureperms=="Yes"?("@\"" +
-host):"") +  
-	"\" = PASSWORD(\"" + v->dbpassword + "\")");
+host + "\""):"") +  
+	" = PASSWORD(\"" + v->dbpassword + "\")");
 s->query("SET PASSWORD FOR " + adminuser + (v->secureperms=="Yes"?("@\"" +
-host):"") + "\" = PASSWORD(\"" +
+host + "\""):"") + " = PASSWORD(\"" +
 	adminpassword + "\")");
 
 retval+="<b><font face=+1>Store Created Successfully.</b><p></font>"

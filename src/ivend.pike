@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.192 1999-05-04 19:48:51 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.193 1999-05-11 23:01:57 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -182,7 +182,8 @@ void get_dbinfo(mapping c){
    if(!local_settings[c->config])
     local_settings[c->config]=([]);
    local_settings[c->config]->pricing_model=SIMPLE_PRICING;
-   if(sizeof(s->list_fields("products", "price"))==0)
+   array n=s->list_fields("products", "price");
+   if(sizeof(n)<1)
      // we're doing complex pricing
     local_settings[c->config]->pricing_model=COMPLEX_PRICING;
 
@@ -1148,7 +1149,10 @@ mixed additem(object id){
         items+=({id->variables->item});          
 
 // we should add complex pricing models to this algorithm.
-
+  if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
+    perror("DOING A COMPLEX PRICE CALCULATION...\n");
+    }
+  else{
    foreach(items, string item){
       float price=DB->query("SELECT price FROM products WHERE " 
                             + KEYS->products +  "='" + item + "'")[0]->price;
@@ -1172,8 +1176,8 @@ mixed additem(object id){
                                       (id->variables[item+"quantity"] ||id->variables->quantity
                                        ||"1")]));
       }
-   }
-
+    }
+  }
    return 0;
 }
 

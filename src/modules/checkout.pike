@@ -115,7 +115,7 @@ else {
 	"<form action=checkout><input type=hidden name=_page value=2>"
 	"<input type=submit value=\" >> \"></form>";
   }
-
+retval="<ivml>blahblahblah"+retval+"</ivml>";
 retval=parse_rxml(retval,id);
 
 return retval;

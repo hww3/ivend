@@ -1,3 +1,4 @@
+<ivml>
 <title>iVend: #name#</title>
 <body bgcolor=white text=navy>
 <img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
@@ -20,3 +21,4 @@ Shipping: #shipping#
 <hr>
 Please direct questions or comments to &lt; <a
 href=mailto:hww3@riverweb.com>hww3@riverweb.com</a> &gt;.
+</ivml>

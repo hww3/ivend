@@ -1,5 +1,7 @@
-iVend version 1.0a1 of 3 february 1998 
+iVend version 1.0a1 of 18 february 1998 
 coding by Bill Welliver <hww3@riverweb.com>
+
+
 
 What is iVend?
 
@@ -121,6 +123,10 @@ IVML
 
 The following tags are additions or modifications of existing HTML and 
 RXML tags. They are only available within the iVend system.
+
+<ivml></ivml>  the grand daddy of the tags. surround all of your pages
+that are served by ivend with these tags, otherwise the following tags
+won't work. use in place of <html></html>.
 
 <a></a> has been modified to provide session tracking capabilities. 
 Additionally, the following attributes have been added:

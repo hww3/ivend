@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.23 1998-02-19 02:01:13 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.24 1998-02-21 00:17:00 hww3 Exp $";
 
 /*
  *
@@ -269,8 +269,7 @@ if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";
-    return parse_rxml(parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id),id);
+return retval;    
  
     }
   
@@ -327,8 +326,7 @@ foreach(r,row){
   }
 
 retval+=html_table(titles, rows);
-    return parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id);
+return retval;
 
     }
 
@@ -386,8 +384,8 @@ foreach(indices(config[c]),d){
   s=replace(s,"#id#",c);
   retval+=s;
 }
+return retval;
 
-return parse_rxml(retval,id);
 }
 
 int read_conf(){          // Read the config data.
@@ -489,8 +487,7 @@ string retval;
 if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
   return handle_error(id->misc->ivend->config->root+"/cart.ivml",id);
  
-    return parse_rxml(parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id),id);
+return retval;    
 
 }
 
@@ -609,8 +606,6 @@ switch(page){
     else retval=find_page(page, st, id);
   }
   if (!retval) return handle_error("Unable to find product "+page, id);
-    return parse_rxml(parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id),id);
  
 
 // return (string)(retval+" "+page+" "+dump_id(id));
@@ -635,8 +630,7 @@ retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
 if(retval==-1) return handle_page("index.ivml",id->misc->ivend->st,id);
 else 
-    return parse_rxml(parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id),id); 
+return retval;    
 }
 
 
@@ -1064,7 +1058,8 @@ switch(id->variables->mode){
 
 }
 
-  return http_string_answer(
+return retval;  
+return http_string_answer(
     parse_rxml(parse_html(retval,([]),
         (["a":container_ia, "form":container_form]),id),id));
 
@@ -1082,14 +1077,14 @@ return http_string_answer(data, "image/gif");
 string create_index(object id){
 string retval="";
 string file=Stdio.read_bytes(query("datadir")+"index.ivml");
-retval=parse_rxml(file,id);
+// retval=parse_rxml(file,id);
 return retval;
 }
 
 mixed find_file(string file_name, object id){
 	id->misc["ivend"]=([]);
 	id->misc["ivendstatus"]="";
-	string retval="";
+	string retval;
    	array(string) request=explode(file_name,"/");
 	string restofrequest=request[2..]*"/";
 
@@ -1099,11 +1094,10 @@ if(file_name==""){
 	  else 
 retval="You must enter through a store!\n";
 
-   	return http_string_answer(retval);
 }
 
 
-	switch(request[0]){
+else	switch(request[0]){
 	
 		case "config":
 		return configuration_interface(request, id);
@@ -1137,7 +1131,7 @@ retval="You must enter through a store!\n";
 
 	    if(catch(request[1])) {
 //	      perror("iVend: no product specified.\n");
-	      return http_string_answer(parse_rxml(handle_page("index.ivml", request[0], id),id));
+	      retval=handle_page("index.ivml", request[0], id);
 	    }
 	    else {
 perror("finding request...\n");
@@ -1146,23 +1140,23 @@ perror("finding request...\n");
 	      switch(request[1]) {
 		    case "":
 	        case "index.ivml":
-		  return http_string_answer(handle_page("index.ivml", request[0], id));
+		  retval=(handle_page("index.ivml", request[0], id));
 	          break;
 		case "cart":
-		  return http_string_answer(handle_cart(request[0], id));
+		  retval=(handle_cart(request[0],id));
 		  break;
 		case "checkout":
-		  return http_string_answer(handle_checkout(id));
+		  retval=(handle_checkout(id));
 		  break;
 		case "images":
 		  return get_image(restofrequest, id);
 		  break;
 		case "admin":
 		  perror("ADMIN!\n");
-		  return admin_handler(restofrequest, id);
+		  retval=admin_handler(restofrequest, id);
 		  break;
 		default:
-		  return http_string_answer(handle_page(request[1], request[0], id));
+		  retval=(handle_page(request[1], request[0], id));
 		}
 	    }
 	  }
@@ -1170,16 +1164,50 @@ perror("finding request...\n");
 #ifdef MODULE_DEBUG	
 //	retval+=dump_id(id);
 #endif
-
+	retval=parse_rxml(retval, id);
    	return http_string_answer(retval);
 
 }
 
+string|void container_ivml(string name, mapping args,
+                      string contents, object id)
+{
 
+if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
+
+return "<html>"+parse_html(contents,
+    ([
+	"ivstatus":tag_ivstatus, 
+	"ivmg":tag_ivmg, 
+	"listitems":tag_listitems
+    ]),
+
+    ([
+	"a":container_ia, 
+	"form":container_form,
+	"icart":container_icart, 
+	"ivindex":container_ivindex	
+    ]),id) +"</html>";
+
+}
+
+mapping query_container_callers()
+{
+  return ([ "ivml": container_ivml ]); }
+
+mapping query_tag_callers()
+{
+  return ([ ]); }
+
+/*
 mapping query_container_callers()
 {
   return ([ "icart":container_icart, "ivindex":container_ivindex ]); }
 
 mapping query_tag_callers()
 {
-  return ([ "ivstatus":tag_ivstatus, "ivmg":tag_ivmg, "listitems":tag_listitems ]); }
+  return ([ 
+"ivstatus":tag_ivstatus, "ivmg":tag_ivmg, "listitems":tag_listitems
+ ])
+; }
+*/

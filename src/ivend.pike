@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.32 1998-03-05 22:02:49 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.33 1998-03-06 04:27:59 hww3 Exp $";
 
 /*
  *
@@ -201,8 +201,9 @@ void|string container_form(string name, mapping args,
 string container_icart(string name, mapping args,
                       string contents, object id)
 {
+string st;
     if(!id->misc->ivend->st) return "You can't access your cart from here.";
-    else string st=id->misc->ivend->st;
+    else st=id->misc->ivend->st;
 
 if(id->variables->update) {
 
@@ -498,6 +499,7 @@ return retval;
 
 mixed parse_page(string page, array(mapping(string:string)) r, array
 desc, object|void id){
+    string  page2;
 
 string field;
 array fields=indices(r[0]);
@@ -511,15 +513,15 @@ if(!objectp(modules[id->misc->ivend->config->checkout_module]))
 	r[0][desc[i]->name]=
 		  modules[id->misc->ivend->config->checkout_module]->currency_convert(r[0][desc[i]->name],id);
 
-    string  page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
+
+	page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
   }
 
 else  if(desc[i]->type=="decimal") {
-    string 
 page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
   }
   else 
-  string page2=replace(page,("#"+desc[i]->name+"#"),(string)r[0][desc[i]->name]);
+  page2=replace(page,("#"+desc[i]->name+"#"),(string)r[0][desc[i]->name]);
   page=page2;
   }
 

@@ -41,9 +41,10 @@ d-=({"CVS"});
 string name;
 string desc;
 string type;
+program p;
 foreach(d,name){
  perror("MODULE: "+name+"\n");
-if(catch(program p=compile_file(moddir+"/"+name)))
+if(catch(p=compile_file(moddir+"/"+name)))
   { perror("error: "+name+"\n");
   continue;
   }

@@ -34,8 +34,8 @@ int main(int argc, array(string) argv)
   object rsa = Crypto.rsa();
   rsa->generate_key(keysize, r);
 
-  write_file(name + ".pub", keys.rsa_to_pub(rsa));
-  write_file(name + ".priv", keys.rsa_to_priv(rsa));
+  write_file(name + ".pub", Commerce.Security.rsa_to_pub(rsa));
+  write_file(name + ".priv", Commerce.Security.rsa_to_priv(rsa));
 
 }
 

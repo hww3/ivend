@@ -173,45 +173,6 @@ CREATE TABLE sessions (
 #
 
 
-#
-# Table structure for table 'shipping_ot'
-#
-CREATE TABLE shipping_ot (
-  type int(11) DEFAULT '0' NOT NULL,
-  charge float(5,2) DEFAULT '0.00' NOT NULL,
-  min float(5,2) DEFAULT '0.00' NOT NULL,
-  max float(5,2) DEFAULT '0.00' NOT NULL
-);
-
-#
-# Dumping data for table 'shipping_ot'
-#
-
-INSERT INTO shipping_ot VALUES (1,5.95,0.00,25.00);
-INSERT INTO shipping_ot VALUES (1,7.95,25.01,100.00);
-INSERT INTO shipping_ot VALUES (1,9.95,100.01,500.00);
-INSERT INTO shipping_ot VALUES (2,6.95,0.00,25.00);
-INSERT INTO shipping_ot VALUES (2,8.95,25.01,100.00);
-INSERT INTO shipping_ot VALUES (2,15.95,100.01,500.00);
-INSERT INTO shipping_ot VALUES (1,24.95,350.00,10000.00);
-INSERT INTO shipping_ot VALUES (2,30.95,350.00,10000.00);
-
-#
-# Table structure for table 'shipping_types'
-#
-CREATE TABLE shipping_types (
-  type int(11) DEFAULT '0' NOT NULL auto_increment,
-  name varchar(64) DEFAULT '' NOT NULL,
-  description blob,
-  PRIMARY KEY (type)
-);
-
-#
-# Dumping data for table 'shipping_types'
-#
-
-INSERT INTO shipping_types VALUES (1,'UPS 3 Day Select','UPS 3 Day Select delivers your package within 3 business days to most addresses.');
-INSERT INTO shipping_types VALUES (2,'UPS 2 Day Select','UPS 2 Day Select delivers your package within 2 business days to addresses within the continental United States.');
 
 #
 # Table structure for table 'status'

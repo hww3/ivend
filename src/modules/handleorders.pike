@@ -368,7 +368,7 @@ if(id->variables->orderid) status=DB->query(
       )[0]->status;
 
  if(id->variables->valpay && id->variables->orderid){
-
+if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
   string cn;
 string key="";
 if(id->misc->ivend->config->general->privatekey)
@@ -391,7 +391,7 @@ cn=cn2*"";
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + ", card_number='" + cn + "'"
 	" WHERE orderid='" + id->variables->orderid+"'");
-
+}
    array r=DB->query(
        "SELECT status.name, orders.status from status, orders "
 	"WHERE status.status=orders.status and orders.id= '" +
@@ -762,6 +762,13 @@ array query_preferences(void|object id) {
 	VARIABLE_INTEGER,
 	12,
 	0
+	})
+
+	({"deletecard", "Delete Card Number?"
+		"Should Credit Card Number be deleted following verification?", 
+	VARIABLE_MULTIPLE,
+	"Yes",
+	({"Yes", "No"})
 	})
 
 

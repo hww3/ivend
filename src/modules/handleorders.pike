@@ -123,7 +123,8 @@ id->variables->orderid + "'");
 
   retval+="<tr>\n<td></td><td></td><td></td>\n<td align=right><font "
 	"face=helvetica>" +
-	capitalize(row->lineitem)
+ capitalize(row->lineitem) + " "
+        + (row->extension||"")
 	+"</td>\n<td> &nbsp; </td><td align=right>" 
 	+ row->value + "</td></tr>\n";
   

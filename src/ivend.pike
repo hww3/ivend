@@ -633,10 +633,11 @@ string tag_upsell(string tag_name, mapping args,
 
 string tag_additem(string tag_name, mapping args,
                    object id, mapping defines) {
+string retval="";
    if(!args->item) return "<!-- you must specify an item " +
                           KEYS->products +". -->\n";
    if(!args->noform)
-      string retval="<form action=" + id->not_query + ">";
+      retval="<form action=" + id->not_query + ">";
    if(!args->silent){
       if(args->showquantity)
          retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity
@@ -2232,10 +2233,10 @@ mixed return_data(mixed retval, object id){
                            }
                            
                         else {*/   // generate the wizard.
-string wiz=c->genwizard(0,query("lang"), query("root")+"src/modules");
-
-object w=(object)clone(compile_string(wiz));
-perror(indices(w)*"\n");
+// string wiz=c->genwizard(0,query("lang"), query("root")+"src/modules");
+// Stdio.write_file("/home/bwellive/ivend/src/addwiz.pike", wiz);
+object w=(object)clone(compile_file(query("root")+"/src/addwiz.pike"));
+// perror(indices(w)*"\n");
 mixed res=w->wizard_for(id, "./");
 if(stringp(res)) retval+=res;
 else return res;                        }

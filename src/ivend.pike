@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.275 2000-12-18 21:14:02 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.276 2000-12-20 01:58:47 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1853,7 +1853,7 @@ void background_session_cleaner(){
 
     foreach(indices(config), string st){
         mapping store=config[st]->general;
-perror("taking a db object in background_session_cleaner()\n");
+
         err=catch(d=db[st]->handle());
         if(err)
             perror("iVend: BackgroundSessionCleaner failed."
@@ -1905,7 +1905,8 @@ mixed getmodify(string type, string pid, object id){
     else if(type=="group")
 
         retval+="<table>\n"+DB->gentable("groups",
-                                         add_pre_state(id->not_query, (<"domodify=product">)),0,0,id,
+                                         add_pre_state(id->not_query,
+(<"domodify=group">)),0,0,id,
                                          record[0])+"</table>\n";
 
     return retval;
@@ -2615,11 +2616,11 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  id->misc->ivend->config->global=global;
                  mixed err;
                  if(!DB) {
-		      ("taking a db object in find_file() 1\n");
+
 
 if(STORE) 
                      DB=db[STORE]->handle();
-perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
+//perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
 			}
                  if(err || config[STORE]->error) {
                      error(err[0] || config[STORE]->error, id);
@@ -2970,12 +2971,14 @@ if(id->cookies->SESSIONID)
                                  retval=handle_error(id);
                              // werror("return_Data\n");
                              if(1) {
-			       perror("sending db back. 221\n");
-			       perror(sprintf("%O\n", STORE));
-			       if(objectp(DB))
-				 db[STORE]->handle(DB);
-			       DB=0;
-			       perror(sprintf("%O\n", DB));
+//			       perror("sending db back. 221\n");
+			 //      perror(sprintf("%O\n", STORE));
+			       if(objectp(DB)) {
+			perror("sending db back.\n");	
+			 db[STORE]->handle(DB);
+				}
+//			       DB=0;
+			 //      perror(sprintf("%O\n", DB));
 			     }
                              if(mappingp(retval))
                                  return retval;
@@ -3124,8 +3127,6 @@ void start_db(mapping c){
   mixed err;
   perror("Creating DB connections for: " + c->config + "\n");
   db[c->config]=iVend.db_handler(c->dbhost, 4 );
-  perror(sprintf("db: %O", mkmapping(indices(db), values(db))) + "\n");
-  perror("taking db object in start_db()\n");
   object s=db[c->config]->handle();
   if(s) {
 
@@ -3207,7 +3208,7 @@ if(s) db[c->config]->handle(s);
                                  foreach(indices(config[c]->addins), string miq)
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
-perror("taking a db object in load_modules()\n");
+
 // perror("1 Found " + sizeof(mtl) + " modules to load.\n");
 object s=db[c]->handle();
 //perror("got db.\n");
@@ -3215,10 +3216,10 @@ object s=db[c]->handle();
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }
- perror("2 Found " + sizeof(mtl) + " modules to load.\n");
+// perror("2 Found " + sizeof(mtl) + " modules to load.\n");
 db[c]->handle(s);
                              foreach(mtl, string name) { 
-perror("loading " + name + "\n");
+
                                  err=load_ivmodule(c,name);
                                  if(err) perror("iVend: The following error occured while loading the module "
                                                     + name + "\n" +  describe_backtrace(err));

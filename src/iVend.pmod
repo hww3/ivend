@@ -528,9 +528,9 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
 
         }
         q=q[0..sizeof(q)-2]+" WHERE " +
-          id->misc->ivend->keys[id->variables->table]
+          DB->keys[id->variables->table]
           +"='" +
-id->variables[lower_case(id->misc->ivend->keys[id->variables->table])] +
+id->variables[lower_case(DB->keys[id->variables->table])] +
           "'";
         // if (sizeof(errors)>0) return errors;
          perror("running query\n" + q);
@@ -962,7 +962,7 @@ array(mapping(string:mixed)) r=list_fields(table);
 
             }
 
-            else if(r[i]->name == id->misc->ivend->keys[table]) {
+            else if(r[i]->name == DB->keys[table]) {
                 retval+="<tr>\n"
                         "<td valign=top align=right><font face=helvetica,arial size=-1>\n"
                         + replace(r[i]->name, "_", " ")+
@@ -1115,7 +1115,7 @@ mapping local_settings=([]);
     string host;
     int num_dbs;
     void create(string|void _host, int num) {
-	perror("Creating " + num  + " database connections.\n");
+//	perror("Creating " + num  + " database connections.\n");
         host = _host;
         num_dbs=num;
         mixed err;
@@ -1138,11 +1138,11 @@ mapping local_settings=([]);
         int count;
         dbs -= ({0});
 	dbs-=({});
-	if(objectp(d)) perror("Returning a DB to the stack.\n");
-	else perror("Taking a DB from the stack.\n");
+//	if(objectp(d)) perror("Returning a DB to the stack.\n");
+//	else perror("Taking a DB from the stack.\n");
 
         if(d) {
-	  perror("Getting ready to return DB\n");
+//	  perror("Getting ready to return DB\n");
             if(search(dbs, d) == -1) {
                 if(sizeof(dbs)>(2*num_dbs)) {
                     werror("Dropping db because of inventory...\n");
@@ -1150,7 +1150,7 @@ mapping local_settings=([]);
                 }
                 else {
                     dbs += ({d});
-                    werror("Handler ++ ("+sizeof(dbs)+")\n");
+//                    werror("Handler ++ ("+sizeof(dbs)+")\n");
                 }
             }
             else {
@@ -1171,7 +1171,7 @@ create(host, num_dbs);
             } else {
                 d = dbs[0];
                 dbs -= ({d});
-                werror("Handler -- ("+sizeof(dbs)+")\n");
+//                werror("Handler -- ("+sizeof(dbs)+")\n");
             }
         }
         UNLOCK();

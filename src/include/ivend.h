@@ -9,7 +9,7 @@
 #define CONFIG id->misc->ivend->config->general
 #define CONFIG_ROOT id->misc->ivend->config
 #define DB id->misc->ivend->db
-#define KEYS id->misc->ivend->keys
+#define KEYS id->misc->ivend->db->keys
 #define T_O id->misc->ivend->this_object
 
 #define ADMIN_FLAGS id->misc->ivend->admin_flags

@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.81 1998-07-22 18:37:16 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.82 1998-07-22 18:55:46 hww3 Exp $";
 
 array register_module(){
 
@@ -1608,7 +1608,11 @@ retval+=
 
 
 "<TR><TD><INPUT TYPE=SUBMIT VALUE=\" Update Variables \"></TD><TD>&nbsp;</TD></TR>\n" 
-"</TABLE></FORM>\n</TD></TR>";
+"</TABLE></FORM>";
+	if(save_status!=1)
+  	retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";
+retval+="\n</TD></TR>";
+
 		break;
 		
 		}

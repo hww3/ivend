@@ -90,6 +90,14 @@ cp -r ../examples/standard/* $storedir
 echo Creating RSA Keypair.
 pike -M ../src ./make_key.pike 1024 $storedir/private/key
 
+if [ -f $configdir/global ]
+then
+  echo Writing Global Configuration File.
+  cat << EOF > $configdir/global
+\$create_index=No
+\$move_onestore=No
+EOF
+fi
 echo Writing Configuration File.
 cat << EOF > $configdir/$storename
 

@@ -165,6 +165,7 @@ for (int i=0; i<sizeof(r); i++){
     errors+="<li>"+replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
 
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
+    r[i]->type=="enum" ||
     r[i]->type=="blob") query+="'"+id->variables[r[i]->name]+"',";
 
   else query+=(id->variables[r[i]->name]||"NULL")+",";

@@ -26,27 +26,30 @@ int page;
 
  if(id->variables["_page"]=="5"){
 
-if(!Commerce.CreditCard.cc_verify(id->variables->Card_Number,id->variables->Card_Type))
-{
+perror("check: "+id->variables->Card_Number+ " "+id->variables->Payment_Method+"\n");
 
-  retval+="card number okay...<p>";
-  string key=Stdio.read_file(id->misc->ivend->config->keyfile+".pub");
+if(Commerce.CreditCard.cc_verify(id->variables->Card_Number,id->variables->Payment_Method)
+    || !Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
+
+return "You have supplied improper credit card information!<p>"
+	"Please go back and correct this before continuing.";
+
+else {
+
+  perror("reading "+id->misc->ivend->config->keybase+".pub");
+  string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
   id->variables->Card_Number=
     Commerce.Security.encrypt(id->variables->Card_Number,key);
 }
 
-return "You have supplied an ivalid Credit Card Number!";
-
-   if( Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
- retval+="expdate okay...<p>";
-
   {
- //  mixed j=s->addentry(id);
- //  if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
-//	   "<br><b>Please correct the following before continuing:<p></b><ul>"
-//	+j+"</ul>";
+  mixed j=s->addentry(id);
+    if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
+	   "<br><b>Please correct the following before continuing:<p></b><ul>"
+	+j+"</ul>";
 
-  retval+="yay...";
+  retval+="<font size=+2>5. Confirm Order</font>\n"
+  	"<form action="+id->not_query+"><table>";
   }
 }
 else if(id->variables["_page"]=="4"){
@@ -62,8 +65,8 @@ else if(id->variables["_page"]=="4"){
     ({"orderid","type"}),id);
 
   retval+="</table>\n"
-        "<input type=hidden name=table value=customer_info>"
-	"<input type=submit value=Continue>"
+        "<input type=hidden name=table value=payment_info>"
+	"<input type=submit value=\" >> \">"
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=_page value=5></form>\n";
 
@@ -88,7 +91,7 @@ else if(id->variables["_page"]=="3"){
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=1>"
         "<input type=hidden name=table value=customer_info>"
-	"<input type=submit value=Continue>"
+	"<input type=submit value=\"  >> \">"
 	"<input type=hidden name=_page value=4></form>\n";
 
   }
@@ -102,7 +105,7 @@ else if(id->variables["_page"]=="2"){
 	"<input type=hidden name=type value=0>"	
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
        "<input type=hidden name=table value=customer_info>" 
-       "<input type=submit value=Continue>"
+       "<input type=submit value=\" >> \">"
 	"<input type=hidden name=_page value=3></form>\n";
   }
 
@@ -110,7 +113,7 @@ else {
   retval+="<font size=+2>1. Confirm Cart</font>\n";
   retval+="<icart fields=\"qualifier\"></icart>"
 	"<form action=checkout><input type=hidden name=_page value=2>"
-	"<input type=submit value=\"Continue\"></form>";
+	"<input type=submit value=\" >> \"></form>";
   }
 
 retval=parse_rxml(retval,id);

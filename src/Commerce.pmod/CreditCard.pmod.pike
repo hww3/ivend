@@ -99,7 +99,7 @@ string *digits=({});
 string *temp=expdate/"";
 
 digits=Array.filter((temp),Regexp("[0-9]")->match);
-
+// if ( (sizeof(digits)<3 ) || (sizeof(digits)>4)) return 0;
 string year;
 string month;
 expdate=(digits * "");
@@ -108,7 +108,8 @@ if (sizeof(expdate)==4){
  
   month=expdate[0..1];
   year=expdate[2..3];
-
+  if(month[0..0]=="0")
+    month=month[1..1];
 }
 
 else if (sizeof(expdate)==3){

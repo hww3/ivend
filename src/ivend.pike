@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.203 1999-05-28 02:34:00 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.204 1999-05-28 19:55:42 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -577,7 +577,7 @@ trigger_event("additem",id,(["item": i->item, "quantity":
 
 mapping get_options(object id, string item)
   {
-	array opt;
+	array opt=({});
 	array options=({});
 	float surcharge;
         array types=DB->query("SELECT option_type FROM item_options "
@@ -590,7 +590,7 @@ mapping get_options(object id, string item)
 	 foreach(options, mapping o) {
 	array optr=DB->query("SELECT * FROM item_options "
 		"WHERE product_id='" + item + 
-		" AND option_code='" + o->option_code  + "' "
+		"' AND option_code='" + o->option_code  + "' "
 		"AND option_type='" + o->option_type + "'");
 	if(!optr || sizeof(optr)<1) {
 	  error("Invalid Option " + o->option_type + " for item " +
@@ -598,7 +598,8 @@ mapping get_options(object id, string item)
 	}
 	else {
 	  surcharge+=(float)(optr[0]->surcharge);
-	  opt+=({optr[0]->option_code + ":" + optr[0]->option_id});			
+	  opt+=({ optr[0]->option_type + ":" + 
+             optr[0]->option_code });			
 	}
     }
 	return (["options": opt*"\000", "surcharge": surcharge]);
@@ -655,7 +656,9 @@ mixed do_additems(object id, array items){
 		 o=get_options(id, item->item);
             //      price=convert((float)price,id);
 		if(o->surcharge)
-		 price+=(float)(o->surcharge);
+perror(o->surcharge +"\n");
+		 price=(float)price + (float)(o->surcharge);
+perror(price+"\n");
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
         return;
@@ -2234,7 +2237,8 @@ string return_to_admin_menu(object id){
              mapping query_tag_callers()
              {
              return ([ "ivendlogo" : tag_ivendlogo, "additem" : tag_additem,
-                       "sessionid" : tag_sessionid ]); }
+                       "sessionid" : tag_sessionid
+			]); }
 
 
              // Start of support functions

@@ -1,5 +1,5 @@
 #include <ivend.h>
-
+#include <messages.h>
 inherit "roxenlib";
 
 constant module_name = "Admin Handler Funx";
@@ -42,6 +42,34 @@ int do_clean_sessions(object db){
 
    return sizeof(r);
 }     
+
+string tag_itemoptions(string tag_name, mapping args, object id, mapping 
+  defines) {
+ 
+  string retval=""; 
+
+  array r=DB->query("SELECT * FROM item_options WHERE product_id='" +
+args->item + "' GROUP BY option_type ORDER BY option_type ASC");
+
+  if(!r || sizeof(r)<1) return "";
+
+retval+="<input type=hidden name=options value=1>\n";
+  foreach(r, mapping row){
+  retval+="  <select name=\"" +  row->option_type + "\">\n";
+    foreach(DB->query("SELECT * FROM item_options WHERE product_id='" +
+      args->item + "' AND option_type='" + row->option_type + 
+      "' ORDER BY option_code ASC"), mapping row2)
+        retval+="<option value=\"" + row2->option_code + "\">" +
+row2->description + 
+((float)(row2->surcharge)!=0.00? MONETARY_UNIT + (sprintf("%.2f",
+(float)(row2->surcharge))) + " surcharge":"") + "\n"; 
+ 
+  retval+="</select>\n";
+  }
+
+return retval;
+}
+
 
 string action_itemoptions(string mode, object id){
 string retval="<html><head><title>Item Options</title></head>\n"
@@ -91,7 +119,7 @@ else {
 retval+="<tr><td><input type=text name=option_type size=10></td><td>"
   "<input type=text name=option_code size=10></td><td>"
   "<input type=text name=description size=30></td><td>"
-  "<input type=text name=surcharge size=6</td><td><font size=2><input "
+  "<input type=text value=0.00 name=surcharge size=6</td><td><font size=2><input "
   "type=submit name=add value=add></font></td></tr>\n";
   retval+="</table>";
 retval+="</form>";
@@ -409,6 +437,12 @@ return ([
 
 	]);
 
+
+}
+
+mapping query_tag_callers(){
+  
+  return (["itemoptions": tag_itemoptions]);
 
 }
 

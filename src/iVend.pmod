@@ -567,7 +567,7 @@ o+=query("SELECT id,parent,name FROM groups");
                         +replace(r[i]->name,"_"," ")+
                         "</FONT></TD>\n"
                         "<TD>\n"
-                        "<TEXTAREA NAME=\""+r[i]->name+"\" COLS=70 ROWS=5>"
+                        "<TEXTAREA WRAP NAME=\""+r[i]->name+"\" COLS=70 ROWS=5>"
                         + (record[r[i]->name]||"")+ "</TEXTAREA>\n";
             }
 
@@ -879,7 +879,7 @@ array(mapping(string:mixed)) r=list_fields(table);
                         "</FONT></TD>\n"
                         "<TD>\n";
 
-                retval+="<TEXTAREA NAME=\""
+                retval+="<TEXTAREA  WRAP NAME=\""
                         +lower_case(r[i]->name)+"\" COLS=70 ROWS=5>"+
                         record[r[i]->name]||""
                         +"</TEXTAREA>\n";

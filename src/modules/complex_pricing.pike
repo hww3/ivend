@@ -78,8 +78,14 @@ while(quantity){ // loop through the offers until we have enough
       o->times_we_accepted++;
       accepted_an_offer=1;
       quantity-=(int)(o->quantity_to_qualify);
+  mapping op=([]);
+  if(id->variables->options){
+   op=T_O->get_options(id, item);
+  }
+//  perror(o->surcharge + "\n");
+//  if(o->surcharge) price=(float)price +(float)(o->surcharge);
       int result=T_O->do_low_additem(id, o->bonus_product_id,
-       o->quantity_to_get, o->price, (["autoadd":1]));
+       o->quantity_to_get, o->price, (["autoadd":1])+op);
       if(!result) perror("an error occurred while adding item " + item
         +".\n");
       offers_we_took++;
@@ -105,12 +111,14 @@ void cpsingle(string event, object id, mapping args){
    perror("Couldn't find a single price rule for " + item + "\n");
  else {
   // add the item.
-  float price=(r[0]->price||0.00);
+  float price=((float)(r[0]->price)||0.00);
   mapping o=([]);
   if(id->variables->options){
    o=T_O->get_options(id, item);
   }
-  if(o->surcharge) price+=(float)(o->surcharge);
+  perror(o->surcharge + "\n");
+  if(o->surcharge) price=(float)price +(float)(o->surcharge);
+  perror(price +"\n");
   int result=T_O->do_low_additem(id, item, quantity, price, o);
   if(!result) {
    COMPLEX_ADD_ERROR=ADD_FAILED;
@@ -154,6 +162,25 @@ return retval;
 
 }
 
+mixed getprice_buyxgetx(object id, string item)
+{
+string retval="";
+
+array r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + item +
+  "' ORDER BY quantity_to_qualify, quantity_to_get ASC");
+
+if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
+
+for(int i=0; i<sizeof(r); i++){
+  retval+="Buy " + r[i]->quantity_to_qualify + ", get " +
+   r[i]->quantity_to_get + " " +
+   ((float)(r[i]->price)==0.00?"Free":("for " + MONETARY_UNIT +
+   sprintf("%.2f",(float)(r[i]->price)))) + "<br>";
+
+}
+return retval;
+}
+
 string tag_complex_pricing(string tag_name, mapping args,
                    object id, mapping defines) {
 string retval="";
@@ -194,10 +221,12 @@ if(!r || sizeof(r)<1) retval+="<tr><td colspan=3 align=center>No Complex "
 
 foreach(r, mapping row){
 
-  retval+="<tr><td>" + row->type + "</td><td>" + row->priority +
-    "</td><td>" + DB->query("SELECT COUNT(*) AS c FROM cp_" +
-    lower_case(row->type) + " WHERE product_id='" + row->product_id
-    +"'")[0]->c + "</td></tr>\n"; 
+  retval+="<tr><td><a href=\"./?type=" + v->type + "&id=" + v->id +
+    "&cptype=" + row->type + "\">" + row->type +
+    "</a></td><td>" +
+    row->priority + "</td><td>" + DB->query("SELECT COUNT(*) AS c FROM cp_" 
+    + lower_case(row->type) + " WHERE product_id='" + row->product_id
+    + "'")[0]->c + "</td></tr>\n"; 
 
 }
 retval+="</table>\n";
@@ -225,6 +254,17 @@ if(v->delete){
 v->id + "'"))<1) DB->query("DELETE FROM complex_pricing WHERE product_id='" + v->id + "' AND type='" + v->cptype + "'");
    retval+="Rule Deleted.<br>\n";
    break; 
+   case "buyxgetx":
+   DB->query("DELETE FROM cp_buyxgetx WHERE product_id='" + v->id + "' AND " 
+    "quantity_to_qualify=" + v->quantity_to_qualify + " AND quantity_to_get=" 
+    + v->quantity_to_get + " AND bonus_product_id='" + v->bonus_product_id
+    + "'");
+
+   if(sizeof(DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" +
+   v->id + "'"))<1) DB->query("DELETE FROM complex_pricing WHERE product_id='"
+   + v->id + "' AND type='" + v->cptype + "'");
+   retval+="Rule Deleted.<br>\n";
+
   }
 
 }
@@ -232,23 +272,29 @@ if(v->addnew){
  if(v->addnew=="2"){
   switch(v->cptype){
    case "single":
+   if(v->minimum_quantity!="" && v->price!=""){
    if(sizeof(DB->query("SELECT * FROM complex_pricing WHERE product_id='"
 + v->id + "' AND type='" + v->cptype + "'"))<1)
    DB->query("INSERT INTO complex_pricing VALUES('" + v->id + "','single',1)");
    DB->query("INSERT INTO cp_single VALUES('" + v->id + "'," +
     v->minimum_quantity + "," + v->price + ")");
    retval+="Rule Added Successfully.<br>\n";
+   } else retval+="You must supply a Minimum Quantity and Price!<br>\n";
+
    break;
 
    case "buyxgetx":
-   if(v->minimum_quantity!="" && v->price!=""){
+   if(v->quantity_to_qualify!="" && v->price!="" && v->bonus_product_id!=""){
+   if(sizeof(DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" +
+v->id + "'"))<1)
    DB->query("INSERT INTO complex_pricing VALUES('" + v->id + "','buyxgetx',2)");
+
    DB->query("INSERT INTO cp_buyxgetx VALUES('" + v->id + "'," +
-    v->quantity_to_qualify + "," + v->quantity_to_get + ",'" +
-    v->bonus_product_id + "'," + v->price + "," + v->repeat + "," +
-    v->exclude_others + ")");
+    v->quantity_to_qualify + "," + (v->quantity_to_get||"1") + ",'" +
+    v->bonus_product_id + "'," + (v->price||"0.00") + "," +
+    (v->repeat||"1") + "," + v->exclude_others + ")");
    retval+="Rule Added Successfully.<br>\n";
-   } else retval+="You must supply a Minimum Quantity and Price!<br>\n";
+   } else retval+="You must supply a Quantity to Qualify, a Product ID and Price!<br>\n";
    break;
    }
   }
@@ -263,7 +309,7 @@ if(v->addnew){
   case "single":
   array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + v->id +
    "' ORDER BY minimum_quantity ASC");
-  retval+="<table><tr><th>Minimum Quantity</th><th>Price Ea.</th></tr>\n";
+  retval+="<table><tr><th>Min. Qty.</th><th>Price Each</th></tr>\n";
   if(!r || sizeof(r)<1)
    retval+="<tr><td colspan=3>No Rules Defined.</td></tr>\n";
   else foreach(r, mapping row)
@@ -278,6 +324,32 @@ if(v->addnew){
   break;
 
   case "buyxgetx":
+  array r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + v->id +
+   "' ORDER BY quantity_to_qualify, quantity_to_get ASC");
+  retval+="<table><tr><th>Qty to Qualify</th><th>Qty to get</th>"
+    "<th>Bonus Product ID</th><th>Price</th><th>Repeat</th><th>Exclude "
+    "Others</th></tr>\n";
+  if(!r || sizeof(r)<1)
+   retval+="<tr><td align=center colspan=6>No Rules Defined.</td></tr>\n";
+  else foreach(r, mapping row)
+   retval+="<tr><td>" + row->quantity_to_qualify + "</td><td>" +
+    row->quantity_to_get + "</td><td>" + row->bonus_product_id + "</td>"
+    "<td>" + sprintf("%.2f",(float)(row->price)) + "</td><td>" +
+    row->repeat + "</td><td>" + (row->exclude_others=="1"?"Y":"N") +
+    "</td><td><font size=1>"
+    "<a href=\"./?id=" + v->id + "&type=" + v->type + "&cptype=" +
+    v->cptype + "&quantity_to_qualify=" + row->quantity_to_qualify +
+    "&quantity_to_get=" + row->quantity_to_get + "&bonus_product_id=" +
+row->bonus_product_id + "&delete=1\">Delete</a></font></td></tr>\n";
+   retval+="<tr><td><input type=text size=5 name=quantity_to_qualify>"
+    "</td><td><input type=text size=5 name=quantity_to_get></td><td>"
+    "<input type=text size=10 name=bonus_product_id value=\""
+	+ v->id + "\"></td><td>"
+    "<input type=text size=6 name=price value=0.00></td><td>"
+    "<input type=text size=3 name=repeat value=1></td><td>"
+    "<select name=exclude_others><option value=1>Yes\n<option value=0>"
+    "No\n</select></td><td>"
+    "<font size=1><input type=submit value=Add></font></td></tr></table>\n";
   break;
   }
  retval+="</form>\n";

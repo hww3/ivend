@@ -436,7 +436,7 @@ row->status)[0]->c);
 //	"DATE_FORMAT(updated, 'm/d/y h:m') as 
 	"updated, notes "
 	"FROM orders "
-	"WHERE status=" + row->status + " ORDER BY updated LIMIT "
+	"WHERE status=" + row->status + " ORDER BY updated DESC LIMIT "
 	+(id->variables["page"+ row->status]?
 		((((int)id->variables["page" + row->status])*numlines
 -numlines) +
@@ -461,13 +461,13 @@ numpages +
     "<td bgcolor=navy><font color=white "
     "face=helvetica><b>Notes</b></font></td>\n</tr>";
 
-  for(int i=(sizeof(r)-1); i>=0; i--){
+  foreach(r, mapping row){
     retval+="<tr>\n";
     retval+="<td bgcolor=gray align=center><a href=\"./?orderid="
-	+r[i]->id+"\">"+
-	r[i]->id+"</a></td>";
+	+row->id+"\">"+
+	row->id+"</a></td>";
 //    retval+="<td>"+ r[i]->status+" </td>\n";
-    retval+="<td> "+(r[i]->updated)+" </td><td> " + (r[i]->notes||"") +
+    retval+="<td> "+(row->updated)+" </td><td> " + (row->notes||"") +
  " </td>\n"
 	"</tr>\n";
 

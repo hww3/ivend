@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.3 1997-12-16 17:41:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.4 1997-12-16 17:51:29 hww3 Exp $";
 
 /*
  *
@@ -193,7 +193,7 @@ foreach(r,row){
 //	perror(t);  
 
       if(n==0)
-        thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</IA>");
+        thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</A>");
       else
         thisrow[n]=row[t]; 
       n++;

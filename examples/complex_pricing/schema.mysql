@@ -166,9 +166,10 @@ CREATE TABLE admin_users (
 
 CREATE TABLE activity_log (
   subsystem CHAR(16) not null,
-  orderid CHAR(12) not null primary key,
+  orderid CHAR(12) not null,
   severity int(1) not null default 1,   
   time_stamp datetime,
-  message blob
+  message blob,
+  KEY key1 (orderid)
 )\g
  

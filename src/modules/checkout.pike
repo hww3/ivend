@@ -134,7 +134,7 @@ if(!args->field)
 mixed err;
 err=catch(good_email=Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]));
 if(err) {
-  id->misc->ivend->this_object->report_ivend_error("Error Running Check Address", id, err);
+  id->misc->ivend->this_object->report_error("Error Running Check Address", id, err);
   return "<!-- An error occurred while checking the email address.-->";
 }
 else if(good_email)
@@ -148,7 +148,7 @@ return "";
 
 mixed getorderid(object id){
 int orderid;
-perror("doing getorderid.\n");
+// perror("doing getorderid.\n");
 if(sizeof(DB->list_tables("orderid_list"))!=1) {
   perror("adding table orderid_list...\n");
   if(catch(DB->query("CREATE TABLE orderid_list ("
@@ -199,6 +199,8 @@ if(sizeof(s)==0) {
 id->misc->ivend->orderid=getorderid(id);
 if(stop_error(id))
  {
+ T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+	"checkout", id);
 // id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
@@ -208,6 +210,8 @@ id->misc->ivend->this_object->trigger_event("preconfirmorder", id,
 
 if(stop_error(id))
  {
+ T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+	"checkout", id);
 // id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
@@ -250,6 +254,8 @@ id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
+ T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
   return "An error occurred while moving your order to confirmed status.\n";
@@ -292,8 +298,8 @@ if(note) {
   perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
-   perror("Error sending confirmation note for " +
-	id->misc->ivend->st + "!\n");
+ T_O->report_error("Unable to send confirmation note to " + recipient +
+"." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
 
 }
 
@@ -317,13 +323,15 @@ if(note) {
 				     "Subject":subject
 				     ]));
 
-  perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
-   perror("Error sending confirmation note for " +
-	id->misc->ivend->st + "!\n");
+ T_O->report_error("Unable to send order notification to " + recipient +
+"." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
 
 }
+
+ T_O->report_error("Order confirmed successfully." ,
+   id->misc->ivend->orderid ||"NA", "checkout", id);
 
 return retval;
 }
@@ -687,7 +695,7 @@ return retval;
 string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
-perror("doing container_checkout.\n");
+// perror("doing container_checkout.\n");
 if(stop_error(id)) {
   perror("<!-- skipping checkout because of errors -->\n");
   return "<!-- skipping checkout because of errors -->";
@@ -716,7 +724,6 @@ contents=parse_html(contents,
 		  tags,
 		  containers,
 		  id);
-perror("done with container_checkout.\n");
 return contents;
 
 }

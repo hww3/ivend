@@ -239,7 +239,7 @@ orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
 "'");
 foreach(orders_to_archive, mapping or){
  array tables=({"orderdata", "shipments", "customer_info",
-	"payment_info", "lineitems"});
+	"payment_info", "lineitems", "activity_log"});
  foreach(tables, string t){
 
   catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id +
@@ -264,7 +264,7 @@ retval+="<order id=\"" + or->id + "\">\n"
 	"<status>" + or->status + "</status>\n"
 	"<notes>" + (or->notes||"") + "</notes>\n";
     array tables=({"orderdata", "shipments", "customer_info",
-	"payment_info", "lineitems"});
+	"payment_info", "lineitems", "activity_log"});
     foreach(tables, t){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
@@ -332,11 +332,11 @@ if(v->method=="Mail Archive" && v->email!=""){
  object dns=Protocols.DNS.client();
 string server=dns->get_primary_mx(gethostname());
 if(!server) server="localhost";
-// if(catch(
+ if(catch(
   Protocols.SMTP.client(server)->simple_mail(v->email, 
 	"Archive Orders " + (orders_to_archive*", "), "ivend@" +
-	gethostname(), retval);
-// ))
+	gethostname(), retval)
+ ))
 	return "An error occurred while mailing your archive request.<p>"
 	 "Your archive request was cancelled. Please try again later.";
   if(id->variables->delete=="yes")

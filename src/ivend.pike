@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.243 1999-09-07 15:04:07 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.244 1999-09-08 20:31:14 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -64,9 +64,39 @@ int num;
 int save_status=1;              // 1=we've saved 0=need to save.
 int db_info_loaded=0;
 
-void report_ivend_error(mixed msg, object id, mixed err){
-    perror(msg + ": " + id->remoteaddr + ": " + id->misc->ivend->sessionid +
-           "\n" + " " + err[0]);
+void report_error(string error, string|void orderid, string subsys, object id){
+    perror(id->remoteaddr + ": " + id->misc->ivend->sessionid +
+           "\n" + " " + error);
+
+
+    catch(DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
+	"1, NOW()," +
+	DB->quote(error) + "')"));  
+
+    return;
+
+}
+
+void report_status(string error, string|void orderid, string subsys, object id){
+
+    catch(DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
+	"5, NOW()," +
+	DB->quote(error) + "')"));  
+
+    return;
+
+}
+
+void report_warning(string error, string|void orderid, string subsys, object id){
+
+    catch(DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
+	"2, NOW()," +
+	DB->quote(error) + "')"));  
+
+    return;
 
 }
 
@@ -2948,6 +2978,18 @@ if(sizeof(s->list_tables("admin_users"))!=1) {
 		"password char(16) not null, "
 		"level int(2) not null default 9)"
 		);
+}
+if(sizeof(s->list_tables("activity_log"))!=1) {
+  perror("adding activity_log table...\n");
+	s->query("CREATE TABLE activity_log ("
+		"subsystem char(16) not null, "
+		"orderid char(12) not null, "
+		"severity int(1) not null, "
+		"time_stamp datetime, "
+		"message blob,"
+		"key key1 (orderid))"
+		);
+
  }
 db[c->config]->handle(s);
                              }

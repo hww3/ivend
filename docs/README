@@ -1,4 +1,4 @@
-iVend version 1.0a1 of 3 january 1998 
+iVend version 1.0a1 of 3 february 1998 
 coding by Bill Welliver <hww3@riverweb.com>
 
 What is iVend?
@@ -67,7 +67,11 @@ product string
 The above fields are considered 'special' by iVend, and are expected to 
 be present. The presence of additional fields is purely optional, however 
 fields such as shipping wights and costs, product descriptions or 
-inventory counts may also be useful.
+inventory counts may also be useful. 
+
+* field names that begin with image are considered special by iVend. They
+indicate images to be stored with groups and products. You can have as 
+many image fields as you like, such as thumbnails and fullsize images.
 
 4. Modify the iVend templates using standard HTML, RXML and additional 
 IVML (ivend markup language) tags. A listing of IVML tags can be found in 
@@ -121,16 +125,29 @@ RXML tags. They are only available within the iVend system.
 <a></a> has been modified to provide session tracking capabilities. 
 Additionally, the following attributes have been added:
 
-cart: generates a link to the store's shopping cart page.
-groups: generates a link to the store's group listing page.
-checkout: generates a link to the store's checkout page.
+  cart: generates a link to the store's shopping cart page.
+  groups: generates a link to the store's group listing page.
+  checkout: generates a link to the store's checkout page.
 
 <ivstatus> when used on product pages, this tag will display information about
 additions to a user's shopping cart, and possibly other information from 
 the iVend system.
 
 <ivmg> is used to insert an image from a product or group stored in ivend's
-database.
+database. This tag takes the following attributes:
 
-<cart> displays the store shopping cart.
+  field: indicates the field that contains the image you want to display.
+
+<icart></icart> displays the store shopping cart for the current
+sessionid. This tag takes the following attributes:
+
+  fields: a comma separated list of additional fields to include in the cart.
+
+<form></form> has been modified to automatically handle session tracking.
+
+<listitems> generates a table of products which fall in a particular
+group. The following attributes affect this tag:
+
+  fields: a comma separated list of additional fields to include in the table.
+
 

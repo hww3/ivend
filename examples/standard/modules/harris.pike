@@ -26,13 +26,16 @@ int page;
  if(id->variables["_page"]=="4"){
    if(id->variables->shipsame=="1");
    else mixed j=s->addentry(id);
+   if(j!=1) return "<font size=+2>Error!</font>\n"
+	   "<br>"+j;
 retval="testin'";
  }
 
 else if(id->variables["_page"]=="3"){
 
   mixed j=s->addentry(id);
-
+if(j!=1) return "<font size=+2>Error!</font>\n"
+	   "<br>"+j;
   retval+="<font size=+2>3. Shipping Address</font>\n"
   	"<form action="+id->not_query+">";
   retval+="Is this order to be shipped to the Billing address?\n"

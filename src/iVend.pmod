@@ -137,7 +137,8 @@ string db;
 string user;
 string password;
 
-int addentry(object id, string referrer){
+int|string addentry(object id, string referrer){
+string errors;
 array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
@@ -155,6 +156,9 @@ for (int i=0; i<sizeof(r); i++){
   else query+="NULL,";
   }
 
+ else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
+    errors+=replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
+
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="blob") query+="'"+id->variables[r[i]->name]+"',";
 
@@ -162,6 +166,7 @@ for (int i=0; i<sizeof(r); i++){
 
   }
 query=query[0..sizeof(query)-2]+")";
+if (errors!="") return errors;
 s->query(query);
  if(id->variables->jointable) {
  array jointable=id->variables[id->variables->jointable]/"\000";

@@ -391,12 +391,12 @@ id->misc->ivend->checkout=1;
 
 string retval=
   Stdio.read_file(id->misc->ivend->config->general->root +
-    "/checkout/checkout_"+ (id->variables["_page"] || "1") +
+    "/html/checkout/checkout_"+ (id->variables["_page"] || "1") +
     ".html");
 
 if(!retval) return "error loading " +
 id->misc->ivend->config->general->root +
-  "/checkout/checkout_"+ (id->variables["_page"] || "1") + 
+  "/html/checkout/checkout_"+ (id->variables["_page"] || "1") + 
   ".html" ;    
 
 retval=parse_rxml(retval,id);

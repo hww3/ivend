@@ -889,11 +889,11 @@ string tag_ivmg(string tag_name, mapping args,
       else if (sizeof(r)!=1) return "<!-- no records returned -->";
       else if ((r[0][args->field]==0))
          return "<!-- No image for this record. -->\n";
-      else filename=CONFIG->root+"/images/"+
+      else filename=CONFIG->root+"/html/images/"+
                     id->misc->ivend->type+"s/"+r[0][args->field];
    }  
    else if(args->src!="")
-      filename=CONFIG->root+"/images/"+args->src;
+      filename=CONFIG->root+"/html/images/"+args->src;
 
    array|int size=size_of_image(filename);
 
@@ -943,9 +943,9 @@ mixed handle_cart(string filename, object id, object this_object){
 #endif
 
    string retval;
-   if(!(retval=Stdio.read_bytes(CONFIG->root+"/cart.html")))
+   if(!(retval=Stdio.read_bytes(CONFIG->root+"/html/cart.html")))
       error("Unable to find the file "+
-            (CONFIG->root)+"/cart.html",id);
+            "/cart.html",id);
     
    return retval;
 
@@ -1038,10 +1038,10 @@ mixed find_page(string page, object id){
    if(id->variables->template) template=id->variables->template;
    else template=type+"_template.html";
 
-   retval=Stdio.read_bytes(CONFIG->root+"/"+template);
+   retval=Stdio.read_bytes(CONFIG->root+"/html/"+template);
    if (catch(sizeof(retval)))
       return 0;
-   id->realfile=CONFIG->root+"/"+template;
+   id->realfile=CONFIG->root+"/html/"+template;
    // perror(id->realfile+"\n");
    // perror(retval + "\n");
    return (retval);
@@ -1104,8 +1104,8 @@ mixed handle_page(string page, object id){
    switch(page){
 
       case "index.html":
-         id->realfile=CONFIG->root+"/index.html";
-         retval= Stdio.read_bytes(CONFIG->root+"/index.html"); 
+         id->realfile=CONFIG->root+"/html/index.html";
+         retval= Stdio.read_bytes(CONFIG->root+"/html/index.html"); 
          break;
 
          default:
@@ -1130,8 +1130,8 @@ mixed handle_page(string page, object id){
          id->misc->ivend->type=get_type(id->misc->ivend->page, id);
          // perror (id->misc->ivend->page + " is a " + id->misc->ivend->type + "\n");
 
-         retval=Stdio.read_file(CONFIG->root + "/" + page);
-         id->realfile=CONFIG->root+"/"+page;
+         retval=Stdio.read_file(CONFIG->root + "/html/" + page);
+         id->realfile=CONFIG->root+"/html/"+page;
    }
    if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
    return retval;
@@ -1981,11 +1981,11 @@ mixed stat_file( mixed f, mixed id )  {
 
    if(!CONFIG)
       return ({ 33204,0,time(),time(),time(),0,0 });
-   //  perror("iVend: statting "+ CONFIG->root+"/"+f+"\n");
+   //  perror("iVend: statting "+ CONFIG->root+"/html/"+f+"\n");
 
    array fs;
    if(!id->pragma["no-cache"] &&
-         (fs=cache_lookup("stat_cache", CONFIG->root+"/" 
+         (fs=cache_lookup("stat_cache", CONFIG->root+"/html/" 
                           +f)))
       return fs[0];  
 
@@ -1994,14 +1994,14 @@ mixed stat_file( mixed f, mixed id )  {
 
 
    fs = file_stat(
-          CONFIG->root + "/" + f); 
+          CONFIG->root + "/html/" + f); 
    /* No security currently in this function */
 
 #ifndef THREADS
    privs = 0;
 #endif
 
-   cache_set("stat_cache", CONFIG->root+"/" +f, ({fs}));
+   cache_set("stat_cache", CONFIG->root+"/html/" +f, ({fs}));
    return fs;  
 
 }
@@ -2020,7 +2020,7 @@ mixed handle_error(object id){
 
    if(STORE && CONFIG)
       retval=Stdio.read_file(
-               CONFIG->root+"/error.html");
+               CONFIG->root+"/html/error.html");
 
    // perror("error: " + retval + "\n");
 
@@ -2039,11 +2039,9 @@ mixed handle_error(object id){
 
 mixed get_image(string filename, object id, object this_object){
 
-   //perror("** "+ CONFIG[STORE]->root+filename+"\n\n");
-
    string data=Stdio.read_bytes(
-                 CONFIG->root+"/"+filename);
-   id->realfile=CONFIG->root+"/"+filename;
+                 CONFIG->root+"/html/"+filename);
+   id->realfile=CONFIG->root+"/html/"+filename;
 
    return http_string_answer(data,
                              id->conf->type_from_filename(id->realfile));

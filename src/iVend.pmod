@@ -350,9 +350,12 @@ class db {
 
 
                      rm(filename);
-                     if(file_stat(CONFIG->general->root+"/images/"+id->variables->table));
-                     else mkdir(CONFIG->general->root+ "/images/" + id->variables->table);
-                     Stdio.write_file(CONFIG->general->root+"/images/"+
+                     if(file_stat(CONFIG->general->root+
+			"/html/images/"+id->variables->table));
+                     else mkdir(CONFIG->general->root+ 
+			"/html/images/" + id->variables->table);
+                     Stdio.write_file(CONFIG->general->root+
+			"/html/images/"+
                                       id->variables->table+"/"+filename,id->variables[r[i]->name]);
                      q+="'"+filename+"',";
                   }
@@ -410,14 +413,18 @@ class db {
                      string filename=id->variables->id+
                                      r[i]->name[5..]+"."+e;
                      rm(filename);
-                     if(file_stat(CONFIG->general->root+"/images/"+id->variables->table));
-                     else mkdir(CONFIG->general->root+ "/images/" + id->variables->table);
+                     if(file_stat(CONFIG->general->root+
+			"/html/images/"+id->variables->table));
+                     else mkdir(CONFIG->general->root+ 
+			"/html/images/" + id->variables->table);
 
-                     rm(CONFIG->general->root + "/images/" + id->variables->table + "/" +
+                     rm(CONFIG->general->root + 
+			"/html/images/" + id->variables->table + "/" +
                         filename );
 
 
-                     Stdio.write_file(CONFIG->general->root+"/images/"+
+                     Stdio.write_file(CONFIG->general->root+
+			"/html/images/"+
                                       id->variables->table+"/"+filename,id->variables[r[i]->name]);
 
                      q+=r[i]->name+"='"+filename+"',";

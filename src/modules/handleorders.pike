@@ -454,10 +454,10 @@ int numlines=(int)CONFIG_ROOT[module_name]->showlines ||10;
 // " where status=" + row->status)[0]->c);
   array r=DB->query("SELECT id, "
 //	"DATE_FORMAT(updated, 'm/d/y h:m') as 
-	"updated, notes "
-	"FROM orders "
+	"updated, notes, status.name as status "
+	"FROM orders,status "
 //	"WHERE status=" + row->status + 
-        " ORDER BY updated DESC LIMIT "
+        " WHERE status.status=orders.status ORDER BY updated DESC LIMIT "
 	+(id->variables->page?
 		((((int)id->variables->page)*numlines
 -numlines) +
@@ -493,6 +493,8 @@ numpages + " &nbsp; " +
   retval+="<tr><td></td>\n"
 	"<td bgcolor=navy><font color=white "
     " face=helvetica> <b>Order ID</b> </font></td>\n"
+	"<td bgcolor=navy><font color=white face=helvetica><b>"
+	"Status</b></td>\n"
     "<td bgcolor=navy><font color=white face=helvetica><b>Record "
     "Updated</font></td>\n"
     "<td bgcolor=navy><font color=white "

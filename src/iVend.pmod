@@ -653,6 +653,11 @@ return capitalize(type)+" "+id+ DELETED_SUCCESSFULLY +"\n";
 string generate_form_from_db(string table, array|void exclude,
 object|void id, array|void pulldown, mapping|void record){
 
+perror(sprintf("table: %O\n\n", table));
+perror(sprintf("exclude: %O\n\n", exclude));
+perror(sprintf("id: %O\n\n", id));
+perror(sprintf("pulldown: %O\n\n", pulldown));
+perror(sprintf("record: %O\n\n", record));
 
 string retval="";
 
@@ -672,7 +677,7 @@ for(int i=0; i<sizeof(pulldown); i++)
   perror("pulldown!\n");
 }
 else pulldown=({""});
-perror(sprintf("%O", pulldown)+"\n");
+// perror(sprintf("%O", pulldown)+"\n");
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 
 if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
@@ -746,8 +751,9 @@ else if(r[i]->type=="var string"){
 	lower_case(r[i]->name)+"\" SIZE="
 	  +
 	(r[i]->length)
-	+"  VALUE=\""+ 	record[r[i]->name]||"" + "\">\n";
-	if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
+	+"  VALUE=\""+ 	(record[r[i]->name]||"") + "\">\n";
+	if(r[i]->flags->not_null) 
+	  retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I>"+REQUIRED+"\n";	
 	}
 
 else if(r[i]->type=="string"){

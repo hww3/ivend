@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.212 1999-06-03 19:31:43 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.213 1999-06-03 20:04:39 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -658,11 +658,11 @@ mixed do_additems(object id, array items){
     }
     else{
         foreach(items, mapping item){
-            float price=DB->query("SELECT price FROM products WHERE "
+            float price=(float)(DB->query("SELECT price FROM products WHERE "
                                   + KEYS->products +  "='" + item->item +
-                                  "'")[0]->price;
+                                  "'")[0]->price);
 		array opt=({});
-		mapping o;
+		mapping o=([]);
 	if(item->options) o=get_options(id, item->item, item->options);
 		else if(id->variables->options)
 		 o=get_options(id, item->item);

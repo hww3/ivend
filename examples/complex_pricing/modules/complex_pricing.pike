@@ -6,6 +6,8 @@
 #include <ivend.h> 
 inherit "roxenlib";
 
+#include <messages.h>
+
 constant module_name = "Complex Pricing Routines";
 constant module_type = "addin";
 
@@ -44,7 +46,7 @@ return;
 }
 
 void cpbuyxgetx(string event, object id, mapping args){
-perror("starting buyxgetx...\n");
+// perror("starting buyxgetx...\n");
  string item=args->item;
  int quantity=(int)args->quantity;
 
@@ -54,7 +56,7 @@ perror("starting buyxgetx...\n");
 
  if(!offers || sizeof(offers)<1) {
   COMPLEX_ADD_ERROR=NO_ADD;
-perror("exiting buyxgetx...\n");
+// perror("exiting buyxgetx...\n");
   return;
  }
 
@@ -82,7 +84,7 @@ while(quantity){ // loop through the offers until we have enough
    else quantity-=1;
   }
 }
-perror("exiting buyxgetx...\n");
+// perror("exiting buyxgetx...\n");
 return;
 
 }
@@ -112,9 +114,61 @@ void cpsingle(string event, object id, mapping args){
 
 }
 
+mixed getprice_single(object id, string item)
+{
+string retval="";
+
+array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + item + "' "
+ "ORDER BY minimum_quantity ASC");
+
+if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
+
+retval+="<table><tr>\n<td bgcolor=black><font color=white>"
+"<b>Minimum Quantity</b></td>\n";
+
+foreach(r, mapping row){
+  retval+="<td>" + row->minimum_quantity + "</td>\n";  
+}
+retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
+ "<b>Price Each</b></td>\n";
+foreach(r, mapping row){
+  retval+="<td> &nbsp; " + MONETARY_UNIT + sprintf("%.2f", (float)(row->price)) +
+" &nbsp; </td>\n";  
+}
+
+ retval+="</tr></table>\n";
+
+return retval;
+
+}
+
+string tag_complex_pricing(string tag_name, mapping args,
+                   object id, mapping defines) {
+string retval="";
+array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='" + args->item
+ + "' GROUP BY priority ASC");
+
+if(!r || sizeof(r)<1)
+  return "Sorry, No pricing information is available at this time.";
+
+else foreach(r, mapping row){
+
+if(!catch(this_object()["getprice_"+ row->type]) &&
+functionp(this_object()["getprice_"+row->type]) )
+ retval+=this_object()["getprice_" + row->type](id, args->item) + "<br>";
+else retval+="<!-- Can't get pricing display for type " + row->type + ". -->\n";
+ }
+
+return retval;
+}
+
 mapping query_event_callers(){
  return (["cp.single" : cpsingle,
           "cp.buyxgetx" : cpbuyxgetx ]);
 }
 
 
+mapping query_tag_callers(){
+ return (["complex_pricing" : tag_complex_pricing ]);
+
+}

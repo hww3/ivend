@@ -8,7 +8,7 @@
 */
 
 string format_section(string section, mapping attributes){
-
+//  perror(section + ":\n" + sprintf("%O", attributes));
   string s="";
   
   s+="\n[" + section + "]\n";
@@ -50,7 +50,7 @@ string write(mapping config, array|void order){
     string s="# Configuration file.\n";
     array configs;
     if(!config) return s;
-
+perror(sprintf("%O", config));
     if(order) configs=order;
     else configs=indices(config);
     foreach(configs, string c){

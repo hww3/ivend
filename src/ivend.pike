@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.195 1999-05-14 01:08:55 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.196 1999-05-16 23:48:41 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -32,6 +32,7 @@ mixed return_data(mixed retval, object id);
 mixed  get_image(string filename, object id);
 mixed admin_handler(string filename, object id);
 mixed handle_cart(string filename, object id);
+mixed additem(object id);
 #endif
 
 int loaded;
@@ -554,6 +555,7 @@ void|string container_form(string name, mapping args,
 }
 
 mixed do_complex_items_add(object id, array items){
+perror("doing complex item add...\n");
  foreach(items, mapping i){ 
   array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
    + i->item + "'");
@@ -600,7 +602,7 @@ mixed do_additems(object id, array items){
 
 // we should add complex pricing models to this algorithm.
   if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
-    perror("DOING COMPLEX PRICE CALCULATIONS...\n");
+//    perror("DOING COMPLEX PRICE CALCULATIONS...\n");
 	return do_complex_items_add(id, items);
     }
   else{
@@ -625,7 +627,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
   array en=({});
   int madechange=0;
   
-  
+perror("doing cart...\n");
   if(args->fields){
     ef=args->fields/",";
     if(args->names)
@@ -678,16 +680,17 @@ perror("updating cart..." + id->variables["q" + (string)i] + "\n");
 if(madechange==1){
  array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd "
    " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");  
-perror(sprintf("%O", r));
+// perror(sprintf("%O", r));
  if(r && sizeof(r)>0) {
   array items=({});
   DB->query("DELETE FROM sessions WHERE sessionid='" +
    id->misc->ivend->SESSIONID + "'");
-  foreach(r, mapping row)
-   if((int)(row->autoadd)==1) continue;
+  foreach(r, mapping row) {
+   if(((int)(row->autoadd))==1) continue;
    items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
      row->qualifier, "series": row->series ]) });
-perror(sprintf("%O", items));
+   }
+ perror(sprintf("%O", items));
   do_additems(id, items);
   }
  }
@@ -726,8 +729,8 @@ if(catch(  array r= DB->query(
   for (int i=0; i< sizeof(r); i++){
     retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
       "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][KEYS->products]+
-	">&nbsp; \n<A HREF=\"/" + r[i][ KEYS->products ] +
-	  ".html\">"
+	">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl +"/" + 
+          r[i][KEYS->products] + ".html\">"
 	    +r[i][ KEYS->products]+"</A> &nbsp;</TD>\n";
     
     foreach(en, field){
@@ -768,13 +771,16 @@ if(catch(  array r= DB->query(
 string tag_additem(string tag_name, mapping args,
                    object id, mapping defines) {
 string retval="";
-   if(!args->item) return "<!-- you must specify an item " +
-                          KEYS->products +". -->\n";
-   if(!args->noform)
-      retval="<form action=" + id->not_query + ">";
-   if(!args->silent){
-      if(args->showquantity)
-         retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity
+   if(id->variables->ADDITEM && !id->misc->ivend->handled_page)
+    additem(id);
+   id->misc->ivend->handled_page=1;
+
+   if(args->item) {
+    if(!args->noform)
+       retval="<form action=" + id->not_query + ">";
+    if(!args->silent){
+       if(args->showquantity)
+          retval+=QUANTITY +": <input type=text size=2 value=" +(args->quantity
                  || "1") + " name=" + args->item + "quantity> ";
       retval+="<input type=submit value=\"" + ADD_TO_CART + "\">\n";
    }
@@ -786,6 +792,7 @@ string retval="";
 
    if(!args->noform)
       retval+="</form>\n";
+  }
    return retval;
 
 }
@@ -1242,7 +1249,7 @@ mixed additem(object id){
 (id->variables[id->variables->item+"quantity"]
         ||id->variables->quantity || 1)
                ]) });          
-
+ perror(sprintf("%O", items));
    int result=do_additems(id, items);
       if(result)
        foreach(items, mapping item)
@@ -1257,8 +1264,6 @@ mixed handle_page(string page, object id){
    // perror("iVend: handling page "+ page+ " in "+ STORE +"\n");
 #endif
 
-
-   if(id->variables->ADDITEM) additem(id);
 
    mixed retval;
 
@@ -2524,14 +2529,18 @@ Config.write_section(query("configdir")+
 	object privs=Privs("iVend: Writing Config Files");
 
                foreach(({"global"}) + active, string confname){
-			perror("moving backup...\n");
+			perror("making backup of " + confname +"...\n");
                   mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
                if(confname=="global")
                     Stdio.write_file(query("configdir")+"global",
 			Config.write(global));
-		else
+		else {
+                    if(config[confname]->global)
+			m_delete(config[confname], "global");
                     Stdio.write_file(query("configdir")+confname,
 			Config.write(config[confname]));
+
+                    }
 #if efun(chmod)
   chmod(query("configdir") + confname, 0640);
 #endif

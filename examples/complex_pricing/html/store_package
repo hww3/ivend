@@ -1,7 +1,20 @@
-<define container="cartheader"><th bgcolor=maroon><font
-face=helvetica,arial><contents></font></th></define>
-<define container="cartcell"><td bgcolor=white align=&align;><font
-face=helvetica,arial><contents></font></td></define>
+<define container=cartdata><tablify nice><contents></tablify></define>
+<define container=cartheader><b><contents></b></define>
+<define container=cartcell><contents></define>
+<define container=cartrow><contents></define>
+
+<define container=heading><b><contents></b></define>
+<define container=price><contents></define>
+<define container=quantity><b><contents></b></define>
+<define container=single><tablify NICE><contents></tablify></define>
+<define container=offer><contents></define>
+<define container=buyxgetx><tablify nice>Special Offers
+<contents></tablify></define>
+<define container=status><b><contents></b><br></define>
+<define container=checkout_error>
+<font color=red><b><contents></b></font><p>
+</define> 
+
 <define tag="storeurl">__STOREURL__</define>
 <define tag="checkouturl">_CHECKOUTURL__</define>
 <define tag="orderemail">__ORDEREMAIL__</define>

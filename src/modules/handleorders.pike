@@ -762,11 +762,11 @@ array query_preferences(void|object id) {
 	VARIABLE_INTEGER,
 	12,
 	0
-	})
+	}) ,
 
-	({"deletecard", "Delete Card Number?"
+	({"deletecard", "Delete Card Number?",
 		"Should Credit Card Number be deleted following verification?", 
-	VARIABLE_MULTIPLE,
+	VARIABLE_SELECT,
 	"Yes",
 	({"Yes", "No"})
 	})

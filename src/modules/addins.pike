@@ -52,18 +52,18 @@ retval+="<body bgcolor=white text=navy>\n"
 "is reloaded.<p>";
 
 retval+="<form action=./>\n"
-  "<input type=hidden name=change_settings value=1>\n";
+  "<input type=hidden name=\"change_settings\" value=1>\n";
 
 foreach(sort(indices(a)), string m)
-  retval+="<input type=checkbox name=" + m + " value=load" +
+  retval+="<input type=checkbox name=\"" + m + "\" value=\"load\"" +
 ((id->misc->ivend->config->addins 
 &&id->misc->ivend->config->addins[m]=="load")?" checked":"") +
        "> &nbsp; " + a[m] + "<br>";
 
-retval+="<p><input type=submit value=\"Update Settings\">\n</form>";
+retval+="<p><input type=\"submit\" value=\"Update Settings\">\n</form>";
 
 if(!saved)
-  retval+="<br><a href=./?write_config=1>Save Configuration</a>";
+  retval+="<br><a href=\"./?write_config=1\">Save Configuration</a>";
 return retval;
 
 }

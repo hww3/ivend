@@ -23,3 +23,11 @@ import ".";
 #if __VERSION__ < 0.6  
 // don't need to add anything...
 #endif
+
+
+#define VARIABLE_SELECT    0
+#define VARIABLE_INTEGER   1
+#define VARIABLE_FLOAT     2
+#define VARIABLE_STRING    3
+#define VARIABLE_MULTIPLE  4
+

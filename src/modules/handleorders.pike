@@ -509,10 +509,19 @@ mapping register_admin(){
 
 return ([
 
-	"menu.main.Orders.View_Orders" : show_orders ,
-	"menu.main.Orders.Preferences" : prefs_handler 
+	"menu.main.Orders.View_Orders" : show_orders
 
 	]);
 
 }
 
+array query_preferences() {
+
+  return ({ ({"manifestfields", "Manifest Fields", 
+	"Fields to be included in the order manifest listing.",
+	VARIABLE_MULTIPLE,
+	"",
+	0
+	}) });
+
+}

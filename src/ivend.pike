@@ -2226,23 +2226,23 @@ perror(filen + "\n");
 
                   return (err);
                }
-               modules[c]+=([  m->module_type : m  ]);
-            if(functionp(modules[c][m->module_type]->start))
-                  modules[c][m->module_type]->start(config[c]);
+               modules[c]+=([  m->module_name : m  ]);
+            if(functionp(modules[c][m->module_name]->start))
+                  modules[c][m->module_name]->start(config[c]);
                mapping p;
 
-            if(functionp(modules[c][m->module_type]->register_paths))
-                  p = modules[c][m->module_type]->register_paths();
+            if(functionp(modules[c][m->module_name]->register_paths))
+                  p = modules[c][m->module_name]->register_paths();
             if(p)
                   foreach(indices(p), string np)
                   register_path_handler(c, np, p[np]);
 
-            if(functionp(modules[c][m->module_type]->register_admin))
-                  p = modules[c][m->module_type]->register_admin();
+            if(functionp(modules[c][m->module_name]->register_admin))
+                  p = modules[c][m->module_name]->register_admin();
             if(p)
                   foreach(indices(p), string np)
                   register_admin_handler(c, np, p[np]);
-      mixed o=modules[c][m->module_type];
+      mixed o=modules[c][m->module_name];
 
       if(functionp(o->query_tag_callers))
          library[c]->tag+=o->query_tag_callers();

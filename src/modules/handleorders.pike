@@ -180,19 +180,49 @@ retval+=	"<td align=right>" + row->price +
 
 retval+="<tr><td colspan=5> &nbsp; </td></tr>\n";
 
+// perror(sprintf("%O", id->variables) + "\n");
+
+if(id->variables["commitli.x"]){ // commit the lineitem change
+  DB->query("UPDATE lineitems SET value=" +
+id->variables[id->variables->commit] + " WHERE orderid='" +
+id->variables->orderid + "' AND lineitem='" + id->variables->commit +
+"'");
+T_O->report_status("Changed Lineitem " + id->variables->commit + ": " +
+id->variables[id->variables->commit],
+                id->variables->orderid || "NA", "handleorders", id);
+
+ }
+
 r=DB->query("select * from lineitems where orderid='"+
 id->variables->orderid + "'");
 
    foreach(r, mapping row) {
 
-  retval+="<tr>\n"
+ retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica>" +
  capitalize((row->extension || row->lineitem)) 
-	+"</td>\n<td align=right>" 
-	+ row->value + "</td></tr>\n";
-  
-  }
+	+"</td>\n<td align=right>";
+array wx=DB->query("SELECT status FROM orders WHERE id='" +
+id->variables->orderid + "'");
+if((int)(wx[0]->status) > 1) retval+= row->value +
+  "</td><td></td></tr>\n";
+
+else if(!id->variables->editli || id->variables->editli!=row->lineitem)
+  retval+= row->value + "</td><td><a href=\"./?orderid="
+	+ id->variables->orderid + "&editli=" + row->lineitem + 
+	"\"><img src=\"" + T_O->query("mountpoint") +
+"ivend-image/edit.gif\" alt=\"Edit\" border=0></a></td></tr>\n";
+ else {
+  retval+="<input type=text size=7 name=\"" + row->lineitem +
+   "\" value=\"" + row->value + "\"></td><td><input alt=\"Commit\""
+   " type=image name=\"commitli\" value=\"" + row->lineitem +
+   "\" src=\"" + T_O->query("mountpoint") +
+   "ivend-image/commit.gif\" border=0>"
+   "<input type=hidden name=commit value=\"" + row->lineitem 
+	+ "\"></td></tr>\n";  
+  } 
+ }
 
 float tax=T_O->get_tax(id, id->variables->orderid);
 
@@ -760,12 +790,14 @@ retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
 retval+= "<input type=submit name=export value=\"Export Order\"><br>"
 	"<input type=submit name=print value=\"Format for Printing\"><br>"
     "</form>";
+if(!id->variables->print) {
 retval+=T_O->open_popup( "View Activity Log",
                                  id->not_query, "View_Activity_Log" ,
                                 (["orderid" : id->variables->orderid,
 				"height": 500, "width":550]) ,id);
 
 retval+="</obox>";
+  }
     }
 
 else {

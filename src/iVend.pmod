@@ -209,7 +209,7 @@ string e= extension(f);
 
 
     rm(filename);
-if(Stdio.file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table);
+if(file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table));
 else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
 Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
@@ -357,7 +357,7 @@ else if(r[i]->type=="string"){
       retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"Y\">"
         "Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
    else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="
-      +r[i]->length+" SIZE="+(r[i]->length+20)+">\n";
+      +r[i]->length+" SIZE="+(r[i]->length)+">\n";
     }       
 
 else if(r[i]->type=="long" && r[i]->flags["not_null"]){

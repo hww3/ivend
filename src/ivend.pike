@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.54 1998-04-22 02:13:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.55 1998-04-24 13:22:21 hww3 Exp $";
 
 array register_module(){
 
@@ -1403,11 +1403,12 @@ mixed find_file(string file_name, object id){
     request=request[1..];
     }
 
-  if(config[id->misc->ivend->st]->error)
-    retval="An error has prevented iVend from servicing your request."
-	"<br>Please check your debug logs.<br>";
-	
   if(retval) return return_data(retval, id);
+/*
+if(config[id->misc->ivend->st]->error)
+    return return_data("An error has prevented iVend from servicing your"
+	"request.<br>Please check your debug logs.<br>",id);
+*/	
 
   if(!config[id->misc->ivend->st]) 
     return return_data("NO SUCH STORE!", id);

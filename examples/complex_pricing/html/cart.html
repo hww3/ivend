@@ -2,14 +2,18 @@
 <page title="Your Cart">
 <img src=images/checkcart.gif> &nbsp; 
 <gtext fg=maroon nfont=helvetica black>Shopping Cart</gtext><p>
-
+<additem>
 Below is your current shopping cart. If you want to change the number of
 a certain item you have in the cart, type the new quantity in the
 corresponding box above and click on 'Update Cart'. To remove an item from
 your cart, type zero (0) as the quantity and click on 'Update Cart.'
 <p> 
-<icart fields="Name" checkout_url="<checkouturl>">
+<cset preparse variable="referer"><referer></cset>
+<formoutput quote="#">
+<icart fields="Name" checkout_url="<checkouturl>"
+cont="#referer:quote=none#">
 </icart>
+</quote>
 <p>
 
 

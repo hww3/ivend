@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.231 1999-07-09 19:37:04 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.232 1999-07-13 21:06:05 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1370,10 +1370,14 @@ items+=({ (["item": id->variables->item,
 //    perror(sprintf("%O", items));
     int result=do_additems(id, items);
     if(result)
-        foreach(items, mapping item)
-trigger_event("additem",id,(["item": item->item, "quantity":
+        foreach(items, mapping item) {
+   trigger_event("preadditem", id, (["item": item->item, "quantity":
+	item->quantity]));
+   trigger_event("additem",id,(["item": item->item, "quantity":
                                      item->quantity]));
-
+   trigger_event("postadditem",id,(["item": item->item, "quantity":
+                                     item->quantity]));
+  }
     return 0;
 }
 
@@ -1500,44 +1504,85 @@ int get_auth(object id){
 
 }
 
-int admin_auth(object id)
+int|mixed admin_auth(object id)
 
 {
 if(!admin_user_cache[STORE])  // if we don't have it already, make space for our store's cache.
   admin_user_cache[STORE]=([]);
 if(id->cookies->admin_user && id->cookies->admin_user!="")
  { 
+  if(admin_user_cache[STORE][id->cookies->admin_user] && 
+
+(admin_user_cache[STORE][id->cookies->admin_user]==id->cookies->admin_auth))
+{
   id->misc->ivend->admin_user=id->cookies->admin_user;
   return 1;
- }
-if(!id->cookies->logging_in || id->cookies->logging_in=="")
- { 
-add_cookie(id, (["name":"logging_in",
-          "value":"1", "seconds": 120]),([]));
-  return 0;
+  }
  }
 
-    array(string) auth=id->realauth/":";
     mixed m;
-	{
+
+if(id->variables->user !=""){
 	array r=DB->query("SELECT * FROM admin_users WHERE username='" +
-		auth[0] + "'");
+		id->variables->user + "'");
 	if(sizeof(r)==1)
 	  { // we've got a valid user.
-		if(!crypt(auth[1], r[0]->password))
-		  return 0;
+		if(!crypt(id->variables->password, r[0]->password))
+		{
+add_cookie(id, (["name":"logging_in",
+          "value":"1", "seconds": 120]),([]));
+admin_user_cache[STORE][upper_case(id->variables->user)]="";
+  return "<html><head><title>Login</title></head>\n"
+	"<body bgcolor=white text=navy>\n"
+	"<h1>iVend Login</h1>"
+	"<b>Invalid Login.</b>"
+	"<form action=./ method=post>"
+	"<input type=hidden name=" + time() + ">"
+	"<table><tr><th>Username:</th>\n"
+	"<td><input type=text size=15 name=user></td></tr>\n"
+	"<tr><th>Password:</th>\n"
+	"<td><input type=password size=15 name=password></td></tr>\n"
+	"<tr><td> &nbsp; </td><td><input type=submit value=\"Login\">"
+	"</td></tr></table>\n"
+	"</form><p>Copyright 1999 Bill Welliver</body></html>";
+
+		}
 		id->misc->ivend->admin_user=r[0]->username;
 		id->misc->ivend->admin_user_level=r[0]->level;
+
+ object md5 = Crypto.md5();
+    md5->update(id->variables->password);
+    md5->update(sprintf("%d", roxen->increase_id()));
+    md5->update(sprintf("%d", time(1)));
+    string SessionID = Crypto.string_to_hex(md5->digest());
+    admin_user_cache[STORE][id->misc->ivend->admin_user]=SessionID;
+    
              add_cookie(id, (["name":"admin_user",
                               "value":r[0]->username, "seconds": 3600]),([]));
 	     add_cookie(id, (["name":"admin_auth",
-			      "value":"" ]), ([]));
+			      "value":SessionID, "seconds": 3600 ]), ([]));
              add_cookie(id, (["name":"logging_in",
                               "value":"", "seconds": 1]),([]));
 		return 1;
 	  }
-	else return 0;
-	}
+
+}
+
+  add_cookie(id, (["name":"logging_in",
+          "value":"1", "seconds": 120]),([]));
+  return "<html><head><title>Login</title></head>\n"
+	"<body bgcolor=white text=navy>\n"
+	"<h1>iVend Login</h1>"
+	"<form action=./ method=post>"
+	"<input type=hidden name=" + time() + ">"
+	"<table><tr><th>Username:</th>\n"
+	"<td><input type=text size=15 name=user></td></tr>\n"
+	"<tr><th>Password:</th>\n"
+	"<td><input type=password size=15 name=password></td></tr>\n"
+	"<tr><td> &nbsp; </td><td><input type=submit value=\"Login\">"
+	"</td></tr></table>\n"
+	"</form><p>Copyright 1999 Bill Welliver</body></html>";
+
 }
 
 
@@ -1637,12 +1682,11 @@ mixed getmodify(string type, string pid, object id){
 
 int my_security_level(object id){
 
- if(!id->cookies->admin_user) return -1;
- if(id->cookies->admin_user=="admin") return 9;
+ if(!id->misc->ivend->admin_user) return -1;
+ if(id->misc->ivend->admin_user=="admin") return 9;
  array r=DB->query("SELECT * FROM admin_users WHERE username='" +
-	id->cookies->admin_user + "'");
+	id->misc->ivend->admin_user + "'");
  if(sizeof(r)!=1) return -1;
-   perror("security level: " + r[0]->level + "\n");
  return (int)(r[0]->level);
 }
 
@@ -1697,17 +1741,21 @@ mixed open_popup(string name, string location, string mode, mapping
             "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
             "\n"
-	    "var id=document.gentable." + lower_case( KEYS[options->type + "s"]) +
-		".value;\n"
-	    " document.popupform" + id->misc->ivend->popup +".id.value=id;"
-	    " if(document.gentable.id.value==\"\") { alert('You have not specified a " +
+	    "var id='';"
+		"id=document.gentable." + lower_case(
+KEYS[options->type
++ "s"]) +
+		";\n"
+	    " document.popupform" + id->misc->ivend->popup
++".id.value=id.value;\n"
+	    " if(id.value==\"\") { alert('You have not specified a " +
 		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
             "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
             "        palette=window.open(location,name,param);\n"
             // "        window.open('',name,param);\n"
             "        \n"
             "        if (palette!=null) palette.opener=mainWin; \n"
-	    "popupform" + id->misc->ivend->popup + ".submit();\n"
+	    "document.popupform" + id->misc->ivend->popup + ".submit();\n"
             "}\n"
             "</SCRIPT>"
             "<form name=popupform" + id->misc->ivend->popup + " target=" +
@@ -1760,6 +1808,9 @@ if(CONFIG->admin_enabled=="No")
 if(id->variables->logout){
    add_cookie(id, (["name":"admin_user",
                  "value":"", "seconds": 1]),([]));
+   add_cookie(id, (["name":"admin_auth",
+                 "value":"", "seconds": 1]),([]));
+   admin_user_cache[STORE][id->cookies->admin_user]="";
 return "You have logged out.<p><a href=./>Click here to continue.</a>";
 }
                  if(sizeof(id->prestate)==0) {
@@ -1773,7 +1824,11 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
                  string mode, type;
 //                     err=catch(DB=db[STORE]->handle());
 
-
+mixed r=admin_auth(id);
+if(!intp(r)){
+  return r;
+}
+/*
                  if(id->auth==0)
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!"
@@ -1782,6 +1837,7 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!",
 						id);
+*/
 
                  string retval="";
                  retval+="<title>iVend Store Administration</title>"
@@ -1832,7 +1888,9 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
                      else{
                          type=(id->variables->table-"s");
                          destruct(DB);
-                         return (retval+type+" Added Sucessfully.");
+               trigger_event("adminadd", id, (["type": type, 
+		"id": id->variables[KEYS[type + "s"]] ]) );
+                       return (retval+"<br>"+capitalize(type)+" Added Sucessfully.");
 
                      }
                      break;
@@ -1845,8 +1903,10 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
                          return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
                      }
                      destruct(DB);
+             trigger_event("adminmodify", id, (["type": type, 
+		"id": id->variables[KEYS[type + "s"]] ]) );
 
-                     return retval + capitalize(type) + " Modified Sucessfully.";
+                     return retval +"<br>"+ capitalize(type) + " Modified Sucessfully.";
                      break;
 
                  case "add":
@@ -1858,7 +1918,7 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
 	    "this " + type + ".";
 
 
-                     if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
+                     if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
                                                             "face=helvetica,arial>Actions\">"
 				"<table><tr>";
 
@@ -1962,7 +2022,7 @@ return "You have logged out.<p><a href=./>Click here to continue.</a>";
                  case "getmodify":
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
-                     if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
+                     if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
                                                             "face=helvetica,arial>Actions\">"
 			"<table><tr>";
 
@@ -2129,7 +2189,7 @@ id->variables->__criteria + "%";
                                       + (id->query?"</a>":"") + "</b></font><p>";
                              if(ADMIN_FLAGS==NO_ACTIONS);
                              else{
-                                 if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
+                                 if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
                                                                         "face=helvetica,arial>Actions\"><table><tr>\n";
 
                                  foreach(valid_handlers, string handler_name) {
@@ -2158,7 +2218,7 @@ id->variables->__criteria + "%";
                          retval+=
                              "<table width=90%>"
                              "<tr><td width=33%>"
-                             "<obox width=95% title=\"<font face=helvetica,arial>Groups</font>\">\n"
+                             "<obox title=\"<font face=helvetica,arial>Groups</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href="+
@@ -2175,7 +2235,7 @@ id->variables->__criteria + "%";
                              +">Delete a Group</a>\n"
                              "</font>"
                              "</obox>"
-                             "<obox width=95% title=\"<font face=helvetica,arial>Products</font>\">\n"
+                             "<obox title=\"<font face=helvetica,arial>Products</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href="+
@@ -2205,7 +2265,7 @@ id->variables->__criteria + "%";
                          cats=uniq(cats);
                          sort(cats);
                          foreach(cats, string category){
-                             retval+="<obox width=95% title=\"<font face=helvetica,arial>"+ replace(category,
+                             retval+="<obox title=\"<font face=helvetica,arial>"+ replace(category,
                                      "_", " ") +
                                      "</font>\">\n<font "
                                      "face=helvetica,arial><ul>\n";
@@ -3110,10 +3170,10 @@ Config.write(config[confname]));
                                          }
                                          retval+="<P><FONT FACE=\"times\" SIZE=+1>To View or Modify a Configuration, Click on it's name in the list above.</FONT><P>\n"
                                                  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; "
-                                                 "<A HREF=\""+query("mountpoint")+"config/delete\">Delete Configuration</A> &nbsp; ";
                                                  "<A HREF=\""+query("mountpoint")+"config/reload\">Reload Configurations</A> &nbsp; ";
                                          if(save_status!=1)
                                              retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";
+                                         else retval+="<A HREF=\""+query("mountpoint")+"config/delete\">Delete Configuration</A> &nbsp; ";
 
                                      }
 

@@ -22,6 +22,10 @@ array fields=({});
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
+mixed throw_error(string error, object id){
+  id->misc->ivend->error+=({error});
+  return;
+}
 
 void load_lineitems(object id){
 
@@ -103,7 +107,7 @@ mixed currency_convert(mixed v, object id){
 
 string tag_shipping(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping shipping because of errors.-->";
 
 string retval;
@@ -116,7 +120,7 @@ return retval;
 
 string tag_confirmemail(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping confirmemail because of errors.-->";
 int good_email;
 if(!args->field) 
@@ -129,10 +133,42 @@ if(err) {
 }
 else if(good_email)
   return "";
- else id->misc->ivend->error+=({
-	INVALID_EMAIL_ADDRESS});
+ else 
+	throw_error(INVALID_EMAIL_ADDRESS, id);
 
 return "";
+
+}
+
+mixed stop_error(object id){
+  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
+    return (id->misc->ivend->error *"\n");
+}
+
+mixed getorderid(object id){
+int orderid;
+perror("doing getorderid.\n");
+if(sizeof(DB->list_tables("orderid_list"))!=1) {
+  perror("adding table orderid_list...\n");
+  if(catch(DB->query("CREATE TABLE orderid_list ("
+    "orderid CHAR(16) NOT NULL PRIMARY KEY, "
+    "timestmp timestamp )"))) {
+      throw_error("An error occurred while reserving your order id.", id);
+      return -1;
+    }
+  }
+if(catch(DB->query("LOCK TABLES orderid_list WRITE")))
+  perror(STORE + ": Our DB doesn't support LOCK TABLES...\n");
+array r=DB->query("SELECT MAX(orderid) AS max FROM orderid_list");
+if(r && sizeof(r)>0)
+  orderid=(int)(r[0]->max) + 1;
+else orderid=1;
+perror(orderid + "\n");
+DB->query("INSERT INTO orderid_list VALUES('" + orderid + "',NOW())");
+catch(DB->query("UNLOCK TABLES"));
+
+
+return orderid;
 
 }
 
@@ -149,13 +185,31 @@ if(id->variables["_backup"] )
 array typer;
 string type;
 array s;
+
+
 s=id->misc->ivend->db->query("SELECT * FROM sessions WHERE sessionid='"
 	+ id->misc->ivend->SESSIONID + "'");
 
 if(sizeof(s)==0) {
- id->misc->ivend->error+=({"Your order appears to have been confirmed already."});
+ throw_error("Your order appears to have been confirmed already.", id);
  return "";
   }
+
+id->misc->ivend->orderid=getorderid(id);
+if(stop_error(id))
+ {
+// id->misc->ivend->error+=({stop_error(id)});
+ return "<false><!-- " + stop_error(id) + " -->\n";
+}
+
+id->misc->ivend->this_object->trigger_event("preconfirmorder", id,
+(["orderid": id->misc->ivend->orderid]));
+
+if(stop_error(id))
+ {
+// id->misc->ivend->error+=({stop_error(id)});
+ return "<false><!-- " + stop_error(id) + " -->\n";
+}
 
 catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
@@ -165,16 +219,9 @@ catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type,"
 
 if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
-  id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0," +
+  id->misc->ivend->db->query("INSERT INTO orders VALUES(" +
+    id->misc->ivend->orderid + ",0," +
     type + ",NOW(),NULL,NOW())");
-
-  id->misc->ivend->orderid=
-    id->misc->ivend->db->insert_id(); // mysql only
-
-  if((int)(id->misc->ivend->orderid)<1)
-    id->misc->ivend->orderid=id->misc->ivend->db->query("SELECT MAX(id) "
-	"as max FROM orders")[0]->max;
-
 
 // get the order from sessions
 
@@ -202,9 +249,8 @@ id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
-  id->misc->ivend->error+=
-    ({ UNABLE_TO_CONFIRM + "<br>" 
-	+ (error*"<br>") });
+  throw_error( UNABLE_TO_CONFIRM + "<br>" 
+	+ (error*"<br>"), id);
   return "An error occurred while moving your order to confirmed status.\n";
 }
 // update customer info and payment info with new orderid
@@ -225,13 +271,17 @@ if(note) {
 
   string subject,sender, recipient;
   sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
+  sender=parse_rxml(sender, id);
+  recipient=parse_rxml(recipient, id);
+  subject=parse_rxml(subject, id);
+  note=parse_rxml(note, id);
   array r=id->misc->ivend->db->query("SELECT " + recipient + " from customer_info WHERE "
 		   "orderid='"+id->misc->ivend->orderid+"' AND "
 		   "type=0");
   recipient=r[0][recipient];
   note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
   
-  object message=MIME.Message(parse_rxml(note,id),
+  object message=MIME.Message(note,
 				   (["MIME-Version":"1.0",
 				     "To":recipient,
 				     "X-Mailer":"iVend 1.0 for Roxen",
@@ -253,22 +303,26 @@ if(note) {
 
   string subject,sender, recipient;
   sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
-
+  sender=parse_rxml(sender, id);
+  recipient=parse_rxml(recipient, id);
+  subject=parse_rxml(subject, id);
+  note=parse_rxml(note, id);
   note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
   
-  object message=MIME.Message(parse_rxml(note,id), (["MIME-Version":"1.0",
+  object message=MIME.Message(note,
+				   (["MIME-Version":"1.0",
 				     "To":recipient,
 				     "X-Mailer":"iVend 1.0 for Roxen",
 				     "Subject":subject
 				     ]));
 
+  perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
-   perror("iVend: Error sending order notification for " 
-	+ id->misc->ivend->st + "!\n");
+   perror("Error sending confirmation note for " +
+	id->misc->ivend->st + "!\n");
 
 }
-
 
 return retval;
 }
@@ -276,7 +330,7 @@ return retval;
 
 string tag_discount(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping discount because of errors.-->";
 
 float tdiscount, ntdiscount;
@@ -314,7 +368,7 @@ return sprintf("%.2f", tdiscount + ntdiscount);
 
 string tag_salestax(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping salestax because of errors.-->";
 
 array r;		// result from query
@@ -399,7 +453,7 @@ return ("ERROR");
 
 string tag_generateform(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping generateform because of errors.-->";
 
 string retval="";
@@ -425,7 +479,7 @@ string tag_addentry(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(id->variables["_backup"])
    return "<!-- Backing up. addentry skipped. -->\n";
-if(sizeof(id->misc->ivend->error)>0) return "<!-- Not adding data because of errors.-->";
+if(stop_error(id)) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) return "";
 if(!args->noflush)
   id->misc->ivend->clear_oldrecord=1;
@@ -469,7 +523,7 @@ return "";
 
 string tag_cardcheck(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping cardcheck because of errors.-->";
 
 string card_number;
@@ -485,14 +539,12 @@ perror("card_type: " + card_type + "\ncard_number: "+ card_number +
 
 if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
   {
-  id->misc->ivend->error+=
-    ({INVALID_CREDIT_CARD});
+    throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad card number -->";
   }
 else if(Commerce.CreditCard.expdate_verify(exp_date)!=0)
  {
-  id->misc->ivend->error+=
-   ({INVALID_CREDIT_CARD});
+   throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad date -->";
  }
 return "<!-- successful card check -->";
@@ -524,7 +576,7 @@ return retval;
 
 string tag_subtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping subtotal because of errors.-->";
 
 float subtotal;
@@ -542,7 +594,7 @@ return sprintf("%.2f", subtotal);
 string tag_grandtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping grandtotal because of errors.-->";
 
 float grandtotal=0.00;
@@ -567,7 +619,7 @@ string item;
 
 string tag_showorder(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(sizeof(id->misc->ivend->error)>0) 
+if(stop_error(id)) 
   return "<!-- skipping showorder because of errors.-->";
 
 float taxable=0.00;
@@ -635,7 +687,7 @@ string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
 perror("doing container_checkout.\n");
-if(sizeof(id->misc->ivend->error)>0) {
+if(stop_error(id)) {
   perror("<!-- skipping checkout because of errors -->\n");
   return "<!-- skipping checkout because of errors -->";
   }

@@ -221,7 +221,7 @@ sessions
   current shopping cart sessions.
 taxrates 
   tax rate calculation table.
-vstatus 
+status 
   master list of order and status codes.
 shipments  
   as orders are shipped, their status is stored in this table.
@@ -353,7 +353,8 @@ subtotal. All checkout tags function within the checkout container,
 generate_form		generate a form from the database
   table=tablename	this is the table to get data for.
   hide=field1,field2    hide these fields in the list.
-
+  pulldown=field1,...	generate a pulldown from fields in the
+			db/table_field.val file.
 confirmemail
   field=fieldname	name of field containing email address to check.
 

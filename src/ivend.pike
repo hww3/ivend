@@ -14,7 +14,9 @@ inherit "module";
 inherit "roxenlib";
 inherit "wizard";
 
+#if __VERSION__ >= 0.6
 import "./";
+#endif
 
 mapping(string:mapping(string:mixed)) config=([]);
 mapping(string:mixed) global=([]) ;
@@ -24,7 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.65 1998-05-14 01:56:21 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.66 1998-05-20 00:57:05 hww3 Exp $";
 
 array register_module(){
 
@@ -109,14 +111,21 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-int load_ivmodule(string c, string name){
+mixed load_ivmodule(string c, string name){
 
-modules+=([ name :
-    (object)clone(compile_file(query("root")+"/modules/"+
-    name)) ]);
+mixed err;
+mixed m;
+perror("loading module...\n");
+    err=catch(m=(object)clone(compile_file(query("root")+"/modules/"+
+    name)));
+if(err) {
+  perror("error!\n");
+  return (err);
+  }
+modules+=([ name : m  ]);
 if(objectp(modules[name]) && functionp(modules[name]->start))
   modules[name]->start(config[c]);
-return 1;
+return 0;
 
 }
 
@@ -271,7 +280,7 @@ if(id->variables->update) {
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
-	id->misc->ivend->error+=({"Your Cart is Empty"});
+	error("Your Cart is Empty", id);
       return "Your Cart is Empty.\n";
     }
     retval+="<tr><th bgcolor=maroon><font color=white>Code</th>\n"
@@ -564,18 +573,20 @@ return 0;
 
 void load_modules(string c){
 
-mixed error;
+perror("running load_modules() for " + c + "\n");
+
+mixed err;
 if(!c) return;
 if(!config[c]) return;
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
       perror("loading module " + config[c][n] + "\n");
-      error=catch(load_ivmodule(c, config[c][n]));
-      if(error) {
+      err=load_ivmodule(c, config[c][n]);
+      if(err) {
         perror("\nThe following error occured while loading the module "
 	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
-	  + error[0]);
-        config[c]->error=1;
+	  + describe_backtrace(err));
+        config[c]->error=err;
 	}
       }
   return;
@@ -590,7 +601,8 @@ perror("added module path: "+query("root")+"src\n");
 
   loaded=1;
 
-  if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
+  if(file_stat(query("datadir")+"ivend.cfd")==0) 
+      return; 
     else  read_conf();   // Read the config data.
   
   foreach(indices(config), string c)
@@ -612,15 +624,24 @@ fs=file_stat(id->misc->ivend->root+"/"+f);
 return fs;
 }
 
+void error(mixed error, object id){
+  perror("error()\n");
+  if(arrayp(error)) id->misc->ivend->error +=({	
+    replace(describe_backtrace(error),"\n","<br>\n") });
+  else if(stringp(error)) id->misc->ivend->error += ({ error });
+  return;
+
+}
 
 mixed handle_error(object id){
 string retval;
-
+perror("handle_error()\n");
 if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
   retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
     "<b>One or more errors have occurred. Please review the following "
     "information and, if necessary, make any changes on the previous page "
-    "before continuing."
+    "before continuing.<p>If you feel that this is a configuration error, "
+    "please contact the administrator of this system for assistance."
     "<error>";
 
 return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
@@ -635,8 +656,8 @@ perror("iVend: handling cart for "+st+"\n");
 
 string retval;
 if(!(retval=Stdio.read_bytes(id->misc->ivend->config->root+"/cart.html")))
-  id->misc->ivend->error+=({
-    "Unable to find the file "+(id->misc->ivend->config->root)+"/cart.html"});
+  error("Unable to find the file "+
+    (id->misc->ivend->config->root)+"/cart.html",id);
  
 return retval;    
 
@@ -756,7 +777,7 @@ switch(page){
 	}
     else retval=find_page(page, id);
   }
-  if (!retval) id->misc->ivend->error+=({"Unable to find product "+page});
+  if (!retval) error("Unable to find product "+page,id);
   return retval;
 
 }
@@ -1383,10 +1404,11 @@ void handle_sessionid(object id) {
 
 mixed return_data(mixed retval, object id){
 
-  if(stringp(retval)){
-
     if(sizeof(id->misc->ivend->error)>0)
       retval=handle_error(id);
+
+  if(stringp(retval)){
+
     retval=parse_rxml(retval, id);
 
     return http_string_answer(retval,
@@ -1441,36 +1463,47 @@ mixed find_file(string file_name, object id){
     }
 
   if(retval) return return_data(retval, id);
+
 /*
 if(config[id->misc->ivend->st]->error)
-    return return_data("An error has prevented iVend from servicing your"
-	"request.<br>Please check your debug logs.<br>",id);
+    error(config[id->misc->ivend->st]->error, id);
+    return return_data("An error has prevented iVend from servicing your request.", id);
 */	
 
-  if(!config[id->misc->ivend->st]) 
+  else if(!config[id->misc->ivend->st]) {
+    perror("NO SUCH STORE!\n");
     return return_data("NO SUCH STORE!", id);
+    }
 
-  if(catch(request[0]))
+  else if(catch(request[0])) {
     request+=({""});
-
+    perror("caught request[0]\n\n");
+    }
 // load id->misc->ivend with the good stuff...
   id->misc->ivend->config=config[id->misc->ivend->st];	
 
+mixed err;
 
   switch(request[0]) {
     case "images":
     break;
     default:
-    id->misc->ivend->db=iVend.db(
+    err=catch(id->misc->ivend->db=iVend.db(
       id->misc->ivend->config->dbhost,
       id->misc->ivend->config->db,
       id->misc->ivend->config->dblogin,
       id->misc->ivend->config->dbpassword
-    );
+    ));
+    if(err || config[id->misc->ivend->st]->error) { 
+       error(err || config[id->misc->ivend->st]->error, id);
+       return return_data(retval, id);
+       }
 
   }
 
 // perror("REQUEST[0]: " + request[0] + "\n");
+
+
 
   switch(request[0]) {
     case "":
@@ -1530,7 +1563,10 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 	"ivindex":container_ivindex,
 	"category_output":container_category_output
     ]);
-if(id->misc->ivend->st){
+
+if(
+//!catch(id->misc->ivend->st) && 
+id->misc->ivend->st){
   if(functionp( modules[id->misc->ivend->config->checkout_module
     ]->query_container_callers))
     containers+=  modules[id->misc->ivend->config->checkout_module

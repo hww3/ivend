@@ -1,3 +1,4 @@
+blas
 /*
  * checkout.pike: default checkout module for iVend.
  *

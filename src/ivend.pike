@@ -200,7 +200,10 @@ mapping arguments=([]);
 
 arguments["_parsed"]="1";
 
-if (args->add) 
+if (arguments->external)
+  arguments["href"]=args->href;
+
+else if (args->add) 
   arguments["href"]="./"+id->misc->ivend->page+".html?SESSIONID="
   +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page;
 else if(args->cart)

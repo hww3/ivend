@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.97 1998-08-17 23:43:03 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.98 1998-08-18 00:28:31 hww3 Exp $";
 
 array register_module(){
 
@@ -681,11 +681,26 @@ switch(page){
 
   default:
 
-    if(!stat_file(page, id)) {
+  mixed fs;
+  fs=stat_file(page,id);
+
+    if(!fs) {
       id->misc->ivend["page"]=page-".html";
       return find_page(page,id);
       }
-    else retval=Stdio.read_file(id->misc->ivend->config->root + "/" + page);
+    else if(fs[1]<=0) {
+//      perror("we've got a directory!\n"
+	"trying " + page + "/index.html\n");
+      fs=stat_file(page+"/index.html",id);
+//  perror(sprintf("%O",fs));
+	
+      if(fs && fs[1]>0) {
+  //      perror("found it!\n");
+        return http_redirect(page + "/index.html", id);
+       }
+      else return 0;
+      }    
+    retval=Stdio.read_file(id->misc->ivend->config->root + "/" + page);
 	id->realfile=id->misc->ivend->config->root+"/"+page;
   }
   if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
@@ -1363,13 +1378,14 @@ array|int size_of_image(string filename){
 
 mixed stat_file( mixed f, mixed id )  {
 
-if(! id->misc->ivend->conf) 
+if(! id->misc->ivend->config) 
 	return ({ 33204,0,time(),time(),time(),0,0 });
-  perror("iVend: statting "+id->misc->ivend->config->root+"/"+f+"\n");
+//  perror("iVend: statting "+id->misc->ivend->config->root+"/"+f+"\n");
 
   array fs;
   if(!id->pragma["no-cache"] &&
-     (fs=cache_lookup("stat_cache", id->misc->ivend->config->root +f)))
+     (fs=cache_lookup("stat_cache", id->misc->ivend->config->root+"/" 
+	+f)))
     return fs[0];  
 
 object privs;
@@ -1377,14 +1393,14 @@ object privs;
 
 
   fs = file_stat(
-	id->misc->ivend->config->root + f);  
+	id->misc->ivend->config->root + "/" + f);  
 	/* No security currently in this function */
 
 #ifndef THREADS
   privs = 0;
 #endif
 
-  cache_set("stat_cache", id->misc->ivend->config->root +f, ({fs}));
+  cache_set("stat_cache", id->misc->ivend->config->root+"/" +f, ({fs}));
   return fs;    
 
 }
@@ -1451,6 +1467,9 @@ mixed return_data(mixed retval, object id){
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
 db[id->misc->ivend->st]->handle(id->misc->ivend->db);
+
+  if(mappingp(retval))
+	return retval;
 
   if(stringp(retval)){ 
     if(id->conf->type_from_filename(id->realfile || "index.html")

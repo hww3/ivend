@@ -808,7 +808,7 @@ class db_handler
     db_user = _user;
     db_password = _password;
     for(int i = 0; i < num; i++) {
-      dbs += ({ db(host, db_name, db_user, db_password) });
+     catch( dbs += ({ db(host, db_name, db_user, db_password) }));
     }
   }
   

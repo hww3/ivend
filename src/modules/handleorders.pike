@@ -246,8 +246,7 @@ string archive_orders(string mode, object id){
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
   retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p><pre>";
   foreach(orders_to_archive, mapping or){
-retval+="#Order " + or->id + "\n";
-// retval+="Records for " + or->id+ "<br>";
+retval+="<order id=\"" + or->id + "\">\n";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info"});
     foreach(tables, string t){
@@ -255,24 +254,19 @@ retval+="#Order " + or->id + "\n";
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
 	or->id + "'");
       foreach(r, mapping row){	
-      array fl=({});
-      array dl=({});
+	retval+="<record>\n";
+	retval+="<table name=\"" + t + "\">\n";
         foreach(fields, mapping f){
-	  fl+=({f->name});
-	if(f->type=="decimal" || f->type=="float" || f->type=="integer" ||
-		f->type=="long" || f->type=="double" || f->type=="longdouble")
-	  dl+=({DB->quote(row[f->name])});
-	else
-	  dl+=({"'"+DB->quote(row[f->name]) + "'"});
+	  retval+="<data field=\"" + f->name + "\" type=\"" + f->type +
+	    "\">" + row[f->name] + "</data>\n";
 	}
-        retval+="INSERT INTO " + t + " (" + (fl*",") + ") VALUES("
-	+ (dl*",")  +")\n";
+  retval+="</record>\n";
         }
       
       }
+  retval+="</order>\n";
     }
 
-  retval+="</pre>\n";
 
  }
 

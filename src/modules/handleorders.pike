@@ -16,12 +16,14 @@ array cc_fields=({});
 
 string|int show_orderdetails(string orderid, object s, object id);
 
-string create_panel(string name, string color, string contents){
-
+string create_panel(string name, string color, string contents, object id){
+  if(id->variables->print) { color="white"; fontcolor="black"; }
+  else { fontcolor="white"; }
   string retval="";
 
    retval+="<table width=80%><tr><td colspan=1 bgcolor=" + color +">\n";
-   retval+=" &nbsp; <font face=helvetica color=white><b>"+ name +"</font></b> &nbsp; </td></tr>\n";
+   retval+=" &nbsp; <font face=helvetica color=\"" + fontcolor + "\"><b>"+
+	name +"</font></b> &nbsp; </td></tr>\n";
    retval+="<tr><td>\n" + contents + "\n</td></tr>\n</table>\n";
 
   return retval;
@@ -43,7 +45,7 @@ array f=DB->list_fields("payment_info");
 
 if(!r || sizeof(r)==0) return create_panel("Payment Information", "maroon", 
 	      "Unable to find Payment Info for Order ID " + 
-		   id->variables->orderid);
+		   id->variables->orderid, id);
 
 retval="<table width=100%>";
  foreach(f, mapping field){
@@ -61,7 +63,7 @@ retval="<table width=100%>";
 retval+="</table>\n";
 
 
-return create_panel("Payment Information", "maroon", retval);
+return create_panel("Payment Information", "maroon", retval, id);
 
 }
 
@@ -75,7 +77,7 @@ if(r && sizeof(r)>0)
   foreach(r, mapping row)
     retval+="<autoformat>" + row->comments +
 "</autoformat><p>&nbsp;<p>\n";
-  return create_panel("Order Comments", "darkpurple", retval);
+  return create_panel("Order Comments", "darkpurple", retval, id);
   }
 else return "";
 }
@@ -105,7 +107,7 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
      else d+=row[field->name]+"</td></tr>\n";
    }
    d+="</table>";
-  retval+=create_panel(type, "navy", d);
+  retval+=create_panel(type, "navy", d, id);
  }
 
 
@@ -141,7 +143,7 @@ CONFIG_ROOT[module_name]->manifestfields;
 	"=orderdata.id");
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
-			"Unable to find data for this order.");
+			"Unable to find data for this order.", id);
   retval+="<tr><td><font face=helvetica size=-1>Select</td>\n<td align=left>"
     "<font face=helvetica size=-1>Qty</font></td>\n"
     "<td align=left><font face=helvetica size=-1>Item</font></td>\n";
@@ -238,7 +240,7 @@ float gt=T_O->get_grandtotal(id, id->variables->orderid);
 	"<td align=right><b>" + sprintf("%.2f", gt) + "</b></td></tr>\n";
 
   retval+="</table>\n";
-  return create_panel("Order Manifest", "darkgreen", retval);
+  return create_panel("Order Manifest", "darkgreen", retval, id);
 
 }
 
@@ -919,7 +921,7 @@ string retval="";
 	"<tr><td width=30%><font face=helvetica>Notes</td><td><pre>"+
 	(r[0]->notes||"")+"</pre></td></tr>\n"
 	"</table>"
-	"\n\n");
+	"\n\n", id);
 
 	 // get address information...
 

@@ -403,10 +403,13 @@ cardcheck		check credit card number
 Other Stuff
 -----------
 
-The database schema to use currently is located in examples/schema.mysql
+* The database schema to use currently is located in examples/schema.mysql
 
-The form generator will look for sets of values in a file called 
+* The form generator will look for sets of values in a file called 
 	storeroot/db/tablename_fieldname.val ... to create dropdowns.
+
+* iVend will send email messages following certain events. These messages
+        are found in the notes directory of your store.
 
 
 Appendix C
@@ -446,6 +449,8 @@ These messages are sent to the individual who places an order:
   rejpay.txt: sent when payment information is rejected.
   ship.txt: sent when all or part of an order is shipped.
 
+The messages are parsed through the rxml parser, so you can include the
+results of sql queries on the product db.
 
 The iVend Main Index
 

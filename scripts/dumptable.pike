@@ -34,7 +34,8 @@ write((fl*"\t")+"\n");
 foreach(records, mapping r){
   array rw=({});
   foreach(fields, mapping f){
-    rw+=({replace(r[f->name]||"NULL",({"\t","\n"}),({"\\t","\\n"}))});    
+
+rw+=({replace(r[f->name]||"NULL",({"\r","\t","\n"}),({"","\\t","\\n"}))});    
     }
   write((rw*"\t")+ "\n");
   }

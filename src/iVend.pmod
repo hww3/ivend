@@ -42,10 +42,12 @@ string name;
 string desc;
 string type;
 program p;
+mixed err;
 foreach(d,name){
-  if(name=="CVS") continue;
-  if(catch(p=compile_file(moddir+"/"+name)))
-  { perror("iVend error: can't compile "+name+"\n");
+  if(name=="CVS" || file_stat(moddir+"/"+name)[1]<=0 ) continue;
+  if(err=catch(p=compile_file(moddir+"/"+name)))
+  { perror("iVend error: can't compile "+name+"\n" +
+    describe_backtrace(err));
   continue;
   }
   desc=p()->module_name;
@@ -64,7 +66,7 @@ string retval="";
 if(sizeof(config_setup)<1){perror("config setup < 1\n"); return 0;}
 array vars=sort(indices(config_setup));
 for(int i=0; i<sizeof(vars); i++){
-  write(vars[i]);
+//  write(vars[i]);
   retval+="<tr>\n<td>";
   retval+=config_setup[vars[i]][lang+"name"]+" &nbsp \n</td><td>";
   switch(config_setup[vars[i]]->type){
@@ -710,7 +712,7 @@ if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
 if(search(exclude,lower_case(r[i]->name))!=-1) continue;
 
 if(search(pulldown,lower_case(r[i]->name))!=-1) {
-perror("doing the pulldown thing...\n");
+// perror("doing the pulldown thing...\n");
     retval+="<tr>\n"
 	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
 	+replace(r[i]->name,"_"," ")+
@@ -894,8 +896,12 @@ class db_handler
     db_user = _user;
     db_password = _password;
     num_dbs=num;
+    mixed err;
     for(int i = 0; i < num; i++) {
-     catch( dbs += ({ db(host, db_name, db_user, db_password) }));
+     err=catch( dbs += ({ db(host, db_name, db_user, db_password) }));
+     if(err)
+       perror("Error creating db object:\n" +
+	describe_backtrace(err)+"\n");
     }
   }
   

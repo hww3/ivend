@@ -141,11 +141,13 @@ void create(){
 	  );}
 
 void get_dbinfo(mapping c){
-
-object s=db[c->config]->handle();
-
+mixed err;
+err=catch(object s=db[c->config]->handle());
 keys[c->config]=([]); // make the entry.
-
+if(err) {
+ perror("An error occurred while trying to grab a db object.\n");
+ return;
+}
 foreach(({"products", "groups"}), string t) {
 array r;
 r=s->query("SHOW INDEX FROM " + t );  // MySQL dependent?
@@ -1478,7 +1480,7 @@ mixed err;
     if(!objectp(DB))
       err=catch(DB=db[STORE]->handle());
     if(err || config[STORE]->error) { 
-       error(err || config[STORE]->error, id);
+       error(err[0] || config[STORE]->error, id);
        return return_data(retval, id);
        }
   
@@ -1805,6 +1807,11 @@ void load_modules(string c){
 mixed err;
 if(!c) return;
 if(!config[c]) return;
+foreach(({"shipping.pike","checkout.pike","handleorders.pike"}),string name) {
+  err=load_ivmodule(c,name);
+  if(err) perror("iVend: The following error occured while loading the module "
+    + name + "\n" +  describe_backtrace(err)); 
+  }
 
   foreach(indices(config[c]->general), string n)
     if(Regexp("._module")->match(n)) {

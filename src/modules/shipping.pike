@@ -66,8 +66,7 @@ string moddir=config->global->root + "/src/modules/shipping";
 mapping am=([]);
 
 foreach(get_dir(moddir), string name){
-  catch(m=(object)clone(compile_file(config->global->root + 
-    "/src/modules/shipping/" + name));
+  catch(m=(object)clone(compile_file( moddir + "/" + name)));
   
   if(m && objectp(m)) {
   string desc=m->module_name;

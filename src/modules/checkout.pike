@@ -9,6 +9,12 @@
 
 inherit "roxenlib";
 
+#if __VERSION__ >= 0.6
+import ".";
+#endif
+#if __VERSION__ < 0.6  
+#endif
+
 #include "../include/messages.h"
 
 constant module_name="Default Checkout Module";

@@ -36,7 +36,7 @@ string validnumbers = replace(number,
                 ({ "","","","","","","","","","" }));
 
 if (validnumbers != "") {
-   perror("we have extraneous digits\n");
+  werror("we have extraneous digits\n");
    return(1);
 }
 
@@ -44,7 +44,7 @@ if (validnumbers != "") {
 // perror("size of number: " + sizeof(number) + "\n");
 // perror("size to match: " + card_digits[card_type] + "\n");
 if (sizeof(number)!= card_digits[card_type]) {
- perror("wrong number of digits in card number\n");
+ werror("wrong number of digits in card number\n");
  return(1);
 }
 
@@ -104,36 +104,44 @@ string *digits=({});
 string *temp=expdate/"";
 
 digits=Array.filter((temp),Regexp("[0-9]")->match);
-// if ( (sizeof(digits)<3 ) || (sizeof(digits)>4)) return 0;
+ if ( (sizeof(digits)<5 ) || (sizeof(digits)>6)) { werror("incorrect number of digits in expdate. got " + sizeof(digits) + "\n");
+return 0; }
 string year;
 string month;
 expdate=(digits * "");
 
-if (sizeof(expdate)==4){
+if (sizeof(expdate)==5){
  
-  month=expdate[0..1];
-  year=expdate[2..3];
-  if(month[0..0]=="0")
-    month=month[1..1];
-}
-
-else if (sizeof(expdate)==3){
-
   month=expdate[0..0];
-  year=expdate[1..2];
+  year=expdate[1..4];
+  if(month=="0") {
+	werror("only got 5 digit expdate and digit zero is 0.\n");
+    return 0;
+	
+	}
+}
+
+else if (sizeof(expdate)==6){
+
+  month=expdate[0..1];
+  year=expdate[2..5];
 
 }
 
 
-else return 0;
+else { return 0;
+  werror("got less than 5 or greater than 6 digits in expdate.\n");
 
+}
 if((int)year<80) year="1"+year;
 
 mapping time=localtime(time());
-if((int)year<time->year) return 0;
-else if((int)year==time->year){
+if((int)year<(time->year+1900)) { werror("got bad year in expdate.\n"); 
+	return 0; }
+else if((int)year==(1900+time->year)){
 
-  if((int)month<(time->mon+1)) return 0;
+  if((int)month<(time->mon+1)) {werror("got good year but bad month in expdate.\n"); 
+return 0; }
   else return 1;
 
 }

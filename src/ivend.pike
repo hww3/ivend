@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.13 1998-01-28 22:37:59 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.14 1998-02-02 04:15:23 hww3 Exp $";
 
 /*
  *
@@ -1001,7 +1001,10 @@ switch(id->variables->mode){
     "<ul>\n"
     "<li><a href=\"admin?mode=addproduct\">Add New Product</a>\n"
     "<li><a href=\"admin?mode=addgroup\">Add New Group</a>\n"
+    "<li><a href=\"admin?mode=modify\">Modify a Product/Group</a>\n"
     "<li><a href=\"admin?mode=delete\">Delete a Product/Group</a>\n"
+    "</ul>\n"
+    "<ul>\n"
     "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n";
 
 

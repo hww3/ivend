@@ -289,7 +289,7 @@ retval+= "<b>Admin User:</b> " + adminuser + "<br>\n"
   "<b>Data File Location</b>: " + v->root + "<br>\n";
 
 retval+="<p>\nYou may edit $DATALOCATION/store_package "
-  "to customize the overall look of your store."
+  "to customize the overall look of your store.";
 
 privs=Privs("iVend: Creating store directory");
 if(v->createdir && !file_stat(v->root)) mkdir(v->root);

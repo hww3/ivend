@@ -11,7 +11,7 @@ constant module_type = "order";
 
 int saved=1;
 array fields=({});
-array ccfields=({});
+array cc_fields=({});
 
 
 string|int show_orderdetails(string orderid, object s, object id);
@@ -805,11 +805,11 @@ array query_preferences(void|object id) {
 	fields +=({m->name});
     }
 
-  if(!catch(DB) && sizeof(fields)<=0) {
+  if(!catch(DB) && sizeof(cc_fields)<=0) {
 
      array f2=DB->list_fields("payment_info");
      foreach(f2, mapping m)
-	ccfields +=({m->name});
+	cc_fields +=({m->name});
     }
    
   return ({ 
@@ -824,7 +824,7 @@ array query_preferences(void|object id) {
 	"Field that contains Credit Card Number.",
 	VARIABLE_SELECT,
 	"Card_Number",
-	ccfields
+	cc_fields
 	}) ,
 
 	({"showlines", "Number of orders to show", 

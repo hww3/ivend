@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.241 1999-08-28 18:47:24 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.242 1999-09-05 23:34:32 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -902,8 +902,9 @@ if(r[i]->autoadd!="1")
                     + "\">";
         retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
     }
-    if(args->cont){
-	retval+="<td> <form action=\"" + args->cont + "\">"
+    if(args->cont||id->variables->referer){
+	retval+="<td> <form action=\"" +
+(args->cont||id->variables->referer) + "\">"
 		"<input type=submit value=\"Continue\"></form></td>";
 	}
     retval+="</tr></table>\n<true>\n"+contents;

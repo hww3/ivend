@@ -369,6 +369,7 @@ r=id->misc->ivend->db->query("SELECT * from shipping_types order by type"));
 if(!r || sizeof(r)==0)
   return "No shipping options are currently available.<input type=hidden name=no_shipping_options value=1>";
 int t=0;
+int g=0;
 foreach(r, mapping row){
 args->type=row->type;
 string price=tag_shippingcalc ("shippingcalc", args,
@@ -379,11 +380,16 @@ retval+="<dt><input type=radio name=type " +((t==0)?("CHECKED"):(""))
   +" value=\"" + row->type + "\"> <b>"+ row->name + 
   ": $ " + price +
   "</b><dd>" + row->description;
+  g=1;
 }
   t=1;
 }
-return retval;
-
+if(g==1)
+  return retval;
+else return "We were unable to find a suitable shipping option for your order. "
+	"We may not be able to deliver your order if you continue. "
+	"Please go back and double check your address(es), and try again. "
+	;
 }
 
 mapping query_container_callers(){

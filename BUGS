@@ -84,12 +84,30 @@ Returns:
 
 S1234567890
 
+
 <GENERATEVIEWS>
 
-Generates Product lists that are grouped on a field in the individual product records. 
+Generates Product lists that are grouped on a field in the individual product records. After generating groups of items, the item list is passed to <LISTITEMS> for the actual display of items.
 
 ATTRIBUTES
 
+TYPE select type of records to display. Valid value is PRODUCT. (Required)
+FIELD determines which field is used to group by. All records are grouped by the value of this field. (Required)
+ID designates the group to select products from. Must be a valid Group ID. (Optional)
+All other attributes are passed to <LISTITEMS> when the products lists are generated.
+
+EXAMPLES
+
+The following code:
+
+<GENERATEVIEWS TYPE="PRODUCT" FIELD="SubCategory" ID="PRODGRP21">
+
+will generate a series of item listings that contain all products in group PRODGRP21. The items will be displayed in groups organized by the value of the field SubCategory.
+
+
+<LISTITEMS>
+
+Generates lists of items (product or group) formatted for display and browsing.
 listitems
 ivstatus
 ivmg

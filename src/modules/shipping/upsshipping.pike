@@ -261,7 +261,8 @@ else { // We calculate as though everything were in a seperate box.
 	return -1.00;
   string zip=n[0]->zip_code;
 
-  rate=u[type]->findrate((string)zip, (string)w);
+  if(catch(rate=u[type]->findrate((string)zip, (string)w)))
+	return -1.00;;
   ratecalc+=((float)rate*(float)(row->quantity));
   }
  rate=ratecalc;

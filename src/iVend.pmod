@@ -64,7 +64,8 @@ m+=([name:desc]);
         return m;
     }
 
-    string|int genform(void|mapping config, void|string lang, void|string moddir){
+    string|int vgenform(void|mapping config, void|string lang, void|string
+moddir){
         if(!lang) lang="en";
         if(!config) config=([]);
         string retval="";
@@ -118,8 +119,9 @@ m+=([name:desc]);
 
             case "string":
             default:
+		if(config[vars[i]])
                     retval+=::input(vars[i],  config[vars[i]] ||
-                              config_setup[vars[i]]->default_value ||"", 40);
+                             "", 40);
                 break;
 
             }

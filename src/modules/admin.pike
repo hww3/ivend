@@ -479,11 +479,11 @@ privs=0;
 
   }
 
-  retval+="<obox title=\"<font face=helvetica,arial><a href='" 
-	"?_module="+ id->variables->_module + "'>" +
+  retval+="<obox><title><font face=helvetica,arial><a href=\"" 
+	"?_module="+ id->variables->_module + "\">" +
 	id->variables->_module + "</a> : " +
 	pton[id->variables->_varname][1]
-        + "</font>\"><font face=helvetica,arial>"
+        + "</font></title><font face=helvetica,arial>"
 	  "<form method=post action=\"./?_module=" +
 	  id->variables->_module + 
 	  "&_varname=" + id->variables->_varname + "\">\n";

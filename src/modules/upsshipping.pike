@@ -3,6 +3,8 @@
 constant module_name = "UPS Zone Shipping";
 constant module_type = "shipping";
 
+#define CONFIG id->misc->ivend->config
+
 mapping query_tag_callers2();
 mapping query_container_callers2();    
 
@@ -48,8 +50,8 @@ catch(id->misc->ivend->db->query(
   " zonefile char(12) NOT NULL, "
   " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
   " ) "));
-rm(id->misc->ivend->config->root + "/db/shipping_ups_chargetype.val");
-catch(Stdio.write_file(id->misc->ivend->config->root +
+rm(CONFIG->general->root + "/db/shipping_ups_chargetype.val");
+catch(Stdio.write_file(CONFIG->general->root +
   "/db/shipping_ups_chargetype.val","Cash\nPercentage\n")); 
 if(sizeof(id->misc->ivend->db->list_tables("shipping_types"))!=1)
   catch(id->misc->ivend->db->query("CREATE TABLE shipping_types ("
@@ -132,7 +134,7 @@ string retval="";
 
 if(initialized==0 && id->variables->initialize) {
   initialize_db(id);
-  start(id->misc->ivend->config);
+  start(id->misc->ivend->config->general);
   }
 if(initialized==0)
   return "This module has not been initialized yet.<br>"

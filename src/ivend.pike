@@ -16,7 +16,7 @@ inherit "wizard";
 
 #define MODULES id->misc->ivend->modules
 #define STORE id->misc->ivend->st
-#define CONFIG id->misc->ivend->config
+#define CONFIG id->misc->ivend->config->general
 #define DB id->misc->ivend->db
 #define KEYS id->misc->ivend->keys
 
@@ -47,6 +47,7 @@ object g;                       // global object
 mapping db=([]);		// db cache
 mapping keys=([]);		// db keys cache
 int num;
+mapping numsessions=([]);
 
 mapping(string:mapping) modules=([]); // module cache
 mapping config=([]);
@@ -139,11 +140,9 @@ void create(){
 
 void start(){
 
-num=0;
+ num=0;
  add_include_path(getmwd() + "include");
-// perror("iVend: added include path: "+getmwd()+"include\n"); 
-add_module_path(getmwd()+"src");
-// perror("iVend: added module path: "+getmwd()+"src\n"); 
+ add_module_path(getmwd()+"src");
   loaded=1;
 if(catch(perror(query("datadir")))) return;
 
@@ -151,15 +150,12 @@ if(catch(perror(query("datadir")))) return;
       return; 
     else  read_conf();   // Read the config data.
   
-  foreach(indices(config), string c)
-    load_modules(config[c]->config);
-
-  foreach(indices(config), string c)
-    start_db(config[c]);
-
-  foreach(indices(config), string c)
-    get_dbkeys(config[c]);
-
+  foreach(indices(config), string c) {
+    load_modules(config[c]->general->config);
+    start_db(config[c]->general);
+    get_dbkeys(config[c]->general);
+    numsessions[config[c]->general->config]=0;
+    }
 
   call_out(background_session_cleaner, 900);
 
@@ -647,9 +643,9 @@ mixed handle_cart(string st, object id){
 #endif
 
 string retval;
-if(!(retval=Stdio.read_bytes(id->misc->ivend->config->root+"/cart.html")))
+if(!(retval=Stdio.read_bytes(CONFIG->root+"/cart.html")))
   error("Unable to find the file "+
-    (id->misc->ivend->config->root)+"/cart.html",id);
+    (CONFIG->root)+"/cart.html",id);
  
 return retval;    
 
@@ -730,10 +726,10 @@ if(!type)
 if(id->variables->template) template=id->variables->template;
   else template=type+"_template.html";
 
-retval=Stdio.read_bytes(id->misc->ivend->config->root+"/"+template);
+retval=Stdio.read_bytes(CONFIG->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
-id->realfile=id->misc->ivend->config->root+"/"+template;
+id->realfile=CONFIG->root+"/"+template;
 perror(id->realfile+"\n");
 perror(retval + "\n");
 return (retval);
@@ -759,7 +755,7 @@ string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
 
 "','"+item+"',"+(id->variables->quantity 
 || 1)+","+(max+1)+",'Standard','"+(time(0)+
-  (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
+  (int)CONFIG->session_timeout)+"'," + price +")";
 
 if(catch(DB->query(query) ))
 	id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n"); 
@@ -782,8 +778,8 @@ mixed retval;
 switch(page){
 
   case "index.html":
-    id->realfile=id->misc->ivend->config->root+"/index.html";
-    retval= Stdio.read_bytes(id->misc->ivend->config->root+"/index.html"); 
+    id->realfile=CONFIG->root+"/index.html";
+    retval= Stdio.read_bytes(CONFIG->root+"/index.html"); 
     break;
 
   case "search":
@@ -812,8 +808,8 @@ switch(page){
     id->misc->ivend->type=get_type(id->misc->ivend->page, id);
 perror (id->misc->ivend->page + " is a " + id->misc->ivend->type + "\n");
 
-    retval=Stdio.read_file(id->misc->ivend->config->root + "/" + page);
-	id->realfile=id->misc->ivend->config->root+"/"+page;
+    retval=Stdio.read_file(CONFIG->root + "/" + page);
+	id->realfile=CONFIG->root+"/"+page;
   }
   if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
   return retval;
@@ -874,8 +870,8 @@ int admin_auth(object id)
 {
   array(string) auth=id->realauth/":";
   if(catch(DB=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
+    CONFIG->dbhost,
+    CONFIG->db,
     auth[0],
     auth[1]
     )))
@@ -908,9 +904,9 @@ return sizeof(r);
 
 int clean_sessions(object id){
 
-int numsessions=do_clean_sessions(DB);
-return numsessions;
-
+int num=do_clean_sessions(DB);
+numsessions[STORE]+=num;
+return num;
 }
 
 void background_session_cleaner(){
@@ -919,19 +915,19 @@ object d;
 mixed err;
 
 foreach(indices(config), string st){
-  mapping store=config[st];
+  mapping store=config[st]->general;
   err=catch(d=db[st]->handle());
  if(err)
    perror("iVend: BackgroundSessionCleaner failed."
 	+ describe_backtrace(err) + "\n");    
     
  else { 
-    int numsessions=do_clean_sessions(d);
-    if(numsessions)
-      perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
-         " sessions from database " + store->db + ".\n");
+    int num=do_clean_sessions(d);
+    if(num)
+//      perror("iVend: BackgroundSessionCleaner cleaned " + num +
+//         " sessions from database " + store->db + ".\n");
+    numsessions[st]+=num;
     }
-perror("returning db in background_session_cleaner\n");
   db[st]->handle(d);
   }
 call_out(background_session_cleaner, 900);
@@ -953,7 +949,7 @@ retval+="<title>iVend Store Orders</title>"
   "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
   "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
+  + CONFIG->name+
   " Orders</gtext><p>"
   "<font face=helvetica,arial size=+1>"
   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
@@ -983,7 +979,7 @@ retval+="<title>iVend Shipping Administration</title>"
   "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
   "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
+  + CONFIG->name+
   " Shipping</gtext><p>"
   "<font face=helvetica,arial size=+1>"
   "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
@@ -1048,7 +1044,7 @@ retval+="<title>iVend Store Administration</title>"
   "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
   "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
   "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
+  + CONFIG->name+
   " Administration</gtext><p>"
   "<font face=helvetica,arial size=+1>"
   "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
@@ -1332,7 +1328,7 @@ mixed find_file(string file_name, object id){
 
     }
 // load id->misc->ivend with the good stuff...
-  CONFIG=config[STORE];	
+  id->misc->ivend->config=config[STORE];
   MODULES=modules[STORE];	
   KEYS=keys[STORE];
 mixed err;
@@ -1504,11 +1500,11 @@ mixed stat_file( mixed f, mixed id )  {
 
 if(!CONFIG) 
 	return ({ 33204,0,time(),time(),time(),0,0 });
-//  perror("iVend: statting "+id->misc->ivend->config->root+"/"+f+"\n");
+//  perror("iVend: statting "+ CONFIG->root+"/"+f+"\n");
 
   array fs;
   if(!id->pragma["no-cache"] &&
-     (fs=cache_lookup("stat_cache", id->misc->ivend->config->root+"/" 
+     (fs=cache_lookup("stat_cache", CONFIG->root+"/" 
 	+f)))
     return fs[0];  
 
@@ -1517,14 +1513,14 @@ object privs;
 
 
   fs = file_stat(
-	id->misc->ivend->config->root + "/" + f);  
+	CONFIG->root + "/" + f);  
 	/* No security currently in this function */
 
 #ifndef THREADS
   privs = 0;
 #endif
 
-  cache_set("stat_cache", id->misc->ivend->config->root+"/" +f, ({fs}));
+  cache_set("stat_cache", CONFIG->root+"/" +f, ({fs}));
   return fs;    
 
 }
@@ -1565,8 +1561,8 @@ mixed get_image(string filename, object id){
 //perror("** "+ CONFIG[STORE]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
-	id->misc->ivend->config->root+"/"+filename);
-id->realfile=id->misc->ivend->config->root+"/"+filename;
+	CONFIG->root+"/"+filename);
+id->realfile=CONFIG->root+"/"+filename;
 
 return http_string_answer(data,
 	id->conf->type_from_filename(id->realfile));
@@ -1623,28 +1619,21 @@ perror(typeof(retval));
 
 mixed getglobalvar(string var){
 
-  if(catch(global[var]))
+  if(catch(global["general"][var]))
     return 0;
-  else return global[var];
+  else return global["general"][var];
 
 }
 
 int read_conf(){          // Read the config data.
 
 string current_config="";
-string attribute;
-string value;
 
 c=iVend.config();
 g=iVend.config();
-if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
-   perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
-// else 
-//   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
-if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
-   perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
-// else 
-//   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
+if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")));
+if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")));
+string config_file;
 
 array|int configfiles=get_dir(query("configdir"));
 
@@ -1652,36 +1641,16 @@ if(intp(configfiles)) return 0;	// no config directory.
 
 configfiles-=({"CVS",".",".."});
 
-for(int i=0; i<sizeof(configfiles); i++){
-
-  if(search(configfiles[i], "~")>0) {
-#ifdef MODULE_DEBUG
-//    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
-#endif
+foreach(configfiles, string confname) {
+  if(search(confname, "~")>0)
     continue;
-    }
-
-  catch(array(string) config_file= Stdio.read_file(query("configdir")+ 
-	configfiles[i])/"\n");
-
-#ifdef MODULE_DEBUG
- // perror("iVend: parsing configuration "+configfiles[i]+"\n");
-#endif
-
-  current_config=configfiles[i];
-
-  for(int j=0; j<sizeof(config_file);j++)
-	if(config_file[j][0..0]=="$"){
-	  array(mixed) current_line=config_file[j][1..]/"=";
-	  attribute=current_line[0];
-	  value=current_line[1];
-	  if(!config[current_config])
-	    config[current_config]= ([attribute:value]);
-	  else config[current_config][attribute]=value;
-          }
+  config_file= Stdio.read_file(query("configdir")+
+	confname);
+  mapping c;
+  c=Config.read(config_file);
+  if(c)
+    config[confname]=c;
   }
-
-
 global=config["global"];
 m_delete(config,"global");
 return 0;
@@ -1703,15 +1672,13 @@ if(err) {
   }
 modules[c]+=([  m->module_type : m  ]);
 if(functionp(modules[c][m->module_type]->start))
-  modules[c][m->module_type]->start(config[c]);
+  modules[c][m->module_type]->start(config[c]->general);
 return 0;
 
 }
 
 
 void get_dbkeys(mapping c){
-
-perror("iVend: Getting DB Keys for " + c->config + "\n");
 
 object s=db[c->config]->handle();
 
@@ -1761,14 +1728,15 @@ mixed err;
 if(!c) return;
 if(!config[c]) return;
 
-  foreach(indices(config[c]), string n)
+  foreach(indices(config[c]->general), string n)
     if(Regexp("._module")->match(n)) {
-      err=load_ivmodule(c, config[c][n]);
+      err=load_ivmodule(c, config[c]["general"][n]);
       if(err) {
         perror("iVend: The following error occured while loading the module "
-	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
+	  + config[c]["general"][n] + " in configuration " +
+	config[c]["general"]->name + ".\n\n"
 	  + describe_backtrace(err));
-        config[c]->error=err;
+        config[c]["general"]->error=err;
 	}
       }
   return;
@@ -1777,38 +1745,20 @@ if(!config[c]) return;
 mapping write_configuration(object id){
 string config_file="";
 
-array(string) configs= indices(config);
-configs+=({"global"});
-array(string) this_config;
-for(int i=0; i<sizeof(configs); i++){	
-  if(configs[i]=="global") {
+foreach(indices(config) + ({"global"}), string confname){
+  if(confname=="global")
+    config_file=Config.write(global);
+  else config_file=Config.write(config[confname]);
 
-    if(!global) this_config=({});
-    else this_config= indices(global);
-    }
-  else
-    this_config= indices(config[configs[i]]);
-	
-  for(int j=0; j<sizeof(this_config); j++){
-	
-    if(configs[i]=="global")
-      config_file+="$" +this_config[j]+ "=" +
-       global[this_config[j]] + "\n";
-    else {
-      config_file+="$" +this_config[j]+ "=" +
-        config[configs[i]][this_config[j]] + "\n";
-      }
-    }
-  config_file+="\n";
-  mv(query("configdir")+configs[i],query("configdir")+configs[i]+"~");
-  Stdio.write_file(query("configdir")+configs[i], config_file);
+  mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
+  Stdio.write_file(query("configdir")+ confname, config_file);
   config_file="";
   }
 	
 
 
 save_status=1;	// We've saved.
-// perror("iVend: reloading all modules...\n");
+
 start();	// Reload all of the modules and crap.
 return http_redirect(id->referer, id);
 
@@ -1817,9 +1767,11 @@ return http_redirect(id->referer, id);
 mapping configuration_interface(array(string) request, object id){
 
 if(id->auth==0)
-  return http_auth_required("iVend Configuration","Silly user, you need to login!"); 
+  return http_auth_required("iVend Configuration",
+	"Silly user, you need to login!"); 
 else if(!get_auth(id)) 
-  return http_auth_required("iVend Configuration","Silly user, you need to login!");
+  return http_auth_required("iVend Configuration",
+	"Silly user, you need to login!");
 
 if(!c) read_conf(); 
 
@@ -1884,9 +1836,8 @@ array(string) vars=indices(id->variables);
 string v;
 foreach((vars),v){
 
-  if(!global) global=([v:id->variables[v]]);
-
-  else global[v]=id->variables[v];
+  if(!global) global=(["general":([])]);
+  global["general"][v]=id->variables[v];
 }
 
 save_status=0;	// we need to save.
@@ -1959,14 +1910,15 @@ retval+="\n</TD></TR>";
 
   if(request[0]=="new"){
 			
-	if(id->variables->config && !config[id->variables->config]){
+if(id->variables->config && !config[id->variables->config]){
 			
-		array(string) variables= indices(id->variables);
-		for(int i=0; i<sizeof(variables); i++){
+  array(string) variables= indices(id->variables);
+  for(int i=0; i<sizeof(variables); i++){
 				
-			if(!config[id->variables->config]) 
-config[id->variables->config]= ([]);
-config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
+    if(!config[id->variables->config]) 
+      config[id->variables->config]= (["general":([])]);
+
+config[id->variables->config]["general"]+=([variables[i]:id->variables[variables[i]]]);
 				
 			}
 				
@@ -1997,12 +1949,12 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 				"All Configurations</FONT><P>\n";
 				
-			array(string) all_configs=indices(config);
+  array(string) all_configs=indices(config);
 			
-			for(int i=0; i<sizeof(all_configs); i++){
+  for(int i=0; i<sizeof(all_configs); i++){
 			
-				retval+="<LI><FONT SIZE=+1 FACE=\"helvetica,arial\"><A HREF=\""+query("mountpoint")+"config/configs/"+all_configs[i]+"\">"
-					+config[all_configs[i]]->name+"</A></FONT>\n";
+	retval+="<LI><FONT SIZE=+1 FACE=\"helvetica,arial\"><A HREF=\""+query("mountpoint")+"config/configs/"+all_configs[i]+"\">"
+	+config[all_configs[i]]->general->name+"</A></FONT>\n";
 			
 				}
 
@@ -2034,13 +1986,13 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 		array(string) variables= (indices(id->variables)- ({"config_modify"}));
                   for(int i=0; i<sizeof(variables); i++){
  	if(variables[i]=="config_password" &&
-id->variables[variables[i]]!=config[id->variables->config][variables[i]])
+id->variables[variables[i]]!=config[id->variables->config]["general"][variables[i]])
 {
 
   id->variables[variables[i]]=crypt(id->variables[variables[i]]);
 }
-
- config[id->variables->config][variables[i]]=id->variables[variables[i]];
+ config[id->variables->config]["general"][variables[i]]=
+	id->variables[variables[i]];
 
            }
  
@@ -2054,10 +2006,11 @@ id->variables[variables[i]]!=config[id->variables->config][variables[i]])
 			"<a href=\""+
 			query("mountpoint")+
 			"/"+request[1]+"\">"
-			+config[request[1]]->name+"</a></FONT><P>\n"
+			+config[request[1]]["general"]->name+"</a></FONT><P>\n"
 			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[1]+"/config_modify\">\n"
 			"<TABLE>"
-			+(c->genform(config[request[1]],query("lang"),
+
++(c->genform(config[request[1]]->general,query("lang"),
 			  query("root")+"src/modules")
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\"><p>";

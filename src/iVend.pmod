@@ -2,6 +2,8 @@
 // #define perror(X) werror(X)
 // for translations
 
+#define CONFIG id->misc->ivend->config
+
 class config {
 
 
@@ -263,9 +265,9 @@ string e= extension(f);
 
 
     rm(filename);
-if(file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table));
-else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
-Stdio.write_file(id->misc->ivend->config->root+"/images/"+
+if(file_stat(CONFIG->general->root+"/images/"+id->variables->table));
+else mkdir(CONFIG->general->root+ "/images/" + id->variables->table);
+Stdio.write_file(CONFIG->general->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
     q+="'"+filename+"',";
 }
@@ -323,18 +325,25 @@ for (int i=0; i<sizeof(r); i++){
     	string filename=id->variables->id+
 		r[i]->name[5..]+"."+e;
         rm(filename);
-if(file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table));
-else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
+if(file_stat(CONFIG->general->root+"/images/"+id->variables->table));
+else mkdir(CONFIG->general->root+ "/images/" + id->variables->table);
 
-rm(id->misc->ivend->config->root + "/images/" + id->variables->table + "/" +
+rm(CONFIG->general->root + "/images/" + id->variables->table + "/" +
 filename );
 
 
-Stdio.write_file(id->misc->ivend->config->root+"/images/"+
+Stdio.write_file(CONFIG->general->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
+<<<<<<< iVend.pmod
+ perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
+  CONFIG->general->root + "/images/" + id->variables->table + "/" +
+filename + 
+".\n");
+=======
  // perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
 // id->misc->ivend->config->root + "/images/" + id->variables->table + "/"
 // + filename +  ".\n");
+>>>>>>> 1.57
     q+=r[i]->name+"='"+filename+"',";
 }
 else perror("ARGH! Can't get image's original filename from browser!\n");
@@ -475,7 +484,7 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
       "SIZE=-1><I> "+ REQUIRED +"\n";
         }
 
-else if(file_stat(id->misc->ivend->config->root + "/db/" +
+else if(file_stat(CONFIG->general->root + "/db/" +
 	lower_case(table) + 
 	"_" + lower_case(r[i]->name) + ".val"))
 
@@ -489,7 +498,7 @@ else if(file_stat(id->misc->ivend->config->root + "/db/" +
     retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
   array vals;
-   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+   if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
 	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {
@@ -722,7 +731,7 @@ perror("doing the pulldown thing...\n");
     retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
   array vals;
-   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+   if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
 	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {
@@ -831,7 +840,7 @@ else if(r[i]->type=="enum" ){
     retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
   array vals;
-   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+   if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
 	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {

@@ -106,7 +106,7 @@ string retval="";
 
 if(initialized==0 && id->variables->initialize) {
   initialize_db(id);
-  start(id->misc->ivend->config);
+  start(id->misc->ivend->config->general);
   }
 if(initialized==0)
   return "This module has not been initialized yet.<br>"

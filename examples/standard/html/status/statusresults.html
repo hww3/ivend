@@ -8,8 +8,8 @@
 <gtext fg=maroon nfont=helvetica black>Order Status</gtext><p>
 <font face=helvetica,arial size=++1>
 <p>
-<sqloutput host=bay.riverweb.com database=ivtest user=hww3
-password=pastram.
+<sqloutput host=IVDBHOST database=IVDBNAME user=IVDBUSER
+password=IVDBPASSWORD
 query="SELECT DATE_FORMAT(orders.updated,'d M Y k:i') as updated,
 status.description, customer_info.zip_code, customer_info.orderid from
 status,orders,customer_info where
@@ -23,8 +23,8 @@ status.tablename='orders'">
 <td>#description#</td><td>#updated#</td></tr>
 </table>
 <table>
-<sqloutput quote="|" host=bay.riverweb.com database=ivtest user=hww3
-password=pastram. query="SELECT
+<sqloutput quote="|" host=IVDBHOST database=IVDBNAME user=IVDBUSER
+password=IVDBPASSWORD query="SELECT
 shipments.tracking_id,shipments.item,products.name from
 shipments,products where
 shipments.orderid='#orderid#' and products.id=shipments.item">

@@ -114,7 +114,9 @@ if(id->variables->stype==DB->keys->products){
   string r = (T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + id->variables->q + ".html");
 
   results=("<redirect to=\"" + r + "\">"
-	"<!-- should have been a redirect to " + r + ". -->" + sprintf("<pre>%O</pre>\n", mkmapping(indices(id),values(id))));
+	"<!-- should have been a redirect to " + r + ". -->") ;
+id->misc->ivend->redirect=1;
+// + sprintf("<pre>%O</pre>\n", mkmapping(indices(id),values(id))));
 //perror(sprintf("<pre>%O</pre>\n", defines));
 
 }
@@ -139,8 +141,8 @@ string tag_searchform(string tag_name, mapping args,
   else if(args->small) size="25";
 
    string retval="<form action=\"" + action + "\">\n";
-	retval+="<input type=text name=q size=" + size + ">\n";
-	retval+="<input type=radio name=stype value=key selected> Keywords "
+	retval+="<input type=text name=q size=" + size +" VALUE=\"" + upper_case((id->variables->q||"")) + "\">\n";
+	retval+="<input type=radio name=stype value=key checked> Keywords "
 		"<input type=radio name=stype value=id> " + 
 		replace(DB->keys->products, "_", " ");
 	retval+=" <input type=submit value=\"Search\">\n";

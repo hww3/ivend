@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.278 2000-12-22 00:35:10 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.279 2000-12-22 20:37:38 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -666,7 +666,7 @@ void|string container_ia(string name, mapping args,
     mapping arguments=([]);
 
     arguments["_parsed"]="1";
-    if(args->parse) args->href=parse_rxml(args->href, id, 0, id->misc->defines);
+    if(args->parse) args->href=parse_rxml(args->href, id, 0);
     if (args->external)
         arguments["href"]=args->href;
     else if (args->referer)
@@ -2743,11 +2743,11 @@ if(STORE){
                  contents= parse_html(contents,
                            t + tags,
                            c + containers, id);
-mapping defines=id->misc->defines;
+// mapping defines=id->misc->defines;
 // perror("DEFINES container_ivml 1: " + sprintf("%O\n", defines));
 if(STORE)
                  MODULES=modules[STORE];
-                 contents=parse_rxml(contents,id, 0, defines);
+                 contents=parse_rxml(contents,id);
 // perror("DEFINES container_ivml 2: " + sprintf("%O\n", id->misc->defines));
                  return contents;
 
@@ -2960,7 +2960,7 @@ if(id->cookies->SESSIONID)
              }
 
 mixed return_data(mixed retval, object id){
-perror("DEFINES return_data start: " + sprintf("%O\n", id->misc->defines));
+// perror("DEFINES return_data start: " + sprintf("%O\n", id->misc->defines));
 	if(sizeof(id->misc->ivend->error)>0 && !id->misc->ivend->handled_error)
 		retval=handle_error(id);
 	if(objectp(DB)) {
@@ -2974,16 +2974,17 @@ perror("DEFINES return_data start: " + sprintf("%O\n", id->misc->defines));
 	if(stringp(retval)){
 		if(id->conf->type_from_filename(id->realfile || "index.html")
 			=="text/html") {
-perror("DEFINES return_data preparse: " + sprintf("%O\n", id->misc->defines));
+// perror("DEFINES return_data preparse: " + sprintf("%O\n", id->misc->defines));
 perror("PARSE return_data: parsing rxml\n");
-			retval=parse_rxml(retval, id, 0, id->misc->defines);
+			retval=parse_rxml(retval, id);
 perror("PARSE return_data: done\n");
 }
-perror("DEFINES return_data end: " + sprintf("%O\n", id->misc->defines));
-perror("RETURN return_data: returning a custom answer.\n");
+// perror("DEFINES return_data end: " + sprintf("%O\n", id->misc->defines));
+// perror("RETURN return_data: returning a custom answer.\n");
+
 int errno=200;
 if(id->misc->defines && id->misc->defines[" _error"]) errno=id->misc->defines[" _error"];
-
+if(id->misc->ivend->redirect) errno=302;
  return
     ([
       "error" : errno,

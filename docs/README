@@ -183,6 +183,8 @@ sessionid. This tag takes the following attributes:
 group. The following attributes affect this tag:
 
   fields: a comma separated list of additional fields to include in the table.
+  names: a comma separated list of alternate names for fields included in
+     the table.
 
 <category_output></category_output> will repeat the contents the container
 once for each record found, replacing values of each field where instances
@@ -226,15 +228,20 @@ because the required private key would not be present.
 *NOTE* Currently both private and public keys are held in the same file.
 You should make sure that this file is readable only a trusted user.
 
-Other Ramblings
----------------
+Email Notification
+------------------
 
-If a function called currency_convert is present in the checkout module,
-currencies from product records will be called as the argument to this 
-function. The function currency_convert will return the converted float.
-This is used to convert prices that are stored in the product database in
-one form, but are displayed as another.
+Automatic email messages are sent by iVend following certain events. iVend
+checks the notes directory of your store for the presence of text files.
+Here is a list of the text files that iVend looks for:
 
+notify.txt: sent to the store administrator when a new order is confirmed.
+
+These messages are sent to the individual who places an order:
+
+confirm.txt: sent after confirmation of a new order.
+rejpay.txt: sent when payment information is rejected.
+ship.txt: sent when all or part of an order is shipped.
 
 Checkout Tags
 -------------

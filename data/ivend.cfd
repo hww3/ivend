@@ -102,12 +102,19 @@ $type=password
 $endescription=Password for Store Administration
 $sidescription=Password for Store Administration
 
-$varname=keybase
-$enname=Public Key Basepath
-$siname=Public Key Basepath
+$varname=privatekey
+$enname=RSA Private Key
+$siname=RSA Private Key
 $type=string
-$endescription=Base File Path for keys (minus extensions)
-$sidescription=Base File Path for keys (minus extensions)
+$endescription=Pathname of RSA Private Key
+$sidescription=Pathname of RSA Private Key
+
+$varname=publickey
+$enname=RSA Public Key
+$siname=RSA Public Key
+$type=string
+$endescription=Pathname of RSA Public Key
+$sidescription=Pathname of RSA Public Key
 
 $varname=shipping_taxable
 $enname=Shipping Taxable?

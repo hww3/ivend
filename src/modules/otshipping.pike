@@ -202,6 +202,7 @@ return "Method: Shipping Cost Based on Order Total\n<br>" + retval;
 
 float|string tag_shipping(float amt, mixed type, object id){
 
+if(!initialized) return "Uninitialized shipping module.";
 
 array r=id->misc->ivend->db->query("SELECT value FROM lineitems WHERE "
   "lineitem='shipping' AND orderid='"+ id->misc->ivend->SESSIONID +
@@ -212,6 +213,8 @@ else  return "";
 }
 
 float|string calculate_shippingcost(float amt, mixed type, object id){
+
+if(!initialized) return "Uninitialized shipping module.";
 
 array r;
 
@@ -235,6 +238,8 @@ float calculate_shippingtotal(object id){
 float subtotal=0.00;
 array r;
 
+
+
 r=id->misc->ivend->db->query("SELECT "
   "SUM(products.price*sessions.quantity) as "
   "shippingtotal FROM sessions,products WHERE sessions.sessionid='" +
@@ -255,6 +260,8 @@ string tag_calculateshippingcost (string tag_name, mapping args,
 string retval="";
 float shipping=0.00;
 
+if(!initialized) return "Uninitialized shipping module.";
+
 if(!args->type) args->type="1";
 
 mixed amt=calculate_shippingtotal(id);
@@ -272,6 +279,8 @@ string tag_showshippingcost (string tag_name, mapping args,
 mixed total, charge;
 string retval;
 
+if(!initialized) return "Uninitialized shipping module.";
+
 total=calculate_shippingtotal(id);
 
 charge=calculate_shippingcost(total, args->type, id);
@@ -281,6 +290,8 @@ return sprintf("%.2f", charge);
 
 string tag_showshippingtype (string tag_name, mapping args,
                     object id, mapping defines) {  
+
+if(!initialized) return "Uninitialized shipping module.";
 
 string retval;
 array r;
@@ -296,6 +307,8 @@ else return r[0]->extension;
 
 string tag_addshipping (string tag_name, mapping args,
                     object id, mapping defines) {  
+
+if(!initialized) return "Uninitialized shipping module.";
 
 if(!id->variables->type) return "Error: You can't use the addshipping tag outside of checkout!\n";
 
@@ -320,6 +333,8 @@ return "";
 string tag_showalltypes (string tag_name, mapping args,
                     object id, mapping defines) {  
 
+if(!initialized) return "Uninitialized shipping module.";
+
 string retval="";
 array r;
 r=id->misc->ivend->db->query("SELECT * from shipping_types");
@@ -336,6 +351,7 @@ return retval;
 string tag_showshippingtypes (string tag_name, mapping args,
                     object id, mapping defines) {  
 
+if(!initialized) return "Uninitialized shipping module.";
 string retval;
 
 

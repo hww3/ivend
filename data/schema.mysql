@@ -1,0 +1,263 @@
+# iVend reference database schema
+# 
+# You may edit this file to your heart's content.
+# Do not alter the "required" fields listed in the README
+# document located in the docs directory.
+#
+#--------------------------------------------------------
+
+#
+# Table structure for table 'customer_info'
+#
+CREATE TABLE customer_info (
+  orderid int(11) DEFAULT '0' NOT NULL,
+  First_Name char(32) DEFAULT '' NOT NULL,
+  Last_Name char(32) DEFAULT '' NOT NULL,
+  Company char(32),
+  Address_1 char(64) DEFAULT '' NOT NULL,
+  Address_2 char(64),
+  City char(64) DEFAULT '' NOT NULL,
+  State char(4) DEFAULT '' NOT NULL,
+  ZIP_Code char(10) DEFAULT '' NOT NULL,
+  Daytime_Phone char(32) DEFAULT '' NOT NULL,
+  Evening_Phone char(32),
+  FAX char(32),
+  EMail_Address char(64) DEFAULT '' NOT NULL,
+  updated timestamp(14),
+  type int(11) DEFAULT '0' NOT NULL
+);
+
+#
+# Dumping data for table 'customer_info'
+#
+
+
+#
+# Table structure for table 'groups'
+#
+CREATE TABLE groups (
+  id varchar(12) DEFAULT '' NOT NULL,
+  name varchar(64) DEFAULT '' NOT NULL,
+  description text,
+  image varchar(24),
+  image2 varchar(24),
+  PRIMARY KEY (id)
+);
+
+#
+# Dumping data for table 'groups'
+#
+
+
+#
+# Table structure for table 'lineitems'
+#
+CREATE TABLE lineitems (
+  orderid char(12) DEFAULT '' NOT NULL,
+  lineitem char(12) DEFAULT '' NOT NULL,
+  value float(10,2) DEFAULT '0.00' NOT NULL,
+  extension char(24)
+);
+
+#
+# Dumping data for table 'lineitems'
+#
+
+
+#
+# Table structure for table 'orderdata'
+#
+CREATE TABLE orderdata (
+  orderid int(11) DEFAULT '0' NOT NULL,
+  id varchar(12) DEFAULT '0' NOT NULL,
+  quantity int(11) DEFAULT '0' NOT NULL,
+  series int(11) DEFAULT '0' NOT NULL,
+  qualifier varchar(24),
+  status int(11) DEFAULT '0' NOT NULL,
+  price decimal(6,2) DEFAULT '0.00' NOT NULL,
+  taxable enum('Y','N') DEFAULT 'Y'
+);
+
+#
+# Dumping data for table 'orderdata'
+#
+
+
+#
+# Table structure for table 'orders'
+#
+CREATE TABLE orders (
+  id int(11) DEFAULT '0' NOT NULL auto_increment,
+  status int(11) DEFAULT '0' NOT NULL,
+  shipping_type int(11) DEFAULT '0' NOT NULL,
+  updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  notes text,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  PRIMARY KEY (id)
+);
+
+#
+# Dumping data for table 'orders'
+#
+
+
+#
+# Table structure for table 'payment_info'
+#
+CREATE TABLE payment_info (
+  Payment_Method enum('MasterCard','VISA','AMEX') DEFAULT 'MasterCard' NOT NULL,
+  Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
+  Card_Number varchar(255) DEFAULT '' NOT NULL,
+  Expiration_Date varchar(10) DEFAULT '' NOT NULL,
+  orderid varchar(12) DEFAULT '' NOT NULL,
+  status int(11) DEFAULT '3' NOT NULL,
+  PRIMARY KEY (orderid)
+);
+
+#
+# Dumping data for table 'payment_info'
+#
+
+
+#
+# Table structure for table 'product_groups'
+#
+CREATE TABLE product_groups (
+  group_id char(12),
+  product_id char(12)
+);
+
+#
+# Dumping data for table 'product_groups'
+#
+
+#
+# Table structure for table 'products'
+#
+CREATE TABLE products (
+  id varchar(12) DEFAULT '' NOT NULL,
+  name varchar(64) DEFAULT '' NOT NULL,
+  description text,
+  onhand int(11),
+  onhand_date datetime,
+  units varchar(24),
+  mfgr varchar(12),
+  shipping decimal(5,2),
+  cost decimal(6,2),
+  price decimal(7,2),
+  qualifiers varchar(24),
+  image varchar(12),
+  taxable enum('Y','N') DEFAULT 'N',
+  PRIMARY KEY (id)
+);
+
+#
+# Dumping data for table 'products'
+#
+
+
+#
+# Table structure for table 'sessions'
+#
+CREATE TABLE sessions (
+  sessionid varchar(12) DEFAULT '' NOT NULL,
+  id varchar(12) DEFAULT '0' NOT NULL,
+  quantity int(11) DEFAULT '0' NOT NULL,
+  series int(11) DEFAULT '0' NOT NULL,
+  qualifier varchar(24),
+  timeout bigint(21),
+  price float(5,2) DEFAULT '0.00' NOT NULL
+);
+
+#
+# Dumping data for table 'sessions'
+#
+
+
+#
+# Table structure for table 'shipments'
+#
+CREATE TABLE shipments (
+  orderid char(12) DEFAULT '' NOT NULL,
+  item char(12) DEFAULT '' NOT NULL,
+  series int(11) DEFAULT '1' NOT NULL,
+  quantity int(11) DEFAULT '1' NOT NULL,
+  tracking_id char(24),
+  created timestamp(14),
+  ship_group int(11) DEFAULT '1' NOT NULL
+);
+
+#
+# Dumping data for table 'shipments'
+#
+
+
+#
+# Table structure for table 'shipping_types'
+#
+CREATE TABLE shipping_types (
+  type int(11) DEFAULT '0' NOT NULL auto_increment,
+  name varchar(32) DEFAULT '' NOT NULL,
+  description blob,
+  PRIMARY KEY (type)
+);
+
+#
+# Dumping data for table 'shipping_types'
+#
+
+
+#
+# Table structure for table 'status'
+#
+CREATE TABLE status (
+  status int(11) DEFAULT '0' NOT NULL,
+  name char(24) DEFAULT '' NOT NULL,
+  description char(128),
+  tablename char(20) DEFAULT '' NOT NULL,
+  PRIMARY KEY (status)
+);
+
+#
+# Dumping data for table 'status'
+#
+
+INSERT INTO status VALUES (0,'Unprocessed','Indicates an order awating initial processing.','orders');
+INSERT INTO status VALUES (1,'Shipped','Indicates an order that has been shipped.','orders');
+INSERT INTO status VALUES (2,'PShipped','Indicates an order that has not completely shipped.','orders');
+INSERT INTO status VALUES (3,'Unprocessed','Indicates unprocessed payment information','payment_info');
+INSERT INTO status VALUES (4,'Validated','Indicates validated payment information','payment_info');
+INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info');
+
+#
+# Table structure for table 'taxrates'
+#
+CREATE TABLE taxrates (
+  locality char(4) DEFAULT '' NOT NULL,
+  taxrate float(10,2) DEFAULT '0.00' NOT NULL,
+  PRIMARY KEY (locality)
+);
+
+#
+# Dumping data for table 'taxrates'
+#
+
+
+#
+# Table structure for table 'type'
+#
+CREATE TABLE type (
+  type int(11) DEFAULT '0' NOT NULL,
+  name char(24),
+  description char(128),
+  tablename char(20) DEFAULT '' NOT NULL,
+  PRIMARY KEY (type)
+);
+
+#
+# Dumping data for table 'type'
+#
+
+INSERT INTO type VALUES (0,'Billing Address','Customer Billing Address','customer_info');
+INSERT INTO type VALUES (1,'Shipping Address','Customer Shipping Address if different than Billing Address','customer_info');
+

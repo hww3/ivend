@@ -92,7 +92,7 @@ catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type,"
 "and shipping_types.name=lineitems.extension"));
 if(sizeof(typer)<1) type="0";
 else type=typer[0]->type;
-  id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0,NULL," +
+  id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0," +
     type + ",NOW(),NULL,NOW())");
 
   id->misc->ivend->orderid=
@@ -115,7 +115,7 @@ for(int i=0; i<sizeof(r); i++){
     r[i]->status=0;
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
-    query=iVend.db()->generate_query(r[i], "orderdata",
+    query=id->misc->ivend->db->generate_query(r[i], "orderdata",
 id->misc->ivend->db);
     id->misc->ivend->db->query(query);
   }
@@ -318,7 +318,7 @@ mixed j;
  if(args->encrypt){
 object encryptedid = id;
 
-  string key=Stdio.read_file(id->misc->ivend->config->keybase);
+  string key=Stdio.read_file(id->misc->ivend->config->publickey);
 
   if(!key) {
     perror("iVend: Could't Load Public Key! Will save data in the clear\n");

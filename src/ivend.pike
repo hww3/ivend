@@ -26,7 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.66 1998-05-20 00:57:05 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.67 1998-05-25 01:01:17 hww3 Exp $";
 
 array register_module(){
 
@@ -72,7 +72,7 @@ void create(){
           "This is location where iVend will store "
           "data files nessecary for operation.");
 
-   defvar("configdir", query("root")+"configurations" , "Configuration Directory",
+   defvar("configdir", query("root")+"configurations" , "iVend Configuration Directory",
           TYPE_DIR,
           "This is location where iVend will keep Store "
           "configuration files nessecary for operation.");
@@ -115,11 +115,11 @@ mixed load_ivmodule(string c, string name){
 
 mixed err;
 mixed m;
-perror("loading module...\n");
-    err=catch(m=(object)clone(compile_file(query("root")+"/modules/"+
+
+    err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
     name)));
 if(err) {
-  perror("error!\n");
+
   return (err);
   }
 modules+=([ name : m  ]);
@@ -268,8 +268,7 @@ if(id->variables->update) {
   string field;
 
   string retval=lower_case(contents);
-  if(!id->misc->ivend->SESSIONID) return retval+"blah";
-  else {
+
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
 
     if(!args->fields) return "Incomplete cart configuration!";
@@ -314,8 +313,6 @@ if(id->variables->update) {
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";
 return retval;    
  
-    }
-  
 }
 
 string tag_additem(string tag_name, mapping args,
@@ -402,27 +399,42 @@ string tag_listitems(string tag_name, mapping args,
 {
 
 string retval="";
+string query;
 
 if(!id->misc->ivend->page) return "no page!";
 string st=id->misc->ivend->st;
+string extrafields="";
+array ef=({});
+array en=({});
+
+ if(args->fields){
+   ef=args->fields/",";
+   if(args->names)
+   en=args->names/",";
+   else en=({});
+   for(int i=0; i<sizeof(ef); i++) {
+     if(catch(en[i]) || !en[i])  en+=({ef[i]});
+     extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
+   }
+ }
 
 array r;
 if(args->type=="groups") {
-  r=id->misc->ivend->db->query("SELECT id AS pid,"+args->fields+ " FROM groups");
+  query="SELECT id AS pid " + extrafields+ " FROM groups";
+   r=id->misc->ivend->db->query(query);
   }
 else {
-
-  r=id->misc->ivend->db->query("SELECT product_id AS pid,"+args->fields+
+  query="SELECT product_id AS pid "+ extrafields+
 	" FROM product_groups,products where group_id='"+
 	     id->misc->ivend->page+"'"
-	" AND products.id=product_id");
+	" AND products.id=product_id";
+  r=id->misc->ivend->db->query(query);
 }
 
 if(sizeof(r)==0) return "Sorry, No Products are Available.";
 
 mapping row;
 
-array(string) titles=(args->fields/",");
 array(array(string)) rows=allocate(sizeof(r));
 int p=0;
 foreach(r,row){
@@ -430,7 +442,7 @@ foreach(r,row){
   string t;
   int n=0;
 // perror(indices(row)*" - ");
-  foreach(titles, t){
+  foreach(en, t){
 //	perror(t);  
 
       if(n==0)
@@ -444,7 +456,7 @@ foreach(r,row){
   p++;
   }
 
-retval+=html_table(titles, rows);
+retval+=html_table(en, rows);
 return retval;
 
     }
@@ -563,7 +575,7 @@ for(int i=0; i<sizeof(configfiles); i++){
           }
   }
 
-perror("moving globals...\n");
+
 global=config["global"];
 m_delete(config,"global");
 return 0;
@@ -573,17 +585,17 @@ return 0;
 
 void load_modules(string c){
 
-perror("running load_modules() for " + c + "\n");
+perror("iVend: running load_modules() for " + c + "\n");
 
 mixed err;
 if(!c) return;
 if(!config[c]) return;
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
-      perror("loading module " + config[c][n] + "\n");
+      perror("iVend: loading module " + config[c][n] + "\n");
       err=load_ivmodule(c, config[c][n]);
       if(err) {
-        perror("\nThe following error occured while loading the module "
+        perror("iVend: The following error occured while loading the module "
 	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
 	  + describe_backtrace(err));
         config[c]->error=err;
@@ -595,9 +607,9 @@ if(!config[c]) return;
 void start(){
 
  add_include_path(query("root") + "include");
-perror("added include path: "+query("root")+"include\n"); 
+perror("iVend: added include path: "+query("root")+"include\n"); 
 add_module_path(query("root")+"src");
-perror("added module path: "+query("root")+"src\n"); 
+perror("iVend: added module path: "+query("root")+"src\n"); 
 
   loaded=1;
 
@@ -618,14 +630,13 @@ if(! id->misc->ivend)
 	return ({ 33204,0,time(),time(),time(),0,0 });
 array fs;
 #ifdef MODULE_DEBUG
- perror("statting "+id->misc->ivend->root+"/"+f+"\n");
+ perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
 #endif
 fs=file_stat(id->misc->ivend->root+"/"+f);
 return fs;
 }
 
 void error(mixed error, object id){
-  perror("error()\n");
   if(arrayp(error)) id->misc->ivend->error +=({	
     replace(describe_backtrace(error),"\n","<br>\n") });
   else if(stringp(error)) id->misc->ivend->error += ({ error });
@@ -635,7 +646,7 @@ void error(mixed error, object id){
 
 mixed handle_error(object id){
 string retval;
-perror("handle_error()\n");
+
 if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
   retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
     "<b>One or more errors have occurred. Please review the following "
@@ -739,7 +750,7 @@ string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
 "','"+item+"',"+(id->variables->quantity 
 || 1)+","+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
-perror(query+"\n");
+
 if(catch(id->misc->ivend->db->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
@@ -777,7 +788,7 @@ switch(page){
 	}
     else retval=find_page(page, id);
   }
-  if (!retval) error("Unable to find product "+page,id);
+  if (!retval) error("Unable to find product or page "+page,id);
   return retval;
 
 }
@@ -814,7 +825,7 @@ configs+=({"global"});
 array(string) this_config;
 for(int i=0; i<sizeof(configs); i++){	
   if(configs[i]=="global") {
-    perror("GLOBAL!\n");
+
     if(!global) this_config=({});
     else this_config= indices(global);
     }
@@ -1058,7 +1069,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	else {		// OK, we know what we have in mind...
 
 	if(id->variables->config_delete=="1") {
-perror("DELETING " + request[1] + "\n");
+
 	config=m_delete(config,request[1]);
 	save_status=0;
   mv(query("configdir")+ request[1], query("configdir") + request[1] + "~");
@@ -1073,7 +1084,7 @@ perror("DELETING " + request[1] + "\n");
  	if(variables[i]=="config_password" &&
 id->variables[variables[i]]!=config[id->variables->config][variables[i]])
 {
-  perror("crypting password...\n");
+
   id->variables[variables[i]]=crypt(id->variables[variables[i]]);
 }
 
@@ -1471,13 +1482,13 @@ if(config[id->misc->ivend->st]->error)
 */	
 
   else if(!config[id->misc->ivend->st]) {
-    perror("NO SUCH STORE!\n");
+
     return return_data("NO SUCH STORE!", id);
     }
 
   else if(catch(request[0])) {
     request+=({""});
-    perror("caught request[0]\n\n");
+
     }
 // load id->misc->ivend with the good stuff...
   id->misc->ivend->config=config[id->misc->ivend->st];	
@@ -1522,19 +1533,15 @@ mixed err;
     return get_image(request*"/", id);
     break;
     case "admin":
-    perror("ADMIN!\n");
     retval=admin_handler(request*"/", id);
     break;
     case "orders":
-    perror("ORDERS!\n");
     retval=order_handler(request*"/", id);
     break;
     case "shipping":
-    perror("SHIPPING!\n");
     retval=shipping_handler(request*"/", id);
     break;
     default:
-    perror("DEFAULT!\n");
     retval=(handle_page(request*"/", id));
 
     }

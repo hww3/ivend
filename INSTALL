@@ -355,6 +355,7 @@ container takes the following attributes:
   random: optional, when used with formrotate, the template to be used 
     will be chosen at random from those provided.
   show: show items with all status types: active, inactive, etc.
+  order: sql order clause, ie ORDER="name,id asc".
 
 <formrotate></formrotate> is used within the category_output container. it
 provides multiple templates to rotate through while processing records. if
@@ -391,9 +392,9 @@ generate_form		generate a form from the database
 confirmemail
   field=fieldname	name of field containing email address to check.
 
-salestax		added as a lineitem
-  locality=fieldname	name of field in billing address to determine
-			taxrate.
+salestax		added as a lineitem. taxrate is automatically
+			calculated using values supplied in the admin
+			interface.
 
 discount
   percent=percentage	percent discount of subtotal, which is then

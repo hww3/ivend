@@ -682,7 +682,7 @@ string container_category_output(string name, mapping args,
    string query;
 
    if(!args->type) return YOU_MUST_SUPPLY_A_CATEGORY_TYPE;
-
+if(lower_case(args->type)!="groups"){
    query="SELECT * FROM " + lower_case(args->type) + ",product_groups ";
    query+=" WHERE product_groups.group_id='" +
 	id->misc->ivend->page + "' AND "
@@ -696,8 +696,24 @@ perror(query + "\n");
       query+=" AND " + args->restriction;
    if(args->order)
       query+=" ORDER BY " + args->order;
+}
+else {
 
+  query="SELECT * FROM " + lower_case(args->type);
 
+  if(args->restriction || args->show)
+    query+=" WHERE ";
+  if(args->restriction)
+    query+=args->restriction;
+  if(args->restriction &&  args->show)
+    query+=" AND ";
+  if(args->show)
+    query+="status='A'";
+
+  if(args->order)
+    query+=" ORDER BY " + args->order;
+
+}
    array r=DB->query(query);
 
    if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";

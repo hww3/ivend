@@ -43,12 +43,15 @@ int initialize_db(object db, mapping config) {
 catch(db->query("drop table taxrates"));
 if(catch(db->query(
   "CREATE TABLE taxrates ("
-  " charge float(5,2) DEFAULT '0.00' NOT NULL,"
+  " taxrate float(5,2) DEFAULT '0.00' NOT NULL,"
   " type char(1) DEFAULT 'C' NOT NULL,"
   " field_name char(64) NOT NULL, "
+  " value char(24) NOT NULL, "
   " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
-  " ) ")))
+  " ) "))) {
+    perror("iVend: taxrate table setup failed. \n");
     return 0;
+    }
 initialized=1;
 return 0;
 
@@ -306,28 +309,68 @@ array r;		// result from query
 string query;		// the query
 float totaltax;		// totaltax
 string locality;	// fieldname of locality
+float taxrate=0.00;
+mapping lookup=([]);
 
-locality=(args->locality||"state");
+query="SELECT field_name FROM taxrates GROUP BY field_name";
 
-query=
-"select " + locality + " from customer_info where orderid='"+
-	id->misc->ivend->SESSIONID +"'";
-r=id->misc->ivend->db->query(query);
+r=DB->query(query);
 
-if(sizeof(r)<1) perror("iVend: ERROR locating customerinfo!\n");
+if(sizeof(r)==0)
+  return "0.00";
 
-else { 
+array fields=({});
+mapping tables=([]);
 
-  query=
-  "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
+foreach(r, mapping row)
+  fields += ({row->field_name});
+foreach(fields, string f)
+  if(!tables[(f/".")[0]]) {
+    tables += ([(f/".")[0]:({})]);
+    tables[(f/".")[0]] += ({f});
+    }
+  else tables[(f/".")[0]] +=({f});
 
-  r=id->misc->ivend->db->query(query);
+foreach(indices(tables), string tname){
+
+ query="SELECT " + (tables[tname]*", ") + " FROM " + tname + 
+  " WHERE " + tname + ".orderid='" + id->misc->ivend->SESSIONID + "'"; 
+
+// perror(query + "\n");
+
+ r=DB->query(query);
+
+ if(sizeof(r)!=0)
+  foreach(indices(r[0]), string fname) 
+    lookup+=([tname + "." + fname: r[0][fname]]);
+ } 
+
+if(sizeof(lookup)==0) {
+  perror("iVend: Unable to find order info for tax calculation!\n");
+  return "0.00";
+  }
+
+
+else { 		// calculate the tax rate as sum of all matches.
+
+  foreach(indices(lookup), string fname) {
+    query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
+      "value='" + lookup[fname] + "'";
+
+    perror(query + "\n");
+    r=DB->query(query);
+
+    if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
+  
+    } 
+
+  r=DB->query(query);
   if(sizeof(r)==1) {
     if(CONFIG_ROOT[module_name]->shipping_taxable=="Yes")
-      totaltax=(float)r[0]->taxrate *
+      totaltax=(float)taxrate *
         (float)((id->misc->ivend->lineitems->taxable +
          id->misc->ivend->lineitems->shipping) || 0.00);
-    else totaltax=(float)r[0]->taxrate *
+    else totaltax=(float)taxrate *
 	(float)(id->misc->ivend->lineitems->taxable || 0.00);
 	totaltax=(float)sprintf("%.2f", (float)totaltax);
     id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);

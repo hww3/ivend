@@ -51,3 +51,6 @@
 #define ERROR_ADDING_ITEM "Error adding item"
 
 #define MONETARY_UNIT "$"
+
+// shipping module
+#define MUST_SELECT_SHIPPING_TYPE "You must select a shipping type."

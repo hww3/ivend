@@ -1,3 +1,5 @@
+#include "../include/messages.h"
+
 constant module_name = "Per Product Shipping";
 constant module_type = "shipping";
 
@@ -54,6 +56,23 @@ return 0;
 
 }
 
+string doaddlookup(object id){
+
+string retval="";
+
+if(!(id->variables->fieldname && id->variables->doaddlookup))
+  return "You must properly add a lookup field.";
+
+else {
+  id->misc->ivend->db->query("DELETE FROM shipping_pp WHERE type=" +
+    id->variables->doaddlookup);
+  id->misc->ivend->db->query("INSERT INTO shipping_pp VALUES(" +
+    id->variables->doaddlookup + ",'" + id->variables->fieldname + "',NULL)"); 
+  retval="Lookup Field added Successfully.";
+  return retval;
+  }
+}
+
 string addlookup(object id){
 
   string retval="<form action=" + id->not_query + ">"
@@ -63,7 +82,7 @@ string addlookup(object id){
   foreach(f, mapping field)
     if(field->type=="float" || field->type=="decimal")
       retval+="<option>" + field->name + "\n";
-  retval+="</select>\n<input type=hidden name=dooaddlookup value="+
+  retval+="</select>\n<input type=hidden name=doaddlookup value="+
 	id->variables->addlookup + ">"
 	"<input type=submit value=AddLookupField></form>";
 
@@ -119,6 +138,8 @@ else {
 
   if(id->variables->addlookup)
     retval+=addlookup(id);
+  else if(id->variables->doaddlookup)
+    retval+=doaddlookup(id);
   else if(id->variables->addtype)
     retval+=addtype(id);
   else {
@@ -135,7 +156,7 @@ else {
 		">Add Lookup Field</a> )\n";
         retval+="</font>\n<dd>"+ row->description+"</font>\n\n";
       if(sizeof(r)>0)
-        retval+="<b>Field:</b> " + r[0]->fieldname + "\n";
+        retval+="<p><b>Lookup Field:</b> " + r[0]->fieldname + "\n";
 
     }
     retval+="</ul><font size=2><a href=shipping?addtype=1>"
@@ -147,10 +168,12 @@ return "Method: Shipping Cost based on product.\n<br>" + retval;
 
 }
 
-float|string tag_shipping(mixed type, object id){
+float|string tag_shipping(string tag_name, mapping args,
+                    object id, mapping defines){
 
 if(!initialized) return "Uninitialized shipping module.";
-
+if(sizeof(id->misc->ivend->error)>0)
+  return "";
 array r=id->misc->ivend->db->query("SELECT value FROM lineitems WHERE "
   "lineitem='shipping' AND orderid='"+ id->misc->ivend->SESSIONID +
   "'");
@@ -169,11 +192,12 @@ r=id->misc->ivend->db->query("SELECT fieldname FROM shipping_pp WHERE "
 	"type=" + type);
 
 if(sizeof(r)<1) return -1.00;
-
-r=id->misc->ivend->db->query("SELECT SUM(sessions.quantity*products." +
+string query="SELECT SUM(sessions.quantity*products." +
 	r[0]->fieldname + ") AS shipping FROM "
 	" products,sessions WHERE sessionid='" +
-	id->misc->ivend->SESSIONID + "'");
+	id->misc->ivend->SESSIONID + "' and products.id=sessions.id";
+perror(query);
+r=id->misc->ivend->db->query(query);
 
 if(sizeof(r)!=1) {
   perror("ERROR GETTING SHIPPINGCOST!\n");
@@ -233,8 +257,10 @@ string tag_addshipping (string tag_name, mapping args,
 
 if(!initialized) return "Uninitialized shipping module.";
 
-if(!id->variables->type) return "Error: You can't use the addshipping tag outside of checkout!\n";
-
+if(!id->variables->type) {
+  id->misc->ivend->error+=({MUST_SELECT_SHIPPING_TYPE});
+  return "ERROR";
+  }
 mixed total, charge;
 string retval;
 

@@ -15,9 +15,10 @@ inherit "wizard";
 
 mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
+mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.17 1998-02-10 20:58:25 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.18 1998-02-11 18:10:49 hww3 Exp $";
 
 /*
  *
@@ -547,6 +548,7 @@ switch(page){
     break;
 
   default:
+//	perror("reading " +config[st]->root+ "/"+page+".\n");
     if(retval=Stdio.read_bytes(config[st]->root+"/"+lower_case(page))) break;
     else retval=find_page(page, st, id);
   }
@@ -569,9 +571,14 @@ mapping ivend_image(array(string) request, object id){
 
 mixed handle_checkout(object id){
 mixed retval;
-object c=clone(compile_file(id->misc->ivend->config->root+"/modules/"+
-	id->misc->ivend->config->checkout_module));
-retval=c->checkout(id);
+ if (id->variables->reload || 
+	! objectp(modules[id->misc->ivend->config->checkout_module]))
+modules+=([ id->misc->ivend->config->checkout_module :
+    (object)clone(compile_file(id->misc->ivend->config->root+"/modules/"+
+    id->misc->ivend->config->checkout_module)) ]);
+
+retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
+
 if(retval==-1) return handle_page("index.ivml",id->misc->ivend->st,id);
 else 
     return parse_rxml(parse_html(retval,([]),

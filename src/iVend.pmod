@@ -138,7 +138,7 @@ string user;
 string password;
 
 int|string addentry(object id, string referrer){
-string errors;
+string errors="";
 array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
@@ -157,7 +157,7 @@ for (int i=0; i<sizeof(r); i++){
   }
 
  else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
-    errors+=replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
+    errors+="<li>"+replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
 
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="blob") query+="'"+id->variables[r[i]->name]+"',";
@@ -392,7 +392,8 @@ return;
 }
 
 
-string generate_form_from_db(string table, array|void exclude){
+string generate_form_from_db(string table, array|void exclude,
+object|void id){
 
 
 string retval="";
@@ -460,6 +461,28 @@ else if(r[i]->type=="long" && r[i]->flags["not_null"]){
 	retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+" VALUE=NULL>\n";
 
 	}
+
+else if(r[i]->type=="enum"){
+    retval+="<tr>\n"
+	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
+	+replace(r[i]->name,"_"," ")+
+	"</font></td>\n"
+	"<td>\n";
+
+    retval+="<select name=\""+r[i]->name+"\">\n";
+
+  array vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	"db/"+table+"_"+r[i]->name+".val")/"\n";
+	vals-=({""});
+    if(sizeof(vals)>0) {
+	for(int j=0; j<sizeof(vals); j++)
+	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	}
+    else retval+="<option>No Options Available\n";
+    retval+="</select></td></tr>";
+    
+    }
+
 
 else if(r[i]->type=="unknown")	{
 	retval+="<TR>\n"

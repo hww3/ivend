@@ -12,7 +12,8 @@ constant module_type="checkout";
 
 mixed checkout(object id){
 
-string retval="";
+string retval="<title>checkout</title><body bgcolor=white text=navy>"
+		"<font face=helvetica>";
 
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
@@ -24,25 +25,31 @@ string retval="";
 int page;
 
  if(id->variables["_page"]=="4"){
-   if(id->variables->shipsame=="1");
-   else mixed j=s->addentry(id);
-   if(j!=1) return "<font size=+2>Error!</font>\n"
-	   "<br>"+j;
-retval="testin'";
+   if((string)id->variables->shipsame=="1");
+   else { mixed j=s->addentry(id);
+   if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
+	   "<br><b>Please correct the following before continuing:<p></b><ul>"
+	+j+"</ul>";
+	}
+	retval+="<form action=./>";
+
+retval+=s->generate_form_from_db("test",({"orderid","type","updated"}),id);
+ retval+="</form>End of the line!";
  }
 
 else if(id->variables["_page"]=="3"){
 
   mixed j=s->addentry(id);
-if(j!=1) return "<font size=+2>Error!</font>\n"
-	   "<br>"+j;
+   if(j!=1) return retval+ "<font size=+2>Error!</font>\n"
+	   "<br><b>Please fix the following before continuing:<p></b><ul>"+
+	j+"</ul>";
   retval+="<font size=+2>3. Shipping Address</font>\n"
   	"<form action="+id->not_query+">";
   retval+="Is this order to be shipped to the Billing address?\n"
 	"<select name=shipsame>"
 	"<option value=1>Yes\n<option value=0>No\n</select>"
 	"<p>If not, complete the following information:<br><table>\n";
-  retval+=s->generate_form_from_db("customer_info", ({"orderid","type","updated"}));
+  retval+=s->generate_form_from_db("customer_info",({"orderid","type","updated"}),id);
   retval+="</table>"
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=1>"
@@ -55,7 +62,8 @@ if(j!=1) return "<font size=+2>Error!</font>\n"
 else if(id->variables["_page"]=="2"){
   retval+="<font size=+2>2. Billing Address</font>\n";
   retval+="<form action="+id->not_query+"><table>\n";
-  retval+=s->generate_form_from_db("customer_info", ({"orderid","type","updated"}));
+  retval+=s->generate_form_from_db("customer_info",
+({"orderid","type","updated"}),id);
   retval+="</table>"
 	"<input type=hidden name=type value=0>"	
         "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"

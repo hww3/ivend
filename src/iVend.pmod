@@ -292,6 +292,11 @@ return "";
     mixed addentry(object id, string referrer){
         // perror("eaddentry\n");
         array errors=({});
+if(!id->variables->table) {
+  errors+=({"You have not supplied all of the required information. "
+	"Please go back and resubmit your request." });
+  return errors;
+  }
 array(mapping(string:mixed)) r=list_fields(id->variables->table);
         for (int i=0; i<sizeof(r); i++)
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -545,7 +550,13 @@ array(mapping(string:mixed)) r=list_fields(table);
 			"<select name=\"parent\">\n";
                 array o=({(["id":"", "name":"Top Level Group",
 			"parent": ""])});
-o+=query("SELECT id,parent,name FROM groups");
+o+=query("SELECT id,parent,name FROM groups where parent = '' order by name asc");
+		foreach(o, mapping r) 
+                 retval+="<option value=\"" + r->id + "\" "
+			+ ((record&&record->parent==r->id)
+			?"SELECTED":"") +">" + r->name +
+			(r->parent==""?" (TLG)":"") + "\n";
+o=query("SELECT id,parent,name FROM groups where parent <> '' order by name asc");
 		foreach(o, mapping r) 
                  retval+="<option value=\"" + r->id + "\" "
 			+ ((record&&record->parent==r->id)

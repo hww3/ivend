@@ -411,8 +411,9 @@ if(file_stat(v->root + "/schema.mysql") && v->populatedb=="Yes"){
     return "An error occurred while connecting to the store database" 
 	"as " + v->config + " with password " + v->dbpassword + "."
 	"<p>This is sometimes due to improper host table setup on "
-	"the database host.<p><b>Error:</b> "
-	+ s->error() + "<p>";
+<<<<<<< newaddwiz.pike
+	"the database host.";
+//	+ s->error();
     }
 perror("populating database...\n");
 ss=ss[0..sizeof(ss)-2];

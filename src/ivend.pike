@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.240 1999-08-24 20:27:35 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.241 1999-08-28 18:47:24 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -601,8 +601,9 @@ void|string container_form(string name, mapping args,
 mixed do_complex_items_add(object id, array items){
 //    perror("doing complex item add...\n");
     foreach(items, mapping i){
-        array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
-                          + i->item + "'");
+        array r;
+	catch(r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
+                          + i->item + "'"));
         if(!r || sizeof(r)<1)
             perror("No Pricing Configuration for " + i->item + ".\n");
         foreach(r, mapping row) {
@@ -634,18 +635,20 @@ if(optstr)
    id->variables[v[0]]=v[1];
  }
 }
-        array types=DB->query("SELECT option_type FROM item_options "
-		"WHERE product_id='" + item + "' GROUP BY option_type");
+        array types;
+	catch(types=DB->query("SELECT option_type FROM item_options "
+		"WHERE product_id='" + item + "' GROUP BY option_type"));
 	foreach(types, mapping c){
 	 if(id->variables[c->option_type])
           options+=({([ "option_code": id->variables[c->option_type],
 		"option_type": c->option_type])});
 	}
 	 foreach(options, mapping o) {
-	array optr=DB->query("SELECT * FROM item_options "
+	array optr;
+	catch(optr=DB->query("SELECT * FROM item_options "
 		"WHERE product_id='" + item + 
 		"' AND option_code='" + o->option_code  + "' "
-		"AND option_type='" + o->option_type + "'");
+		"AND option_type='" + o->option_type + "'"));
 	if(!optr || sizeof(optr)<1) {
 	  error("Invalid Option " + o->option_type + " for item " +
 		item + ".", id);
@@ -701,9 +704,10 @@ mixed do_additems(object id, array items){
     }
     else{
         foreach(items, mapping item){
-            float price=(float)(DB->query("SELECT price FROM products WHERE "
+            float price;
+	catch(price=(float)(DB->query("SELECT price FROM products WHERE "
                                   + KEYS->products +  "='" + item->item +
-                                  "'")[0]->price);
+                                  "'")[0]->price));
 		array opt=({});
 		mapping o=([]);
 	if(item->options) o=get_options(id, item->item, item->options);
@@ -744,9 +748,9 @@ mixed container_icart(string name, mapping args, string contents, object id) {
         if(id->variables[v]==DELETE) {
             string p=(v/"/")[0];
             string s=(v/"/")[1];
-            DB->query("DELETE FROM sessions WHERE SESSIONID='"
+            catch(DB->query("DELETE FROM sessions WHERE SESSIONID='"
                       +id->misc->ivend->SESSIONID+
-                      "' AND id='"+ p +"' AND series=" +s );
+                      "' AND id='"+ p +"' AND series=" +s ));
 // perror("DELETED ITEM " + p + " SERIES " + s + "\n");
             madechange=1;
 trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
@@ -766,18 +770,19 @@ trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
 		if(mr[0]->locked==0) 
 */
                   madechange=1;
-                DB->query("DELETE FROM sessions WHERE SESSIONID='"
+                catch(DB->query("DELETE FROM sessions WHERE SESSIONID='"
                           +id->misc->ivend->SESSIONID+
                           "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
-                          id->variables["s"+(string)i] );
+                          id->variables["s"+(string)i] ));
 trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
             } else {
                 madechange=1;
 //              perror("updating cart..." + id->variables["q" +(string)i] + "\n");
-                DB->query("UPDATE sessions SET "
+                catch(DB->query("UPDATE sessions SET "
                           "quantity="+(int)(id->variables["q"+(string)i])+
                           " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
-                          id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
+                          id->variables["p"+(string)i]+ "' AND series="+
+			id->variables["s"+(string)i] ));
 trigger_event("updateitem", id, (["item" : id->variables["p" +
                                   (string)i] , "series" : id->variables["s" + (string)i],
                                   "quantity": id->variables["p" + (string)i]]) );
@@ -786,13 +791,15 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
     }
 // madechange=0;
     if(madechange==1){
-        array r=DB->query("SELECT id, price, quantity, series, options, autoadd, locked "
-                          " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");
+        array r;
+	catch(r=DB->query("SELECT id, price, quantity, series, options, autoadd, locked "
+                          " FROM sessions WHERE sessionid='" +
+			id->misc->ivend->SESSIONID + "'"));
         // perror(sprintf("%O", r));
         if(r && sizeof(r)>0) {
             array items=({});
-            DB->query("DELETE FROM sessions WHERE sessionid='" +
-                      id->misc->ivend->SESSIONID + "'");
+            catch(DB->query("DELETE FROM sessions WHERE sessionid='" +
+                      id->misc->ivend->SESSIONID + "'"));
             foreach(r, mapping row) {
                 if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
 		 continue;
@@ -1001,7 +1008,8 @@ string container_category_output(string name, mapping args,
             query+=" ORDER BY " + args->order;
 
     }
-    array r=DB->query(query);
+    array r;
+	catch(r=DB->query(query));
 
     if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
 
@@ -1099,8 +1107,9 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
         tablename="products";
     }
     else if(args->type=="groups") {
-        array r=DB->query("SELECT id FROM groups WHERE id='" +
-          id->misc->ivend->page + "'");
+        array r;
+	catch(r=DB->query("SELECT id FROM groups WHERE id='" +
+          id->misc->ivend->page + "'"));
 	if(r && sizeof(r)>0) args->parent=r[0]->id;
 	else args->parent="";
         query="SELECT " + KEYS->groups + " AS pid " +
@@ -1132,7 +1141,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     if(args->order)
         query+=" ORDER BY " + args->order;
 
-    r=DB->query(query);
+    catch(r=DB->query(query));
     // perror("Query: " +query + "\n");
 
     if(sizeof(r)==0 && !args->quiet) return NO_PRODUCTS_AVAILABLE;
@@ -1306,7 +1315,8 @@ string container_itemoutput(string name, mapping args,
              KEYS[type + "s"]
              +"='"+ item +"'";
 
-    array r=  DB->query(q);
+    array r;
+	catch(r=  DB->query(q));
 
     if(sizeof(r)==0)
         return 0;
@@ -1335,15 +1345,15 @@ string container_itemoutput(string name, mapping args,
 string get_type(string page, object id){
 
     array r;
-    r=DB->query("SELECT * FROM groups WHERE " +
+    catch(r=DB->query("SELECT * FROM groups WHERE " +
                 KEYS->groups +
-                "='"+page+"'");
+                "='"+page+"'"));
     if (sizeof(r)==1) { 
 	id->misc->ivend->template=r[0]->template;
 	return "group";
 	}
-    r=DB->query("SELECT * FROM products WHERE " +
-                KEYS->products + "='" + page + "'");
+    catch(r=DB->query("SELECT * FROM products WHERE " +
+                KEYS->products + "='" + page + "'"));
 
     if(sizeof(r)==1) {
 	id->misc->ivend->template=r[0]->template;
@@ -1568,8 +1578,8 @@ if(id->cookies->admin_user && id->cookies->admin_user!="")
     mixed m;
 
 if(id->variables->user !=""){
-	array r=DB->query("SELECT * FROM admin_users WHERE username='" +
-		id->variables->user + "'");
+	catch(array r=DB->query("SELECT * FROM admin_users WHERE username='" +
+		id->variables->user + "'"));
 	if(sizeof(r)==1)
 	  { // we've got a valid user.
 		if(!crypt(id->variables->password, r[0]->password))
@@ -1638,20 +1648,21 @@ admin_user_cache[STORE][upper_case(id->variables->user)]="";
 int do_clean_sessions(object db){
 
     string query="SELECT sessionid FROM session_time WHERE timeout < "+time(0);
-    array r=db->query(query);
+    array r;
+	catch(r=db->query(query));
     foreach(r,mapping record){
         foreach(({"customer_info","payment_info","orderdata","lineitems"}),
                 string table)
-        db->query("DELETE FROM " + table + " WHERE orderid='"
-                  + record->sessionid + "'");
+        catch(db->query("DELETE FROM " + table + " WHERE orderid='"
+                  + record->sessionid + "'"));
 
-	db->query("DELETE FROM sessions WHERE sessionid='" +
-		record->sessionid + "'");
-	db->query("DELETE FROM session_time WHERE sessionid='" +
-		record->sessionid + "'");
+	catch(db->query("DELETE FROM sessions WHERE sessionid='" +
+		record->sessionid + "'"));
+	catch(db->query("DELETE FROM session_time WHERE sessionid='" +
+		record->sessionid + "'"));
     }
 
-    db->query(query);
+    catch(db->query(query));
 
     return sizeof(r);
 }
@@ -1692,16 +1703,19 @@ mixed getmodify(string type, string pid, object id){
 
     string retval="";
     multiset gid=(<>);
-    array record=DB->query("SELECT * FROM " + type + "s WHERE "
-                           +  KEYS[type +"s"]  + "='" + pid +"'");
-    if (sizeof(record)!=1)
+    array record;
+	catch(record=DB->query("SELECT * FROM " + type + "s WHERE "
+                           +  KEYS[type +"s"]  + "='" + pid +"'"));
+    if (!record || sizeof(record)!=1)
         return "Error Finding " + capitalize(type) + " " +
                KEYS[type +"s"] + " " + pid + ".<p>";
 
     if(type=="product") {
-        array groups=DB->query("SELECT group_id from "
-                               "product_groups where product_id='"+ pid + "'");
-        if(sizeof(groups)>0)
+        array groups;
+	catch(groups=DB->query("SELECT group_id from " 
+                              "product_groups where product_id='"+ pid +
+				"'"));
+        if(groups && sizeof(groups)>0)
             foreach(groups, mapping g)
             gid[g->group_id]=1;
         record[0]->group_id=gid;
@@ -2132,8 +2146,10 @@ if(!intp(r)){
 			   "<script language=javascript>"
 			   "function setmatch() {\n"
 //		"alert('Value of __matchfield is |' + document.form.__criteria.value + '|.');\n"
-		"if(document.form.__matchfield.value!=\"Choose Field\")"
+		"if(document.form.__matchfield.value!=\"NONE\")\n{"
 			   "document.form.__select[1].checked=true;\n"
+			"document.form.__rule[0].checked=true;\n"
+			"}\n"
 			"else \n"
 			"document.form.__select[0].checked=true;\n"
 			   "}\n"
@@ -2145,7 +2161,7 @@ if(!intp(r)){
 " name=__select value=some> Match"
 			   "</font></td><td><font face=helvetica,arial size=2>"
 			   "<select name=__matchfield onchange=setmatch()>"
-				"<option value=\"\">Choose Field\n";
+				"<option value=\"NONE\">Choose Field\n";
 			foreach(f, mapping field)
 			   retval+="<option " +
 	(id->variables->__matchfield==field->name?"selected ":" ") + 
@@ -2168,7 +2184,6 @@ if(!intp(r)){
 		     retval+="</tr></table>"
                              "<input type=hidden name=primary_key value=\"" +
                              primary_key + "\"></form>";
-
                      string query="SELECT ";
                      array fields=({});
                      foreach(f, mapping v)

@@ -574,7 +574,7 @@ if(cn && stringp(cn)) {
    if(cn2[l]!=" ") cn2[l]="X";
   cn=cn2*"";
   }
-   array r=DB->query(
+   r=DB->query(
        "SELECT status FROM status WHERE name='Validated'");
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + ", card_number='" + cn + "'"
@@ -622,7 +622,7 @@ else {
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
 
-   array r=DB->query(
+   r=DB->query(
        "SELECT status FROM status WHERE name='Error'");
         T_O->report_status("Changed order status to 'Error.'",
                 id->variables->orderid || "NA", "handleorders", id); 
@@ -642,7 +642,7 @@ else {
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + ", " + CONFIG_ROOT[module_name]->card_number_field + "=''"
 	+ " WHERE orderid='" + id->variables->orderid+"'");
-   array r=DB->query(
+   r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
         T_O->report_status("Changed order status to 'Cancelled.'",
                 id->variables->orderid || "NA", "handleorders", id); 
@@ -682,7 +682,7 @@ else {
 
 
   int already_shipped_some, shipped_any, shipped_some, shipped_all=0;
-  array r=({});
+  r=({});
   r=DB->query("SELECT * FROM shipments WHERE orderid='" +
    id->variables->orderid + "'");
   if(sizeof(r)>0)

@@ -439,7 +439,7 @@ v->id + "'"))<1)
   break;
 
   case "grad":
-  array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + v->id +
+  r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + v->id +
    "' ORDER BY quantity ASC");
   retval+="<table><tr><th>Quantity</th><th>Price Each</th></tr>\n";
   if(!r || sizeof(r)<1)
@@ -456,7 +456,7 @@ v->id + "'"))<1)
   break;
 
   case "buyxgetx":
-  array r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + v->id +
+  r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + v->id +
    "' ORDER BY quantity_to_qualify, quantity_to_get ASC");
   retval+="<table><tr><th>Qty to Qualify</th><th>Qty to get</th>"
     "<th>Bonus Product ID</th><th>Price</th><th>Repeat</th><th>Exclude "

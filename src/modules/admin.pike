@@ -38,7 +38,7 @@ int do_clean_sessions(object db){
                 + record->sessionid + "'");
 
    }
-   string query="DELETE FROM sessions WHERE timeout < "+time(0);
+   query="DELETE FROM sessions WHERE timeout < "+time(0);
 
    db->query(query);
 
@@ -222,7 +222,7 @@ mixed action_template(string mode, object id){
    rm(CONFIG->root + "/db/groups.template");
    Stdio.write_file(CONFIG->root + "/db/groups.template", f*"\n");
 
-   array f=Stdio.read_file(CONFIG->root + "/db/products.template")/"\n";
+   f=Stdio.read_file(CONFIG->root + "/db/products.template")/"\n";
    f-=({""});
    f-=({id->variables->delete});
 //   f=Array.uniq(f);
@@ -278,7 +278,7 @@ mixed action_template(string mode, object id){
     if(sizeof(f)>0) retval+="</ul>";
     else retval+="You have not configured any group templates yet.<p>";
 
-    array f=(Stdio.read_file(CONFIG->root +
+    f=(Stdio.read_file(CONFIG->root +
 "/db/products.template")||"")/"\n";
     f-=({""});
     
@@ -435,8 +435,8 @@ id->variables[id->variables->_varname]=CONFIG_ROOT[id->variables->_module][id->v
 if(id->variables[id->variables->_varname])
 switch(pton[id->variables->_varname][3]){  
 case VARIABLE_INTEGER: 
-	int d;
-	if(sscanf(id->variables[id->variables->_varname],"%d",d)!=1) {
+	int dx;
+	if(sscanf(id->variables[id->variables->_varname],"%d",dx)!=1) {
 	  retval+="<b>You must supply an integer value for this preference.</b><p>";
 	id->variables[id->variables->_varname]=id->variables["_" + 
 		id->variables->_varname];

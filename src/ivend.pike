@@ -5,13 +5,13 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.283 2001-01-02 22:04:42 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.284 2002-01-13 05:21:39 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
-#include <simulate.h>
+//#include <simulate.h>
 
 // #define ENABLE_ADMIN_BACKDOOR 0
 
@@ -60,6 +60,40 @@ mapping admin_user_cache=([]);
 int num;
 int save_status=1;              // 1=we've saved 0=need to save.
 int db_info_loaded=0;
+
+#define PAGELINES 66
+#define PAGECOLUMNS 100
+#define ITEMSPERPAGE 10
+#define ITEMSTARTLINE 29
+array page=({});
+
+string At(string line, int column, string text, int|void maxlen, string|void align)
+{
+  if(!text||text=="") return "";
+  if(maxlen && sizeof(text)>maxlen)  // we need to trim the text to length
+  {
+    text=text[0..(maxlen-1)];
+  }
+  else if(maxlen && sizeof(text)<maxlen) // we need to pad the text
+  {
+    if(align&&align=="right")
+      text= (" "*(maxlen-sizeof(text)) + text);
+    else if(align&&align=="center")
+      text= (" "*((maxlen-sizeof(text))/2) + text + 
+	(" "*((maxlen-sizeof(text))/2)));
+    else
+      text=text + (" "*(maxlen-sizeof(text)));
+  }
+  int endcolumn=column + sizeof(text);
+  string lineb="";
+  string linea=line;
+  if(column>1)
+    lineb+=linea[0..column-2];
+  lineb+=text;
+  lineb+=linea[endcolumn..];
+  line=lineb;
+  return line;
+}
 
 void report_error(string error, string|void orderid, string subsys, object id){
     perror(id->remoteaddr + ": " + id->misc->ivend->sessionid +
@@ -113,7 +147,7 @@ void report_warning(string error, string|void orderid, string subsys, object id)
 */
 
 float get_tax(object id, string orderid){
-
+//perror("getting tax for orderid: " + orderid + "\n");
 array r;                // result from query
 string query;           // the query
 float totaltax;         // totaltax
@@ -123,6 +157,7 @@ mapping lookup=([]);
 
 // do we have tax exemption support?
 if(DB->local_settings->tax_exemption_support==TRUE){
+//perror("we support tax exemption.\n");
   query="SELECT tax_exempt FROM customer_info WHERE orderid='"
 	+ orderid + "' AND type=0 AND (tax_exempt<>0)";
   r=DB->query(query);
@@ -134,7 +169,7 @@ r=DB->query(query);
 
 if(sizeof(r)==0)
   return 0.00;
-
+//perror("there are rates defined.\n");
 array fields=({});
 mapping tables=([]);
 
@@ -167,19 +202,21 @@ if(sizeof(lookup)==0) {
 
 
 else {          // calculate the tax rate as sum of all matches.
- 
+  //perror("we have matches.\n"); 
   foreach(indices(lookup), string fname) {
     query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
       "value='" + lookup[fname] + "'";
-
+  //perror("looking up rates for " + fname + " " + lookup[fname] + "\n");
     r=DB->query(query);
 
-    if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
-
+    if(sizeof(r)!=0) {
+	//perror("got something back on that one.\n");
+	taxrate+=(float)(r[0]->taxrate);
+	}
+    // else perror("got nothin'.\n");
     }
-     
-  r=DB->query(query);
-  if(sizeof(r)==1) {
+//  perror("taxrate: " + taxrate + "\n");
+  if(((float)taxrate)>0.00) {
      r=DB->query("SELECT SUM(value)*" + taxrate + " as totaltax "
         " FROM lineitems WHERE orderid='" + orderid + "' AND "
         "taxable='Y'");
@@ -231,6 +268,23 @@ orderid) +
 
 array r=DB->query("SELECT SUM(value) as st FROM lineitems "
 	"WHERE orderid='" + orderid + "' and lineitem like '%taxable'");
+
+if(r && sizeof(r)==1) subtotal=(float)(r[0]->st);
+else throw(({"Unable to find order lineitems.", backtrace()}));
+
+// subtotal=(float)id->misc->ivend->lineitems->taxable +
+//        (float)id->misc->ivend->lineitems->nontaxable;
+
+return subtotal;
+
+}  
+
+float get_shipping(object id, string orderid){
+
+float subtotal;
+
+array r=DB->query("SELECT SUM(value) as st FROM lineitems "
+	"WHERE orderid='" + orderid + "' and lineitem like 'shipping'");
 
 if(r && sizeof(r)==1) subtotal=(float)(r[0]->st);
 else throw(({"Unable to find order lineitems.", backtrace()}));
@@ -429,7 +483,8 @@ void trigger_event(string event, object|void id, mapping|void args){
         if(library[STORE]->event[event])
             foreach(library[STORE]->event[event], mixed f)
 	     if(!had_fatal_error(id))
-		f(event, id, args);
+		if(functionp(f))
+		  f(event, id, args);
     }
 
 }
@@ -449,7 +504,7 @@ void register_event(mapping config, mapping events){
 
 string|void container_procedure(string name, mapping args,
                                 string contents, object id) {
-    string name;
+    string tname;
     string type;
     string header;
     string footer;
@@ -459,11 +514,12 @@ string|void container_procedure(string name, mapping args,
     else {
         if(args->tag) {
             type="tag";
-            name=lower_case(args->tag-" ");
+            tname=lower_case(args->tag-" ");
             header="#define MODULES id->misc->ivend->modules\n"
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
+		   "#define T_O id->misc->ivend->this_object\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string tag_name, mapping "
                    "args, object id, mapping defines){\n";
@@ -471,44 +527,48 @@ string|void container_procedure(string name, mapping args,
         }
         else if(args->event) {
             type="event";
-            name=lower_case(args->event-" ");
+            tname=lower_case(args->event-" ");
             header="#define MODULES id->misc->ivend->modules\n"
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "inherit \"roxenlib\";\n"
+                   "#define T_O id->misc->ivend->this_object\n"
+		   "inherit \"roxenlib\";\n"
                    "mixed proc(string event_name, "
                    "object|void id, mapping|void args){\n";
             footer="\n}";
         }
         else {
             type="container";
-            name=lower_case(args->container-" ");
+            tname=lower_case(args->container-" ");
             header="#define MODULES id->misc->ivend->modules\n"
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
                    "#define DB->keys id->misc->ivend->keys\n"
-                   "inherit \"roxenlib\";\n"
+                   "#define T_O id->misc->ivend->this_object\n"
+		   "inherit \"roxenlib\";\n"
                    "mixed proc(string container_name, mapping args,"
                    " string contents, object id){\n";
             footer="\n}";
         }
     }
-    perror("Defining Procedure (" +type+"):  " + name + "\n");
+    perror("Defining Procedure (" +type+"):  " + tname + "\n");
     contents=header+contents+footer;
     mixed err;
+master()->set_inhibit_compile_errors(0);
     err=catch(object p=(object)clone(compile_string(contents)));
+    if(err)perror(describe_backtrace(err));
     if(type=="event") {
         if(err)
-register_event(id->config, ([name : err ]));
+register_event(id->config, ([tname : err ]));
         else
-register_event(id->config, ([name : p->proc ]));
+register_event(id->config, ([tname : p->proc ]));
     }
     else {
         if(err)
-            library[id->config->config][type][name]=err;
-        else library[id->config->config][type][name]=p->proc;
+            library[id->config->config][type][tname]=err;
+        else library[id->config->config][type][tname]=p->proc;
     }
 
     return;
@@ -2116,11 +2176,11 @@ if(!intp(r)){
                  switch(mode){
 
                  case "doadd":
-                     mixed j=DB->addentry(id,id->referrer);
+                     mixed xj=DB->addentry(id,id->referrer);
                      retval+="<br>";
-                     if(!intp(j)){
+                     if(!intp(xj)){
 		       //                         destruct(DB);
-                         return retval+= "<p>The following errors occurred:<p><ul><li>" + (j*"<li>")
+                         return retval+= "<p>The following errors occurred:<p><ul><li>" + (xj*"<li>")
 				+"</ul><p>"
 	"Please return to the previous page to remedy this  "
 "situation before continuing.</body></html>";
@@ -2129,7 +2189,7 @@ if(!intp(r)){
                          type=(id->variables->table-"s");
 			 //                         destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
-		"id": id->variables[lower_case(DB->keys[type + "s"])] ])
+		"id": id->variables[DB->keys[type + "s"]] ])
 );
                        return (retval+"<br>"+capitalize(type)+" Added Sucessfully.")
 				+"</body></html>";
@@ -2138,16 +2198,16 @@ if(!intp(r)){
                      break;
 
                  case "domodify":
-                     mixed j=DB->modifyentry(id,id->referrer);
+                     xj=DB->modifyentry(id,id->referrer);
                      retval+="<br>";
-                     if(stringp(j)){
+                     if(stringp(xj)){
 		       //                         destruct(DB);
-                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>")
+                         return retval+= "The following errors occurred:<p><li>" + (xj*"<li>")
 				+"</body></html>";
                      }
 //                     destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
-		"id": id->variables[lower_case(DB->keys[type + "s"])] ])
+		"id": id->variables[DB->keys[type + "s"]] ])
 );
 
                      return retval +"<br>"+ capitalize(type) + " Modified Sucessfully."
@@ -2197,8 +2257,8 @@ if(!intp(r)){
                              retval+="<p>You must select an existing ID to act upon!<br>";
                          else {
 
-foreach(id->variables[lower_case(DB->keys[type
-+"s"])]/"\000", string d) {
+foreach(id->variables[DB->keys[type
++"s"]]/"\000", string d) {
 				 retval+="<p>\n"+DB->dodelete(type,
                       			d, DB->keys[type+"s"] ); 
              trigger_event("admindelete", id, (["type": type, 
@@ -2209,7 +2269,7 @@ foreach(id->variables[lower_case(DB->keys[type
                          if(id->variables->match) {
                              mixed n=DB->showmatches(type,
 
-id->variables[lower_case(DB->keys[type+ "s"])],
+id->variables[DB->keys[type+ "s"]],
                                                      DB->keys[type+"s"], id);
                              if(n)
                                  retval+="<form _parsed=1 name=form action=\"" +
@@ -2225,20 +2285,20 @@ id->variables[lower_case(DB->keys[type+ "s"])],
                                          + "\">\n"
                                          "Are you sure you want to delete the following?<p>";
 //perror("Input: " + id->variables[DB->keys[type +"s"]] + "\n");
-	foreach(id->variables[DB->keys[type +"s"]]/"\000", string d){
+	foreach(id->variables[DB->keys[type +"s"]]/"\000",
+string d){
                              mixed n= DB->showdepends(type,
 							d
                                                       , DB->keys[type+"s"],
 (type=="group"?DB->keys->products:0), id);
                              if(n){  retval+=
                                          "<input type=checkbox name=\"" +
-					DB->keys[type+"s"] + "\" value=\"" +d 
-                                             +"\" checked>\n";
+					DB->keys[type+"s"] +
+"\" value=\"" +d +"\" checked>\n";
          retval+=n;
 			}
                              else retval+="<p>Couldn't find "+capitalize(type) +" "
-                                              +id->variables[ DB->keys[
-                                                                  type+"s"]]+".<p>";
+                                              +id->variables[DB->keys[type+"s"]]+".<p>";
                              }
 retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                          }
@@ -2531,7 +2591,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                  cats+=({m});
                              else { m=(m/".")[0]; cats+=({m}); }
                          }
-                         cats=uniq(cats);
+                         cats=Array.uniq(cats);
                          sort(cats);
                          foreach(cats, string category){
                              retval+="<obox title=\"<font face=helvetica,arial>"+ replace(category,
@@ -2930,7 +2990,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 
 string generate_sessionid(object id){
  object md5 = Crypto.md5();
-    md5->update(id->remoteaddr);
+    md5->update((string)(id->remoteaddr));
     md5->update(sprintf("%d", roxen->increase_id()));
     md5->update(sprintf("%d", time(1)));
     string SessionID = Crypto.string_to_hex(md5->digest());
@@ -3225,18 +3285,18 @@ if(s) db[c->config]->handle(s);
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
 
-// perror("1 Found " + sizeof(mtl) + " modules to load.\n");
+ perror("1 Found " + sizeof(mtl) + " modules to load.\n");
 object s=db[c]->handle();
 //perror("got db.\n");
 			if(s->local_settings->pricing_model==COMPLEX_PRICING) {
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }
-// perror("2 Found " + sizeof(mtl) + " modules to load.\n");
+ perror("2 Found " + sizeof(mtl) + " modules to load.\n");
 db[c]->handle(s);
                              foreach(mtl, string name) { 
-
-                                 err=load_ivmodule(c,name);
+perror("3 loading " + name + "\n");
+                                 err=catch(load_ivmodule(c,name));
                                  if(err) perror("iVend: The following error occured while loading the module "
                                                     + name + "\n" +  describe_backtrace(err));
                              }

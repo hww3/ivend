@@ -344,14 +344,6 @@ if(!id->variables->table) {
 	"Please go back and resubmit your request." });
   return errors;
   }
-string k=Array.filter((id->variables[lower_case(DB->keys[id->variables->table])]/""),Regexp("[_\-a-z0-9]")->match)*"";
-if(k!=id->variables[lower_case(DB->keys[id->variables->table])])
-{
-  errors+=({"You have entered incorrect characters in your " +
-	replace(DB->keys[id->variables->table],"_"," ")+ ". You may use "
-	"alpha numeric characters and _ or -." });
-  return errors;
-}
 array(mapping(string:mixed)) r=list_fields(id->variables->table);
         for (int i=0; i<sizeof(r); i++)
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -1217,15 +1209,15 @@ object s=handle();
     if(sizeof(n)<1)
         // we're doing complex pricing
         local_settings->pricing_model=COMPLEX_PRICING;
-    array n=s->list_fields("products", "handling_charge");
+    n=s->list_fields("products", "handling_charge");
     if(sizeof(n)>0)
         // we're doing individual handling charges
         local_settings->handling_charge=PER_ITEM;
-    array n=s->list_fields("products", "handling_charge_aggregation");
+    n=s->list_fields("products", "handling_charge_aggregation");
     if(sizeof(n)>0)
         // we're doing aggregated handling charges
         local_settings->handling_charge_aggregate=TRUE;
-    array n=s->list_fields("customer_info", "tax_exempt");
+    n=s->list_fields("customer_info", "tax_exempt");
     if(sizeof(n)>0)
         // we're doing individual handling charges
         local_settings->tax_exemption_support=TRUE;

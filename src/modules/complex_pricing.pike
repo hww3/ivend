@@ -152,7 +152,7 @@ else if(id->variables->options){
 
 }
 
-mixed getprice_single(object id, string item)
+mixed getprice_single(object id, string item, mapping args)
 {
 string retval="";
 
@@ -161,7 +161,7 @@ array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<heading>Quantity</heading>\t";
+retval+="<heading>" + (args->text_quantity||"Quantity") + "</heading>\t";
 array elements=({});
 for(int i=0; i<sizeof(r); i++){
   if(i==sizeof(r)-1)
@@ -173,7 +173,8 @@ for(int i=0; i<sizeof(r); i++){
 retval+=elements*"\t";
 retval+="\n";
 elements=({});
-retval+="<heading>Price Each</heading>\t";
+retval+="<heading>" + (args->text_priceeach||"Price Each") +
+"</heading>\t";
 foreach(r, mapping row){
   elements+=({"<price>" + MONETARY_UNIT + sprintf("%.2f",
 (float)(row->price))
@@ -230,7 +231,7 @@ else if(id->variables->options){
 
 }
 
-mixed getprice_grad(object id, string item)
+mixed getprice_grad(object id, string item, mapping args)
 {
 string retval="";
 
@@ -239,12 +240,12 @@ array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<heading>Quantity</heading>\n";
+retval+="<heading>" + (args->text_quantity||"Quantity") + "</heading>\n";
 
 for(int i=0; i<sizeof(r); i++){
    retval+="<quantity>" + r[i]->quantity + "</quantity>\n";  
 }
-retval+="<heading>Price Each</heading>\n";
+retval+="<heading>" + (args->text_priceeach||"Price Each") + "</heading>\n";
 foreach(r, mapping row){
   retval+="<price>" + MONETARY_UNIT + sprintf("%.2f",
 (float)(row->price)) + "</price>\n";  
@@ -256,7 +257,7 @@ return retval;
 
 }
 
-mixed getprice_buyxgetx(object id, string item)
+mixed getprice_buyxgetx(object id, string item, mapping args)
 {
 string retval="";
 
@@ -266,9 +267,12 @@ array r=DB->query("SELECT * FROM cp_buyxgetx WHERE product_id='" + item +
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
 for(int i=0; i<sizeof(r); i++){
-  retval+="<offer>Buy " + r[i]->quantity_to_qualify + ", get " +
+  retval+="<offer>" + (args->text_buy||"Buy") + " " +
+   r[i]->quantity_to_qualify + ", " + (args->text_get||"get") + " "+
    r[i]->quantity_to_get + " " +
-   ((float)(r[i]->price)==0.00?"Free":("for " + MONETARY_UNIT +
+
+((float)(r[i]->price)==0.00?(args->text_free||"Free"):((args->text_for||"for")
+   + " " + MONETARY_UNIT +
    sprintf("%.2f",(float)(r[i]->price)))) + "</offer>";
 
 }
@@ -289,7 +293,7 @@ else foreach(r, mapping row){
 if(!catch(this_object()["getprice_"+ row->type]) &&
 functionp(this_object()["getprice_"+row->type]) )
  retval+=make_container(row->type, ([]), this_object()["getprice_" +
-	row->type](id, args->item));
+	row->type](id, args->item, args));
 else retval+="<!-- Can't get pricing display for type " + row->type + ". -->\n";
  }
 

@@ -173,7 +173,7 @@ CONFIG_ROOT[module_name]->manifestfields;
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
 	   " AND products." + DB->keys->products +
-	"=orderdata.id");
+	"=orderdata.id ORDER BY " + DB->keys->products);
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
 			"Unable to find data for this order.", id);

@@ -86,7 +86,7 @@ string addtype(object id, mixed type) {
     if(stringp(j))
       return retval+= "The following errors occurred:<p>" + j;
 
-    string type=(id->variables->table/"_"*" ");
+    type=(id->variables->table/"_"*" ");
     retval+=type+" Added Successfully.<br>\n";
     return retval;
     }
@@ -102,7 +102,6 @@ string deletetype(object id, mixed type) {
 
 
 mixed showtype(object id, mapping row){
-  string retval="";
 string retval="<tr><td><b>Method:</b></td><td>Charge based on "
   "product table lookup field.</td></tr></table>\n";  
 
@@ -118,13 +117,13 @@ string retval="<tr><td><b>Method:</b></td><td>Charge based on "
       array r=id->misc->ivend->db->query("SELECT fieldname FROM "
 	"shipping_pp WHERE type=" + row->type );
       if(sizeof(r)==0)
-        retval+="No Lookup Field Specified. ( <a href=./"
+        retval+="No Lookup Field Specified. ( <a href=\"./"
 		"?mode=showtype&showtype=" + row->type + "&addlookup=" +
-		row->type + ">Add Lookup Field</a> )\n";
+		row->type + "\" _parsed=1>Add Lookup Field</a> )\n";
       if(sizeof(r)>0)
         retval+="<p><b>Lookup Field:</b> " + r[0]->fieldname + "\n"
-	"( <a href=./?mode=showtype&showtype=" +
-	row->type + "&deletetype=" + row->type + ">Delete Lookup Field</a> )";
+	"( <a href=\"./?mode=showtype&showtype=" +
+	row->type + "&deletetype=" + row->type + "\" _parsed=1>Delete Lookup Field</a> )";
 	
 return retval;
 }

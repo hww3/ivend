@@ -21,7 +21,10 @@ return;
 
 mixed upsell_handler(string mode, object id){
 
-// return sprintf("<pre>%O</pre>", mkmapping(indices(id->misc->ivend),
+ADMIN_FLAGS=NO_BORDER;
+
+// return sprintf("<pre>%O</pre>",
+// mkmapping(indices(id->misc->ivend),
 // values(id->misc->ivend))); 
 
 if(id->variables->initialize) {
@@ -57,7 +60,7 @@ if(!r) return "Cannot Find Product " + id->variables->id + ".";
 
   retval+="<form action=./>\n"
 	"<input type=hidden name=id value=" + id->variables->id + ">\n"
-	"<select name=upsell>\n";	
+	"<select size=5 name=upsell>\n";	
   array r=DB->query("SELECT * FROM products ORDER BY " + KEYS->products);
 	foreach(r, mapping row)
 	  retval+="<option value=\"" + row[KEYS->products] + "\">"

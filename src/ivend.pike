@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.15 1998-02-03 00:54:07 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.16 1998-02-03 01:05:30 hww3 Exp $";
 
 /*
  *
@@ -234,10 +234,10 @@ if(id->variables->update) {
 	    }
 
 	retval+="<td align=right>"
-	+sprintf("$%.2f",r[i]->price)+"</td>\n"
+	+sprintf("$%.2f",(float)r[i]->price)+"</td>\n"
 	"<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
         r[i]->quantity+"></td><td align=right>"
-	+sprintf("$%.2f",r[i]->quantity*r[i]->price)+"</td></tr>\n";
+	+sprintf("$%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";

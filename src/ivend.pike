@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.92 1998-08-15 00:19:26 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.93 1998-08-15 16:13:17 hww3 Exp $";
 
 array register_module(){
 
@@ -188,35 +188,44 @@ if (catch(id->misc->ivend->SESSIONID)) return;
 
 if (args["_parsed"]) return;
 
+mapping arguments=([]);
+
+arguments["_parsed"]="1";
+
 if (args->add) 
-  return "<a _parsed=1 href=\"./"+id->misc->ivend->page+".html?SESSIONID="
-  +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page+
-  "\">"+contents+"</a>";
+  arguments["href"]="./"+id->misc->ivend->page+".html?SESSIONID="
+  +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page;
 else if(args->cart)
-  return "<a _parsed=1 href=\""+query("mountpoint")+
-(id->misc->ivend->moveup?"":id->misc->ivend->st+ "/")
-+"cart?SESSIONID="
-  +id->misc->ivend->SESSIONID+
-  "\">"+contents+"</a>";
+  arguments["href"]=query("mountpoint")+
+    (id->misc->ivend->moveup?"":id->misc->ivend->st+ "/")
+    +"cart?SESSIONID=" +id->misc->ivend->SESSIONID;
 else if(args->checkout)
-  return "<a _parsed=1 href=\""+query("mountpoint")+
-  (id->misc->ivend->moveup?"":id->misc->ivend->st + "/")
-+"checkout?SESSIONID="
-  +id->misc->ivend->SESSIONID+
-  "\">"+contents+"</a>";
+  arguments["href"]=query("mountpoint")+
+    (id->misc->ivend->moveup?"":id->misc->ivend->st + "/")
+    +"checkout?SESSIONID=" +id->misc->ivend->SESSIONID;
 else if(args->href){
   int loc;
   if(loc=search(args->href,"?")==-1)
-  return "<a _parsed=1 href=\""+args->href
-    +"?SESSIONID=" +(id->misc->ivend->SESSIONID)
-    +"\">"+contents+"</a>";  
+    arguments["href"]=args->href
+    +"?SESSIONID=" +(id->misc->ivend->SESSIONID);  
 
-  else  return "<a _parsed=1 href=\""+args->href
-    +"&SESSIONID=" +(id->misc->ivend->SESSIONID)
-    + "\">"+contents+"</a>";  
+  else  arguments["href"]=args->href
+    +"&SESSIONID=" +(id->misc->ivend->SESSIONID);  
 
   }
-else return "<!-- Error Parsing 'A' tag -->";
+
+if(arguments->href && args->template) arguments->href+="&template=" +
+	args->template; 
+  
+  m_delete(args, "href");
+  m_delete(args, "checkout");
+  m_delete(args, "cart");
+  m_delete(args, "add");
+  m_delete(args, "template");
+
+  arguments+=args;
+  return make_container("A", arguments, contents);
+
 }
 
 void|string container_form(string name, mapping args,
@@ -460,8 +469,11 @@ foreach(r,row){
   foreach(en, t){
 //	perror(t);  
 
-      if(n==0)
-        thisrow[n]=("<A HREF=\""+row->pid+".html\">"+row[t]+"</A>");
+      if(n==0) {
+        thisrow[n]=("<A " + (args->template?("TEMPLATE=\"" +
+	  args->template + "\""):"") +
+	  " HREF=\""+row->pid+".html\">"+row[t]+"</A>");
+        }
       else
         thisrow[n]=row[t]; 
       n++;
@@ -589,13 +601,15 @@ array f;
 r=id->misc->ivend->db->query("SELECT * FROM groups WHERE id='"+page+"'");
 if (sizeof(r)==1){
   id->misc->ivend->type="group";
-  template="group_template.html";
+  if(id->variables->template) template=id->variables->template;
+  else template="group_template.html";
   f=id->misc->ivend->db->list_fields("groups");
   }
 else {
   r=id->misc->ivend->db->query("SELECT * FROM products WHERE id='"+page+"'");
   id->misc->ivend->type="product";
-  template="product_template.html";
+  if(id->variables->template) template=id->variables->template;
+  else template="product_template.html";
   f=id->misc->ivend->db->list_fields("products");
 
   }
@@ -668,7 +682,7 @@ switch(page){
 	}
     else retval=find_page(page, id);
   }
-  if (!retval) error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
+  if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
   return retval;
 
 }
@@ -690,7 +704,8 @@ mixed retval;
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
 
-if(retval==-1) return handle_page("index.html",id);
+if(retval==-1) return 
+handle_page("index.html",id);
 else 
 return retval;    
 }

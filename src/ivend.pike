@@ -1417,12 +1417,14 @@ mixed getmodify(string type, string pid, object id){
       record[0]->group_id=gid;
    }
 
-   if(id->variables->type=="product")
-      retval+="<table>\n"+DB->gentable("products","./admin","groups",
+   if(type=="product")
+      retval+="<table>\n"+DB->gentable("products",
+add_pre_state(id->not_query, (<"domodify=product">)),"groups",
                                        "product_groups", id, record[0])+"</table>\n";
-   else if(id->variables->type=="group")
+   else if(type=="group")
 
-      retval+="<table>\n"+DB->gentable("groups","./admin",0,0,id,
+      retval+="<table>\n"+DB->gentable("groups",
+add_pre_state(id->not_query, (<"domodify=product">)),0,0,id,
                                        record[0])+"</table>\n";
     
    return retval;
@@ -1489,8 +1491,10 @@ return retval;
 
 
 mixed admin_handler(string filename, object id, object this_object){
-   numsessions[STORE]--;
-   numrequests[STORE]--;
+//   numsessions[STORE]--;
+//   numrequests[STORE]--;
+
+string mode, type;
 
    if(id->auth==0)
       return http_auth_required("iVend Store Administration",
@@ -1508,9 +1512,22 @@ mixed admin_handler(string filename, object id, object this_object){
    + CONFIG->name+
    " Administration</gtext><p>"
    "<font face=helvetica,arial size=+1>"
-   "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
+   "<a href=" + 
+      id->misc->ivend->storeurl + ">Storefront</a> &gt; <a href=" +
+	add_pre_state(id->not_query, (<"menu=main">))+">Admin</a>\n";
 
-   switch(id->variables->mode){
+
+if(id->prestate && sizeof(id->prestate)>0){
+  array(string) m=indices(id->prestate);
+  m=m[0]/"=";
+  mode=m[0];
+  if(sizeof(m)>1)
+   type=m[1];
+}
+
+perror(mode +"\n" + type + "\n");
+
+   switch(mode){
 
       case "doadd":
          mixed j=DB->addentry(id,id->referrer);
@@ -1518,8 +1535,8 @@ mixed admin_handler(string filename, object id, object this_object){
          if(!intp(j))
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
 
-
-         string type=(id->variables->table-"s");
+	if(!type)
+         type=(id->variables->table-"s");
          return retval+type+" Added Sucessfully.";
          break;
 
@@ -1530,18 +1547,19 @@ mixed admin_handler(string filename, object id, object this_object){
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
 
 
-         string type=(id->variables->table-"s");
          return retval + capitalize(type) + " Modified Sucessfully.";
          break;
 
       case "add":
-         retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
+         retval+="&gt <b>Add New " + capitalize(type) +"</b><br>\n";
 
-         if(id->variables->type=="product")
-            retval+="<table>\n"+ DB->gentable("products","./admin","groups", 
+         if(type=="product")
+            retval+="<table>\n"+ DB->gentable("products",
+	    add_pre_state(id->not_query,(<"doadd=product">)),"groups", 
                                               "product_groups", id)+"</table>\n";
-         else if(id->variables->type=="group")
-            retval+="<table>\n"+ DB->gentable("groups","./admin",0,0,id)+"</table>\n";
+         else if(type=="group")
+            retval+="<table>\n"+
+DB->gentable("groups",add_pre_state(id->not_query,(<"doadd=group">)),0,0,id)+"</table>\n";
          break;
 
       case "dodelete":
@@ -1549,51 +1567,54 @@ mixed admin_handler(string filename, object id, object this_object){
          if(id->variables->confirm){
             if(id->variables->id==0 || id->variables->id=="") 
                retval+="You must select an ID to act upon!<br>";
-            else retval+=DB->dodelete(id->variables->type,
-                                      id->variables[KEYS[id->variables->type +"s"]],
-                                      KEYS[id->variables->type +"s"]); }
+            else retval+=DB->dodelete(type,
+                                      id->variables[KEYS[type +"s"]],
+                                      KEYS[type +"s"]); }
          else {
             if(id->variables->match) {
-               mixed n=DB->showmatches(id->variables->type,
-                                       id->variables->id, KEYS[id->variables->type+"s"]);
+               mixed n=DB->showmatches(type,
+                                        id->variables->id,
+KEYS[type+"s"]);
                if(n)
-                  retval+="<form action=./admin>\n"
+                  retval+="<form action=" +
+	add_pre_state(id->not_query,(<"dodelete=" + type>)) +">\n"
                   + n +
                   "<input type=hidden name=mode value=dodelete>\n"
                   "<input type=submit value=Delete>\n</form>";
-               else retval+="No " + capitalize(id->variables->type +"s") + " found.";
+               else retval+="No " + capitalize(type +"s") + " found.";
             }
             else {
-               mixed n= DB->showdepends(id->variables->type,
-                                        id["variables"][ KEYS[id->variables->type+"s"] ]
-                                        , KEYS[id->variables->type+"s"],
-                                        (id->variables->type=="group"?KEYS->products:0));
+               mixed n= DB->showdepends(type,
+                                        id["variables"][ KEYS[type+"s"] ]
+                                        , KEYS[type+"s"],
+                                        (type=="group"?KEYS->products:0));
                if(n){ 
-                  retval+="<form action=./admin>\n"
-                  "<input type=hidden name=mode value=dodelete>\n"
-                  "<input type=hidden name=type value="+id->variables->type+">\n"
+                  retval+="<form action=" +
+			add_pre_state(id->not_query,(<"dodelete=" + type>))
+			+ ">\n"
                   "<input type=hidden name=id value="+id->variables[
-                    KEYS[id->variables->type+"s"] ]+">\n"
+                    KEYS[type+"s"] ]+">\n"
                   "Are you sure you want to delete the following?<p>";
                   retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                }
-               else retval+="Couldn't find "+capitalize(id->variables->type) +" "
+               else retval+="Couldn't find "+capitalize(type) +" "
                   +id->variables[ KEYS[ 
-                                    id->variables->type+"s"]]+".<p>";
+                                    type+"s"]]+".<p>";
             }
 
          }
 
       case "delete":
-         retval+="<form action=./admin>\n"
+         retval+="<form action="+
+	add_pre_state(id->not_query,(<"dodelete=" + type>))+">\n"
          "<input type=hidden name=mode value=dodelete>\n"
-         +capitalize(id->variables->type) + " "+
-         KEYS[id->variables->type +"s"] + " to Delete:\n"
+         +capitalize(type) + " "+
+         KEYS[type +"s"] + " to Delete:\n"
          "<input type=text size=10 name=\"" +
-         KEYS[id->variables->type+"s"] + "\">\n"
-         "<input type=hidden name=type value=" + id->variables->type + ">\n"
+         KEYS[type+"s"] + "\">\n"
+         "<input type=hidden name=type value=" + type + ">\n"
          "<br><font size=2>If using FindMatches, you may type any part of an "
-         + KEYS[id->variables->type+"s"] +
+         + KEYS[type+"s"] +
          " or Name to search for.<br></font>"
          "<input type=submit name=match value=FindMatches> &nbsp; \n"
          "<input type=submit value=Delete>\n</form>";
@@ -1611,29 +1632,29 @@ mixed admin_handler(string filename, object id, object this_object){
          break;
 
       case "getmodify":
-   retval+="&gt <b>Modify " + capitalize(id->variables->type)
+   retval+="&gt <b>Modify " + capitalize(type)
    +"</b><br>\n";
 	if(DB->list_tables("upsell"))
 	 retval+=open_popup("Upsell",
 id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
 
-         retval+=getmodify(id->variables->type,
-                           id->variables[KEYS[id->variables->type+"s"]], id);
+         retval+=getmodify(type,
+                           id->variables[KEYS[type+"s"]], id);
 
          break;
 
       case "show":
-         retval+="&gt <b>Show " + capitalize(id->variables->type)
+         retval+="&gt <b>Show " + capitalize(type)
          +"</b><br>\n";
          retval+="<form action=./admin>\n"
          "<input type=hidden name=mode value=show>\n"
-         "<input type=hidden name=type value="+ id->variables->type + ">\n"
+         "<input type=hidden name=type value="+ type + ">\n"
          "<table><tr><td><input type=submit value=Show></td><td>\n";
          retval+="<td><b>Show fields:</b> ";
-         array f=DB->list_fields(id->variables->type+"s");
+         array f=DB->list_fields(type+"s");
          array k;
          catch(k=DB->query("SHOW INDEX FROM " +
-                           id->variables->type + "s"));
+                           type + "s"));
 
          string primary_key;
 
@@ -1666,7 +1687,7 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
             foreach(fields, string field)
             query+=field + ", ";
 
-            query=query[0..(sizeof(query)-3)] + " FROM " + id->variables->type
+            query=query[0..(sizeof(query)-3)] + " FROM " + type
             + "s";
             array r=DB->query(query);
             if(sizeof(r)>0) {
@@ -1676,11 +1697,13 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
                retval+="</tr>";
                foreach(r, mapping row){
                   retval+="<tr>\n<td><font face=helvetica,arial size=0>"
-                          "<a href=\"./admin?mode=getmodify&type=" +
-                          id->variables->type + "&" +id->variables->primary_key + "=" +
+                          "<a href=\"" + add_pre_state(id->not_query,
+(<"getmodify=" + type>))+
+                          "?" +id->variables->primary_key + "=" +
                           row[id->variables->primary_key] + "\">Modify</a> "
-                          "&nbsp; <a href=\"./admin?mode=dodelete&type=" +
-                          id->variables->type + "&" + id->variables->primary_key + "=" + 
+                          "&nbsp; <a href=\"" +
+		add_pre_state(id->not_query, (<"dodelete="+ type>)) +
+                          "?" + id->variables->primary_key + "=" + 
                           row[id->variables->primary_key] + "\">Delete</a></td>";
                   foreach(fields, string fld)
                   retval+="<td>" + row[fld] + "</td>\n";            
@@ -1694,15 +1717,14 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
          break;
 
       case "modify":
-         retval+="&gt <b>Modify " + capitalize(id->variables->type)
+         retval+="&gt <b>Modify " + capitalize(type)
                  +"</b><br>\n";
-         retval+="<form action=./admin>\n"
+         retval+="<form action="+add_pre_state(id->not_query,(<"getmodify=" + type>))+">\n"
                  "<input type=hidden name=mode value=getmodify>\n"
-                 + capitalize(id->variables->type) + " "+
-                 KEYS[id->variables->type+"s"] + " to Modify: \n"
+                 + capitalize(type) + " "+
+                 KEYS[type+"s"] + " to Modify: \n"
                  "<input type=text size=10 name=\"" +
-                 KEYS[id->variables->type+"s"] + "\">\n"
-                 "<input type=hidden name=type value="+id->variables->type+">\n"
+                 KEYS[type+"s"] + "\">\n"
                  "<input type=submit value=Modify>\n</form>";
          break;
 
@@ -1717,37 +1739,37 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
                   "<li>Groups\n"
                   "<ul>"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"showgroups">))
+add_pre_state(id->not_query,(<"show=group">))
  		+">Show Groups</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"addgroups">))
+add_pre_state(id->not_query,(<"add=group">))
 	+">Add New Group</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"modifygroups">))
+add_pre_state(id->not_query,(<"modify=group">))
 	+">Modify a Group</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"deletegroups">))
+add_pre_state(id->not_query,(<"delete=group">))
 	+">Delete a Group</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"dumpgroups">))
+add_pre_state(id->not_query,(<"dump=group">))
 	+">Dump Groups</a>\n"
                   "</ul>"
                   "<li>Products\n"
                   "<ul>"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"showproducts">))
+add_pre_state(id->not_query,(<"show=product">))
  		+">Show Products</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"addproducts">))
+add_pre_state(id->not_query,(<"add=product">))
 	+">Add New Product</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"modifyproducts">))
+add_pre_state(id->not_query,(<"modify=product">))
 	+">Modify a Product</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"deleteproducts">))
+add_pre_state(id->not_query,(<"delete=product">))
 	+">Delete a Product</a>\n"
                   "<li><a href="+
-add_pre_state(id->not_query,(<"dumpproducts">))
+add_pre_state(id->not_query,(<"dump=product">))
 	+">Dump Products</a>\n"
 
 
@@ -1845,6 +1867,8 @@ mixed find_file(string file_name, object id){
    KEYS=keys[STORE];
    mixed err;
    numrequests[STORE]+=1;
+   id->misc->ivend->storeurl=query("mountpoint")+
+                        (id->misc->ivend->moveup?"": STORE+ "/");
 
    if(!objectp(DB))
       err=catch(DB=db[STORE]->handle());

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.201 1999-05-21 18:31:48 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.202 1999-05-28 01:21:42 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -374,11 +374,11 @@ void start_store(string c){
 
     // perror(config[c]->general->config +"\n\n");
 
-    get_entities(config[c]->general);
-    load_modules(config[c]->general->config);
-
     start_db(config[c]->general);
     get_dbinfo(config[c]->general);
+
+    get_entities(config[c]->general);
+    load_modules(config[c]->general->config);
 
     numsessions[config[c]->general->config]=0;
     numrequests[config[c]->general->config]=0;
@@ -1492,6 +1492,10 @@ mixed getmodify(string type, string pid, object id){
         record[0]->group_id=gid;
     }
 
+    retval+="Please fill out the following information. Required fields "
+            "are indicated by the <i>" + REQUIRED + "</i> next to the "
+	    "field.";
+
     if(type=="product")
         retval+="<table>\n"+DB->gentable("products",
                                          add_pre_state(id->not_query, (<"domodify=product">)),"groups",
@@ -1539,9 +1543,13 @@ mixed open_popup(string name, string location, string mode, mapping
                  options, object id){
     name=replace(name," ","_");
     string retval="";
+    if(!id->misc->ivend->popup) id->misc->ivend->popup=1;
+    else id->misc->ivend->popup++;
+
     retval+="<SCRIPT LANGUAGE=javascript>"
             "\n"
-            "function popup(name,location,w,h) {\n"
+            "function popup_" + id->misc->ivend->popup
+		+ "(name,location,w,h) {\n"
             " mainWin=self;\n"
             "	if(h<1) h=300;\n"
             "	if(w<1) w=300;\n"
@@ -1549,7 +1557,7 @@ mixed open_popup(string name, string location, string mode, mapping
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
             "\n"
 	    " id=document.gentable." + KEYS[options->type + "s"] + ".value;\n"
-	    " document.popupform.id.value=id;\n"
+	    " document.popupform" + id->misc->ivend->popup +".id.value=id;\n"
 	    " if(id==\"\") { alert('You must have an item " +
 		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
             "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
@@ -1557,11 +1565,11 @@ mixed open_popup(string name, string location, string mode, mapping
             // "        window.open('',name,param);\n"
             "        \n"
             "        if (palette!=null) palette.opener=mainWin; \n"
-	    "document.popupform.submit();\n"
+	    "document.popupform" + id->misc->ivend->popup + ".submit();\n"
             "}\n"
             "</SCRIPT>"
-            "<form name=popupform target=" + name +
-            " ACTION=\"" + add_pre_state(id->not_query, (<mode>))
+            "<form name=popupform" + id->misc->ivend->popup + " target=" +
+		name + " ACTION=\"" + add_pre_state(id->not_query, (<mode>))
             +"\">";
     foreach(indices(options), string o){
 
@@ -1571,9 +1579,11 @@ mixed open_popup(string name, string location, string mode, mapping
 
     retval+="<input type=hidden name=id>";
     retval+="<input type=hidden name=mode value=\""  +mode + "\">"
-            "<input onclick=\"popup('" +name +"','" +
-            add_pre_state(id->not_query,
-                          (<mode>))  + "',300,300)\" type=reset value=\""
+            "<input onclick=\"popup_" + id->misc->ivend->popup + "('"
+		+name +"','" + add_pre_state(id->not_query,
+                          (<mode>))  + "'," +(options->width||450)+ ","
+		+(options->height||300)+
+		")\" type=reset value=\""
 		+ replace(name,"_"," ") + "\">"
             "</form>";
 
@@ -1685,21 +1695,30 @@ string return_to_admin_menu(object id){
                      break;
 
                  case "add":
-                     retval+="&gt <b>Add New " + capitalize(type) +"</b><br>\n";
+                     retval+="&gt <b>Add New " + capitalize(type) 
+			+"</b><br>\n";
+    retval+="Please fill out the following information. Required fields "
+            "are indicated by the <i>" + REQUIRED + "</i> next to the "
+	    "field. Click on <i>Add</i> when you are finished to add "
+	    "this " + type + ".";
+
+
                      if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
-                                                            "face=helvetica,arial>Actions\">";
+                                                            "face=helvetica,arial>Actions\">"
+				"<table><tr>";
 
                      foreach(valid_handlers, string handler_name) {
                          string name;
                          array a=handler_name/".";
                          name=a[sizeof(a)-1];
-
+			retval+="<td>";
                          retval+=open_popup( name,
                                  id->not_query, handler_name ,
-				(["type" : type]) ,id);
+				(["type" : type, "width":550]) ,id);
+			retval+="</td>\n";
                      }
                      if(sizeof(valid_handlers))
-                         retval+="</obox>";
+                         retval+="</tr></table></obox>";
 
                      if(type=="product")
                          retval+="<table>\n"+ DB->gentable("products",
@@ -1715,9 +1734,14 @@ string return_to_admin_menu(object id){
                      if(id->variables->confirm){
                          if(id->variables->id==0 || id->variables->id=="")
                              retval+="You must select an ID to act upon!<br>";
-                         else retval+=DB->dodelete(type,
+                         else {
+				 retval+="<p>\n"+DB->dodelete(type,
                                                        id->variables[KEYS[type +"s"]],
-                                                       KEYS[type +"s"]); }
+                                                       KEYS[type +"s"]);
+             trigger_event("admindelete", id, (["type": type, 
+		"id": id->variables[KEYS[type + "s"]] ]) );
+
+				} }
                      else {
                          if(id->variables->match) {
                              mixed n=DB->showmatches(type,
@@ -1784,19 +1808,21 @@ string return_to_admin_menu(object id){
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
                      if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
-                                                            "face=helvetica,arial>Actions\">";
+                                                            "face=helvetica,arial>Actions\">"
+			"<table><tr>";
 
                      foreach(valid_handlers, string handler_name) {
                          string name;
                          array a=handler_name/".";
                          name=a[sizeof(a)-1];
-
+			retval+="<td>";
                          retval+=open_popup( name,
                                  id->not_query, handler_name ,
-				(["type": type]) ,id);
+				(["type": type, "width":550]) ,id);
+			retval+="</td>\n";
                      }
                      if(sizeof(valid_handlers))
-                         retval+="</obox>";
+                         retval+="</tr></table></obox>";
                      retval+=getmodify(type,
                                        id->variables[KEYS[type+"s"]], id);
 
@@ -1833,7 +1859,23 @@ string return_to_admin_menu(object id){
                          retval+="<input type=hidden name=\"show-" + field->name +
                                  "\" value=\"yes\">\n";
 
-                     retval+="</td></tr></table>"
+                     retval+="</td>";
+			retval+="<td>Show:</td><td>"
+			   "<script language=javascript>"
+			   "function setmatch() {\n"
+//			   "document.form.__select.value='some';\n"
+			   "document.form.__select[1].checked=true;\n"
+			   "}\n"
+			   "</script>"
+			   "<input type=radio checked name=__select value=all> All<br>"
+			   "<input type=radio name=__select value=some> Match by"
+			   "</td><td>"
+			   "<select name=__matchfield onchange=setmatch()>";
+			foreach(f, mapping field)
+			   retval+="<option value=\"" + field->name + "\">"
+				+ field->name + "\n";
+			retval+="</select></td>";
+		     retval+="</tr></table>"
                              "<input type=hidden name=primary_key value=\"" +
                              primary_key + "\"></form>";
 
@@ -2573,6 +2615,11 @@ string return_to_admin_menu(object id){
                                  foreach(indices(config[c]->addins), string miq)
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
+			     if(local_settings[config[c]->general->config]->pricing_model==COMPLEX_PRICING) {
+			       perror("adding complex_pricing to module startup list.\n");
+			       mtl+=({"complex_pricing.pike"});
+			     }
+
                              mtl+=({"shipping.pike",
                                     "checkout.pike", "addins.pike",
                                     "handleorders.pike", "admin.pike"});

@@ -19,6 +19,13 @@ return;
 
 }   
 
+void event_admindelete(string event, object id, mapping args){
+
+  if(args->type=="product")
+	DB->query("DELETE FROM upsell WHERE id='" + args->id + "'");
+  return;
+}
+
 mixed upsell_handler(string mode, object id){
 
 ADMIN_FLAGS=NO_BORDER;
@@ -115,6 +122,12 @@ string tag_upsell(string tag_name, mapping args,
 mixed query_tag_callers(){
 
   return ([ "upsell": tag_upsell ]);
+
+}
+
+mixed query_event_callers(){
+
+  return ([ "admindelete": event_admindelete ]);
 
 }
 

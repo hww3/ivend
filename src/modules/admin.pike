@@ -19,6 +19,12 @@ return "<a href=\""  +     add_pre_state(id->not_query,
 
 }
 
+void event_admindelete(string event, object id, mapping args){
+if(args->type=="product")
+  DB->query("DELETE FROM item_options WHERE product_id='" + args->id + "'");
+return;
+}
+
 int do_clean_sessions(object db){
 
    string query="SELECT sessionid FROM sessions WHERE timeout < "+time(0);
@@ -38,16 +44,20 @@ int do_clean_sessions(object db){
 }     
 
 string action_itemoptions(string mode, object id){
-string retval="";
+string retval="<html><head><title>Item Options</title></head>\n"
+	"<body bgcolor=white text=navy>\n"
+	"<font face=helvetica>";
 mapping v=id->variables;
+ADMIN_FLAGS=NO_BORDER;
 retval+="Options for " + v->id +"<p>";
 
 if(v->add) {
   if(!catch(DB->query("INSERT INTO item_options VALUES('" + v->id + "','"
-+ v->option_type + "','" + v->option_code + "','" +
-DB->quote(v->description)  + "'," + (v->surcharge||0.00) + ")")))
++ upper_case(v->option_type) + "','" + upper_case(v->option_code) + "','"
++ DB->quote(v->description)  + "'," + (v->surcharge||0.00) + ")")))
     retval+="<font size=1>Item Option Added Successfully.</font><br>";
-
+  else retval+="<font size=1>An error occurred while adding this option:<br>"
+   + DB->error() + "\n<br>";
 }
 
 if(v->delete) {
@@ -81,10 +91,14 @@ else {
 retval+="<tr><td><input type=text name=option_type size=10></td><td>"
   "<input type=text name=option_code size=10></td><td>"
   "<input type=text name=description size=30></td><td>"
-  "<input type=text name=surcharge size=10</td><td><font size=2><input "
+  "<input type=text name=surcharge size=6</td><td><font size=2><input "
   "type=submit name=add value=add></font></td></tr>\n";
   retval+="</table>";
 retval+="</form>";
+retval+="<center><font size=-1>"
+	"<form><input type=reset onclick=window.close() value=Close></form>"
+	"</font></center>";
+retval+="</font></body></html>";
 return retval;
 }
 
@@ -387,13 +401,18 @@ mapping register_admin(){
 
 return ([
 	"menu.main.Store_Maintenance.Clean_Stale_Sessions" : action_cleansessions,
-	"menu.main.Store_Maintenance.Reload_store" : action_reloadstore,
+	"menu.main.Store_Maintenance.Reload_Store" : action_reloadstore,
 	"menu.main.Store_Maintenance.Preferences" : action_preferences,
-	"menu.main.Store_Administration.DropDownMenus" : action_dropdown,
-	"add.product.Item Options":action_itemoptions,
+	"menu.main.Store_Administration.Drop_Down_Menus" : action_dropdown,
+	"add.product.Item_Options":action_itemoptions,
 	"getmodify.product.Item_Options":action_itemoptions
 
 	]);
 
 
+}
+
+mapping query_event_callers() {
+
+  return (["admindelete": event_admindelete ]);
 }

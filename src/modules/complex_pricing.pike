@@ -11,6 +11,9 @@ inherit "roxenlib";
 constant module_name = "Complex Pricing Routines";
 constant module_type = "addin";
 
+mapping complex_types=([ "Single Price": "cpsingle", 
+	"Buy X Get Y": "buyxgetx"]);
+
 void start(mapping config){
 object db;
 if(catch(db=iVend.db(config->general->dbhost, config->general->db,
@@ -131,8 +134,12 @@ if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 retval+="<table><tr>\n<td bgcolor=black><font color=white>"
 "<b>Minimum Quantity</b></td>\n";
 
-foreach(r, mapping row){
-  retval+="<td>" + row->minimum_quantity + "</td>\n";  
+for(int i=0; i<sizeof(r); i++){
+  if(i==sizeof(r)-1)
+   retval+="<td>" + r[i]->minimum_quantity + "+</td>\n";
+  else
+   retval+="<td>" + r[i]->minimum_quantity + "-" +
+    r[i+1]->minimum_quantity + "</td>\n";  
 }
 retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
  "<b>Price Each</b></td>\n";
@@ -167,6 +174,56 @@ else retval+="<!-- Can't get pricing display for type " + row->type + ". -->\n";
 return retval;
 }
 
+string action_complexpricing(string mode, object id){
+string retval="<html><head><title>Item Options</title></head>\n"
+        "<body bgcolor=white text=navy>\n"
+        "<font face=helvetica>";
+mapping v=id->variables;
+ADMIN_FLAGS=NO_BORDER;
+retval+="Complex Pricing for " + v->id +"<p>";
+
+if(!v->cptype){
+
+array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
+  + v->id + "'");
+
+  retval+="<table border=1>\n<tr><th>Rule Type</th><th>Priority</th>"
+   "<th>Number of Rules</th><td></td></tr>\n";
+if(!r || sizeof(r)<1) retval+="<tr><td colspan=3 align=center>No Complex "
+  "Rules Defined.</td></tr>\n";
+
+foreach(r, mapping row){
+
+  retval+="<tr><td>" + row->type + "</td><td>" + row->priority +
+    "</td><td>" + DB->query("SELECT COUNT(*) AS c FROM cp_" +
+    lower_case(row->type) + " WHERE product_id='" + row->product_id
+    +"'")[0]->c + "</td></tr>\n"; 
+
+}
+retval+="</table>\n";
+
+retval+="<form action=./>Add New Rule: "
+  "<input type=hidden name=addnew value=1>\n"
+  "<input type=hidden name=id value=\"" + v->id + "\">\n"
+  "<select name=\"cptype\">\n"; 
+
+foreach(sort(indices(complex_types)), string t)
+  retval+="<option value=\"" + complex_types[t] + "\">" + t + "\n";
+
+retval+="</select> <input type=submit value=\"Add\">\n"
+  "</form>";
+}
+else { // we should be putting type handlers here.
+
+}
+
+retval+="<center><font size=-1>"
+        "<form><input type=reset onclick=window.close() value=Close></form>"
+        "</font></center>";
+retval+="</font></body></html>";
+return retval;
+}
+
 mapping query_event_callers(){
  return (["cp.single" : cpsingle,
           "cp.buyxgetx" : cpbuyxgetx ]);
@@ -175,5 +232,15 @@ mapping query_event_callers(){
 
 mapping query_tag_callers(){
  return (["complex_pricing" : tag_complex_pricing ]);
+
+}
+
+mapping register_admin(){
+
+return ([
+	"add.product.Complex_Pricing":action_complexpricing,
+	"getmodify.product.Complex_Pricing":action_complexpricing
+
+	]);
 
 }

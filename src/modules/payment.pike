@@ -6,8 +6,8 @@
 
 inherit "roxenlib";
 
-constant module_name = "Shipping Handler";
-constant module_type = "shipping";
+constant module_name = "Payment";
+constant module_type = "payment";
 
 mapping handlers=([]);
 
@@ -18,10 +18,11 @@ int initialized;
 
 object|void load_module(string module, mapping config)
 {
-perror("STARTING SHIPPING HANDLER...");
+perror("STARTING PAYMENT HANDLER...");
 object m;
 
-string moddir=config->global->general->root + "/src/modules/shipping";
+string moddir=config->global->general->root + "/src/modules/payment";
+ // perror("loading shipping module "  + module + "\n");
 mixed x;
 mixed xerr;
 master()->set_inhibit_compile_errors(0);
@@ -32,6 +33,8 @@ if(x)
  m=(object)clone(x);
 if(m && objectp(m)) {
   m->start(config);
+  perror("DONE\n");
+//  perror(sprintf("%O\n", mkmapping(indices(m), values(m))));
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -49,18 +52,16 @@ handlers=([]);
 
 db=iVend.db(config->general->dbhost);
 
-
-if((sizeof(db->list_tables("shipping_types")))==1)
+if((sizeof(db->list_tables("payment_types")))==1)
 {  initialized=1;
-if(sizeof(db->list_fields("shipping_types","availability"))!=1)
-  catch(db->query("alter table shipping_types add availability char(254) default ''"));
 
 }
 
 else {initialized=0;  perror("module not initialized.\n"); return; }
 
+perror("module inititalized.\n");
 
-array r=db->query("select * from shipping_types");
+array r=db->query("select * from payment_types");
 
 foreach(r, mapping row){
 	// load modules
@@ -71,6 +72,7 @@ foreach(r, mapping row){
     }
   else handlers[row->module]=load_module(row->module, config);
   }
+perror("done in start()\n");
 return;
 
 }
@@ -87,7 +89,7 @@ mapping available_modules(mapping config)
 object m;
 
 
-string moddir=config->global->general->root + "/src/modules/shipping";
+string moddir=config->global->general->root + "/src/modules/payment";
 mapping am=([]);
 
 foreach(get_dir(moddir), string name){
@@ -97,7 +99,7 @@ foreach(get_dir(moddir), string name){
   if(m && objectp(m)) {
   string desc=m->module_name;
   string type=m->module_type;
-  if(type=="shipping")
+  if(type=="payment")
     am[name] = desc;
   }
 
@@ -109,14 +111,16 @@ return am;
 
 int initialize_db(object id)
 {
-  perror("initializing shipping module!\n");
 
-if(sizeof(DB->list_tables("shipping_types"))!=1)
-  DB->query("CREATE TABLE shipping_types ("
+  perror("initializing payment module tables!\n");
+
+if(sizeof(DB->list_tables("payment_types"))!=1)
+  DB->query("CREATE TABLE payment_types ("
   "  type int(11) DEFAULT '0' NOT NULL auto_increment,"
   "  name varchar(32) DEFAULT '' NOT NULL,"
   "  description blob,"
   "  module varchar(32),"
+  "  availability blob,"
   "  PRIMARY KEY (type)"
   ") ");
 
@@ -125,27 +129,14 @@ return 0;
 
 }
 
-float calculate_handlingcharge(string type, string orderid, object id){
-float handling_charge=0.00;
-
-  T_O->trigger_event("calculateHandlingCharge",id,(["type": type,
-	"orderid": orderid]));   
-
-  if(id->misc->ivend->handling_charge)
-        handling_charge+=(float)(id->misc->ivend->handling_charge);
-
-   return handling_charge;
-
-}
-
 string showmainmenu(object id)
 {
 string retval="";
-retval+="<b>Configured Shipping Types</b><p>";
+retval+="<b>Configured Payment Types</b><p>";
 
-catch(array r=DB->query("SELECT * FROM shipping_types ORDER BY type"));
+catch(array r=DB->query("SELECT * FROM payment_types ORDER BY type"));
 if(!r || sizeof(r)==0)
-    retval+="No Shipping Types Configured.";
+    retval+="No Payment Types Configured.";
 else {
   retval+="<table>\n"
 	"<tr><th>Name</th><th>Description</th><th>Avail. Query</th>"
@@ -159,7 +150,7 @@ row->description +
 	"\">Delete</a> )</td></tr>\n";
 retval+="</table>\n";
   }
-retval+="<p><a href=\"./?mode=addtypemenu\">Add Shipping Type</a>";
+retval+="<p><a href=\"./?mode=addtypemenu\">Add Payment Type</a>";
 
 return retval;
 }
@@ -167,8 +158,8 @@ return retval;
 string addtypemenu(object id)
 {
   string retval="<form action=\"./\">\n"
-    "Shipping Type Name: <input type=text size=40 name=name><br>\n"
-    "Calculation method: <select name=module>\n";
+    "Payment Type Name: <input type=text size=40 name=name><br>\n"
+    "Payment method: <select name=module>\n";
   mapping am=available_modules(id->misc->ivend->config);
   foreach(indices(am),string method)
     retval+="<option value=\"" +method + "\">" + am[method] + "\n";
@@ -178,21 +169,21 @@ string addtypemenu(object id)
     "<textarea name=\"availability\" cols=60 rows=6></textarea><br>"
     "<input type=hidden name=mode value=doaddtype>\n"
     "<input type=submit name=doaddtype value=AddShippingType>\n</form>"
-    "<b>Shipping Type</b>: This is the name of the shipping type that "
+    "<b>Shipping Type</b>: This is the name of the payment type that "
     "will be displayed as an option to the user.<p>"
-    "<b>Calculation Method</b>: This is the method used to calculate "
-    "the shipping charge for this type of shipping.<p>"
-    "<b>Description</b>: A short discription describing the shipping "
+    "<b>Payment Method</b>: This is the method of payment to use. "
+    "<b>Description</b>: A short discription describing the payment "
     "method. This information is displayed to the user when choosing "
-    "a shipping type.<p>"
+    "a payment method.<p>"
     "<b>Availability Query</b>: The Availability Query allows you to "
-    "control when a shipping type is made available for selection. "
+    "control when a payment type is made available for selection. "
     "The query is a SQL statement that returns zero or more rows "
     "based upon the current Session ID and other criteria such as "
     "shipping or billing addresses. The Session ID is inserted into "
     "the query using <i>#sessionid#</i>. If the query returns one or "
-    "more rows, the shipping type will be made available. Otherwise, "
-    "the shipping type will not be displayed as an option.";
+    "more rows, the method will be made available. Otherwise, "
+    "the method will not be displayed as an option. If no query is "
+    provided, this method will always be available.";
 
   return retval;
 }
@@ -203,7 +194,7 @@ mixed showtype(object id, mapping row)
 string retval="";
 
 if(!objectp(handlers[row->module]))
-  return "This shipping handler has not been loaded.";
+  return "This payment handler has not been loaded.";
 else retval+=handlers[row->module]->showtype(id, row);
 
 return retval;
@@ -218,11 +209,11 @@ if(!id->variables->deletetype)
 return "you must select a type to delete.";
 
 else {
-  array r=DB->query("SELECT * FROM shipping_types WHERE type=" +
+  array r=DB->query("SELECT * FROM payment_types WHERE type=" +
     id->variables->deletetype);
   if(handlers[r[0]->module]->deletetype)
     retval+=handlers[r[0]->module]->deletetype(id);
-  DB->query("DELETE FROM shipping_types WHERE type=" +
+  DB->query("DELETE FROM payment_types WHERE type=" +
     id->variables->deletetype);
   }
 
@@ -233,7 +224,7 @@ return retval;
 mixed doaddtype(object id)
 {
 
-  DB->query("INSERT INTO shipping_types VALUES(NULL,'" +
+  DB->query("INSERT INTO payment_types VALUES(NULL,'" +
 	DB->quote(id->variables->name) + "','" +
 	DB->quote(id->variables->description) + "','" +
 	id->variables->module + "','" +
@@ -244,13 +235,14 @@ mixed doaddtype(object id)
   return showmainmenu(id);
 }
 
-mixed shipping_admin (string p, object id)
+mixed payment_admin (string p, object id)
 { 
+
 if(id->variables->initialize)
   initialize_db(id);
 
 string retval=
-	"<h2>Shipping Administration</h2>\n";
+	"<h2>Payment Administration</h2>\n";
 
 if(!initialized) {
   retval+="This module has not been initialized."
@@ -267,13 +259,12 @@ if(id->variables->mode) {
     case "addtypemenu":
 	retval+=addtypemenu(id);
     break;
-
     case "deletetype":
         retval+=deletetype(id);
     break;
     case "showtype":
 	if(id->variables->showtype){
-     	 array r=DB->query("SELECT * FROM shipping_types WHERE type=" +
+     	 array r=DB->query("SELECT * FROM payment_types WHERE type=" +
       	  id->variables->showtype );
     	 retval+="<table><tr><td><b>Type:</b></td><td>" + r[0]->name +
 	"</td></tr>"; 
@@ -301,17 +292,13 @@ mixed register_admin()
 {
 
 return ({
-	([ "mode": "menu.main.Store_Administration.Shipping_Administration",
-		"handler": shipping_admin,
+	([ "mode": "menu.main.Store_Administration.Payment_Administration",
+		"handler": payment_admin,
 		"security_level": 8 ])
 	});
 
 }
-
-/*				*/
-/*	The shipping tags	*/
-/*				*/
-
+/*
 float|string tag_shippingcost (string tag_name, mapping args,
                     object id, mapping defines) {  
 
@@ -358,6 +345,7 @@ array r;
 string query=("SELECT extension FROM lineitems where orderid='" +
   (id->misc->ivend->orderid || id->misc->ivend->SESSIONID)
   + "' AND lineitem='shipping'");
+// perror(query);
 r=DB->query(query);
 
 if(sizeof(r)!=1) return "Error Finding Shipping Data for this order.";
@@ -427,12 +415,14 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
    }
 
   id->misc->ivend->handling_charge=charge;
+perror("Handling Charge: " + charge + "\n");
   return;
 }
 
 string tag_shippingtypes (string tag_name, mapping args,
                     object id, mapping defines) {  
 
+perror("tag_shippingtypes\n");
 string retval="";
 array r;
 catch(
@@ -441,6 +431,7 @@ int t=0;
 int g=0;
 array rw=({});
 foreach(r, mapping row){
+perror("got a type.\n");
   if(search(lower_case(row->availability), "select")!=-1){
     row->availability=replace(row->availability, "#sessionid#",
 	id->misc->ivend->SESSIONID);
@@ -454,6 +445,7 @@ if(!rw || sizeof(rw)==0)
   return "No shipping options are currently available.<input type=hidden name=no_shipping_options value=1>";
 
 foreach(rw, mapping row){
+perror("checking cost.\n");
 args->type=row->type;
 string price=tag_shippingcalc ("shippingcalc", args,
                     id, defines);
@@ -481,6 +473,8 @@ else return "We were unable to find a suitable shipping option for your order. "
 	;
 }
 
+*/
+
 mapping query_container_callers(){
 
   return ([]);
@@ -492,17 +486,12 @@ mapping query_tag_callers(){
 return
 
  ([
-  "shippingtype"    : tag_shippingtype,
-  "shippingcost"    : tag_shippingcost,
-  "shippingtypes" : tag_shippingtypes,
-  "shippingadd"     : tag_shippingadd,
-  "shippingcalc"    : tag_shippingcalc
   ]);
 
 }
 
 mixed query_event_callers(){
 
-  return ([ "calculateHandlingCharge": event_calculateHandlingCharge ]);
+  return ([ ]);
 
 } 

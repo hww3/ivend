@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.55 1998-04-24 13:22:21 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.56 1998-04-26 20:40:47 hww3 Exp $";
 
 array register_module(){
 
@@ -225,8 +225,8 @@ string container_icart(string name, mapping args,
                       string contents, object id)
 {
 string st;
-    if(!id->misc->ivend->st) return "You can't access your cart from here.";
-    else st=id->misc->ivend->st;
+
+st=id->misc->ivend->st;
 
 if(id->variables->update) {
 
@@ -261,7 +261,11 @@ if(id->variables->update) {
 	args->fields+" FROM sessions,products "
       "WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
-    if (sizeof(r)==0) return "Your Cart is Empty.\n";
+    if (sizeof(r)==0) {
+      if(id->misc->ivend->error) 
+	id->misc->ivend->error+=({"Your Cart is Empty"});
+      return "Your Cart is Empty.\n";
+    }
     retval+="<tr><th bgcolor=maroon><font color=white>Code</th>\n"
 	"<th bgcolor=maroon><font color=white>Product</th>\n";
 	
@@ -585,13 +589,18 @@ return fs;
 }
 
 
-mixed handle_error(string error, object id){
+mixed handle_error(object id){
 string retval;
+
 if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
   retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
-	"The following error has occurred:<p><error><p>\n"
-	"Please contact the administrator for assistance.";
-return replace(retval,"<error>",error);
+    "<b>One or more errors have occurred. Please review the following "
+    "information and, if necessary, make any changes on the previous page "
+    "before continuing."
+    "<error>";
+
+return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
+	       +"</ul>\n");
 
 }
 
@@ -602,7 +611,8 @@ perror("iVend: handling cart for "+st+"\n");
 
 string retval;
 if(!(retval=Stdio.read_bytes(id->misc->ivend->config->root+"/cart.html")))
-  return handle_error(id->misc->ivend->config->root+"/cart.html",id);
+  id->misc->ivend->error+=({
+    "Unable to find the file "+(id->misc->ivend->config->root)+"/cart.html"});
  
 return retval;    
 
@@ -721,8 +731,8 @@ switch(page){
 	}
     else retval=find_page(page, id);
   }
-  if (!retval) return handle_error("Unable to find product "+page, id);
-  else return retval;
+  if (!retval) id->misc->ivend->error+=({"Unable to find product "+page});
+  return retval;
 
 }
 
@@ -741,6 +751,7 @@ mixed retval;
 
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
+
 
 if(retval==-1) return handle_page("index.html",id);
 else 
@@ -1351,10 +1362,13 @@ mixed return_data(mixed retval, object id){
 
   if(stringp(retval)){
 
-	retval=parse_rxml(retval, id);
-   	return http_string_answer(retval,
-		id->conf->type_from_filename(id->realfile|| "index.html"));
-	}
+    if(sizeof(id->misc->ivend->error)>0)
+      retval=handle_error(id);
+    else retval=parse_rxml(retval, id);
+
+    return http_string_answer(retval,
+       id->conf->type_from_filename(id->realfile|| "index.html"));
+  }
 
   else return retval;
 
@@ -1366,7 +1380,7 @@ mixed find_file(string file_name, object id){
   id->misc["ivend"]=([]);
   id->misc["ivendstatus"]="";
   string retval;
-
+  id->misc->ivend->error=({});
   array(string) request=(file_name / "/") - ({""});
   if(catch(request[0])) request+=({""});
   switch(request[0]){
@@ -1493,28 +1507,25 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 	"ivindex":container_ivindex,
 	"category_output":container_category_output
     ]);
-
 if(id->misc->ivend->st){
-
-if(functionp( modules[id->misc->ivend->config->checkout_module
+  if(functionp( modules[id->misc->ivend->config->checkout_module
     ]->query_container_callers))
-containers+=  modules[id->misc->ivend->config->checkout_module
+    containers+=  modules[id->misc->ivend->config->checkout_module
     ]->query_container_callers();
 
-if(functionp( modules[id->misc->ivend->config->checkout_module
+  if(functionp( modules[id->misc->ivend->config->checkout_module
     ]->query_tag_callers))
-tags+=  modules[id->misc->ivend->config->checkout_module
+    tags+=  modules[id->misc->ivend->config->checkout_module
     ]->query_tag_callers();
 
-if(functionp( modules[id->misc->ivend->config->shipping_module
+  if(functionp( modules[id->misc->ivend->config->shipping_module
     ]->query_container_callers))
-containers+= modules[id->misc->ivend->config->shipping_module
+    containers+= modules[id->misc->ivend->config->shipping_module
     ]->query_container_callers();
 
-if(functionp( modules[id->misc->ivend->config->shipping_module
+  if(functionp( modules[id->misc->ivend->config->shipping_module
     ]->query_tag_callers))
-tags+= 
-  modules[id->misc->ivend->config->shipping_module
+    tags+=modules[id->misc->ivend->config->shipping_module
     ]->query_tag_callers();
 }
 

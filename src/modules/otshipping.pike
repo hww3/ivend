@@ -304,7 +304,8 @@ total=calculate_shippingtotal(id);
 charge=calculate_shippingcost(total, id->variables->type, id);
 string typename=id->misc->ivend->s->query("SELECT name FROM shipping_types "
   "WHERE type=" + id->variables->type )[0]->name;
-
+if(id->variables["_backup"])
+   return "<!--Backing up. CalculateShipping skipped.-->\n";
 id->misc->ivend->s->query("INSERT INTO lineitems VALUES('" +
   id->misc->ivend->SESSIONID + "', 'shipping', " + charge + ",'" +
   typename + "')");

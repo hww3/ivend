@@ -66,8 +66,8 @@ if(!args->field)
   return "";
 else if(Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]))
   return "";
-else id->misc->ivend->error+=
-	"You have provided an invalid email address.";
+ else id->misc->ivend->error+=({
+	"You have provided an invalid email address."});
 
 return "";
 
@@ -75,6 +75,9 @@ return "";
 
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
+
+if(id->variables["_backup"] )
+   return "<!-- Backing up. ConfirmOrder skipped.-->\n";
 
   string retval="";
 
@@ -120,7 +123,9 @@ id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
-  id->misc->ivend->error+="ERROR MOVING ORDER TO CONFIRMED STATUS!";
+  id->misc->ivend->error+=
+    ({"We were unable to move your order to confirmed status. "
+	" Please contact the administrator of this store for assistance."});
   return "An error occurred while moving your order to confirmed status.\n";
 }
 // update customer info and payment info with new orderid
@@ -291,7 +296,8 @@ return retval;
 
 string tag_addentry(string tag_name, mapping args,
 		     object id, mapping defines) {
-
+if(id->variables["_backup"])
+   return "<!-- Backing up. addentry skipped. -->\n";
 if(id->misc->ivend->error) return "";
 if((int)id->variables->shipsame==1) return "";
 
@@ -325,9 +331,8 @@ array e=(args->encrypt-" ")/",";
 else
   j=id->misc->ivend->db->addentry(id);
     
-if(j!=1) id->misc->ivend->error+= "<font size=+2>Error!</font>\n"
-	   "<br><b>Please correct the following before continuing:<p></b><ul>"
-	+j+"</ul>";
+if(j!=1) id->misc->ivend->error+=
+	j/"<br>";
 
 return "";
 
@@ -346,8 +351,8 @@ if(Commerce.CreditCard.cc_verify(
 	      || id->variables->expiration_date))
 
 id->misc->ivend->error+=
-  "You have supplied improper credit card information!<p>"
-  "Please go back and correct this before continuing.";
+  ({"You have supplied improper credit card information."});
+
 
 return "";
 }
@@ -395,12 +400,17 @@ string item;
    float i= id->misc->ivend->lineitems[item];
    grandtotal+=i;
    if(item=="shipping");
-   else id->misc->ivend->db->query("INSERT INTO lineitems VALUES('"+
-id->variables->orderid + 
-	"','" + item + "',"+ i + ",NULL)");
-  }
+   else {
+     id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
+				+id->variables->orderid+"' AND lineitem='"
+				+item +"'");
+     id->misc->ivend->db->query("INSERT INTO lineitems VALUES('"+ 
+			   id->variables->orderid + 
+			   "','" + item + "',"+ i + ",NULL)");
+   }
+ }
 
-  return sprintf("%.2f",(float)grandtotal);
+ return sprintf("%.2f",(float)grandtotal);
 
 }
 
@@ -460,6 +470,8 @@ if(functionp(query_container_callers2))
   containers=query_container_callers2();
 string h;
 
+ id->misc->ivend->error=({});
+
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
 
@@ -474,13 +486,8 @@ contents=parse_html(contents,
 		  containers,
 		  id);
 
- if(id->misc->ivend->error) return 
-	"<b>An error occurred while processing your request.</b><p>" 
-	"Please review the cause of this error and go back to correct it:<p>" 
-	+ (id->misc->ivend->error[1..]);
-else { 
-  return contents;
-  }
+return contents;
+
 }
 
 

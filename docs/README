@@ -98,11 +98,12 @@ IVML (ivend markup language) tags. A listing of IVML tags can be found in
 the section labelled IVML. The minimum files required by ivend to operate 
 must be present in each store's data directory and are described below:
 
-index.ivml -- the default page displayed upon arrival at the store.
-groups.ivml -- this page is used to display all available store groups.
-group_template.ivml -- template used to generate group listings.
-product_template.ivml -- template used to generate individual product listings.
+index.html -- the default page displayed upon arrival at the store.
+groups.html -- this page is used to display all available store groups.
+group_template.html -- template used to generate group listings.
+product_template.html -- template used to generate individual product listings.
 cart.ivml -- handles shopping cart functions.
+error.html -- custom error message for iVend errors (optional).
 
 examples of these files are located in the examples directory.
 

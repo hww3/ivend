@@ -508,7 +508,7 @@ numpages + " &nbsp; " +
 	"</td><td bgcolor=gray align=center> <a href=\"./?orderid="
 	+row->id+"\">"+
 	row->id+"</a> </td>";
-    retval+="<td>"+ r[i]->status+" </td>\n";
+    retval+="<td>"+ row->status+" </td>\n";
     retval+="<td> "+(row->updated)+" </td><td> " + (row->notes||"") +
  " </td>\n"
 	"</tr>\n";

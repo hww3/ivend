@@ -139,6 +139,12 @@ string action_dropdown(string mode, object id){
 	id->variables->contents);
    privs=0;
    }
+   if(id->variables->delete){
+    object privs=Privs("iVend: deleting dropdown file");
+    rm(CONFIG->root + "/db/" + id->variables->delete);
+    privs=0;
+   }
+  retval+="<font face=helvetica,arial>";
   if(!id->variables->edit){
     array f=get_dir(CONFIG->root + "/db");
     if(sizeof(f)>0)
@@ -146,12 +152,20 @@ string action_dropdown(string mode, object id){
 	"Table : Fields:<p><ul>";
     foreach(f, string file){
      if(file!="CVS")
-      retval+="<li><a href=\"./?edit=" + file  + "\">" +
- 	(file-".val")+"</a>\n";
+      retval+="<li><a href=\"./?edit=" +  file + "\">" +
+ 	 file +"</a> <font size=1>(<a href=./?delete=" + file +
+	 ">Delete</a>)</font>\n";
     }
 
     if(sizeof(f)>0) retval+="</ul>";
     else retval+="You have not configured any dropdowns yet.<p>";
+    retval+="Create New Dropdown:<br>\n"
+     "<form action=./>\n";
+//     "<select name=edit>\n";
+
+    retval+="<input name=edit type=text size=15 value=\"table.field\"> "
+//"</select>"
+"<input type=submit value=Add></form>\n";
   }
   else { 
     retval+="Editing " + id->variables->edit + ":<p>";
@@ -159,7 +173,7 @@ string action_dropdown(string mode, object id){
 	"<input type=hidden name=edit value=\"" + id->variables->edit 
 	+ "\">\n";
     string f=Stdio.read_file(CONFIG->root + "/db/" + id->variables->edit);
-    retval+="<textarea name=contents rows=15 cols=80 wrap>" + f +
+    retval+="<textarea name=contents rows=15 cols=80 wrap>" + (f||"") +
 	"</textarea>\n";
     retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
   }

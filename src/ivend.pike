@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.211 1999-06-03 14:13:04 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.212 1999-06-03 19:31:43 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1881,7 +1881,7 @@ string return_to_admin_menu(object id){
                              "<input type=hidden name=mode value=show>\n"
                              "<input type=hidden name=type value="+ type + ">\n"
                              "<table><tr><td><input type=submit value=Show></td><td>\n";
-                     retval+="<td><b>Show fields:</b> ";
+                     retval+="<td><font face=helvetica,arial size=2><b>Show fields:</b> ";
                      array f=DB->list_fields(type+"s");
                      array k;
                      catch(k=DB->query("SHOW INDEX FROM " +
@@ -1905,22 +1905,46 @@ string return_to_admin_menu(object id){
                          retval+="<input type=hidden name=\"show-" + field->name +
                                  "\" value=\"yes\">\n";
 
-                     retval+="</td>";
-			retval+="<td>Show:</td><td>"
+                     retval+="</font></td>";
+			retval+="<td><font face=helvetica,arial "
+			"size=2><b>Show:</b></font></td><td>"
+			"<font face=helvetica,arial size=2>"
 			   "<script language=javascript>"
 			   "function setmatch() {\n"
-//			   "document.form.__select.value='some';\n"
+//		"alert('Value of __matchfield is |' + document.form.__criteria.value + '|.');\n"
+		"if(document.form.__matchfield.value!=\"Choose Field\")"
 			   "document.form.__select[1].checked=true;\n"
+			"else \n"
+			"document.form.__select[0].checked=true;\n"
 			   "}\n"
 			   "</script>"
-			   "<input type=radio checked name=__select value=all> All<br>"
-			   "<input type=radio name=__select value=some> Match by"
-			   "</td><td>"
-			   "<select name=__matchfield onchange=setmatch()>";
+			   "<input type=radio " +
+(id->variables->__select!="some"?"checked":"") +" name=__select value=all> All<br>"
+			   "<input type=radio " +
+(id->variables->__select=="some"?"checked":"") +
+" name=__select value=some> Match"
+			   "</font></td><td><font face=helvetica,arial size=2>"
+			   "<select name=__matchfield onchange=setmatch()>"
+				"<option value=\"\">Choose Field\n";
 			foreach(f, mapping field)
-			   retval+="<option value=\"" + field->name + "\">"
+			   retval+="<option " +
+	(id->variables->__matchfield==field->name?"selected ":" ") + 
+			"value=\"" + field->name + "\">"
 				+ field->name + "\n";
 			retval+="</select></td>";
+		retval+="<td><font face=helvetica,arial size=2>\n"
+	"<input type=radio "+ (id->variables->__rule=="like"?"checked":"") 
++" name=__rule value=like>Contains<br>"
+	"<input type=radio "+ (id->variables->__rule=="="?"checked":"")
++" name=__rule value=\"=\">Is Exactly<br>"
+	"<input type=radio "+ (id->variables->__rule=="<"?"checked":"") +
+" name=__rule value=\"<\">Less Than<br>"
+	"<input type=radio "+
+(id->variables->__rule==">"?"checked":"") +" name=__rule value=\">\">Greater Than<br>"
+	"</font></td>\n"
+	"<td><font face=helvetica,arial size=2>\n"
+	"<input type=text value=\"" + (id->variables->__criteria||"")
+	+ "\" name=__criteria size=12></font></td>";
 		     retval+="</tr></table>"
                              "<input type=hidden name=primary_key value=\"" +
                              primary_key + "\"></form>";
@@ -1936,6 +1960,14 @@ string return_to_admin_menu(object id){
 
                          query=query[0..(sizeof(query)-3)] + " FROM " + type
                                + "s";
+			if(id->variables->__select=="some"){
+if(id->variables->__rule=="like") id->variables->__criteria="%" +
+id->variables->__criteria + "%";
+	query +=" WHERE " + id->variables->__matchfield
+				+ " " + id->variables->__rule + " '"+
+			         DB->quote(id->variables->__criteria) +
+				"'";
+			}
                          array r=DB->query(query);
                          if(sizeof(r)>0) {
                              retval+="<table>\n<tr><td></td>\n";

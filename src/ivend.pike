@@ -19,7 +19,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.39 1998-03-23 00:14:50 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.40 1998-03-25 03:39:29 hww3 Exp $";
 
 array register_module(){
 
@@ -974,7 +974,7 @@ retval+="<title>iVend Store Orders</title>"
   +id->misc->ivend->config->name+
   " Orders</gtext><p>"
   "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a><p>\n";
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
 
 if(! objectp(modules[id->misc->ivend->config->order_module])) 
 	load_ivmodule(id, "order_module");

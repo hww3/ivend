@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.235 1999-08-03 01:35:12 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.236 1999-08-03 18:42:28 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -240,6 +240,38 @@ void register_path_handler(string c, string path, function f){
     return;
 }
 
+mixed throw_fatal_error(mixed error, object id) {  
+// we don't do anything with error yet.
+
+  if(!id->misc->ivend[STORE]->had_fatal_event)
+    id->misc->ivend[STORE]->had_fatal_event=1;
+  else id->misc->ivend[STORE]->had_fatal_event ++;
+
+}
+
+mixed throw_warning(mixed error, object id) {  
+// we don't do anything with error yet.
+
+  if(!id->misc->ivend[STORE]->had_warning_event)
+    id->misc->ivend[STORE]->had_warning_event=1;
+  else id->misc->ivend[STORE]->had_warning_event ++;
+
+}
+
+int had_fatal_error(object id){
+
+  if(id->misc->ivend[STORE]->had_fatal_event) return 1;
+  else return 0;
+
+}
+
+int had_warning(object id){
+
+  if(id->misc->ivend[STORE]->had_warning_event) return 1;
+  else return 0;
+
+}
+
 void trigger_event(string event, object|void id, mapping|void args){
 
     //   perror("triggering event " + event + "\n");
@@ -247,7 +279,8 @@ void trigger_event(string event, object|void id, mapping|void args){
     if(id && STORE){
         if(library[STORE]->event[event])
             foreach(library[STORE]->event[event], mixed f)
-            f(event, id, args);
+	     if(!had_fatal_error(id))
+		f(event, id, args);
     }
 
 }

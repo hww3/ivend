@@ -67,8 +67,8 @@ Installation Instructions
  or zcat ivend-1.0.XX.tar.gz | tar xvf -
 
 This should give you a directory called ivend/. We'll call this
-directory the iVend distribution directory. Do not move or rename
-files in this directory. For example, if you unpacked the distribution
+directory the iVend distribution directory. Do not move or rename files
+in this directory. For example, if you unpacked the distribution
 file under /usr/local/roxen, your iVend distribution directory would be
 /usr/local/roxen/ivend.
 
@@ -77,10 +77,11 @@ directory is in Roxen's module search path, located in the "Global
 Variables" section of the Roxen Configuration Interface. For the example
 above, you'd add /usr/local/roxen/ivend/src to your module search path. 
 
-3. Be sure to set all the directories in the iVend section of the Roxen
-Config Interface. iVend will try to guess the proper values when you add 
-the module the first time. If you don't provide the correct directory
-information, iVend will not work properly:
+3. Add the iVend module to a virtual server.
+
+4. Be sure to set all the directories in the iVend section of the Roxen
+Config Interface. If you don't provide the correct directory information,
+iVend will not work properly:
 
   a. iVend Root Directory: This is the iVend distribution directory.
   b. iVend Config Directory: This is usually ivend/configurations.
@@ -88,7 +89,7 @@ information, iVend will not work properly:
   d. Mount Path: this is where iVend will be located within your server's
      virtual filesystem. The default is /ivend/.
 
-4. Assign values for any other configuration variables such as config user
+5. Assign values for any other configuration variables such as config user
 and password.
 
 5. Save your changes.

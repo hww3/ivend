@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.88 1998-08-03 23:14:45 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.89 1998-08-06 23:20:26 hww3 Exp $";
 
 array register_module(){
 
@@ -309,11 +309,10 @@ if(id->variables->update) {
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
 	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+">&nbsp; \n"
-        +r[i]->id+" &nbsp;</TD>\n"
-	  "<td>"+r[i]["name"]+"</td>\n";
+        +r[i]->id+" &nbsp;</TD>\n";
 
 	foreach(en, field){
-		perror(field + "\n");
+		perror(field +"\n");
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 

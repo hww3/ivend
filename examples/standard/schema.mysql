@@ -7,7 +7,7 @@
 # Table structure for table 'customer_info'
 #
 CREATE TABLE customer_info (
-  orderid int(11) DEFAULT '0' NOT NULL,
+  orderid int(16) DEFAULT '0' NOT NULL,
   First_Name char(32) DEFAULT '' NOT NULL,
   Last_Name char(32) DEFAULT '' NOT NULL,
   Company char(32),
@@ -33,7 +33,7 @@ CREATE TABLE customer_info (
 # Table structure for table 'groups'
 #
 CREATE TABLE groups (
-  id varchar(12) DEFAULT '' NOT NULL,
+  id varchar(16) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
   image varchar(24),
@@ -50,7 +50,7 @@ CREATE TABLE groups (
 # Table structure for table 'lineitems'
 #
 CREATE TABLE lineitems (
-  orderid char(12) DEFAULT '' NOT NULL,
+  orderid char(16) DEFAULT '' NOT NULL,
   lineitem char(12) DEFAULT '' NOT NULL,
   value float(10,2) DEFAULT '0.00' NOT NULL,
   extension char(24)
@@ -65,8 +65,8 @@ CREATE TABLE lineitems (
 # Table structure for table 'orderdata'
 #
 CREATE TABLE orderdata (
-  orderid int(11) DEFAULT '0' NOT NULL,
-  id varchar(12) DEFAULT '0' NOT NULL,
+  orderid int(16) DEFAULT '0' NOT NULL,
+  id varchar(16) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   qualifier varchar(24),
@@ -84,7 +84,7 @@ CREATE TABLE orderdata (
 # Table structure for table 'orders'
 #
 CREATE TABLE orders (
-  id int(11) DEFAULT '0' NOT NULL auto_increment,
+  id int(16) DEFAULT '0' NOT NULL auto_increment,
   status int(11) DEFAULT '0' NOT NULL,
   shipping_type int(11) DEFAULT '0' NOT NULL,
   updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE payment_info (
   Cardholder_Name varchar(64) DEFAULT '' NOT NULL,
   Card_Number varchar(255) DEFAULT '' NOT NULL,
   Expiration_Date varchar(10) DEFAULT '' NOT NULL,
-  orderid varchar(12) DEFAULT '' NOT NULL,
+  orderid varchar(16) DEFAULT '' NOT NULL,
   status int(11) DEFAULT '3' NOT NULL,
   PRIMARY KEY (orderid)
 );
@@ -120,8 +120,8 @@ CREATE TABLE payment_info (
 # Table structure for table 'product_groups'
 #
 CREATE TABLE product_groups (
-  group_id char(12),
-  product_id char(12)
+  group_id char(16),
+  product_id char(16)
 );
 
 #
@@ -133,7 +133,7 @@ CREATE TABLE product_groups (
 # Table structure for table 'products'
 #
 CREATE TABLE products (
-  id varchar(12) DEFAULT '' NOT NULL,
+  id varchar(16) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
   onhand int(11),
@@ -158,8 +158,8 @@ CREATE TABLE products (
 # Table structure for table 'sessions'
 #
 CREATE TABLE sessions (
-  sessionid varchar(12) DEFAULT '' NOT NULL,
-  id varchar(12) DEFAULT '0' NOT NULL,
+  sessionid varchar(16) DEFAULT '' NOT NULL,
+  id varchar(16) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   qualifier varchar(24),

@@ -309,6 +309,16 @@ if(id->variables["_backup"])
 if(sizeof(id->misc->ivend->error)>0) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) return "";
 
+if(args->encrypt){	// handle encrypting of records...
+  array toencrypt=(lower_case(args->encrypt)-" ")/",";
+  string key=Stdio.read_file(id->misc->ivend->config->public_key);
+  foreach(toencrypt, string encrypt){
+    if(id->variables[encrypt])
+	id->variables[encrypt]=
+	  Commerce.Security.encrypt(id->variables[encrypt],key);
+    }
+}
+
 mixed j;
 
  if(id->variables->aeexclude){

@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.93 1998-08-15 16:13:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.94 1998-08-17 02:21:13 hww3 Exp $";
 
 array register_module(){
 
@@ -1303,6 +1303,7 @@ if(id->misc->ivend->st){
   }
 };
   id->misc->ivend->modules=modules;
+contents=parse_rxml(contents,id);
  return "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
 
@@ -1429,13 +1430,15 @@ mixed return_data(mixed retval, object id){
     if(sizeof(id->misc->ivend->error)>0)
      	 retval=handle_error(id);
 
-  if(stringp(retval)){
-
+  if(stringp(retval)){ 
+    if(id->conf->type_from_filename(id->realfile || "index.html")
+=="text/html")
     retval=parse_rxml(retval, id);
 
     return http_string_answer(retval,
-       id->conf->type_from_filename(id->realfile|| "index.html"));
-  }
+      id->conf->type_from_filename(id->realfile|| "index.html"));
+// return retval;  
+}
 
   else return retval;
 

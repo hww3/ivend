@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.16 1998-02-03 01:05:30 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.17 1998-02-10 20:58:25 hww3 Exp $";
 
 /*
  *
@@ -919,7 +919,7 @@ switch(id->variables->mode){
     id->misc->ivend->config->password
     );
   retval+=s->gentable("products","./admin","groups", 
-	"product_groups", id->misc->ivend->SESSIONID);
+	"product_groups", id);
   break;
 
   case "addgroup":
@@ -929,7 +929,7 @@ switch(id->variables->mode){
     id->misc->ivend->config->user,
     id->misc->ivend->config->password
     );
-  retval+=s->gentable("groups","./admin",0,0,id->misc->ivend->SESSIONID);
+  retval+=s->gentable("groups","./admin",0,0,id);
   break;
 
   case "dodelete":

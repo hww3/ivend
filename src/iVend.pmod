@@ -183,7 +183,7 @@ return 1;
 }
 
 string|int gentable(string table, string return_page, 
-    string|void jointable,string|void joindest , string|void SESSIONID){
+    string|void jointable,string|void joindest , object|void id){
 string retval="";
 array(mapping(string:mixed)) r=s->list_fields(table);
 
@@ -192,9 +192,6 @@ retval+="<FORM ACTION=\""+return_page+"\" ENCTYPE=multipart/"
 	"form-data>\n"
         "<INPUT TYPE=HIDDEN NAME=table VALUE=\""+table+"\">\n"
         "<INPUT TYPE=HIDDEN NAME=mode VALUE=\"doadd\">\n";
-if(SESSIONID)
-  retval+="<INPUT TYPE=HIDDEN NAME=SESSIONID " 
-	"VALUE=\""+SESSIONID+"\">\n"
         "<TABLE>\n";
 
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
@@ -228,6 +225,26 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+ REQUIRED +"\n";
         }
+
+else if(r[i]->type=="enum"){
+    retval+="<tr>\n"
+	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
+	+replace(r[i]->name,"_"," ")+
+	"</font></td>\n"
+	"<td>\n";
+
+    retval+="<select name=\""+r[i]->name+"\">\n";
+
+    array vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	"db/"+r[i]->name+".val")/"\n";
+    if(sizeof(vals)>0) {
+	for(int j=0; j<sizeof(vals); j++)
+	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	}
+    else retval+="<option>No Options Available\n";
+    retval+="</select></td></tr>";
+    
+    }
 
 else if(r[i]->type=="var string"){
     retval+="<TR>\n"

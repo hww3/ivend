@@ -1,5 +1,3 @@
-#define DICTFILE "/usr/dict/words"
-
 inherit "wizard";
 
 constant name= "Add New Store...";
@@ -244,19 +242,6 @@ v->copyfiles-="\0000";
 string retval="";
 object privs;
 
-privs=Privs("iVend: Creating store directory");
-if(v->createdir && !file_stat(v->root)) mkdir(v->root);
-privs=0;
-
-if(v->copyfiles=="yes"){
-perror("copying store files...\n");
-privs=Privs("iVend: Copying store files ");
-mixed result=Process.system("/bin/cp -rf " +
-   id->misc->ivend->this_object->query("root") + "examples/" +
-   v->style +"/* " + v->root);
-privs=0;
-}
-
 object s;
 
   if(catch(s=Sql.sql(id->variables->dbhost, 0, 
@@ -266,12 +251,16 @@ object s;
     }
 
 if(catch(s->create_db(v->config)))
-  return "An error occurred while creating the store database.";
+  return "An error occurred while creating the store database. "
+	"This usually means that either 1) the database already exists, "
+	"or 2) the db administrator account does not have permission to "
+	"create new databases.";
 s->select_db(v->config);
 string adminuser=(sizeof(v->config + "admin")<=16?(v->config +
   "admin"):(v->config + "admin")[0..15]);
 
-string adminpassword= makepw->make_password(DICTFILE, 8);
+string adminpassword=
+makepw->make_password(id->misc->ivend->this_object->query("wordfile"), 8);
 
 if(v->dbhost=="") v->dbhost=="localhost";
 v->dblogin=v->config;
@@ -302,13 +291,28 @@ retval+= "<b>Admin User:</b> " + adminuser + "<br>\n"
 retval+="<p>\nYou may edit $DATALOCATION/store_package "
   "to customize the overall look of your store."
 
+privs=Privs("iVend: Creating store directory");
+if(v->createdir && !file_stat(v->root)) mkdir(v->root);
+privs=0;
+
+if(v->copyfiles=="yes"){
+perror("copying store files...\n");
+privs=Privs("iVend: Copying store files ");
+mixed result=Process.system("/bin/cp -rf " +
+   id->misc->ivend->this_object->query("root") + "examples/" +
+   v->style +"/* " + v->root);
+privs=0;
+}
+
 if(file_stat(v->root + "/schema.mysql")){
 
   array ss=Stdio.read_file(v->root +  "/schema.mysql")/"\\g\n";
   if(catch(object s=Sql.sql(id->variables->dbhost, v->config , 
     v->config, v->dbpassword))) {
     return "An error occurred while connecting to the store database" 
-	"as " + v->config + " with password " + v->dbpassword + ".";
+	"as " + v->config + " with password " + v->dbpassword + "."
+	"<p>This is sometimes due to improper host table setup on "
+	"the database host.";
     }
 ss=ss[0..sizeof(ss)-2];
   foreach(ss, string statement)

@@ -141,7 +141,15 @@ void create(){
    defvar("lang", "en", "Default Language",
           TYPE_MULTIPLE_STRING, "Default Language for Stores",
           ({"en","si"})
-         );}
+         );
+   defvar("wordfile", "/usr/dict/words",
+          "Word File",
+          TYPE_FILE,
+          "This is a file containing words that will be used to generate "
+	  "config passwords. On Solaris and Linux, this is usually "
+	  "/usr/dict/words, and on FreeBSD /usr/share/dict/words."
+
+}
 
 void get_dbinfo(mapping c){
    mixed err;

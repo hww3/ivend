@@ -48,6 +48,8 @@
 #define UNABLE_TO_CONFIRM "We were unable to move your order to confirmed status. " \
         " Please contact the administrator of this store for assistance."   
 #define INVALID_CREDIT_CARD "You have provided incorrect Credit Card information."
+#define ERROR_RESERVING_ORDERID "An error occurred while reserving your order number."
+#define ERROR_ORDERID_ALREADY_EXISTS "Your order appears to have either been confirmed already, or your shopping session has expired."
 
 #define ITEM " item "
 #define ERROR_ADDING_ITEM "Error adding item"

@@ -483,7 +483,7 @@ string|void container_ia(string name, mapping args,
 
    if (args->external)
       arguments["href"]=args->href;
-   if (args->referer)
+   else if (args->referer)
       arguments["href"]= (id->variables->referer || ((id->referer*"")-"ADDITEM=1") || "");
    else if (args->add)
       arguments["href"]="./"+id->misc->ivend->page+".html?SESSIONID="
@@ -1010,9 +1010,7 @@ int i=0;
   retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
     foreach(indices(rows[cnt]), cnt2) {
 	string align;
-	if((float)rows[cnt][cnt2])
-         align="right";
-        else align="left";
+        align="left";
       retval += sprintf("<td nowrap align=" + align + "><font color=%s>%s&nbsp;&nbsp;</td>\n",
 			listfontcolor, (string)rows[cnt][cnt2]);
  
@@ -1044,11 +1042,12 @@ string tag_ivmg(string tag_name, mapping args,
    string filename="";
    array r;
    if(args->field!=""){
-      r=DB->query("SELECT "+args->field+ " FROM "+ 
+      catch(r=DB->query("SELECT "+args->field+ " FROM "+ 
                   id->misc->ivend->type+"s WHERE "
                   " " +  KEYS[id->misc->ivend->type+"s"]  +"='" 
-                  +id->misc->ivend->id+"'");
-      if (sizeof(r)!=1) return "";
+                  +id->misc->ivend->item+"'"));
+      if(!r) return "<!-- query failed -->";
+      else if (sizeof(r)!=1) return "<!-- no records returned -->";
       else if ((r[0][args->field]==0))
          return "<!-- No image for this record. -->\n";
       else filename=CONFIG->root+"/images/"+
@@ -1063,20 +1062,18 @@ string tag_ivmg(string tag_name, mapping args,
    // file doesn't exist
    if(size==-1)
       return "<!-- couldn't find the image: "+filename+"... -->";
-   // it's not a gif file
-   else if(size==0)
-      return ("<IMG SRC=\""+ query("mountpoint") +
+
+      args->src=query("mountpoint") +
               (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
                  ?"": STORE+"/")+"images/"
-              +id->misc->ivend->type+"s/"+r[0][args->field]+"\">");
-   // it's a gif file
-   else return ("<IMG SRC=\""+ query("mountpoint") +
-                (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
-                   ?""
-                   : STORE+"/")+"images/"
+              +id->misc->ivend->type+"s/"+r[0][args->field];
+   if(arrayp(size)){
+      args->height=(string)size[1];
+      args->width=(string)size[0];
+    }
 
-                +id->misc->ivend->type+"s/"+r[0][args->field]+"\""
-                " HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
+perror(sprintf("%O", args));
+   return make_tag("img", args);
 
 
 }
@@ -1118,9 +1115,18 @@ mixed handle_cart(string filename, object id, object this_object){
 string container_itemoutput(string name, mapping args,
                             string contents, object id) {
    string page=(args->item || id->misc->ivend->page);
-   string type=(args->type || id->misc->ivend->type);
+   string type=(args->type || id->misc->ivend->type || "product");
    string item=(args->item || id->misc->ivend->page);
 
+   mixed o_page=id->misc->ivend->page;
+   mixed o_item=id->misc->ivend->item;
+   mixed o_type=id->misc->ivend->type;
+
+//   id->misc->ivend->page=page;
+   id->misc->ivend->type=type;
+   id->misc->ivend->item=item;
+
+   string retval="";
 
    string q="SELECT *" + (args->extrafields?"," +
                           args->extrafields:"") +" FROM " +
@@ -1146,8 +1152,12 @@ string container_itemoutput(string name, mapping args,
          r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
 
    }
-   return do_output_tag( ([]), ({ r[0] }), contents, id ); 
-
+   retval=parse_html(do_output_tag( ([]), ({ r[0] }), contents, id ),
+(["ivmg":tag_ivmg]),([]),id); 
+   id->misc->ivend->page=o_page;
+   id->misc->ivend->item=o_item;
+   id->misc->ivend->type=o_type;
+   return retval;
 }
 
 string get_type(string page, object id){
@@ -1175,7 +1185,7 @@ mixed find_page(string page, object id){
    string retval;
 
    page=(page/".")[0];// get to the core of the matter.
-   id->misc->ivend->id=page;
+   id->misc->ivend->item=page;
    string template;
    array(mapping(string:string)) r;
    array f;
@@ -1329,14 +1339,20 @@ int admin_auth(object id)
 
 {
    array(string) auth=id->realauth/":";
-   if(catch(DB=iVend.db(
+mixed m;
+    if(catch(m=iVend.db(
               CONFIG->dbhost,
               CONFIG->db,
               auth[0],
               auth[1]
-            )))
+            ))) {
+      destruct(m);
       return 0;
-   else return 1;
+      }
+   else {
+      destruct(m);
+      return 1;
+    }
 }
 
 

@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.91 1998-08-15 00:11:33 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.92 1998-08-15 00:19:26 hww3 Exp $";
 
 array register_module(){
 
@@ -1770,7 +1770,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 				}
 
 	retval+="<P><FONT FACE=\"times\" SIZE=+1>To View, Modify or Delete a Configuration, Click on it's name in the list above.</FONT><P>\n"
-  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; ";
+  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; "
   "<A HREF=\""+query("mountpoint")+"config/reload\">Reload Configurations</A> &nbsp; ";
   if(save_status!=1)
    	  retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";

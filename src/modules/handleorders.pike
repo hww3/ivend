@@ -22,8 +22,8 @@ string create_panel(string name, string color, string contents){
 string|int genpayment(object id, object s){
 string retval="";
 string key="";
-if(id->misc->ivend->config->privatekey)
-  key=Stdio.read_file(id->misc->ivend->config->privatekey);
+if(id->misc->ivend->config->general->privatekey)
+  key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
 array r=s->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -90,14 +90,15 @@ string|int listorder(object id, object s){
 
   string manifestfields="";
 array mf=({});
-  if(CONFIG->handleorders->manifestfields) {
-    if(mappingp(CONFIG->handleorders->manifestfields)) {
-      manifestfields=", " + CONFIG->handleorders->manifestfields;
+  if(CONFIG->handleorders && CONFIG->handleorders->manifestfields) {
+    if(!arrayp(CONFIG->handleorders->manifestfields)) {
+      manifestfields=", products." + CONFIG->handleorders->manifestfields;
 	mf=({CONFIG->handleorders->manifestfields});
       }
     else {
-      manifestfields=", " + (CONFIG->handleorders->manifestfields*", ");
 	mf=CONFIG->handleorders->manifestfields;
+      foreach(mf, string f)
+        manifestfields += ", products." + f ;
       }
   }
   string retval="<table width=100%>\n";
@@ -114,7 +115,7 @@ array mf=({});
   retval+="<tr><td><font face=helvetica size=-1>Select</td>\n<td align=left>"
     "<font face=helvetica size=-1>Qty</font></td>\n"
     "<td align=left><font face=helvetica size=-1>Item</font></td>\n";
-foreach(mfields,string f)
+foreach(mf,string f)
   retval+="<td align=left><font face=helvetica size=-1>" + 
     replace(f,"_"," ") +"</font></td>\n";
 retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
@@ -126,7 +127,9 @@ retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
 	row[id->misc->ivend->keys->products ]+
       "." + row->series + "\">")+ "</td>"
       "<td>" + row->quantity + "</td><td>" + row->id 
-      + "</td><td>" + row["name"] + "</td><td align=right>" + row->price +
+      + "</td>";
+     foreach(mf, string f) retval+="<td>" + row[f] + "</td>";
+retval+=	"<td align=right>" + row->price +
 	"</td><td align=right>"
       + sprintf("%.2f", (float)row->price * (float)row->quantity) 
       + "</td></tr>\n";
@@ -139,7 +142,10 @@ id->variables->orderid + "'");
 
    foreach(r, mapping row) {
 
-  retval+="<tr>\n<td></td><td></td><td></td>\n<td align=right><font "
+  retval+="<tr>\n<td></td><td></td>";
+  foreach(mf, string f)
+    retval+="<td></td>\n";
+  retval+="\n<td align=right><font "
 	"face=helvetica>" +
  capitalize(row->lineitem) + " "
         + (row->extension||"")
@@ -151,7 +157,10 @@ id->variables->orderid + "'");
 r=s->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
 	"orderid='"+ id->variables->orderid + "'");
 
-  retval+="<tr><td></td><td></td><td></td><td align=right>"
+  retval+="<tr><td></td><td></td>";
+foreach(mf, string f)
+    retval+="<td></td>\n";   
+  retval+="<td align=right>"
 	"<font face=helvetica><b>Grand Total</b></td><td></td>"
 	"<td align=right><b>" + r[0]->grandtotal + "</b></td></tr>\n";
 
@@ -179,7 +188,8 @@ void send_notification(object id, string orderid, string type){
 if(!type) return;
 
 string note;
-note=Stdio.read_file(id->misc->ivend->config->root+"/notes/" + type +".txt");
+note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/" +
+type +".txt");
 if(note) {
 
   string subject,sender, recipient;
@@ -216,7 +226,19 @@ string retval="";
        "SELECT status FROM status WHERE name='Validated'");
    id->misc->ivend->db->query("UPDATE payment_info SET status=" + 
        r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
-			    
+
+   array r=id->misc->ivend->db->query(
+       "SELECT status.name, orders.status from status, orders "
+	"WHERE status.status=orders.status and orders.id= '" +
+	id->variables->orderid + "'");  
+   if(r[0]->name=="Error"){
+       array r1=id->misc->ivend->db->query( 
+	"SELECT status FROM status WHERE name='In Progress' "
+	"AND tablename='orders'");
+       id->misc->ivend->db->query("UPDATE orders SET status=" + 
+	 r1[0]->status + ",updated=NOW() WHERE id='" +
+	id->variables->orderid + "'"); 
+	}
 
  } 
 
@@ -226,6 +248,13 @@ string retval="";
        "SELECT status FROM status WHERE name='Rejected'");
    id->misc->ivend->db->query("UPDATE payment_info SET status=" + 
        r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
+
+   array r=id->misc->ivend->db->query(
+       "SELECT status FROM status WHERE name='Error'");
+   id->misc->ivend->db->query("UPDATE orders SET status=" + 
+       r[0]->status + " WHERE id='" + id->variables->orderid+"'");
+
+   
 
    send_notification(id, id->variables->orderid, "rejpay");
 
@@ -246,7 +275,7 @@ string retval="";
       "SELECT status FROM status WHERE name='Shipped' AND tablename='orders'"
       );
 
-
+int shipped_some=0;
      if(id->variables->doship=="Ship Selected") {
 
        foreach(indices(id->variables), string v)
@@ -259,6 +288,7 @@ string retval="";
          "SELECT * FROM orderdata WHERE orderid='" + 
 	 id->variables->orderid + "' AND id='" + t[0] + "' AND series=" +t[1]);
        foreach(o, mapping l){
+         shipped_some=1;
 	 string query="INSERT INTO shipments VALUES('" + id->variables->orderid
 	 +"','" + l->id + "'," + l->series + "," + l->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
@@ -281,7 +311,6 @@ string retval="";
 	 id->misc->ivend->db->query(query);
        }
      
-       send_notification(id, id->variables->orderid, "ship");
 
      }
      
@@ -294,16 +323,20 @@ string retval="";
 	     id->variables->orderid +"'");
 	 id->misc->ivend->db->query("UPDATE orders SET status=" + r[0]->status
 	   + ", updated=NOW() WHERE id='" + id->variables->orderid + "'");    
-
+// send note confirming shipment.
+       send_notification(id, id->variables->orderid, "ship");
+	id->misc->ivend->this_object->trigger_event("ship",id,(["orderid":id->variables->orderid]));
        }
 
-     else {
+     else if(shipped_some){
        array r=id->misc->ivend->db->query( 
-	"SELECT status FROM status WHERE name='PShipped' "
+	"SELECT status FROM status WHERE name='Partially Shipped' "
 	"AND tablename='orders'");
        id->misc->ivend->db->query("UPDATE orders SET status=" + 
 	 r[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
+	id->misc->ivend->this_object->trigger_event("pship",id,
+		(["orderid": id->variables->orderid]));
      }
 
 
@@ -331,23 +364,20 @@ if(id->variables->delete){
 }
 
 else if(id->variables->orderid) {
-  /*
-    retval+="<a href=./orders?fprint=1&orderid="+ id->variables->orderid+">"
-    "Display for Printing</a><p>";
 
-  */
-
+if(!id->variables->print)
   retval+="<form action=\"./orders\" method=post>\n"
     "<input type=hidden name=orderid value=\"" + 
     id->variables->orderid + "\">\n";
 
   retval+=show_orderdetails(id->variables->orderid, s, id);
-
+if(!id->variables->print)
   retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
     "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; "
     "<input type=submit name=doship value=\"Ship All\"> &nbsp; "
-    "<input type=submit name=doship value=\"Ship Selected\">"
+    "<input type=submit name=doship value=\"Ship Selected\"> &nbsp; "
+    "<input type=submit name=print value=\"Format for Printing\">"
     "</form>";
     }
 
@@ -393,7 +423,7 @@ string|int show_orderdetails(string orderid, object s, object id){
 
 string retval="";
 
-  array r=s->query("SELECT id, status.name as status, "
+  array r=s->query("SELECT id, status.name as status, status.status as status_code, "
 //	"DATE_FORMAT(updated, 'm/d/y h:m') as "
 	"updated, "
 //	"DATE_FORMAT(created, 'm/d/y h:m') as "
@@ -404,6 +434,14 @@ string retval="";
   if(sizeof(r)!=1) retval="Error finding the requested record.\n";
 
   else {
+  if(r[0]->status_code=="0") {
+       array r1=id->misc->ivend->db->query( 
+	"SELECT status FROM status WHERE name='In Progress' "
+	"AND tablename='orders'");
+       id->misc->ivend->db->query("UPDATE orders SET status=" + 
+	 r1[0]->status + ",updated=NOW() WHERE id='" +
+	id->variables->orderid + "'"); 
+	}
 
 	retval+=create_panel("Order Details","hunter","<table width=100%>"
 	"<tr><td><font face=helvetica>"

@@ -24,7 +24,6 @@ constant module_type="checkout";
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
-object ivend;
 
 void load_lineitems(object id){
 
@@ -162,8 +161,8 @@ foreach(({"customer_info","payment_info","lineitems"}), string t)
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-ivend->trigger_event("confirmorder", id, (["orderid":
-	id->misc->ivend->orderid]));
+id->misc->ivend->this_object->trigger_event("confirmorder", id,
+(["orderid": id->misc->ivend->orderid]));
 
 // do we send a confirmation note? if so, do it.
 
@@ -186,6 +185,7 @@ if(note) {
 				     "Subject":subject
 				     ]));
 
+  perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
    perror("Error sending confirmation note for " +
@@ -281,7 +281,7 @@ else {
 
   r=id->misc->ivend->db->query(query);
   if(sizeof(r)==1) {
-    if(id->misc->ivend->config->shipping_taxable=="Yes")
+    if(id->misc->ivend->config->general->shipping_taxable=="Yes")
       totaltax=(float)r[0]->taxrate *
         (float)((id->misc->ivend->lineitems->taxable +
          id->misc->ivend->lineitems->shipping) || 0.00);
@@ -334,7 +334,7 @@ if(!args->noflush)
 if(args->encrypt){	// handle encrypting of records...
   array toencrypt=(lower_case(args->encrypt)-" ")/",";
   string key;
-  catch(key=Stdio.read_file(id->misc->ivend->config->publickey));
+  catch(key=Stdio.read_file(id->misc->ivend->config->general->publickey));
   if(key)
   foreach(toencrypt, string encrypt){
     if(id->variables[encrypt])
@@ -385,7 +385,6 @@ return "";
 
 mixed checkout(string p, object id, object this_object){
 
-ivend=this_object;
 id->misc->ivend->checkout=1;
 
 string retval=
@@ -522,7 +521,7 @@ string h;
 
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
-
+if(!args->quiet)
 contents="<form action=\"" + id->not_query + "\">\n<input type=hidden name=_page "
   "value=" + (id->misc->ivend->next_page || "2") + ">\n"
   +contents+ "</form>\n";

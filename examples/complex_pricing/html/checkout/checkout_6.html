@@ -1,38 +1,43 @@
 <use file="../store_package">
 <page title="Checkout">
 <checkout>
-<addentry encrypt=card_number>
+<cardcheck>
+<addentry>
 <font size=+2>5. Confirm Order</font>
-<table>
+<table width=95%>
 <tr>
-<th align=left>Quantity</th>
-<th align=left>Product Name</th>
-<th align=left>Unit Price</th>
-<th align=left>Subtotal</th>
+<th bgcolor=maroon align=left width=10%><font
+face=helvetica,arial color=white>Quantity</th>
+<th bgcolor=maroon align=left width=50%><font 
+face=helvetica,arial color=white>Product Name</th>
+<th bgcolor=maroon align=left width=20%><font 
+face=helvetica,arial color=white>Unit Price</th>
+<th bgcolor=maroon align=left width=20%><font 
+face=helvetica,arial color=white>Subtotal</th>
 </tr>
 <showorder fields="name">
 <tr>
 <td> &nbsp; </td>
 <td> &nbsp; </td>
-<td align=right>Subtotal:</td>
+<td align=right><b>Subtotal:</b></td>
 <td align=right><subtotal></td>
 </tr>
 <tr>
 <td> &nbsp; </td>
 <td> &nbsp; </td>
-<td align=right><shippingtype>:</td>
+<td align=right><b><shippingtype>:</b></td>
 <td align=right><shippingcost></td>
 </tr>
 <tr>
 <td> &nbsp; </td>
 <td> &nbsp; </td>
-<td align=right>Sales Tax:</td>
+<td align=right><b>Sales Tax:</b></td>
 <td align=right><salestax></td>
 </tr>
 <tr>
 <td> &nbsp; </td>
 <td> &nbsp; </td>
-<td align=right>Grand Total:</td>
+<td align=right><b>Grand Total:</b></td>
 <td align=right><grandtotal></td>
 </table>
 

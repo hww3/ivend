@@ -244,9 +244,9 @@ string archive_orders(string mode, object id){
 
   array orders_to_archive=DB->query("SELECT * FROM orders WHERE "
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
-  retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p>";
+  retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p><pre>";
   foreach(orders_to_archive, mapping or){
-// perror(sprintf("%O", or));
+retval+="#Order " + or->id + "\n";
 // retval+="Records for " + or->id+ "<br>";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info"});
@@ -259,7 +259,11 @@ string archive_orders(string mode, object id){
       array dl=({});
         foreach(fields, mapping f){
 	  fl+=({f->name});
+	if(f->type=="decimal" || f->type=="float" || f->type=="integer" ||
+		f->type=="long" || f->type=="double" || f->type=="longdouble")
 	  dl+=({DB->quote(row[f->name])});
+	else
+	  dl+=({"'"+DB->quote(row[f->name]) + "'"});
 	}
         retval+="INSERT INTO " + t + " (" + (fl*",") + ") VALUES("
 	+ (dl*",")  +")\n";
@@ -267,6 +271,8 @@ string archive_orders(string mode, object id){
       
       }
     }
+
+  retval+="</pre>\n";
 
  }
 

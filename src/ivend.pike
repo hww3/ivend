@@ -952,7 +952,8 @@ mixed handle_cart(string filename, object id, object this_object){
 string container_itemoutput(string name, mapping args,
                             string contents, object id) {
    string page=(args->item || id->misc->ivend->page);
-   string type=(args->type || id->misc->ivend->type || "product");
+   string type=lower_case(args->type || id->misc->ivend->type ||
+"product");
    string item=(args->item || id->misc->ivend->page);
 
    mixed o_page=id->misc->ivend->page;
@@ -967,7 +968,7 @@ string container_itemoutput(string name, mapping args,
 
    string q="SELECT *" + (args->extrafields?"," +
                           args->extrafields:"") +" FROM " +
-            type + "s WHERE " +
+            lower_case(type) + "s WHERE " +
             KEYS[type + "s"] 
             +"='"+ item +"'";
 
@@ -989,7 +990,7 @@ string container_itemoutput(string name, mapping args,
          r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
 
    }
-   retval=parse_html(do_output_tag( ([]), ({ r[0] }), contents, id ),
+   retval=parse_html(do_output_tag( args, ({ r[0] }), contents, id ),
 (["ivmg":tag_ivmg]),([]),id); 
    id->misc->ivend->page=o_page;
    id->misc->ivend->item=o_item;

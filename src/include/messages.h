@@ -49,3 +49,5 @@
 
 #define ITEM " item "
 #define ERROR_ADDING_ITEM "Error adding item"
+
+#define MONETARY_UNIT "$"

@@ -26,7 +26,8 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.69 1998-05-27 13:09:45 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.69 1998/05/27 13:09:45 hww3
+Exp $";
 
 array register_module(){
 
@@ -318,11 +319,11 @@ if(id->variables->update) {
 
 	  r[i]->price=convert((float)r[i]->price,id);
 
-	retval+="<td align=right>"
-	+sprintf("$%.2f",(float)r[i]->price)+"</td>\n"
+	retval+="<td align=right>" + MONETARY_UNIT +
+	+sprintf("%.2f",(float)r[i]->price)+"</td>\n"
 	"<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
-        r[i]->quantity+"></td><td align=right>"
-	+sprintf("$%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";
+        r[i]->quantity+"></td><td align=right>" + MONETARY_UNIT 
+	+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"" 

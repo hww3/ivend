@@ -9,6 +9,8 @@
 
 class config {
 
+inherit "html";
+
 
 mapping (string:mixed) config_setup=([]);
     array config_order=({});
@@ -65,7 +67,7 @@ m+=([name:desc]);
         return m;
     }
 
-    string|int vgenform(void|mapping config, void|string lang, void|string
+    string|int genform(void|mapping config, void|string lang, void|string
 moddir){
         if(!lang) lang="en";
         if(!config) config=([]);

@@ -1,5 +1,14 @@
 THIS DOCUMENT DESCRIBES IVEND SPECIFIC MARKUP TAGS AND CONTAINERS.
 
+<IVML>..</
+<HTML>..</
+
+The IVML and HTML containers are interchangable. They are the master containers that enable parsing of all other iVend tags. Each page within a store should contain the HTML/IVML container. All attributes are passed through the HTML/IVML container.
+
+ATTRIBUTES
+
+QUIET do not output HTML container. Only return the parsed contents of the container. (Optional)
+EXTRAFIELDS 
 
 <ICART>..</
 
@@ -23,7 +32,7 @@ Generates and responds to requests to add items to the session cart.
 
 This tag has two modes: generate and respond. To add an item, you must generate a request, then respond to that request. These two actions may occur on the same page, or a request generated on one page may be responded to on another. Multiple items may be added at one time. See the examples below for more details.
 
-You do not have to use this tag to generate a request; a properly formatted form submission to a page with a listening <additem> tag will also work for this purpose.
+You do not have to use this tag to generate a request; a properly formatted form submission to a page with a listening <additem> tag will also work for this purpose. If you place multiple <additem> tags on one page, the first <additem> tag only will add the items.
 
 If no arguments are supplied to this tag, <additem> will respond to requests only. A tag set to generate the request may also respond, allowing items to be added to the cart without requiring a visit to a different page.
 
@@ -112,7 +121,7 @@ will generate a series of item listings that contain all products in group PRODG
 
 <LISTITEMS>
 
-Generates lists of items (product or group) formatted for display and browsing.
+Generates lists of items (product or group) formatted for display and browsing. If the query returns no items, a <FALSE> tag is returned, allowing use of the <ELSE>..</ container.
 
 ATTRIBUTES
 HEADLINEBGCOLOR	Specifies the background color of the title bar. (Optional)
@@ -167,12 +176,14 @@ FIELD If specified, will return the image attached to field VALUE for the curren
 SRC If specified, will return the image VALUE located in the directory $STOREROOT/html/images/. (Optional)
 
 
-form
-ivindex
+<FORM>..</
+
+The <FORM>..</ container has been modified to provide session tracking capabilities. All arguments to the form container are passed through to the browser.
+
 category_output
 itemoutput
 
-ivml/html
+ivindex
 
 itemoptions
 shipping

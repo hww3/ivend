@@ -819,9 +819,12 @@ record[r[i]->name] ||"", r[i]->length)
 
 
 array(mapping(string:mixed)) r=list_fields(table);
-        for (int i=0; i<sizeof(r); i++)
+        for (int i=0; i<sizeof(r); i++){
+	    if(record[r[i]->name])
+		record[lower_case(r[i]->name)]=record[r[i]->name];
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
-
+		}
+perror(sprintf("%O", record));
         if(exclude)
             for(int i=0; i<sizeof(exclude); i++)
                 exclude[i]=lower_case(exclude[i]);

@@ -468,9 +468,21 @@ string tag_generateform(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
   return "<!-- skipping generateform because of errors.-->";
-
+mapping record;
 string retval="";
 if(!args->table) return "";
+
+if(args->autofill) {
+ array r;
+ r=DB->query("SELECT * FROM " + lower_case(args->table) + " WHERE "
+	"orderid='" + id->misc->ivend->SESSIONID + "'" +
+ (args->type?" AND type='"+ args->type + "'":"") ) ;
+
+ if(r && sizeof(r)==1){
+  record=r[0];
+  perror("got a record...");
+  }
+}
 
  retval+=id->misc->ivend->db->generate_form_from_db(args->table,
     ((
@@ -481,7 +493,7 @@ if(!args->table) return "";
      ( (
       ((args->hide||" ")-" ") /",")
       ||({})) 
-     ),id,(( ((args->pulldown||" ")-" ")/",")||({})))+
+     ),id,(( ((args->pulldown||" ")-" ")/",")||({})), record)+
         "<input type=hidden name=table value=\""+args->table+"\">";
 retval+="<input type=hidden name=aeexclude value=\""+((args->exclude||" ")-" ")
   + "\">\n";
@@ -569,7 +581,9 @@ mixed checkout(string p, object id){
 perror("checkout: "+ p + "\n");
 
 id->misc->ivend->checkout=1;
-
+if(id->variables->_backup  && id->variables->_page)
+  id->variables->_page=(int)(id->variables->_page)-2;
+  if((int)(id->variables->_page) < 1) id->variables->_page=1;
 string retval=
   Stdio.read_file(id->misc->ivend->config->general->root +
     "/html/checkout/checkout_"+ (id->variables["_page"] || "1") +

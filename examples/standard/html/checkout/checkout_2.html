@@ -13,10 +13,11 @@ Your email address will be checked for validity after you press
 <checkout>
 <table>
 <generateform table=customer_info hide="orderid,type,updated"
-pulldown="state">
+pulldown="state" autofill="1" type="0">
 </table>
 <input type=hidden name=orderid value="<sessionid>">
 <input type=hidden name=type value=0>	
+<input type=submit name="_backup" value=" Back Up "> 
 <input type=submit value=" Continue ">
 </checkout>
 </page>

@@ -132,14 +132,22 @@ return retval;
 
 string action_dropdown(string mode, object id){
   string retval="";
+  if(id->variables->commit){
+   object privs=Privs("iVend: Copying store files ");
+   rm(CONFIG->root + "/db/" + id->variables->edit);
+   Stdio.write_file(CONFIG->root + "/db/" + id->variables->edit,
+	id->variables->contents);
+   privs=0;
+   }
   if(!id->variables->edit){
     array f=get_dir(CONFIG->root + "/db");
     if(sizeof(f)>0)
       retval+="You have configured dropdown boxes for the following "
 	"Table : Fields:<p><ul>";
     foreach(f, string file){
+     if(file!="CVS")
       retval+="<li><a href=\"./?edit=" + file  + "\">" +
- 	replace((file-".val"),"_",":")+"</a>\n";
+ 	(file-".val")+"</a>\n";
     }
 
     if(sizeof(f)>0) retval+="</ul>";
@@ -152,6 +160,41 @@ string action_dropdown(string mode, object id){
 	+ "\">\n";
     string f=Stdio.read_file(CONFIG->root + "/db/" + id->variables->edit);
     retval+="<textarea name=contents rows=50 cols=10>" + f +
+	"</textarea>\n";
+    retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
+  }
+  return retval;
+}
+
+string action_template(string mode, object id){
+  string retval="";
+  if(id->variables->commit){
+   object privs=Privs("iVend: Copying store files ");
+   rm(CONFIG->root + "/templates/" + id->variables->edit);
+   Stdio.write_file(CONFIG->root + "/templates/" + id->variables->edit,
+	id->variables->contents);
+   privs=0;
+   }
+  if(!id->variables->edit){
+    array f=get_dir(CONFIG->root + "/templates");
+    if(sizeof(f)>0)
+      retval+="You have configured the following templates:<p><ul>";
+    foreach(f, string file){
+     if(file!="CVS")
+      retval+="<li><a href=\"./?edit=" + file  + "\">" +
+ 	(file-".val")+"</a>\n";
+    }
+
+    if(sizeof(f)>0) retval+="</ul>";
+    else retval+="You have not configured any dropdowns yet.<p>";
+  }
+  else { 
+    retval+="Editing " + id->variables->edit + ":<p>";
+    retval+="<form action=\"./\">\n"
+	"<input type=hidden name=edit value=\"" + id->variables->edit 
+	+ "\">\n";
+    string f=Stdio.read_file(CONFIG->root + "/templates/" + id->variables->edit);
+    retval+="<textarea name=contents rows=60 cols=10>" + f +
 	"</textarea>\n";
     retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
   }
@@ -432,6 +475,7 @@ return ([
 	"menu.main.Store_Maintenance.Reload_Store" : action_reloadstore,
 	"menu.main.Store_Maintenance.Preferences" : action_preferences,
 	"menu.main.Store_Administration.Drop_Down_Menus" : action_dropdown,
+	"menu.main.Store_Administration.Templates" : action_template,
 	"add.product.Item_Options":action_itemoptions,
 	"getmodify.product.Item_Options":action_itemoptions
 

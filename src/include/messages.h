@@ -7,6 +7,7 @@
 
 // iVend.pmod functions
 
+#define WORD_OPTIONS	"Options"
 #define REQUIRED	"*"
 #define GROUP		"Group"
 #define PRODUCTS	"Products"

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.210 1999-05-29 04:06:10 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.211 1999-06-03 14:13:04 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -565,7 +565,8 @@ mixed do_complex_items_add(object id, array items){
             perror("triggering an event, cp." + row->type + " for " + i->item +
                    "\n");
 trigger_event("cp." + row->type,id,(["item": i->item, "quantity":
-                                                 i->quantity]));
+                                                 i->quantity,
+"options": i->options]));
         }
         if(!COMPLEX_ADD_ERROR)
 trigger_event("additem",id,(["item": i->item, "quantity":
@@ -575,11 +576,20 @@ trigger_event("additem",id,(["item": i->item, "quantity":
     return 0;
 }
 
-mapping get_options(object id, string item)
+mapping get_options(object id, string item, string|void optstr)
   {
 	array opt=({});
 	array options=({});
 	float surcharge;
+if(optstr)
+{
+ array q=optstr/"\n";
+ foreach(q, string qt){
+   array v=qt/":";
+   if(sizeof(v)==2)
+   id->variables[v[0]]=v[1];
+ }
+}
         array types=DB->query("SELECT option_type FROM item_options "
 		"WHERE product_id='" + item + "' GROUP BY option_type");
 	foreach(types, mapping c){
@@ -653,14 +663,15 @@ mixed do_additems(object id, array items){
                                   "'")[0]->price;
 		array opt=({});
 		mapping o;
-		if(id->variables->options)
+	if(item->options) o=get_options(id, item->item, item->options);
+		else if(id->variables->options)
 		 o=get_options(id, item->item);
             //      price=convert((float)price,id);
 		if(o->surcharge)
 perror(o->surcharge +"\n");
 		 price=(float)price + (float)(o->surcharge);
 perror(price+"\n");
-if(item->options) o+=item->options;
+// if(item->options) o+=item->options;
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
         return;
@@ -733,7 +744,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
     }
 // madechange=0;
     if(madechange==1){
-        array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd, locked "
+        array r=DB->query("SELECT id, price, quantity, series, options, autoadd, locked "
                           " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");
         // perror(sprintf("%O", r));
         if(r && sizeof(r)>0) {
@@ -744,7 +755,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
                 if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
 		 continue;
 items+=({ (["item": row->id, "quantity": row->quantity, "options":
-            row->qualifier, "series": row->series, "locked": row->locked,
+            row->options, "series": row->series, "locked": row->locked,
 "autoadd": row->autoadd ]) });
             }
 //            perror(sprintf("%O", items));
@@ -760,7 +771,8 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
     if(catch(  array r= DB->query(
                                 "SELECT sessions." + KEYS->products +
                                 ",series,quantity,sessions.price, "
-				"sessions.locked, sessions.autoadd " +
+				"sessions.locked, sessions.autoadd, " 
+				"sessions.options " +
                                 extrafields+" FROM sessions,products "
                                 "WHERE sessions.SESSIONID='"
                                 +id->misc->ivend->SESSIONID+"' AND sessions."+
@@ -778,7 +790,10 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
     foreach(en, field){
         retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
     }
-    retval+="<th bgcolor=maroon><font color=white>&nbsp; "
+    retval+="<th bgcolor=maroon><font color=white>&nbsp; " + WORD_OPTIONS
++
+" &nbsp;</th>\n"
+	"<th bgcolor=maroon><font color=white>&nbsp; "
             + PRICE +" &nbsp;</th>\n"
             "<th bgcolor=maroon><font color=white>&nbsp; "
             + QUANTITY +" &nbsp;</th>\n"
@@ -798,6 +813,15 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
 
         //    r[i]->price=convert((float)r[i]->price,id);
 
+	retval+="<td align=left>";
+array o=r[i]->options/"\n";
+foreach(o, string opt){
+  array o_=opt/":";
+catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
+   "product_id='" + r[i][KEYS->products] + "' AND option_type='" +
+   o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description +"<br>");
+}
+	retval+="</td>\n";
         retval+="<td align=right>" + MONETARY_UNIT +
                 sprintf("%.2f",(float)r[i]->price)+"</td>\n"
                 "<TD><INPUT TYPE="+ (r[i]->locked=="1"?"HIDDEN":"TEXT") +

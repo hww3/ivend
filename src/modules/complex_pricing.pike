@@ -12,7 +12,8 @@ constant module_name = "Complex Pricing Routines";
 constant module_type = "addin";
 
 mapping complex_types=([ "Single Price": "single", 
-	"Buy X Get Y": "buyxgetx"]);
+	"Buy X Get Y": "buyxgetx",
+	"Graduated Price": "grad"]);
 
 void start(mapping config){
 object db;
@@ -29,6 +30,13 @@ if(sizeof(db->list_tables("cp_single"))<1)
    "minimum_quantity integer not null default 1, "
    "price decimal(10,2) not null)"))) 
     perror("An error occurred while creating table cp_single.\n");
+
+if(sizeof(db->list_tables("cp_grad"))<1)
+  if(catch(db->query("CREATE TABLE cp_grad ("
+   "product_id varchar(16) not null, "
+   "quantity integer not null default 1, "
+   "price decimal(10,2) not null)"))) 
+    perror("An error occurred while creating table cp_grad.\n");
 
 if(sizeof(db->list_tables("cp_buyxgetx"))<1)
   if(catch(db->query("CREATE TABLE cp_buyxgetx ("
@@ -79,7 +87,10 @@ while(quantity){ // loop through the offers until we have enough
       accepted_an_offer=1;
       quantity-=(int)(o->quantity_to_qualify);
   mapping op=([]);
-  if(id->variables->options){
+if(args->options){
+  op=T_O->get_options(id, item, args->options);
+}
+else  if(id->variables->options){
    op=T_O->get_options(id, item);
   }
 //  perror(o->surcharge + "\n");
@@ -113,7 +124,10 @@ void cpsingle(string event, object id, mapping args){
   // add the item.
   float price=((float)(r[0]->price)||0.00);
   mapping o=([]);
-  if(id->variables->options){
+if(args->options){
+  o=T_O->get_options(id, item, args->options);
+}
+else if(id->variables->options){
    o=T_O->get_options(id, item);
   }
   perror(o->surcharge + "\n");
@@ -148,6 +162,77 @@ for(int i=0; i<sizeof(r); i++){
   else
    retval+="<td align=center>" + r[i]->minimum_quantity + "-" +
     ((int)(r[i+1]->minimum_quantity)-1) + "</td>\n";  
+}
+retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
+ "<b>Price Each</b></td>\n";
+foreach(r, mapping row){
+  retval+="<td> &nbsp; " + MONETARY_UNIT + sprintf("%.2f", (float)(row->price)) +
+" &nbsp; </td>\n";  
+}
+
+ retval+="</tr></table>\n";
+
+return retval;
+
+}
+
+void cpgrad(string event, object id, mapping args){
+
+ string item=args->item;
+ int quantity=(int)(args->quantity);
+
+ array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" +
+  item + "' AND quantity <= " + quantity +
+  " ORDER BY quantity DESC");
+
+ if(!r || sizeof(r) < 1)
+   perror("Couldn't find a graduated price rule for " + item + "\n");
+ else {
+  mapping o=([]);
+if(args->options){
+  o=T_O->get_options(id, item, args->options);
+}
+else if(id->variables->options){
+   o=T_O->get_options(id, item);
+  }
+  perror(o->surcharge + "\n");
+  foreach(r, mapping row){
+   if((int)(row->quantity)>quantity) break;
+   else {
+    row->quantity_to_add=((int)(quantity))/((int)(row->quantity));
+    quantity-=((int)(row->quantity)*(int)(row->quantity_to_add));
+  if(o->surcharge) row->price=(float)(row->price) +(float)(o->surcharge);
+//  o->lock=1;
+// add the item.
+  int result=T_O->do_low_additem(id, item,
+        (int)(row->quantity_to_add)*(int)(row->quantity),
+	(float)(row->price), o);
+  if(!result) {
+   COMPLEX_ADD_ERROR=ADD_FAILED;
+   perror("An error occurred adding item: " + item + " price: " +
+    row->price + "\n");
+   }
+  }
+ }
+}
+ return;
+
+}
+
+mixed getprice_grad(object id, string item)
+{
+string retval="";
+
+array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + item + "' "
+ "ORDER BY quantity ASC");
+
+if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
+
+retval+="<table><tr>\n<td bgcolor=black><font color=white>"
+"<b>Quantity</b></td>\n";
+
+for(int i=0; i<sizeof(r); i++){
+   retval+="<td align=center>" + r[i]->quantity + "</td>\n";  
 }
 retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
  "<b>Price Each</b></td>\n";
@@ -254,6 +339,14 @@ if(v->delete){
 v->id + "'"))<1) DB->query("DELETE FROM complex_pricing WHERE product_id='" + v->id + "' AND type='" + v->cptype + "'");
    retval+="Rule Deleted.<br>\n";
    break; 
+   case "grad":
+   DB->query("DELETE FROM cp_grad WHERE product_id='" + v->id + "' AND "
+    "quantity=" + v->quantity );
+   if(sizeof(DB->query("SELECT * FROM cp_grad WHERE product_id='" +
+	v->id + "'"))<1) DB->query("DELETE FROM complex_pricing WHERE "
+	"product_id='" + v->id + "' AND type='" + v->cptype + "'");
+   retval+="Rule Deleted.<br>\n";
+   break; 
    case "buyxgetx":
    DB->query("DELETE FROM cp_buyxgetx WHERE product_id='" + v->id + "' AND " 
     "quantity_to_qualify=" + v->quantity_to_qualify + " AND quantity_to_get=" 
@@ -280,6 +373,18 @@ if(v->addnew){
     v->minimum_quantity + "," + v->price + ")");
    retval+="Rule Added Successfully.<br>\n";
    } else retval+="You must supply a Minimum Quantity and Price!<br>\n";
+
+   break;
+
+   case "grad":
+   if(v->quantity!="" && v->price!=""){
+   if(sizeof(DB->query("SELECT * FROM complex_pricing WHERE product_id='"
++ v->id + "' AND type='" + v->cptype + "'"))<1)
+   DB->query("INSERT INTO complex_pricing VALUES('" + v->id + "','grad',1)");
+   DB->query("INSERT INTO cp_grad VALUES('" + v->id + "'," +
+    v->quantity + "," + v->price + ")");
+   retval+="Rule Added Successfully.<br>\n";
+   } else retval+="You must supply a Quantity and Price!<br>\n";
 
    break;
 
@@ -319,6 +424,23 @@ v->id + "'"))<1)
     v->cptype + "&minimum_quantity=" + row->minimum_quantity +
     "&delete=1\">Delete</a></font></td></tr>\n";
    retval+="<tr><td><input type=text size=5 name=minimum_quantity>"
+    "</td><td><input type=text size=6 name=price></td><td>"
+    "<font size=1><input type=submit value=Add></font></td></tr></table>\n";
+  break;
+
+  case "grad":
+  array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + v->id +
+   "' ORDER BY quantity ASC");
+  retval+="<table><tr><th>Quantity</th><th>Price Each</th></tr>\n";
+  if(!r || sizeof(r)<1)
+   retval+="<tr><td colspan=3>No Rules Defined.</td></tr>\n";
+  else foreach(r, mapping row)
+   retval+="<tr><td>" + row->quantity + "</td><td>" +
+    sprintf("%.2f",(float)(row->price)) + "</td><td><font size=1>"
+    "<a href=\"./?id=" + v->id + "&type=" + v->type + "&cptype=" +
+    v->cptype + "&quantity=" + row->quantity +
+    "&delete=1\">Delete</a></font></td></tr>\n";
+   retval+="<tr><td><input type=text size=5 name=quantity>"
     "</td><td><input type=text size=6 name=price></td><td>"
     "<font size=1><input type=submit value=Add></font></td></tr></table>\n";
   break;
@@ -363,9 +485,29 @@ retval+="</font></body></html>";
 return retval;
 }
 
+void event_admindelete(string event, object id, mapping args){
+if(args->type=="product") {
+  DB->query("DELETE FROM complex_pricing WHERE product_id='" + args->id +
+"'");
+  DB->query("DELETE FROM cp_single WHERE product_id='" + args->id +
+"'");
+  DB->query("DELETE FROM cp_grad WHERE product_id='" + args->id +
+"'");
+  DB->query("DELETE FROM cp_buyxgetx WHERE product_id='" + args->id +
+"'");
+
+}
+return;
+
+}
+
+
 mapping query_event_callers(){
- return (["cp.single" : cpsingle,
-          "cp.buyxgetx" : cpbuyxgetx ]);
+ return ([ "admindelete" : event_admindelete,
+	"cp.single" : cpsingle,
+          "cp.buyxgetx" : cpbuyxgetx,
+	"cp.grad": cpgrad
+	]);
 }
 
 

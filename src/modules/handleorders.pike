@@ -85,6 +85,7 @@ else return "";
 }
 
 string|int gentable(object id, object s, string table, string ignore, void|int worrytype){
+
 string retval="";
 array r=DB->query("SELECT "+table+".*, type.name as type FROM "
 		+table+",type "
@@ -96,34 +97,33 @@ array f=DB->list_fields(table);
 if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " + 
 		   id->variables->orderid+"</b></i><p>\n";
 
-//  if(id->variables->print && table=="customer_info")
-//    retval+="<table valign=top align=left><tr>\n";
-
-
  foreach(r, mapping row){
+
    string d="<table width=100% valign=top>";
    string type=row->type;
    m_delete(row, "type");
-   foreach(f, mapping field){
-     if(field->name=="updated" || field->name=="type" || field->name=="orderid" || row[field->name]==ignore) continue;
-     d+="<tr><td width=30%><font face=helvetica>"+replace(field->name, "_"," ")+"</td><td>\n";
-     if(Regexp(".@.*\.*")->match((string)row[field->name]))
-       d+="<a href=\"mailto:"+row[field->name]+"\">"+
-	 row[field->name]+"</a></td></tr>\n";
-     else d+=row[field->name]+"</td></tr>\n";
+
+   if(id->variables->edit_data && id->variables->edit_data==type)
+	{
+	d+=DB->generate_form_from_db(table, ({}), id, ({}), row);
+	}
+   else 
+	{
+	   foreach(f, mapping field){
+	     if(field->name=="updated" || field->name=="type" || field->name=="orderid" || row[field->name]==ignore) continue;
+	     d+="<tr><td width=30%><font face=helvetica>"+replace(field->name, "_"," ")+"</td><td>\n";
+	     if(Regexp(".@.*\.*")->match((string)row[field->name]))
+	       d+="<a href=\"mailto:"+row[field->name]+"\">"+
+		 row[field->name]+"</a></td></tr>\n";
+	     else d+=row[field->name]+"</td></tr>\n";
+	}
    }
    d+="</table>";
-//  if(id->variables->print && table=="customer_info")
-//    retval+="<td>\n";
+
   retval+=create_panel(type, "navy", d, id);
-//  if(id->variables->print && table=="customer_info")
-//    retval+="</td>\n";
+
  }
 
-//  if(id->variables->print && table=="customer_info")  {
-
-//    retval+="</tr></table><p>\n";
-//  }
  return retval;
 
 }
@@ -962,6 +962,23 @@ string retval="";
 	(r[0]->notes||"")+"</pre></td></tr>\n"
 	"</table>"
 	"\n\n", id);
+
+//do we need to update customer info?
+
+if(id->variables->orderid) id->misc->ivend->orderid=id->variables->orderid;
+
+if(id->variables["commitci.x"]){ // commit the lineitem change
+
+  DB->query("UPDATE customer_info SET value=" +
+id->variables[id->variables->commit] + " WHERE orderid='" +
+id->variables->orderid + "' AND lineitem='" + id->variables->commit +
+"'");
+T_O->report_status("Changed Lineitem " + id->variables->commit + ": " +
+id->variables[id->variables->commit],
+                id->variables->orderid || "NA", "handleorders", id);
+
+ }
+
 
 	 // get address information...
 

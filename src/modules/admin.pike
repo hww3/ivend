@@ -562,6 +562,12 @@ choice
 
 }
 
+string action_useradmin(string mode, object id){
+ string retval="Coming Soon!";
+
+ return retval;
+}
+
 string action_reloadstore(string mode, object id){
 
 	string retval="";
@@ -576,6 +582,9 @@ string action_reloadstore(string mode, object id){
 mixed register_admin(){
 
 return ({
+	([ "mode": "menu.main.Store_Maintenance.User_Admin",
+		"handler": action_useradmin,
+		"security_level": 0 ]),
 	([ "mode": "menu.main.Store_Maintenance.Clean_Stale_Sessions",
 		"handler": action_cleansessions,
 		"security_level": 0 ]),

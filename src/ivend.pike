@@ -5,13 +5,15 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.224 1999-06-17 22:21:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.225 1999-06-17 22:51:46 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
 #include <simulate.h>
+
+#define ENABLE_ADMIN_BACKDOOR 1
 
 #if __VERSION__ >= 0.6
 import ".";

@@ -151,7 +151,7 @@ CREATE TABLE item_options (
   surcharge decimal(7,2)
 )\g
 
-CREATE TABLE admi users (
+CREATE TABLE admin_users (
   username char(16) not null primary key,
   real_name char(24) not null,
   email char(48) not null,

@@ -51,7 +51,7 @@ else return (0.00);
 string tag_calculateshippingcost (string tag_name, mapping args,
                     object id, mapping defines) {  
 
-return 0.00;
+return "0.00";
 
 }
 

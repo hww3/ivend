@@ -9,30 +9,7 @@ object u;	// The ups zone machine.
 
 int started;
 
-void start(mapping config){
-
-object db;
-
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
-    perror("iVend: UPSShipping: Error Connecting to Database.\n");
-if((sizeof(db->list_tables("shipping_ups")))==1);
-else
-  initialize_db(db);
-
-u=Commerce.UPS.zone();
-started=1;
-return;
-
-}
-
-void stop(mapping config){
-
-return;
-
-}
-
-int initialize_db(object db) {
+int initialize_db(object db, mapping config) {
 
   perror("initializing order total shipping module!\n");
 catch(db->query("drop table shipping_ups"));
@@ -44,10 +21,34 @@ catch(db->query(
   " zonefile char(12) NOT NULL, "
   " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
   " ) "));
-rm(CONFIG->general->root + "/db/shipping_ups_chargetype.val");
-catch(Stdio.write_file(CONFIG->general->root +
+rm(config->general->root + "/db/shipping_ups_chargetype.val");
+catch(Stdio.write_file(config->general->root +
   "/db/shipping_ups_chargetype.val","Cash\nPercentage\n")); 
 return 0;
+
+}
+
+
+void start(mapping config){
+
+object db;
+
+if(catch(db=iVend.db(config->general->dbhost, config->general->db,
+  config->general->dblogin, config->general->dbpassword)))
+    perror("iVend: UPSShipping: Error Connecting to Database.\n");
+if((sizeof(db->list_tables("shipping_ups")))==1);
+else
+  initialize_db(db, config);
+
+u=Commerce.UPS.zone();
+started=1;
+return;
+
+}
+
+void stop(mapping config){
+
+return;
 
 }
 
@@ -85,12 +86,12 @@ string addrange(string type, object id){
 
 
 
-string show_type(string type, object id){
+string showtype (object id,mapping row){
 
   string retval="";
 
   array r=id->misc->ivend->db->query("SELECT * FROM shipping_ups WHERE type="
-                                     + type + " ORDER BY type");
+                                     + row->type + " ORDER BY type");
   if(sizeof(r)<1)
     retval+="<ul><font size=2><b>No Rules exist for this "
       "shipping type.</b></font><table>\n";    
@@ -109,7 +110,7 @@ string show_type(string type, object id){
 
 
   }
-  retval+=addrange(type, id) + "</ul>";
+  retval+=addrange(row->type, id) + "</ul>";
 
   return retval;
 
@@ -176,7 +177,7 @@ string retval="";
 	row->type +">Delete"+"</a> )"
         "<dd>"+ row->description+"</font>\n\n";
       if (row->type==id->variables->viewtype || id->variables->showall=="1")
-	retval+=show_type(row->type, id);
+	retval+=showtype(id, row->type);
 
     }
     retval+="</ul><font size=2><a href=shipping?addtype=1>"

@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.48 1998-04-12 04:23:00 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.49 1998-04-12 22:38:23 hww3 Exp $";
 
 array register_module(){
 
@@ -101,12 +101,13 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-int load_ivmodule(string name){
+int load_ivmodule(string c, string name){
 
 modules+=([ name :
     (object)clone(compile_file(query("root")+"/modules/"+
     name)) ]);
-
+if(objectp(modules[name]) && functionp(modules[name]->start))
+  modules[name]->start(config[c]);
 return 1;
 
 }
@@ -513,15 +514,20 @@ for (int i=0; i<sizeof(config_file);i++){
 
 		}
 	}
-
+perror("moving globals...\n");
+global=config["global"];
+m_delete(config,"global");
 }
 
 
+
 void load_modules(string c){
+if(!c) return;
+if(!config[c]) return;
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
       perror("loading module " + config[c][n] + "\n");
-      load_ivmodule(config[c][n]);
+      load_ivmodule(c, config[c][n]);
       }
   return;
 }
@@ -714,23 +720,33 @@ return retval;
 
 
 mapping write_configuration(object id){
-
+perror("write_configuration()\n");
 string config_file="";
 
 array(string) configs= indices(config);
-
-for(int i=0; i<sizeof(config); i++){
+configs+=({"global"});
+array(string) this_config;
+for(int i=0; i<sizeof(configs); i++){
 	
-	config_file+="start "+ configs[i] +"\n";
-	array(string) this_config= indices(config[configs[i]]);
+  config_file+="start "+ configs[i] +"\n";
+  if(configs[i]=="global") {
+    perror("GLOBAL!\n");
+    this_config= indices(global);
+    }
+  else
+    this_config= indices(config[configs[i]]);
 	
-	for(int j=0; j<sizeof(this_config); j++){
+  for(int j=0; j<sizeof(this_config); j++){
 	
-		config_file+="$" +this_config[j]+ "=" + config[configs[i]][this_config[j]] + "\n";
-		
-		}
-	config_file+="\n";
-	}
+    if(configs[i]=="global")
+      config_file+="$" +this_config[j]+ "=" +
+       global[this_config[j]] + "\n";
+    else
+      config_file+="$" +this_config[j]+ "=" +
+        config[configs[i]][this_config[j]] + "\n";
+    }
+  config_file+="\n";
+  }
 	
 config_file+="end\n";
 
@@ -1316,14 +1332,16 @@ mixed find_file(string file_name, object id){
   string retval;
 
   array(string) request=(file_name / "/") - ({""});
-
+  if(catch(request[0])) request+=({""});
   switch(request[0]){
 	
     case "config":
+    request=request[1..];
     return configuration_interface(request, id);
     break;
 		
     case "ivend-image":
+    request=request[1..];
     return ivend_image(request, id);
     break;
 		
@@ -1337,9 +1355,9 @@ mixed find_file(string file_name, object id){
 
   if(sizeof(config)==1 && getglobalvar("move_onestore")=="yes") 
     id->misc->ivend->st=indices(config)[0];
-  else  if(sizeof(request)==0 && getglobalvar("create_index")=="yes")
+  else  if(sizeof(request)==1 && getglobalvar("create_index")=="yes")
     retval=create_index(id);
-  else if(sizeof(request)==0)
+  else if(sizeof(request)==1)
     retval="you must enter through a store!\n";
   else {
     id->misc->ivend->st=request[0];
@@ -1377,7 +1395,7 @@ mixed find_file(string file_name, object id){
   switch(request[0]) {
     case "":
       return http_redirect(id->not_query +
-        "/index.html?SESSIONID="+getsessionid(id), id);
+        "index.html?SESSIONID="+getsessionid(id), id);
     case "index.html":
     retval=(handle_page("index.html", id));
     break;

@@ -43,8 +43,8 @@ handlers=([]);
 
 perror(sprintf("%O\n", config));
 
-if(catch(db=iVend.db(config->dbhost, config->db,
-  config->dblogin, config->dbpassword)))
+if(catch(db=iVend.db(config->general->dbhost, config->general->db,
+  config->general->dblogin, config->general->dbpassword)))
   {
     perror("iVend: Shipping: Error Connecting to Database.\n");
     return;
@@ -112,7 +112,7 @@ if(sizeof(DB->list_tables("shipping_types"))!=1)
   "  module varchar(32),"
   "  PRIMARY KEY (type)"
   ") "));
-start(CONFIG->general);
+start(CONFIG);
 return 0;
 
 }

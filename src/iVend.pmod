@@ -400,7 +400,13 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
             catch(jointable=id->variables[id->variables->jointable]/"\000");
             if(jointable)
                 for(int i=0; i<sizeof(jointable); i++){
-                    q="REPLACE INTO "
+                    q="DELETE FROM "
+                      + id->variables->joindest +" WHERE product_id='"+
+			+id->variables[lower_case(KEYS[id->variables->table])]+"'";
+                    if(catch(query(q)))
+			return ({sqlconn::error() || "You have provided invalid data."});
+                
+                    q="INSERT INTO "
                       + id->variables->joindest +" VALUES('"+
                       jointable[i]+ "','"
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.268 2000-07-20 17:24:48 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.269 2000-07-25 18:13:06 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2647,7 +2647,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
 
              mixed find_file(string file_name, object id){
-
+// perror("request: " + file_name + "\n");
                  id->misc["ivend"]=([]);
                  id->misc["ivendstatus"]="";
                  mixed retval;
@@ -2728,7 +2728,10 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  if(!retval)
                      switch(request[0]) {
                      case "":
-                         request=({"index.html"});
+string rx=replace((id->not_query + "/index.html" +
+	(id->query?("?"+id->query):"")),"//","/");
+// perror("redirecting to: " + rx + "\n");
+return http_redirect(rx, id);
                      default:
                          retval=(handle_page(request*"/", id));
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.236 1999-08-03 18:42:28 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.237 1999-08-04 17:45:12 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -605,8 +605,8 @@ mixed do_complex_items_add(object id, array items){
         if(!r || sizeof(r)<1)
             perror("No Pricing Configuration for " + i->item + ".\n");
         foreach(r, mapping row) {
-            perror("triggering an event, cp." + row->type + " for " + i->item +
-                   "\n");
+//            perror("triggering an event, cp." + row->type + " for " +
+// i->item + "\n");
 trigger_event("cp." + row->type,id,(["item": i->item, "quantity":
                                                  i->quantity,
 "options": i->options]));
@@ -912,7 +912,7 @@ string tag_additem(string tag_name, mapping args,
 
     if(args->item) {
         if(!args->noform)
-            retval="<form action=" + id->not_query + ">";
+            retval="<form action=\"" + (args->action||id->not_query) + "\">";
         if(!args->silent){
             if(args->showquantity)
                 retval+=QUANTITY +": <input type=text size=2 value=" +(args->quantity
@@ -1027,13 +1027,22 @@ string tag_generateviews(string tag_name, mapping args,
                          object id, mapping defines)
 {
 
+    if(!args->type || !args->field) 
+	return "<!-- required attributes are not present. -->\n";
+    args->type=lower_case(args->type);
+
     string retval="";
+    if(catch(
     array r = DB->query("SELECT " + args->field + " FROM "
                         + args->type + ", product_groups WHERE product_groups.product_id="
                         + args->type + "." +  KEYS[args->type] + " AND "
                         + args->type + ".status='A'"
                         " AND product_groups.group_id= '" + id->misc->ivend->page + "' "
-                        " GROUP BY " + args->field);
+                        " GROUP BY " + args->field)))
+	{
+	error(DB->error(), id);
+	return "";
+	}
 
     if(sizeof(r) == 0)
         r=({([])});

@@ -161,15 +161,15 @@ object s;
 
 if(v->deletedb=="Yes"){
 
-s->select_db(general->db);
+catch(s->select_db(general->db));
 catch(s->query("REVOKE ALL ON " + general->db + " FROM " + v->__name));
 catch(s->query("REVOKE ALL ON " + general->db + " FROM " + v->__name +
 "admin"));
 if(catch(s->drop_db(general->db)))
-  return "An error occurred while dropping the store database. "
+  retval+= "An error occurred while dropping the store database. "
 	"This usually means that either 1) the database doesn't exist, "
 	"or 2) the db administrator account does not have permission to "
-	"drop databases.";
+	"drop databases.<p>";
 }
 retval+="<b><font face=+1>Store Deleted Successfully.</b><p></font>";
 

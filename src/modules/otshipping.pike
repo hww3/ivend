@@ -62,6 +62,31 @@ string addtype(object id){
 }
 
 
+string addrange(string type, object id){
+
+  string retval="<form action="+id->not_query +"><tr></tr>\n"+
+    "<tr><td><font face=helvetica><b>From $</b></font></td>\n"
+    "<td><font face=helvetica><b>To $</b></font></td>\n"
+    "<td><font face=helvetica><b>Charge</b></font></td></tr>\n"
+    "<tr><td><input type=text size=10 name=min></td>\n"
+    "<td><input type=text size=10 name=max></td>\n"
+    "<td><input type=text size=10 name=charge></td>\n"
+    "</tr></table><input type=hidden value="+ type+ " name=type>"
+    "<input type=hidden name=doaddrange value=1>"
+    "<input type=submit value=Add>";
+
+  foreach(({"viewtype","showall"}), string var)
+    retval+="<input type=hidden name=" + var + " value=" + 
+	  id->variables[var] + ">\n";
+
+  retval+="</form>";
+
+  return retval;
+
+}
+
+
+
 string show_type(string type, object id){
 
   string retval="";
@@ -87,29 +112,6 @@ string show_type(string type, object id){
 
   }
   retval+=addrange(type, id) + "</ul>";
-
-  return retval;
-
-}
-
-string addrange(string type, object id){
-
-  string retval="<form action="+id->not_query +"><tr></tr>\n"+
-    "<tr><td><font face=helvetica><b>From $</b></font></td>\n"
-    "<td><font face=helvetica><b>To $</b></font></td>\n"
-    "<td><font face=helvetica><b>Charge</b></font></td></tr>\n"
-    "<tr><td><input type=text size=10 name=min></td>\n"
-    "<td><input type=text size=10 name=max></td>\n"
-    "<td><input type=text size=10 name=charge></td>\n"
-    "</tr></table><input type=hidden value="+ type+ " name=type>"
-    "<input type=hidden name=doaddrange value=1>"
-    "<input type=submit value=Add>";
-
-  foreach(({"viewtype","showall"}), string var)
-    retval+="<input type=hidden name=" + var + " value=" + 
-	  id->variables[var] + ">\n";
-
-  retval+="</form>";
 
   return retval;
 

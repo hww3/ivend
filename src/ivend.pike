@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.8 1998-01-07 22:08:21 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.9 1998-01-07 23:30:37 hww3 Exp $";
 
 /*
  *
@@ -134,8 +134,17 @@ mixed handle_search(object id){
 return "";
 }
 
-int clean_sessions(int timeout){
-
+int clean_sessions(object id){
+string st=id->misc->ivend->st;
+object s=Sql.sql(
+	config[st]->dbhost, 
+	config[st]->db, 
+	config[st]->user, 
+	config[st]->password
+	);
+string query="DELETE FROM sessions WHERE timeout < "+time(0);
+s->query(query);
+perror(query);
 return 0;
 }
 
@@ -171,6 +180,11 @@ if (args->add)
 else if(args->cart)
   return "<a _parsed=1 href=\""+query("mountpoint")+
   id->misc->ivend->st+"/cart?SESSIONID="
+  +id->variables->SESSIONID+
+  "\">"+contents+"</a>";
+else if(args->checkout)
+  return "<a _parsed=1 href=\""+query("mountpoint")+
+  id->misc->ivend->st+"/checkout?SESSIONID="
   +id->variables->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->href){
@@ -414,8 +428,11 @@ void start(){
 }
 
 mixed handle_error(string error, object id){
-string retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml");
-perror("ERROR~!");
+string retval;
+if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml")))
+  retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
+	"The following error has occurred:<p><error><p>\n"
+	"Please contact the administrator for assistance.";
 return replace(retval,"<error>",error);
 
 // return "error!  "+page+" in "+st;
@@ -519,8 +536,11 @@ config[id->misc->ivend->st]->db,
 
 int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID="+
   id->variables->SESSIONID+" AND id='"+item+"'"));
-if(catch(s->query("INSERT INTO sessions VALUES("+ id->variables->SESSIONID+
-  ",'"+item+"',1,"+(max+1)+",'Standard')") ))
+string query="INSERT INTO sessions VALUES("+ id->variables->SESSIONID+
+  ",'"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
+  (int)id->misc->ivend->config->session_timeout)+"')";
+perror(query+"\n");
+if(catch(s->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
   id->misc["ivendstatus"]+=("Item "+item+ " added successfully.\n"); 
@@ -947,16 +967,23 @@ switch(id->variables->mode){
       "Product &nbsp; <input type=radio name=type value=group>\n"
       "Group<p>"
       "<input type=submit value=Delete>\n</form>";
-    
   break;
+
+  case "clearsessions":
+  clean_sessions(id);	
+  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
+	"Return to Administration Menu.</a>\n";
+  break;
+
   default:
   retval+= "<ul>\n"
     "<li><a href=admin?mode=orders>Orders</a>\n"
-    "</ul><br>\n"
+    "</ul>\n"
     "<ul>\n"
     "<li><a href=\"admin?mode=addproduct\">Add New Product</a>\n"
     "<li><a href=\"admin?mode=addgroup\">Add New Group</a>\n"
-    "<li><a href=\"admin?mode=delete\">Delete a Product/Group</a>\n";
+    "<li><a href=\"admin?mode=delete\">Delete a Product/Group</a>\n"
+    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n";
 
 
 

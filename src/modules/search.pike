@@ -168,7 +168,7 @@ perror("found " + sizeof(k) + " searchable words.\n");
 // are we left with any good words?
 if(sizeof(k)<1) return "No searchable words supplied for search. Please try again with more specific words.";
 
-string query="SELECT id, type, (sum(occ)*count(id)) as occ, word FROM searchwords WHERE ";
+string query="SELECT id, type, (sum(occ)*count(id)*(length(word)*1.1)) as occ, word FROM searchwords WHERE ";
 array qp=({});
 foreach(k, string word) {
   if(word[0..0]=="+") word=word[1..];

@@ -227,6 +227,10 @@ if(note) {
 
 string show_orders(string mode, object id){
 string retval="";
+string status="";
+if(id->variables->orderid) status=DB->query(
+      "SELECT status FROM status WHERE name='Shipped' AND tablename='orders'"
+      )[0]->status;
 
  if(id->variables->valpay && id->variables->orderid){
 
@@ -262,8 +266,6 @@ string retval="";
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
-   
-
    send_notification(id, id->variables->orderid, "rejpay");
 
  } 
@@ -279,9 +281,6 @@ string retval="";
      return "Payment information has not been validated.\n" 
        "Cannot Ship order without validation.<p>";
 
-     array r=DB->query(
-      "SELECT status FROM status WHERE name='Shipped' AND tablename='orders'"
-      );
 
   int already_shipped_some, shipped_any, shipped_some, shipped_all=0;
   array r=({});
@@ -289,14 +288,17 @@ string retval="";
    id->variables->orderid + "'");
   if(sizeof(r)>0)
     already_shipped_some=1;
-
-  switch(id->variables->doship){
-
+       array n= DB->query(
+	"SELECT id FROM orderdata WHERE orderid='" +
+	id->variables->orderid + "' AND status !=" +status);
+  if(sizeof(n)>0) {
+   switch(id->variables->doship){
+   perror("sizeof n: " + sizeof(n) + "\n");
     case "Ship Selected":
        foreach(indices(id->variables), string v)
 	 if(Regexp(".\..")->match(v) && id->variables[v]=="ship") {
        array t=v/".";
-       DB->query("UPDATE orderdata SET status=" + r[0]->status
+       DB->query("UPDATE orderdata SET status=" + status
          + " WHERE orderid='" + id->variables->orderid + "' AND id='"
 	 + t[0] + "' AND series="+ t[1] );
        array o=DB->query(
@@ -313,13 +315,19 @@ string retval="";
      }
     break;
     case "Ship All":
-       DB->query("UPDATE orderdata SET status=" + r[0]->status
+    array r=DB->query("SELECT orderdata.*, status.name as status FROM "
+	   "products,orderdata,status WHERE orderdata.orderid=" + 
+	   id->variables->orderid + " AND status.status=orderdata.status " 
+	   " AND products." + id->misc->ivend->keys->products +
+	"=orderdata.id and status.name!='Shipped'");
+
+     DB->query("UPDATE orderdata SET status=" + status
        + " WHERE orderid='" + id->variables->orderid + "'");
-       array o=DB->query("SELECT * FROM orderdata WHERE orderid='" + 
-				id->variables->orderid + "'");
-       foreach(o, mapping l){
+
+       foreach(r, mapping row){
+         if(row->status=="Shipped") continue;
 	 string query="INSERT INTO shipments VALUES('" + id->variables->orderid
-	 +"','" + l->id + "'," + l->series + "," + l->quantity + ",'" +
+	 +"','" + row->id + "'," + row->series + "," + row->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
 	 DB->query(query);
 	 shipped_any=1;
@@ -331,20 +339,20 @@ string retval="";
 
        array n= DB->query(
 	"SELECT id FROM orderdata WHERE orderid='" +
-	id->variables->orderid + "' AND status !=" + r[0]->status);
+	id->variables->orderid + "' AND status !=" +status);
        if(sizeof(n)==0) shipped_all=1;
 
        if(shipped_all) {
 	 DB->query(
              "UPDATE payment_info SET Card_Number='',Expiration_Date='' WHERE orderid='" +
 	     id->variables->orderid +"'");
-	 DB->query("UPDATE orders SET status=" + r[0]->status
+	 DB->query("UPDATE orders SET status=" + status
 	   + ", updated=NOW() WHERE id='" + id->variables->orderid + "'");    
        array r=DB->query( 
 	"SELECT status FROM status WHERE name='Shipped' "
 	"AND tablename='orders'");
        DB->query("UPDATE orders SET status=" + 
-	 r[0]->status + ",updated=NOW() WHERE id='" +
+	 status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
 	id->misc->ivend->this_object->trigger_event("shipall",id,
 		(["orderid": id->variables->orderid]));
@@ -361,7 +369,7 @@ string retval="";
 		(["orderid": id->variables->orderid]));
      }
 
-
+  }
  }
 
 if(id->variables->dodelete && id->variables->orderid){
@@ -398,12 +406,15 @@ if(!id->variables->print)
 if(!id->variables->print)
   retval+="<obox title=\"<font face=helvetica,arial>Order Actions</font>\">"
     "<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
-    "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
-    "<input type=submit name=doship value=\"Ship All\"> &nbsp; "
+    "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n";
+if(sizeof(DB->query(
+	"SELECT id FROM orderdata WHERE orderid='" +    
+	id->variables->orderid + "' AND status !=" +status))>0)
+retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
     "<input type=submit name=doship value=\"Ship Selected\"> &nbsp; "
     "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
-    "<input type=submit name=print value=\"Format for Printing\"><br>"
-    "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; " 
+    "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; ";
+retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
     "</obox></form>";
     }
 

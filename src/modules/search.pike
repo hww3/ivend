@@ -52,7 +52,7 @@ else q=(id->variables->q)-" ";
 {
 
 
-  string r = (T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + id->variables->q + ".html");
+  string r = (T_O->query("mountpoint") + id->variables->q + ".html");
 
   results=("<redirect to=\"" + r + "\">"
 	"<!-- should have been a redirect to " + r + ". -->") ;
@@ -112,8 +112,7 @@ else // we aren't requiring words to be present...
 	mapping grow=DB->query("SELECT name "
 	", description FROM groups WHERE " + DB->keys->groups + "='" +
 row->id + "'")[0];
-	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") +
-(id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" +
+	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") + row->id + ".html\">" +
 grow->name + "</a> (" + row->occ + " / " +maxocc +  ")</dt><dd>" +
 grow->description + "</dd><p>";
 	}
@@ -124,8 +123,7 @@ grow->description + "</dd><p>";
 CONFIG_ROOT[module_name]->productnamefield + 
 	", description FROM products WHERE " + DB->keys->products + "='" +
 row->id + "'")[0];
-	productresults+="<dt><a href=\"" + T_O->query("mountpoint") +
-(id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" +
+	productresults+="<dt><a href=\"" + T_O->query("mountpoint") + row->id + ".html\">" +
 grow[CONFIG_ROOT[module_name]->productnamefield] +
 "</a> (" + row->occ + " / " + maxocc  +  ")</dt><p>";
 

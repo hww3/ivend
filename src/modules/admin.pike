@@ -736,7 +736,8 @@ retval+="User updated successfully.<p>";
 string action_reloadstore(string mode, object id){
 
 	string retval="";
-	id->misc->ivend->this_object->start_store(STORE);
+	id->misc->ivend->this_object->stop_store();
+	id->misc->ivend->this_object->start_store();
          retval+="Store Restarted Successfully.<p>" +
                 return_to_admin_menu(id); 
 //	ADMIN_FLAGS=NO_BORDER;

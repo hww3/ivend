@@ -190,7 +190,7 @@ if(sizeof(DB->list_tables("orderid_list"))!=1) {
     }
   }
 if(catch(DB->query("LOCK TABLES orderid_list WRITE")))
-  perror(STORE + ": Our DB doesn't support LOCK TABLES...\n");
+  perror("Our DB doesn't support LOCK TABLES...\n");
 array r=DB->query("SELECT MAX(orderid +1) AS max FROM orderid_list");
 if(r && sizeof(r)>0)
   orderid=(int)(r[0]->max);

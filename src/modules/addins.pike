@@ -28,7 +28,7 @@ Config.write_section(id->misc->ivend->this_object->query("configdir")+
   CONFIG->config, "addins", id->misc->ivend->config->addins);
   saved=1;
 privs=0;
-id->misc->ivend->this_object->start_store(STORE);
+id->misc->ivend->this_object->start_store();
   }
 
 if(id->variables->change_settings){ 

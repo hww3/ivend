@@ -566,6 +566,8 @@ string retval="";
 
 if(!table) return "";
 
+if(!record) record=([]);
+
 array(mapping(string:mixed)) r=::list_fields(table);
 if(exclude)
 for(int i=0; i<sizeof(exclude); i++)
@@ -662,7 +664,7 @@ else if(r[i]->type=="string"){
                 record[r[i]->name]=="N")?"SELECTED":"")+ 
 	">No\n</SELECT>\n";
 	else {
-	  retval+="<INPUT TYPE=TEXT VALUE=\"" + record[r[i]->name]||"" +
+	  retval+="<INPUT TYPE=TEXT VALUE=\"" + (record[r[i]->name]||"") +
 	"\" NAME=\""+
 	lower_case(r[i]->name)+"\" SIZE="+
 	(r[i]->length)+">\n";

@@ -37,6 +37,25 @@ int do_clean_sessions(object db){
    return sizeof(r);
 }     
 
+string action_dropdown(string mode, object id){
+  string retval="";
+  if(!id->variables->edit){
+    array f=get_dir(CONFIG->root + "/db");
+    if(sizeof(f)>0)
+      retval+="You have configured dropdown boxes for the following "
+	"Table : Fields:<p><ul>";
+    foreach(f, string file){
+      retval+="<li><a href=\"./?edit=" + file  + "\">" +
+ 	replace((file-".val"),"_",":")+"</a>\n";
+    }
+
+    if(sizeof(f)>0) retval+="</ul>";
+    else retval+="You have not configured any dropdowns yet.<p>";
+  }
+  else retval+="Editing " + id->variables->edit;
+  return retval;
+}
+
 string action_cleansessions(string mode, object id){
 
           string retval="";
@@ -310,6 +329,8 @@ return ([
 	"menu.main.Store_Maintenance.Clean_Stale_Sessions" : action_cleansessions,
 	"menu.main.Store_Maintenance.Reload_store" : action_reloadstore,
 	"menu.main.Store_Maintenance.Preferences" : action_preferences
+	"menu.main.Store_Maintenance.Preferences" : action_preferences,
+	"menu.main.Store_Administration.DropDownMenus" : action_dropdown
 	]);
 
 

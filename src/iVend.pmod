@@ -1,6 +1,5 @@
+#include "messages.h"
 
-
-#define REQUIRED "Required" 
 // for translations
 
 class config {
@@ -162,19 +161,16 @@ for (int i=0; i<sizeof(r); i++){
     {
 
 string f=	id->variables[ r[i]->name+".filename"];
-perror("**" + f+"\n\n");
-string e= ::extension(f);
-perror("**"+e+"\n\n");
-    string filename=id->misc->ivend->config->root+"/images/"+id->variables->table+"/"
-	+id->variables->id+
-	r[i]->name[5..]+
-	e;
+string e= extension(f);
+    string filename=id->variables->id+
+	r[i]->name[5..]+"."+e;
 
 
     rm(filename);
-	perror("** "+filename+"\n\n");
-    Stdio.write_file(filename,id->variables[r[i]->name]);
-    query+="'"+id->variables->id+r[i]->name[5..]+"',";
+
+Stdio.write_file(id->misc->ivend->config->root+"/images/"+
+	id->variables->table+"/"+filename,id->variables[r[i]->name]);
+    query+="'"+filename+"',";
     }
   else query+="NULL,";
   }
@@ -370,13 +366,13 @@ if(type=="group"){
   array j=s->query(query);
   if(sizeof(j)!=1) return 0;
   else {
-    retval+="Group "+j[0]->id+" ( "+j[0]->name+" ) is linked to the following"
-      " products:<p>";
+    retval+= GROUP + j[0]->id+" ( "+j[0]->name+" ) " + IS_LINKED +
+      PRODUCTS +":<p>";
     query="SELECT product_groups.product_id,products.name FROM "
 	"products,product_groups WHERE product_groups.group_id='"
         +id+"' AND products.id=product_groups.product_id";
     j=s->query(query);
-    if(sizeof(j)==0) retval+="<blockquote>No Products in this group.</blockquote>";
+    if(sizeof(j)==0) retval+="<blockquote>"+ NO_PRODUCTS +"</blockquote>";
     else {
       retval+="<blockquote>\n";
       for(int i=0; i<sizeof(j); i++)
@@ -399,7 +395,7 @@ string dodelete(string type, string id){
 string query="";
 
 if(type=="" || id=="")
-return "Delete unsuccessful.\n";
+return DELETE_UNSUCCESSFUL+".\n";
 
 if(type=="group") {
   query="DELETE FROM groups WHERE id='"+id+"'";

@@ -18,13 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.34 1998-03-07 03:38:54 hww3 Exp $";
-
-/*
- *
- * register_module() is required.
- *
- */
+string cvs_version = "$Id: ivend.pike,v 1.35 1998-03-10 05:04:17 hww3 Exp $";
 
 array register_module(){
 
@@ -36,7 +30,6 @@ array register_module(){
             1
             } );
                
-
 }
 
 string query_location()
@@ -134,7 +127,9 @@ array|int size_of_image(string filename){
   string sizes;
   array res = ({ 0,0 });
   fop = Stdio.File();
-  if(!fop->open(filename, "r")) return 0;
+  if(!fop->open(filename, "r")) return -1;
+  fop->seek(0);
+  if(fop->read(3) !="GIF") return 0;
   fop->seek(6); 
   sizes = fop->read(4);
   if(!sizes || (strlen(sizes) < 4)) return 0; // To short file
@@ -374,17 +369,23 @@ if(args->field!=""){
 	" id='"+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else filename=config[id->misc->ivend->st]->root+"/images/"+
-    id->misc->ivend->type+"s/"+r[0][args->field]+".gif";
+    id->misc->ivend->type+"s/"+r[0][args->field];
   }  
 else if(args->src!="") 
-filename=config[id->misc->ivend->st]->root+"/images/"+args->src+".gif";
-// perror("getting image "+filename+"\n");
+filename=config[id->misc->ivend->st]->root+"/images/"+args->src;
 
 array|int size=size_of_image(filename);
 
-if(size==0) return "";
+
+// file doesn't exist
+if(size==-1) return "<couldn't find the image: "+filename+"... -->";
+// it's not a gif file
+else if(size==0)	
+	return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
+      +id->misc->ivend->type+"s/"+r[0][args->field]+"\">");
+// it's a gif file
 else return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
-      +id->misc->ivend->type+"s/"+r[0][args->field]+".gif\""
+      +id->misc->ivend->type+"s/"+r[0][args->field]+"\""
 	" HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
 
 
@@ -580,8 +581,8 @@ object s=Sql.sql(config[id->misc->ivend->st]->dbhost,
 
 int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID='"+
   id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
-string query="INSERT INTO sessions VALUES("+ id->misc->ivend->SESSIONID+
-  ",'"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
+string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
+  "','"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"')";
 perror(query+"\n");
 if(catch(s->query(query) ))
@@ -985,7 +986,8 @@ switch(id->variables->mode){
     );
   mixed j=s->addentry(id,id->referrer);
 //  return http_redirect(id->referrer, id);
-  return http_string_answer(parse_rxml(retval+"Product Added Sucessfully.",id));
+string type=(id->variables->table-"s");
+  return http_string_answer(parse_rxml(retval+type+" Added Sucessfully.",id));
   break;
 
   case "addproduct":
@@ -1084,7 +1086,7 @@ mixed get_image(string filename, object id){
 
 string data=Stdio.read_bytes(
 	config[id->misc->ivend->st]->root+"/images/"+filename);
-
+id->realfile=config[id->misc->ivend->st]->root+"/images/"+filename;
 perror("** "+filename+"\n\n");
 
 return http_string_answer(data,
@@ -1194,7 +1196,7 @@ else {
 	//
 
 #ifdef MODULE_DEBUG	
-	retval+="<DUMPID>";
+//	retval+="<DUMPID>";
 #endif
 
 if(stringp(retval)){

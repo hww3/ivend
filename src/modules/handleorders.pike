@@ -227,7 +227,47 @@ if(note) {
 
 string archive_orders(string mode, object id){
  string retval="";
- return "";
+ mapping v=id->variables;
+
+ if(!v->archive){
+ // return the usage screen.
+ retval+="<form action=\"./\">\n"
+	"<input type=hidden name=archive value=1>\n";
+
+ retval+="Archive all orders more than "
+	"<input type=text size=3 name=days value=30> days old. "; 
+
+ retval+="<input type=submit value=\"Archive\"></form>\n";
+ }
+
+ else {
+
+  array orders_to_archive=DB->query("SELECT * FROM orders WHERE "
+	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
+
+  foreach(orders_to_archive, mapping o){
+    array tables=({"orderdata", "shipments", "customer_info",
+	"payment_info"});
+    foreach(tables, string t){
+      array fields=DB->list_fields(t);
+      array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
+	o->orderid + "'");
+      array fl,dl=({});
+      foreach(r, mapping row){	
+        foreach(fields, mapping f){
+	  fl+=({f->name});
+	  dl+=({DB->quote(row[f->name])});
+	}
+        retval+="INSERT INTO " + t + " (" + (fl*",") + ") VALUES("
+	+ (dl*",")  +")\n";
+        }
+      
+      }
+    }
+
+ }
+
+ return retval;
 }
 
 string show_orders(string mode, object id){

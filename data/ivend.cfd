@@ -35,6 +35,14 @@ $module_type=checkout
 $endescription=Name of Checkout Module to Use.
 $sidescription=Name of Checkout Module to Use (slovenian).
 
+$varname=currency_module
+$enname=Currency Module
+$siname=Currency Module
+$type=module
+$module_type=currency
+$endescription=Name of Currency Module to use. Normally the default module is the proper one to use.
+$sidescription=Name of Currency Module to use (slovenian).
+
 $varname=shipping_module
 $enname=Shipping Module
 $siname=Shipping Module

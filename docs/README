@@ -38,7 +38,8 @@ Administration interface.
 3. Choose 'Add Module' to a virtual server.
 
 4. Set the configuration username and password, as well as the module's root
-configuration directory. This is normally ivend/data.
+and configuration directory. This is normally ivend/ and ivend/data/
+respectively.
 
 5. Save the settings and you're ready to go! iVend will be mounted by 
 default on /ivend/, and configuration is located at /ivend/config/.
@@ -53,9 +54,10 @@ Other systems may vary. Provide select/insert/delete access to a user so
 that iVend can connect and use this db.
 
 3. Create data tables in that database for iVend to use. A sample schema 
-file is located in the examples directory. These tables can contain as 
-many and varied fields as you like, but at least the following must be 
-present:
+file is located in the examples directory called schema.mysql. It's
+probably a good idea to start with the example schema and work from
+there. These tables can contain as  many and varied fields as you like,
+but at least the following must be  present:
 
 products		groups			product_groups
 
@@ -64,16 +66,23 @@ name string		name string		product string
 image* string		image* string
 price decimal(2)	price decimal(2)
 
-orders
-
-id string
-product string
-
-
 The above fields are considered 'special' by iVend, and are expected to 
 be present. The presence of additional fields is purely optional, however 
 fields such as shipping wights and costs, product descriptions or 
 inventory counts may also be useful. 
+
+There are a number of tables that are required by iVend to operate. These
+tables are:
+
+customer_info
+payment_info
+orders
+orderdata
+sessions
+taxrates
+status 
+type
+shipping_*
 
 * field names that begin with image are considered special by iVend. They
 indicate images to be stored with groups and products. You can have as 
@@ -196,6 +205,8 @@ Other Ramblings
 If a function called currency_convert is present in the checkout module,
 currencies from product records will be called as the argument to this 
 function. The function currency_convert will return the converted float.
+This is used to convert prices that are stored in the product database in
+one form, but are displayed as another.
 
 
 Checkout Tags
@@ -203,8 +214,12 @@ Checkout Tags
 
 the subtotal is the sum of all taxable and nontaxable items ( including
 shipping if taxable ). discounts and salestax are calculated from the
-subtotal.
+subtotal. All checkout tags function within the checkout container,
+<checkout></checkout>.
 
+generate_form		generate a form from the database
+  table=tablename	this is the table to get data for.
+  hide=field1,field2    hide these fields in the list.
 
 confirmemail
   field=fieldname	name of field containing email address to check.
@@ -212,15 +227,21 @@ confirmemail
 salestax		added as a lineitem
   locality=fieldname	name of field in billing address to determine
 			taxrate.
-  excludediscount	should discounts be excluded from calculation of
-			salestax?
 
 discount
-  percent=percentage	percent discount of subtotal, added as a lineitem.
-  convert		convert currency if converter is present.
-
+  percent=percentage	percent discount of subtotal, which is then
+			removed from the subtotal.
 grandtotal
 			sum of all lineitems
+
+showorder		show all items in this order.
+
+shipping		show the shipping charges
+
+shippingtype		show the shipping type
+
+addentry		add the data from the previous form.
+  encrypt=field1,field2..  encrypt these fields using rsa.
 
 Other Stuff
 -----------

@@ -11,6 +11,8 @@ messages.h -> roxen/server/lib/pike/include/messages.h
 2. make sure that the iVend distribution directory is in Roxen's module
 search path. 
 
+3. create an RSA keypair using the scripts/make_keys.pike script.
+
 for more information, see doc/README.
 
 24 march 1998

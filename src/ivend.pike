@@ -18,15 +18,25 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
+int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.41 1998-04-10 02:52:16 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.42 1998-04-10 05:22:10 hww3 Exp $";
 
 array register_module(){
 
-   return( {
-            MODULE_LOCATION | MODULE_PARSER,
-            "iVend 1.0",
-            "iVend enables online shopping within Roxen.",
+ string s="";
+
+  if(loaded) {
+    s = "<br>Go to the <a href='"+
+      my_configuration()->query("MyWorldLocation")+ query("mountpoint") +
+	"config/'>iVend Configuration Interface</a>";
+
+   }
+
+  return( {
+     MODULE_LOCATION | MODULE_PARSER,
+       "iVend 1.0",
+       "iVend enables online shopping within Roxen." + s,
             0,
             1
             } );
@@ -48,8 +58,8 @@ void create(){
 
    defvar("root", "/home/roxen/share/ivend/" , "iVend Root Location",
           TYPE_DIR,
-          "This is location where iVend will store "
-          "various files nessecary for operation.");
+          "This is location where the iVend program files are located "
+          );
 
    defvar("datadir", query("root")+"data" , "iVend Data Location",
           TYPE_DIR,
@@ -118,7 +128,6 @@ object s=Sql.sql(
 	);
 string query="DELETE FROM sessions WHERE timeout < "+time(0);
 s->query(query);
-perror(query);
 return 0;
 }
 
@@ -133,7 +142,7 @@ array|int size_of_image(string filename){
   if(fop->read(3) !="GIF") return 0;
   fop->seek(6); 
   sizes = fop->read(4);
-  if(!sizes || (strlen(sizes) < 4)) return 0; // To short file
+  if(!sizes || (strlen(sizes) < 4)) return 0; //  short file
   res[0] = (sizes[1]<<8) + sizes[0];
   res[1] = (sizes[3]<<8) + sizes[2];
   return res;
@@ -254,12 +263,12 @@ if(id->variables->update) {
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 
-if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id, "checkout_module");
+if(! objectp(modules[id->misc->ivend->config->currency_module])) 
+	load_ivmodule(id, "currency_module");
 
-if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert))
+if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
 	  r[i]->price=
-	  modules[id->misc->ivend->config->checkout_module
+	  modules[id->misc->ivend->config->currency_module
 	  ]->currency_convert(r[i]->price,id);
 
 	retval+="<td align=right>"
@@ -456,6 +465,8 @@ for (int i=0; i<sizeof(config_file);i++){
 
 void start(){
 
+	loaded=1;
+
    	if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
    	else  read_conf();   // Read the config data.
    	return;	
@@ -507,17 +518,20 @@ array fields=indices(r[0]);
 for(int i=0; i<sizeof(desc); i++){
   // page+=field +": "+r[0][field];
   if(desc[i]->type=="decimal" && desc[i]->name=="price") {
-if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id, "checkout_module");
+if(!objectp(modules[id->misc->ivend->config->currency_module])) 
+	load_ivmodule(id, "currency_module");
 
 
 if(functionp(
-    modules[id->misc->ivend->config->checkout_module]->currency_convert))
+    modules[id->misc->ivend->config->currency_module]->currency_convert))
 	r[0][desc[i]->name]=
-		  modules[id->misc->ivend->config->checkout_module]->currency_convert(r[0][desc[i]->name],id);
 
+  modules[
+    id->misc->ivend->config->currency_module
+    ]->currency_convert(r[0][desc[i]->name],id);
 
-	page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
+  page2=replace(page,("#"+desc[i]->name+"#"),
+    sprintf("%.2f",(float)(r[0][desc[i]->name])));
   }
 
 else  if(desc[i]->type=="decimal") {
@@ -527,7 +541,6 @@ page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->
   page2=replace(page,("#"+desc[i]->name+"#"),(string)r[0][desc[i]->name]);
   page=page2;
   }
-
 
 return page;
 }
@@ -573,9 +586,9 @@ mixed additem(string item, object id){
 float price=id->misc->ivend->s->query("SELECT price FROM products WHERE id='" 
   + item + "'")[0]->price;
 
-if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert))
+if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
 	  price=
-	  modules[id->misc->ivend->config->checkout_module
+	  modules[id->misc->ivend->config->currency_module
 	  ]->currency_convert(price,id);
 
 
@@ -888,10 +901,10 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 		
 				
 			
-		else {					// OK, we know what we have in mind...
+	else {		// OK, we know what we have in mind...
 
-			if(id->variables->config_delete==1) {
-
+			if(id->variables->config_delete=="1") {
+perror("DELETING " + request[2] + "\n");
 				config=m_delete(config,request[2]);
 				save_status=0;
 				return http_redirect(query("mountpoint")+"config/configs?"+time(),id);				
@@ -992,6 +1005,11 @@ return retval;
 
 }
 
+mixed getmodify(string type, string pid, object id){
+
+return "";
+
+}
 
 mixed admin_handler(string filename, object id){
 
@@ -1087,6 +1105,23 @@ string type=(id->variables->table-"s");
   clean_sessions(id);	
   retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
 	"Return to Administration Menu.</a>\n";
+  break;
+
+  case "getmodify":
+
+  retval+=getmodify(id->variables->type, id->variables->id, id);
+
+  break;
+
+  case "modify":
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=getmodify>\n"
+      "ID to Modify: \n"
+      "<input type=text size=10 name=id>\n"
+      "&nbsp; <input type=radio name=type selected value=product>\n"
+      "Product &nbsp; <input type=radio name=type value=group>\n"
+      "Group<p>"
+      "<input type=submit value=Modify>\n</form>";
   break;
 
   default:
@@ -1285,25 +1320,26 @@ if(! objectp(modules[id->misc->ivend->config->checkout_module]))
 if(! objectp(modules[id->misc->ivend->config->shipping_module])) 
 	load_ivmodule(id, "shipping_module");
 
-if(functionp(
-  modules[id->misc->ivend->config->checkout_module]->query_container_callers))
-containers+= 
-  modules[id->misc->ivend->config->checkout_module]->query_container_callers();
+if(functionp( modules[id->misc->ivend->config->checkout_module
+    ]->query_container_callers))
+containers+=  modules[id->misc->ivend->config->checkout_module
+    ]->query_container_callers();
 
-if(functionp(
-  modules[id->misc->ivend->config->checkout_module]->query_tag_callers))
+if(functionp( modules[id->misc->ivend->config->checkout_module
+    ]->query_tag_callers))
+tags+=  modules[id->misc->ivend->config->checkout_module
+    ]->query_tag_callers();
+
+if(functionp( modules[id->misc->ivend->config->shipping_module
+    ]->query_container_callers))
+containers+= modules[id->misc->ivend->config->shipping_module
+    ]->query_container_callers();
+
+if(functionp( modules[id->misc->ivend->config->shipping_module
+    ]->query_tag_callers))
 tags+= 
-  modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
-
-if(functionp(
-  modules[id->misc->ivend->config->shipping_module]->query_container_callers))
-containers+= 
-  modules[id->misc->ivend->config->shipping_module]->query_container_callers();
-
-if(functionp(
-  modules[id->misc->ivend->config->shipping_module]->query_tag_callers))
-tags+= 
-  modules[id->misc->ivend->config->shipping_module]->query_tag_callers();
+  modules[id->misc->ivend->config->shipping_module
+    ]->query_tag_callers();
 }
 
 

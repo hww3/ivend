@@ -19,7 +19,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.38 1998-03-20 21:32:00 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.39 1998-03-23 00:14:50 hww3 Exp $";
 
 array register_module(){
 
@@ -90,13 +90,13 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-int load_ivmodule(object id){
+int load_ivmodule(object id, string type){
 
  if (id->variables->reload || 
-	! objectp(modules[id->misc->ivend->config->checkout_module]))
-modules+=([ id->misc->ivend->config->checkout_module :
+	! objectp(modules[id->misc->ivend->config[type]]))
+modules+=([ id->misc->ivend->config[type] :
     (object)clone(compile_file(query("root")+"/modules/"+
-    id->misc->ivend->config->checkout_module)) ]);
+    id->misc->ivend->config[type])) ]);
 
 return 1;
 
@@ -256,7 +256,7 @@ if(id->variables->update) {
 	    }
 
 if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id);
+	load_ivmodule(id, "checkout_module");
 
 if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert))
 	  r[i]->price=
@@ -512,7 +512,7 @@ for(int i=0; i<sizeof(desc); i++){
   // page+=field +": "+r[0][field];
   if(desc[i]->type=="decimal" && desc[i]->name=="price") {
 if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id);
+	load_ivmodule(id, "checkout_module");
 
 	r[0][desc[i]->name]=
 		  modules[id->misc->ivend->config->checkout_module]->currency_convert(r[0][desc[i]->name],id);
@@ -643,7 +643,7 @@ mixed handle_checkout(object id){
 mixed retval;
 
 if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id);
+	load_ivmodule(id, "checkout_module");
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
@@ -691,7 +691,6 @@ if(i){
         return 1;
   else return 0;                   
 }
-// perror(query("config_password")+" "+query("config_user")+"\n");
   array(string) auth=id->realauth/":";
   if(auth[0]!=id->misc->ivend->config->config_user) return 0;
   else if(id->misc->ivend->config->config_password==auth[1])
@@ -976,6 +975,20 @@ retval+="<title>iVend Store Orders</title>"
   " Orders</gtext><p>"
   "<font face=helvetica,arial size=+1>"
   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a><p>\n";
+
+if(! objectp(modules[id->misc->ivend->config->order_module])) 
+	load_ivmodule(id, "order_module");
+
+  object s=Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+ mixed d=modules[id->misc->ivend->config->order_module]->show_orders(id, s);
+ if(stringp(d))
+ retval+=d;
 
 
 return retval;
@@ -1264,7 +1277,7 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 if(id->misc->ivend->st){
 
 if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id);
+	load_ivmodule(id, "checkout_module");
 
 if(functionp(modules[id->misc->ivend->config->checkout_module]->query_container_callers))
 containers+= 

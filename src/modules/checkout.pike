@@ -47,7 +47,7 @@ return retval;
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
 
-  string retval;
+  string retval="";
 
   object s=Sql.sql(
     id->misc->ivend->config->dbhost,
@@ -85,7 +85,7 @@ s->query("DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'"
 
 else {
   id->misc->ivend->error+="ERROR MOVING ORDER TO CONFIRMED STATUS!";
-  return "";
+  return "An error occurred while moving your order to confirmed status.\n";
 }
 // update customer info and payment info with new orderid
     
@@ -145,49 +145,6 @@ if(note) {
 
 }
 
-=======
-// do we send a confirmation note? if so, do it.
-
-string note;
-note=Stdio.read_file(id->misc->ivend->config->root+"/notes/confirm.txt");
-if(note) {
-
-  perror("\n\nSENDING MESSAGE!\n");
-
-  string subject,sender, recipient;
-  sscanf(note, "%s\n%s\n%s", sender, subject, note);
-  array r=s->query("SELECT email_address from customer_info WHERE "
-		   "orderid='"+id->misc->ivend->orderid+"' AND "
-		   "type=0");
-  recipient=r[0]->email_address;
-  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
-  
-  object message=MIME.Message(note, (["MIME-Version":"1.0",
-				     "To":recipient,
-				     "Subject":subject
-				     ]));
-
-  perror((string)message);
-
-  object f=Stdio.File();
-  f->open_socket();
-  f->connect("localhost", 25);
-
-  f->write("HELO localhost\n");
-  f->read();
-  f->write("MAIL FROM: <"+sender+">\n");
-  f->read();
-  f->write("RCPT TO: <"+ recipient+">\n");
-  f->read();
-  f->write("DATA\n");
-  f->read();
-  f->write((string)message);
-  f->write("\n.\n");
-  f->read();
-  f->write("QUIT\n");
-  f->close();
-
-}
 
 return retval;
 }

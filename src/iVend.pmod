@@ -460,7 +460,8 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
     "<TD>\n"
     "<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+
     " MAXLEN="+r[i]->length+" VALUE=\"" 
-	+ (record[r[i]->name] ||"") +"\">\n";
+	+ (record[r[i]->name] ||"");
+    retval+="\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+ REQUIRED +"\n";
@@ -509,7 +510,8 @@ else if(r[i]->type=="var string"){
 
     retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
       "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+" VALUE=\""
-	+( record[r[i]->name]||"") + "\">\n";
+	+( record[r[i]->name]||"");
+    retval+= "\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+REQUIRED+"\n";
@@ -751,7 +753,8 @@ else if(r[i]->type=="var string"){
 	lower_case(r[i]->name)+"\" SIZE="
 	  +
 	(r[i]->length)
-	+"  VALUE=\""+ 	(record[r[i]->name]||"") + "\">\n";
+	+"  VALUE=\""+ 	(record[r[i]->name]||"");
+	retval+= "\">\n";
 	if(r[i]->flags->not_null) 
 	  retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I>"+REQUIRED+"\n";	
 	}

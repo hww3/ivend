@@ -326,8 +326,8 @@ else return r[0]->extension;
 string tag_shippingadd (string tag_name, mapping args,
                     object id, mapping defines) {  
 
-TO->write_config_section(STORE, "shipping", ([ "sessionid" :
-  id->misc->ivend->SESSIONID ]));
+id->misc->ivend->this_object->write_config_section(STORE, "shipping", ([
+	"sessionid" :  id->misc->ivend->SESSIONID ]));
 
 int type= (args->type || id->variables->type || 0); 
 if(! type)

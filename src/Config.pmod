@@ -7,6 +7,22 @@
 
 */
 
+string format_section(string section, mapping attributes){
+
+  string s="";
+  
+  s+="\n[" + section + "]\n";
+  foreach(indices(attributes), string a)
+        if(stringp(attributes[a]))
+            s = s + a + "=" + (string)attributes[a] + "\n";
+        else if(arrayp(attributes[a]))
+            foreach(attributes[a], string v)
+            s+=a + "=" + v + "\n";
+
+  return s;
+
+}
+
 mapping read(string contents){
     mapping config=([]);
     string section,attribute,value;
@@ -30,25 +46,29 @@ mapping read(string contents){
     return config;
 }
 
-string write(mapping config){
+string write(mapping config, array|void order){
     string s="# Configuration file.\n";
-    array configs=indices(config);
+    array configs;
 
+    if(order) configs=order;
+    else configs=indices(config);
     foreach(configs, string c){
-        s+="\n[" + c + "]\n";
-        foreach(indices(config[c]), string a)
-        if(stringp(config[c][a]))
-            s = s + a + "=" + (string)config[c][a] + "\n";
-        else if(arrayp(config[c][a]))
-            foreach(config[c][a], string v)
-            s+=a + "=" + v + "\n";
-
+      s+= format_section(c, config[c]) +"\n";
     }
+
     return s;
 }
 
 array get_section_names(string contents){
 array sections=({});
+
+array c=contents/"\n";
+string section="";
+
+foreach(c, string line) {
+  if(sscanf(line, "[%s]", section)==1)
+    sections +=({section});
+  }
 return sections;
 
 }
@@ -66,26 +86,21 @@ int write_section(string file, string section, mapping attributes){
 
   array sections=get_section_names(contents);
 
-  string before,during,after;
-  if(search(contents, "[" + section + "]\n") !=-1){ //create new section
-  sscanf(contents, "%s[" + section + "]\n%s\n[%s", before, during, after);
+  if(search(sections, section)==-1) // we need to create a new section.
+    {
+    fd->write(format_section(section, attributes));
+    return 1;
+    }
 
-  during="";
+  else {  // we need to overwrite the existing section.
+    mapping m=read(contents);
+    m[section]=attributes;
+    array order=get_section_names(contents);
+    contents=write(m, order);
+    fd->seek(0);
+    fd->write(contents);
+    fd->close();
   }
-  else {
-    during="";
-    before=contents;
-    after="";
-  }
-foreach(indices(attributes), string a)
-        if(stringp(attributes[a]))
-            during = during + a + "=" + (string)attributes[a] + "\n";
-        else if(arrayp(attributes[a]))
-            foreach(attributes[a], string v)
-            during+=a + "=" + v + "\n";     
-  fd->seek(0);
-  if(after) after="\n[" + after;
-  else after="";
-  fd->write(before + "[" + section + "]\n" + during + after);
+
   return 1;
 }

@@ -1565,6 +1565,8 @@ return retval;
 
 
 mixed admin_handler(string filename, object id, object this_object){
+   numsessions[STORE]--;
+   numrequests[STORE]--;
 
    if(id->auth==0)
       return http_auth_required("iVend Store Administration",
@@ -1809,8 +1811,12 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
                   "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
                   "<li><a href=\"admin?mode=restartstore\">Restart Store</a>\n"
                   "</ul>\n"
-                  "<ul>\n"
+                  "<ul>\n"		
                   "<li><a href=\"shipping\">Shipping Administration</a>\n"
+		  "</ul>\n"
+		  "<ul>\n"
+		  "<li><a href=\"addins\">Add-ins</a>\n"
+		  "</ul>\n"
                   "<p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
 

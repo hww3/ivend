@@ -45,3 +45,37 @@ mixed register_admin(){
 }
 
 
+
+mixed query_preferences(object id){
+
+return ({
+                
+        ({"host", "Signio Processor Host",
+        "Hostname of Signio internet payment host.",
+        VARIABLE_STRING,
+        "test.paymentnet.com"
+        }),
+
+        ({"port", "Signio Processor Port",
+        "Port Number on Signio internet payment host.",
+        VARIABLE_STRING,
+        "443"
+        }),
+
+        ({"account", "Signio Account Number",
+        "Your account number with Signio.",
+        VARIABLE_STRING,
+        ""
+        }),
+
+        ({"password", "Signio Account Password",
+        "Your account password.",
+        VARIABLE_STRING,
+        ""
+        })
+
+
+
+});
+
+}

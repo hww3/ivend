@@ -2,7 +2,7 @@
 #include <messages.h>
 inherit "roxenlib";
 
-constant module_name = "Admin Handler Funx";
+constant module_name = "Admin Interface";
 constant module_type = "handler";
 
 void start(mapping config){
@@ -785,4 +785,25 @@ mapping query_tag_callers(){
 mapping query_event_callers() {
 
   return (["admindelete": event_admindelete ]);
+}
+
+mixed query_preferences(object id){
+
+return ({
+
+        ({"productnamefield", "Product Name Field",
+        "Name of field in products table that contains a product name.",
+        VARIABLE_STRING,
+        "name"
+        }),  
+
+        ({"minqtyfield", "Minimum Quantity Field",
+        "Name of field in products table that contains the minimum "
+		"quantity of a product available for purchase at a time.",
+        VARIABLE_STRING,
+        "min_order_qty"
+        })
+
+});
+
 }

@@ -178,8 +178,8 @@ return orderid;
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
 
-if(id->variables["_backup"] )
-   return "<!-- Backing up. ConfirmOrder skipped.-->\n";
+if(id->variables["_backup"] || id->misc->ivend->skip_page )
+   return "<!-- ConfirmOrder skipped.-->\n";
 
   string retval="";
 
@@ -227,9 +227,10 @@ catch(typer=DB->query("SELECT shipping_types.type,"
 
 if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
-if(catch(DB->query("INSERT INTO orders VALUES(" +
+mixed error=catch(DB->query("INSERT INTO orders VALUES(" +
     id->misc->ivend->orderid + ",0," +
-    type + ",NOW(),NULL,NOW())")))
+    type + ",NOW(),NULL,NOW())"));
+if(error)
 {
  T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
 	"checkout", id);
@@ -247,7 +248,7 @@ if(catch(DB->query("INSERT INTO orders VALUES(" +
 
 // replace sessionid with orderid
 string query;
-mixed error; 
+// mixed error; 
 error= catch{  
 for(int i=0; i<sizeof(r); i++){
 
@@ -512,8 +513,8 @@ return retval;
 
 string tag_addentry(string tag_name, mapping args,
 		     object id, mapping defines) {
-if(id->variables["_backup"])
-   return "<!-- Backing up. addentry skipped. -->\n";
+if(id->variables["_backup"] || id->misc->ivend->skip_page)
+   return "<!-- addentry skipped. -->\n";
 if(stop_error(id)) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) return "";
 if(!args->noflush)
@@ -587,8 +588,8 @@ return "<!-- successful card check -->";
 }
 
 mixed checkout(string p, object id){
-//if(p!="") return;
-perror("checkout: "+ p + "\n");
+// if(p!="") return;
+// perror("checkout: "+ p + "\n");
 
 id->misc->ivend->checkout=1;
 if(id->variables->_backup  && id->variables->_page)
@@ -606,7 +607,12 @@ id->misc->ivend->config->general->root +
 
 retval=parse_rxml(retval,id);
 
-return retval;
+if(id->misc->ivend->skip_page) {
+  m_delete(id->misc->ivend, "skip_page");
+  return checkout(p, id);
+  }
+else
+  return retval;
 
 }
 
@@ -652,6 +658,17 @@ string item;
 
  return sprintf("%.2f",(float)grandtotal);
 
+}
+
+string tag_skippage(string tag_name, mapping args,
+		     object id, mapping defines) {
+id->misc->ivend->skip_page=1;
+if(id->variables->_backup  && id->variables->_page)
+  id->variables->_page=(int)(id->variables->_page)-1;
+else id->variables->_page=(int)(id->variables->_page)+1;
+  if((int)(id->variables->_page) < 1) id->variables->_page=1;
+
+return "";
 }
 
 string tag_showorder(string tag_name, mapping args,
@@ -837,7 +854,8 @@ return (["showorder" : tag_showorder,
 	  "discount" : tag_discount, 
 	 "cardcheck" : tag_cardcheck,
 	  "addentry" : tag_addentry,
-	"generateform": tag_generateform
+	"generateform": tag_generateform,
+	"skippage": tag_skippage
 	]);
 
 }

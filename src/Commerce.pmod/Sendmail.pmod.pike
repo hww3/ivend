@@ -53,7 +53,11 @@ if(r=readcode(f)/100 !=2){
   return 0;
   }
 
-f->write("VRFY <" + address + ">\n");
+f->write("MAIL FROM: <" + address + ">\n");
+if(r=readcode(f)/100 !=2) {
+  return 0; // bad address!
+  }
+f->write("RCPT TO: <" + address + ">\n");
 if(r=readcode(f)/100 !=2) {
   return 0; // bad address!
 } else {

@@ -9,12 +9,7 @@
 
 inherit "roxenlib";
 
-#if __VERSION__ >= 0.6
-import ".";
-#endif
-#if __VERSION__ < 0.6  
-#endif
-
+#include "../include/ivend.h"
 #include "../include/messages.h"
 
 constant module_name="Default Checkout Module";
@@ -524,7 +519,7 @@ string h;
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
 if(!args->quiet)
-contents="<form action=\"" + id->not_query + "\">\n<input type=hidden name=_page "
+contents="<form method=post action=\"" + id->not_query + "\">\n<input type=hidden name=_page "
   "value=" + (id->misc->ivend->next_page || "2") + ">\n"
   +contents+ "</form>\n";
 

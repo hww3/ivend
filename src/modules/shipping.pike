@@ -1,9 +1,9 @@
 #!NOMODULE
 
-#define DB id->misc->ivend->db
-#define CONFIG id->misc->ivend->config
-#define TO id->misc->ivend->this_object
-#define STORE id->misc->ivend->st
+
+#include "../include/ivend.h"
+#include "../include/messages.h"
+
 inherit "roxenlib";
 
 constant module_name = "Shipping Handler";

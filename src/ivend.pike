@@ -5,6 +5,7 @@
  *
  */
 
+#include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
@@ -14,16 +15,6 @@ inherit "roxenlib";
 inherit "module";
 inherit "wizard";
 
-#define MODULES id->misc->ivend->modules
-#define STORE id->misc->ivend->st
-#define CONFIG id->misc->ivend->config->general
-#define DB id->misc->ivend->db
-#define KEYS id->misc->ivend->keys
-
-#if __VERSION__ >= 0.6
-import ".";
-#endif
-#if __VERSION__ < 0.6
 int read_conf();          // Read the config data.
 void load_modules(string c);
 void start_db(mapping c);
@@ -400,21 +391,22 @@ void start_store(string c){
    register_path_handler(c, "orders", order_handler);
    register_path_handler(c, "cart", handle_cart);
 
-   register_admin_handler(c, "upsell", upsell_handler);
 
-   perror("Loading: modules ");
+//   register_admin_handler(c, "upsell", upsell_handler);
+
+//   perror("Loading: modules ");
    load_modules(config[c]->general->config);
-   perror("db ");
+//   perror("db ");
    start_db(config[c]->general);
-   perror("keys ");
+//   perror("keys ");
    get_dbinfo(config[c]->general);
    numsessions[config[c]->general->config]=0;
    numrequests[config[c]->general->config]=0;
 
-   perror("markup ");
+//   perror("markup ");
    get_entities(config[c]->general);
    load_library(config[c]->general);
-   perror("done.\n");
+//   perror("done.\n");
 }
 
 
@@ -2235,7 +2227,8 @@ mixed return_data(mixed retval, object id){
 
             if(!modules[c]) modules[c]=([]);
 
-               err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
+             
+  err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
                                                       name)));
             if(err) {
 
@@ -2245,11 +2238,18 @@ mixed return_data(mixed retval, object id){
             if(functionp(modules[c][m->module_type]->start))
                   modules[c][m->module_type]->start(config[c]);
                mapping p;
+
             if(functionp(modules[c][m->module_type]->register_paths))
                   p = modules[c][m->module_type]->register_paths();
             if(p)
                   foreach(indices(p), string np)
                   register_path_handler(c, np, p[np]);
+
+            if(functionp(modules[c][m->module_type]->register_admin))
+                  p = modules[c][m->module_type]->register_admin();
+            if(p)
+                  foreach(indices(p), string np)
+                  register_admin_handler(c, np, p[np]);
                 
                return 0;
 
@@ -2281,7 +2281,9 @@ mixed return_data(mixed retval, object id){
                mixed err;
             if(!c) return;
             if(!config[c]) return;
-               foreach(({"shipping.pike","checkout.pike","handleorders.pike"}),string name) {
+               foreach(({"upsell.pike", "shipping.pike",
+			"checkout.pike",
+			"handleorders.pike"}),string name) {
                   err=load_ivmodule(c,name);
                if(err) perror("iVend: The following error occured while loading the module "
                                  + name + "\n" +  describe_backtrace(err)); 

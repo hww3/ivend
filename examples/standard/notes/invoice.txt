@@ -1,0 +1,56 @@
+orderguy@foo.com
+email_address
+iVend Order ##orderid#
+This notice is your invoice. Please keep a copy for future reference or in
+case you need to return an item. Our policies for returns and refunds are
+included below for your convenience.
+<formoutput quote="~">
+Order: ~orderid~ 
+<sqloutput query="select * from orders where id='~orderid~'"
+HOST="db">Date: #created#
+Notes: #notes#</sqloutput>
+
+Billing Address
+-----------------
+<sqloutput query="select * from customer_info  where orderid='~orderid~'
+and type=0" host="db">#First_Name# #Last_Name#
+#Company#
+#Address_1# #Address_2#
+#City#, #State# #ZIP_Code#
+</sqloutput>
+Shipping Address
+-----------------
+<sqloutput query="select * from customer_info  where orderid='~orderid~'
+and type=1" host="db">#First_Name# #Last_Name#
+#Company#
+#Address_1# #Address_2#
+#City#, #State# #ZIP_Code#
+</sqloutput><sqlelse>SAME AS BILLING ADDRESS</sqlelse>
+
+Payment Method
+---------------
+<sqloutput query="select * from payment_info where orderid='~orderid~'"
+host="db">Card Type : #Payment_Method#
+Cardholder: #Cardholder_Name#
+</sqloutput>
+
+Qty   Name                                Unit Price   Item Total
+----- ----------------------------------- -----------  -----------
+<sqloutput query="select orderdata.quantity as qty, orderdata.price as
+total, products.name,
+products.price from orderdata,products where orderid='~orderid~' 
+and products.id=orderdata.id" host="db">#qty:pad=5# #name:pad=35:align=left# #price:pad=12# #total:pad=11#
+</sqloutput>
+<sqloutput query="SELECT * FROM lineitems WHERE
+orderid='~orderid~'" host="db">#lineitem:pad=56# #value:pad=10#
+</SQLOUTPUT>
+Grand Total Charged to your Credit Card:                <sqloutput
+query="SELECT
+SUM(value) as total FROM lineitems WHERE orderid='~orderid~'"
+HOST="db">#total#</sqloutput>
+
+</formoutput>
+Return Policy
+--------------
+
+Insert your return policy here.

@@ -1,0 +1,10 @@
+<procedure tag="relatedgroups">
+array r=DB->query("SELECT product_groups.group_id,groups.name FROM "
+  "groups,product_groups WHERE product_id='"
+  + id->misc->ivend->page + "' AND groups.id=product_groups.group_id");
+if(!r) return "";
+string retval="| ";
+foreach(r, mapping row)
+  retval+="<a href=\"" + row->group_id + ".html\">" +row->name + "</a> | ";
+return retval;
+</procedure>

@@ -1,10 +1,16 @@
+<define tag="storename">
+__STORENAME__
+</define>
+<define tag="adminemail">
+__ADMINEMAIL__
+</define>
 <define container="page">
 <html>
 <head>
-<title>&title;</title>
+<title><storename>: &title;</title>
 </head>
 <body bgcolor="white" text="navy" link="maroon">
-<font size=+1 face="helvetica,arial">
+<font face="helvetica,arial">
 <contents>
 </font>
 </body>

@@ -289,7 +289,7 @@ catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
 	" AND orders.status=status.status" );
   retval+="Found " + sizeof(orders_to_archive) + " orders"
 	" to archive.";
-  if(sizeof(orders_to_archive>0)
+  if(sizeof(orders_to_archive)>0)
 	retval+=
 	" Click the button below to generate the "
 	" archive file.<P>"

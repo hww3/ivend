@@ -409,10 +409,10 @@ if(!id->variables->print)
       "SELECT status.name,payment_info.orderid from status,payment_info "
       "WHERE payment_info.orderid='" + id->variables->orderid + "' AND "
       "status.status=payment_info.status");
-if(r[0]->name=="Validated")
+if(r[0]->name!="Validated")
    retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n";
-if(sizeof(DB->query(
+else if(sizeof(DB->query(
 	"SELECT id FROM orderdata WHERE orderid='" +    
 	id->variables->orderid + "' AND status !=" +status))>0)
 retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
@@ -424,20 +424,38 @@ retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
     }
 
 else {
-  array r=DB->query("SELECT id, status.name as status,"
+  retval+="<br><b>Click on an order id to display an order.\n\n<br></b>";
+
+  array s=DB->query("SELECT status, name from status where tablename='orders'");
+
+  foreach(s, mapping row) {
+int numlines=(int)CONFIG_ROOT[module_name]->showlines ||10;
+  int i=(int)(DB->query("SELECT count(*) as c from orders where status=" +
+row->status)[0]->c);
+  array r=DB->query("SELECT id, "
 //	"DATE_FORMAT(updated, 'm/d/y h:m') as 
-	"updated "
-	"FROM orders,status "
-	"WHERE status.status=orders.status ORDER BY status, updated");
+	"updated, notes "
+	"FROM orders "
+	"WHERE status=" + row->status + " ORDER BY updated LIMIT "
+	+(id->variables["page"+ row->status]?
+		((((int)id->variables["page" + row->status])*numlines
+-numlines) +
+","):"") + numlines);
 
+int numpages=0;
+numpages=((int)i)/numlines;
+if((int)i%numlines) numpages ++;
 
-  if(sizeof(r) <1) retval+="No orders.\n";
-  else {
-  retval+="<br>Click on an order id to display an order.\n\n<br>";
-  retval+="<table>\n<tr><td bgcolor=navy><font color=white "
-    " face=helvetica><b>Order ID</b></font></td>\n"
-    "<td bgcolor=navy><font color=white "
-    "face=helvetica><b>Status</font></td>\n"
+  if(sizeof(r)>0) {
+  retval+="<h3>" + row->name + "</h3>";
+  retval+="<i><font size=1>Showing page " + (((int)id->variables["page" +
+    row->status])||1 )+ " of " + 
+numpages +
+"<br></font></i>";
+  retval+="<table cellspacing=0 cellpadding=2>\n<tr><td bgcolor=navy><font color=white "
+    " face=helvetica> <b>Order ID</b> </font></td>\n"
+//    "<td bgcolor=navy><font color=white "
+//    "face=helvetica><b>Status</font></td>\n"
     "<td bgcolor=navy><font color=white face=helvetica><b>Record "
     "Updated</font></td>\n"
     "<td bgcolor=navy><font color=white "
@@ -445,17 +463,19 @@ else {
 
   for(int i=(sizeof(r)-1); i>=0; i--){
     retval+="<tr>\n";
-    retval+="<td><a href=\"./?orderid="
+    retval+="<td bgcolor=gray align=center><a href=\"./?orderid="
 	+r[i]->id+"\">"+
 	r[i]->id+"</a></td>";
-    retval+="<td>"+ r[i]->status+"</td>\n";
-    retval+="<td>"+(r[i]->updated)+"</td><td>"
+//    retval+="<td>"+ r[i]->status+" </td>\n";
+    retval+="<td> "+(r[i]->updated)+" </td><td> " + (r[i]->notes||"") +
+ " </td>\n"
 	"</tr>\n";
 
     }
 
     retval+="</table>\n";
   }
+ }
 }
 
 return retval;

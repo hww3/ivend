@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.197 1999-05-17 19:26:29 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.198 1999-05-17 19:29:20 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2754,9 +2754,8 @@ string return_to_admin_menu(object id){
                                                      +config[all_configs[i]]->general->name+"</A></FONT>\n";
 
                                          }
-                                         retval+="<P><FONT FACE=\"times\" SIZE=+1>To View, Modify or Delete a Configuration, Click on it's name in the list above.</FONT><P>\n"
+                                         retval+="<P><FONT FACE=\"times\" SIZE=+1>To View or Modify a Configuration, Click on it's name in the list above.</FONT><P>\n"
                                                  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; "
-                                                 "<A HREF=\""+query("mountpoint")+"config/delete\">Delete a Configuration</A> &nbsp; "
                                                  "<A HREF=\""+query("mountpoint")+"config/reload\">Reload Configurations</A> &nbsp; ";
                                          if(save_status!=1)
                                              retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";

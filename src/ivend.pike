@@ -26,8 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.69 1998/05/27 13:09:45 hww3
-Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.72 1998-06-07 15:02:51 hww3 Exp $";
 
 array register_module(){
 
@@ -295,7 +294,7 @@ if(id->variables->update) {
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
-	error(YOUR_CART_IS_EMPTY, id);
+//	error(YOUR_CART_IS_EMPTY, id);
       return YOUR_CART_IS_EMPTY +"\n";
     }
     retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n"
@@ -320,7 +319,7 @@ if(id->variables->update) {
 	  r[i]->price=convert((float)r[i]->price,id);
 
 	retval+="<td align=right>" + MONETARY_UNIT +
-	+sprintf("%.2f",(float)r[i]->price)+"</td>\n"
+	sprintf("%.2f",(float)r[i]->price)+"</td>\n"
 	"<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
         r[i]->quantity+"></td><td align=right>" + MONETARY_UNIT 
 	+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";

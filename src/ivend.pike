@@ -29,7 +29,7 @@ mapping configuration_interface(array(string) request, object id);
 void handle_sessionid(object id);
 mixed getglobalvar(string var);
 mixed return_data(mixed retval, object id);
-mixed get_image(string filename, object id);
+mixed  get_image(string filename, object id);
 #endif
 
 int loaded;
@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.100 1998-08-18 23:56:45 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.101 1998-08-19 12:29:05 hww3 Exp $";
 
 array register_module(){
 
@@ -253,6 +253,7 @@ string container_icart(string name, mapping args,
                       string contents, object id)
 {
 string st;
+string retval="";
 
 st=id->misc->ivend->st;
 
@@ -293,7 +294,6 @@ if(id->variables->update) {
 
   string field;
 
-  string retval=lower_case(contents);
 
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
 
@@ -339,7 +339,7 @@ if(id->variables->update) {
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"" 
-	+ UPDATE_CART + "\"></form>\n<true>\n";
+	+ UPDATE_CART + "\"></form>\n<true>\n"+contents;
 return retval;    
  
 }
@@ -526,10 +526,15 @@ array|int size=size_of_image(filename);
 if(size==-1) return "<!-- couldn't find the image: "+filename+"... -->";
 // it's not a gif file
 else if(size==0)	
-	return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
+	return ("<IMG SRC=\""+query("mountpoint")+
+(  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
+	?"":st+"/")+"images/"
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\">");
 // it's a gif file
-else return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
+else return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"+
+(  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
+	?"":st+"/")+"images/"
+
       +id->misc->ivend->type+"s/"+r[0][args->field]+"\""
 	" HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
 
@@ -1437,8 +1442,8 @@ return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
 
 
 mixed get_image(string filename, object id){
-
-perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
+perror("** getting image " + filename + "\n");
+//perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
 	id->misc->ivend->config->root+"/"+filename);

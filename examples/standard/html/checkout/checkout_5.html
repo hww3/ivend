@@ -1,16 +1,18 @@
 <use file="../store_package">
 <page title="Checkout">
-<font size=+2>5. Payment Information</font>
+<H1>4. Shipping Selection</H1>
 <p>
-Please provide your credit card information in the form below. Your credit
-card number will be encrypted during this operation for your safety.
+Please choose one of the following methods of shipping:
 <br>
+
+<p>
 <checkout>
-<shippingadd>
-<table>
-<generateform table="payment_info" hide="orderid,status,authorization" 
-autofill="1" pulldown="payment_method">
-</table>
+<checkouterror>
+<!-- Let's add the data collected on the previous page. -->
+<addentry>
+<!-- Now show a menu of available shipping types. -->
+<shippingtypes>
+<p>
 <input type=submit name="_backup" value=" Back Up "> 
 <input type=submit value=" Continue ">
 <input type=hidden name=orderid value="<sessionid>">

@@ -1,12 +1,57 @@
 <use file="../store_package">
 <page title="Checkout">
 <checkout>
-<confirmorder> 
-</checkout>
-<font size=+2>Order Confirmed!</font>
-<br>
-Your order has been successfully confirmed. You should receive an email message confirming
-this shortly. We appreciate your business and hope you come back soon!
+<cardcheck>
+<addentry>
+<H1>6. Confirm Order</H1>
+<checkouterror>
+
+<table width=95%>
+<tr>
+<th bgcolor=maroon align=left width=10%>
+<font color=white>Quantity</th>
+<th bgcolor=maroon align=left width=50%>
+<font color=white>Product Name</th>
+<th bgcolor=maroon align=left width=20%>
+<font color=white>Unit Price</th>
+<th bgcolor=maroon align=left width=20%>
+<font color=white>Subtotal</th>
+</tr>
+<showorder fields="product_name">
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right><b>Subtotal:</b></td>
+<td align=right><subtotal></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right><b><shippingtype>:</b></td>
+<td align=right><shippingcost></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right><b>Sales Tax:</b></td>
+<td align=right><salestax></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right><b>Grand Total:</b></td>
+<td align=right><grandtotal></td>
+</table>
+
+<p><font face="GeoSlb712 Md BT,helvetica">
+Click the button below to confirm and place your order. Please be patient
+while our server processes your order request. Do not click on your
+browser's stop button after you have pressed Confirm, as you will
+duplicate your order.
+</font>
 <p>
-<a href="<storeurl>">Return to the Storefront</a>.
+<input type=submit name="_backup" value=" Back Up "> 
+<input type=submit value=" Confirm ">
+<input type=hidden name=orderid value="<sessionid>"> 
+</checkout>
 </page>

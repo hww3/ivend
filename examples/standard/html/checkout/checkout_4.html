@@ -1,20 +1,27 @@
 <use file="../store_package">
 <page title="Checkout">
-<font size=+2>4. Shipping Selection</font>
-<p>
-Please choose one of the following methods of shipping:
-<br>
-
-<p>
 <checkout>
-<!-- Let's add the data collected on the previous page. -->
+<confirmemail field="email_address">
 <addentry>
-<!-- Now show a menu of available shipping types. -->
-<shippingtypes>
+<H1>3. Shipping Address</H1>
 <p>
+Is this order to be shipped to the Billing address?
+<select name=shipsame>
+<option value=1>Yes
+<option value=0>No
+</select>
+<p>
+If not, complete the following information:
+<p>
+<checkouterror>
+<table>
+<generateform table=customer_info hide="orderid,type,updated"
+exclude="Fax,Daytime_Phone,Evening_Phone,EMail_Address" pulldown="state"
+autofill="1" type="1">
+</table>
+<input type=hidden name=orderid value="<sessionid>">
+<input type=hidden name=type value=1>
 <input type=submit name="_backup" value=" Back Up "> 
 <input type=submit value=" Continue ">
-<input type=hidden name=orderid value="<sessionid>">
-<input type=hidden name=status value="3">
 </checkout>
 </page>

@@ -89,12 +89,16 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
 string|int listorder(object id, object s){
 
   string manifestfields="";
-
+array mf=({});
   if(CONFIG->handleorders->manifestfields) {
-    if(mappingp(CONFIG->handleorders->manifestfields))
+    if(mappingp(CONFIG->handleorders->manifestfields)) {
       manifestfields=", " + CONFIG->handleorders->manifestfields;
-    else
+	mf=({CONFIG->handleorders->manifestfields});
+      }
+    else {
       manifestfields=", " + (CONFIG->handleorders->manifestfields*", ");
+	mf=CONFIG->handleorders->manifestfields;
+      }
   }
   string retval="<table width=100%>\n";
 
@@ -109,9 +113,11 @@ string|int listorder(object id, object s){
 			"Unable to find data for this order.");
   retval+="<tr><td><font face=helvetica size=-1>Select</td>\n<td align=left>"
     "<font face=helvetica size=-1>Qty</font></td>\n"
-    "<td align=left><font face=helvetica size=-1>Item</font></td>\n"
-    "<td align=left><font face=helvetica size=-1>Description</font></td>\n"
-    "<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
+    "<td align=left><font face=helvetica size=-1>Item</font></td>\n";
+foreach(mfields,string f)
+  retval+="<td align=left><font face=helvetica size=-1>" + 
+    replace(f,"_"," ") +"</font></td>\n";
+retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {

@@ -323,14 +323,15 @@ string|mapping archive_orders(string mode, object id){
      } 
 #if constant(Protocols.SMTP.client)
 if(v->method=="Mail Archive" && v->email!=""){
- if(catch(
  object dns=Protocols.DNS.client();
 string server=dns->get_primary_mx(gethostname();
 if(!server) server="localhost";
+ if(catch(
   Protocols.SMTP.client(server)->simple_mail(v->email, 
 	"Archive Orders " + (orders_to_archive*", "), "ivend@" +
 	gethostname(), retval)))
-	return retval;
+	return "An error occurred while mailing your archive request.<p>"
+	 "Your archive request was cancelled. Please try again later.";
   foreach(orders_to_archive, mapping or){
 	delete_order(or->id, id);
      } 

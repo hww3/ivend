@@ -91,14 +91,17 @@ string|int listorder(object id, object s){
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
 			"Unable to find data for this order.");
-  retval+="<tr><td align=left><font face=helvetica size=-1>Qty</font></td>\n"
+  retval+="<tr><td><font face=helvetica size=-1>Select</td>\n<td align=left>"
+    "<font face=helvetica size=-1>Qty</font></td>\n"
     "<td align=left><font face=helvetica size=-1>Item</font></td>\n"
     "<td align=left><font face=helvetica size=-1>Description</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
-    retval+="<tr><td>" + row->quantity + "</td><td>" + row->id 
+    retval+="<tr><td><input type=checkbox value=ship name=\"" + row->id +
+      "." + row->series + "\"></td>"
+      "<td>" + row->quantity + "</td><td>" + row->id 
       + "</td><td>" + row->name + "</td><td align=right>" + row->price +
 	"</td><td align=right>"
       + sprintf("%.2f", (float)row->price * (float)row->quantity) 
@@ -112,7 +115,7 @@ id->variables->orderid + "'");
 
    foreach(r, mapping row) {
 
-  retval+="<tr>\n<td></td><td></td>\n<td align=right><font "
+  retval+="<tr>\n<td></td><td></td><td></td>\n<td align=right><font "
 	"face=helvetica>" +
 	capitalize(row->lineitem)
 	+"</td>\n<td> &nbsp; </td><td align=right>" 
@@ -123,7 +126,7 @@ id->variables->orderid + "'");
 r=s->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
 	"orderid='"+ id->variables->orderid + "'");
 
-  retval+="<tr><td></td><td></td><td align=right>"
+  retval+="<tr><td></td><td></td><td></td><td align=right>"
 	"<font face=helvetica><b>Grand Total</b></td><td></td>"
 	"<td align=right><b>" + r[0]->grandtotal + "</b></td></tr>\n";
 
@@ -175,29 +178,20 @@ if(id->variables->delete){
 }
 
 else if(id->variables->orderid) {
+  /*
+    retval+="<a href=./orders?fprint=1&orderid="+ id->variables->orderid+">"
+    "Display for Printing</a><p>";
 
-retval+="<a href=./orders?fprint=1&orderid="+ id->variables->orderid+">"
-	"Display for Printing</a><p>";
-retval+=show_orderdetails(id->variables->orderid, s, id);
+  */
 
-retval+="<form action=./orders>\n"
-	"Change this order's status to: "
-	"<input type=hidden name=orderid value="+
-	id->variables->orderid+">\n"
-	"<select name=status>";
+  retval+="<form action=\"./orders\" method=post>\n";
 
-array status=s->query("SELECT status, name from status where tablename='orders'");
-foreach(status, mapping v)
-  retval+="<option value="+ v->status + ">"+v->name+"\n";
+  retval+=show_orderdetails(id->variables->orderid, s, id);
 
-retval+="</select><input type=submit value=Change></form>\n";
-retval+="<form action=./orders>\n"
-	"<input type=hidden value=1 name=dodelete>"
-	"<input type=hidden value=" + id->variables->orderid  +" name=orderid>"
-	"<input type=submit value=Delete></form>\n";
-
-
-  }
+  retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
+    "<input type=submit name=doship value=\"Ship Selected\">"
+    "</form>";
+    }
 
 else {
   array r=s->query("SELECT id, status.name as status,"

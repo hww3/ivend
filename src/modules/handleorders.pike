@@ -787,7 +787,7 @@ else if(id->variables->orderid) {
 
 if(id->variables->print) {
   ADMIN_FLAGS=NO_BORDER;
-  retval+="<BODY onLoad=\"document.print()\">\n";
+  retval+="<BODY onLoad=\"this.print()\">\n";
 }
 if(id->variables->export) {
   ADMIN_FLAGS=NO_BORDER;

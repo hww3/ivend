@@ -2693,9 +2693,11 @@ else return res;                        }
                            }
 
                         else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
-                                        "<a href=\""+
-                                        query("mountpoint")+
-                                        "/"+request[1]+"\">"
+                                        "<a href=\""+ query("mountpoint")+
+                                        ((sizeof(config)==1 &&
+					getglobalvar("move_onestore")=="Yes")
+		       			?"": request[1]+"/")
+				 	+"\">"
                                         +config[request[1]]["general"]->name+"</a></FONT><P>\n"
                                         "<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[1]+"/config_modify\">\n"
                                         "<TABLE>"

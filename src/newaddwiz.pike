@@ -242,18 +242,20 @@ string wizard_done(object id){
 mapping v=id->variables;
 v->copyfiles-="\0000";
 string retval="";
+object privs;
+
+privs=Privs("iVend: Creating store directory");
 if(v->createdir && !file_stat(v->root)) mkdir(v->root);
-// if((int)v->overwrite) 
+privs=0;
+
 if(v->copyfiles=="yes"){
-object privs=Privs("iVend: Copying store files ");
+perror("copying store files...\n");
+privs=Privs("iVend: Copying store files ");
 mixed result=Process.system("/bin/cp -rf " +
    id->misc->ivend->this_object->query("root") + "examples/" +
    v->style +"/* " + v->root);
 privs=0;
 }
-// else mixed result=Process.system("/bin/cp -r  " +
-//   id->misc->ivend->this_object->query("root") + "examples/" +
-//   v->style + "/* " + v->root);
 
 object s;
 
@@ -302,9 +304,9 @@ if(file_stat(v->root + "/schema.mysql")){
 
   array ss=Stdio.read_file(v->root +  "/schema.mysql")/"\\g\n";
   if(catch(object s=Sql.sql(id->variables->dbhost, v->config , 
-    adminuser, adminpassword))) {
+    v->config, v->dbpassword))) {
     return "An error occurred while connecting to the store database" 
-	"as " + adminuser + " with password " + adminpassword + ".";
+	"as " + v->config + " with password " + v->dbpassword + ".";
     }
 ss=ss[0..sizeof(ss)-2];
   foreach(ss, string statement)
@@ -315,7 +317,9 @@ ss=ss[0..sizeof(ss)-2];
 
 
 
+privs=Privs("iVend: Copying store files ");
 mkdir(v->root + "/private");
+privs=0;
 
 if(!file_stat(v->root +"/private/key.pub"))
   write_keys(v->root + "/private/key");

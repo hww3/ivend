@@ -279,7 +279,7 @@ s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
 	v->config + ".* TO " + v->config + (v->secureperms=="Yes"?("@" +
 host):"")); 
 
-s->query("GRANT SELECT, INSERT, UPDATE, DELETE on " +
+s->query("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP on " +
 	v->config + ".* TO " + adminuser + (v->secureperms=="Yes"?("@" +
 host):"") ); 
 

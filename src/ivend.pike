@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.213 1999-06-03 20:04:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.214 1999-06-05 04:00:31 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -769,14 +769,14 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
             id->variables->referer + "\">\n";
     // if(!args->fields) return "Incomplete cart configuration!";
     if(catch(  array r= DB->query(
-                                "SELECT sessions." + KEYS->products +
+                                "SELECT sessions.id +
                                 ",series,quantity,sessions.price, "
 				"sessions.locked, sessions.autoadd, " 
 				"sessions.options " +
                                 extrafields+" FROM sessions,products "
                                 "WHERE sessions.SESSIONID='"
-                                +id->misc->ivend->SESSIONID+"' AND sessions."+
-                                KEYS->products+"=products." +
+                                +id->misc->ivend->SESSIONID+"' AND sessions."
+                                "id=products." +
                                 KEYS->products
                             )))
         return "An error occurred while accessing your cart."

@@ -17,11 +17,13 @@ array cc_fields=({});
 string|int show_orderdetails(string orderid, object s, object id);
 
 string create_panel(string name, string color, string contents, object id){
+string fontcolor;
   if(id->variables->print) { color="white"; fontcolor="black"; }
   else { fontcolor="white"; }
   string retval="";
 
-   retval+="<table width=80%><tr><td colspan=1 bgcolor=" + color +">\n";
+   retval+="<table valign=top width=80%><tr><td colspan=1 bgcolor=" +
+color +">\n";
    retval+=" &nbsp; <font face=helvetica color=\"" + fontcolor + "\"><b>"+
 	name +"</font></b> &nbsp; </td></tr>\n";
    retval+="<tr><td>\n" + contents + "\n</td></tr>\n</table>\n";
@@ -47,7 +49,7 @@ if(!r || sizeof(r)==0) return create_panel("Payment Information", "maroon",
 	      "Unable to find Payment Info for Order ID " + 
 		   id->variables->orderid, id);
 
-retval="<table width=100%>";
+retval="<table valign=top width=100%>";
  foreach(f, mapping field){
      if(field->name=="updated" || field->name=="type" || field->name=="orderid") continue;
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
@@ -94,6 +96,10 @@ array f=DB->list_fields(table);
 if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " + 
 		   id->variables->orderid+"</b></i><p>\n";
 
+//  if(id->variables->print && table=="customer_info")
+//    retval+="<table valign=top align=left><tr>\n";
+
+
  foreach(r, mapping row){
    string d="<table width=100% valign=top>";
    string type=row->type;
@@ -107,10 +113,17 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
      else d+=row[field->name]+"</td></tr>\n";
    }
    d+="</table>";
+//  if(id->variables->print && table=="customer_info")
+//    retval+="<td>\n";
   retval+=create_panel(type, "navy", d, id);
+//  if(id->variables->print && table=="customer_info")
+//    retval+="</td>\n";
  }
 
+//  if(id->variables->print && table=="customer_info")  {
 
+//    retval+="</tr></table><p>\n";
+//  }
  return retval;
 
 }
@@ -133,7 +146,7 @@ CONFIG_ROOT[module_name]->manifestfields;
         manifestfields += ", products." + f ;
       }
   }
-  string retval="<table width=100%>\n";
+  string retval="<table valign=top width=100%>\n";
 
   array r=DB->query("SELECT orderdata.*, status.name as status " 
 	+ manifestfields +" FROM "
@@ -207,7 +220,8 @@ id->variables->orderid + "'");
 	+"</td>\n<td align=right>";
 array wx=DB->query("SELECT status FROM orders WHERE id='" +
 id->variables->orderid + "'");
-if((int)(wx[0]->status) > 1) retval+= row->value +
+if(((int)(wx[0]->status) > 1)|| id->variables->print) retval+= row->value
++
   "</td><td></td></tr>\n";
 
 else if(!id->variables->editli || id->variables->editli!=row->lineitem)
@@ -215,7 +229,7 @@ else if(!id->variables->editli || id->variables->editli!=row->lineitem)
 	+ id->variables->orderid + "&editli=" + row->lineitem + 
 	"\"><img src=\"" + T_O->query("mountpoint") +
 "ivend-image/edit.gif\" alt=\"Edit\" border=0></a></td></tr>\n";
- else {
+ else  {
   retval+="<input type=text size=7 name=\"" + row->lineitem +
    "\" value=\"" + row->value + "\"></td><td><input alt=\"Commit\""
    " type=image name=\"commitli\" value=\"" + row->lineitem +
@@ -616,16 +630,16 @@ else {
   }
   else return "<b>Do you really want to cancel this order?</b>"
 	"<table><tr><td>"
-	"<form action=\"./" method=post>"
+	"<form action=\"./\" method=post>"
 	"<input type=hidden name=reallydocancel value=1>\n"
 	"<input type=hidden name=docancel value=1>\n"
-	"<input type=hidden name=orderid value=\" +
+	"<input type=hidden name=orderid value=\"" +
 		id->variables->orderid + "\">\n"
 	"<input type=submit value=\"Yes\">"
 	"</form>\n"
 	"</td><td>\n"
-	"<form action=\"./" method=post>"
-	"<input type=hidden name=orderid value=\" +
+	"<form action=\"./\" method=post>"
+	"<input type=hidden name=orderid value=\"" +
 		id->variables->orderid + "\">\n"
 	"<input type=submit value=\"No\">"
 	"</form></td></tr></table>\n";
@@ -788,13 +802,13 @@ if(!id->variables->print)
     id->variables->orderid + "\">\n";
 
   retval+=show_orderdetails(id->variables->orderid, DB, id);
-if(!id->variables->print)
+if(!id->variables->print) {
   retval+="<obox title=\"<font face=helvetica,arial>Order Actions</font>\">";
    array r=DB->query(
       "SELECT status.name,payment_info.orderid from status,payment_info "
       "WHERE payment_info.orderid='" + id->variables->orderid + "' AND "
       "status.status=payment_info.status");
-if(r && sizeof(r)>0 && r[0]->name!="Validated")
+if(r && sizeof(r)>0 && r[0]->name!="Validated" && !id->variables->print)
    retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
     "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
@@ -816,6 +830,7 @@ retval+=T_O->open_popup( "View Activity Log",
 				"height": 500, "width":550]) ,id);
 
 retval+="</obox>";
+  }
   }
     }
 
@@ -845,7 +860,7 @@ if((int)i%numlines) numpages ++;
 
 
   if(sizeof(r)>0) {
-  retval+="<table cellspacing=0 cellpadding=0>\n<tr>"
+  retval+="<table valign=top cellspacing=0 cellpadding=0>\n<tr>"
 	"<td colspan=4 align=center>";
 //  retval+="<font size=+1>" + row->name + "</font><br>";
 
@@ -929,7 +944,7 @@ string retval="";
 	id->variables->orderid + "'"); 
 	}
 
-	retval+=create_panel("Order Details","hunter","<table width=100%>"
+	retval+=create_panel("Order Details","hunter","<table valign=top width=100%>"
 	"<tr><td><font face=helvetica>"
 	"Order ID</td><td>"+r[0]->id+"</td></tr>\n"
 	"<tr><td width=30%><font face=helvetica>Status</td><td>"+r[0]->status+"</td></tr>\n"

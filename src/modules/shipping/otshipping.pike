@@ -136,7 +136,7 @@ string showtype(object id, mapping row){
 }
 
 
-float calculate_shippingtotal(object id){
+float calculate_shippingtotal(object id, mixed orderid, mixed type){
 
 float subtotal=0.00;
 array r;

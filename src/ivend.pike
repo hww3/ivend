@@ -1996,9 +1996,13 @@ array|int size_of_image(string filename){
 
 mixed stat_file( mixed f, mixed id )  {
 
+
    if(!CONFIG)
       return ({ 33204,0,time(),time(),time(),0,0 });
    //  perror("iVend: statting "+ CONFIG->root+"/html/"+f+"\n");
+
+   if(f=="." || f=="..")
+     f="/";
 
    array fs;
    if(!id->pragma["no-cache"] &&

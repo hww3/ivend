@@ -15,6 +15,7 @@ inherit "roxenlib";
 constant module_name="Default Checkout Module";
 constant module_type="checkout";
 
+int initialized;
 
 mapping query_tag_callers2();
 mapping query_container_callers2();
@@ -34,6 +35,45 @@ id->misc->ivend->lineitems=([]);
   return;    
 
 }
+
+
+int initialize_db(object db, mapping config) {
+
+  perror("initializing sales tax module!\n");
+catch(db->query("drop table taxrates"));
+if(catch(db->query(
+  "CREATE TABLE taxrates ("
+  " charge float(5,2) DEFAULT '0.00' NOT NULL,"
+  " type char(1) DEFAULT 'C' NOT NULL,"
+  " field_name char(64) NOT NULL, "
+  " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
+  " ) ")))
+    return 0;
+initialized=1;
+return 0;
+
+}
+
+void start(mapping config){
+
+object db;
+
+if(catch(db=iVend.db(config->general->dbhost, config->general->db,
+  config->general->dblogin, config->general->dbpassword))) {
+    perror("iVend: Checkout: Error Connecting to Database.\n");
+    return;
+  }
+if((sizeof(db->list_tables("taxrates")))==1)
+ initialized=1;
+else
+  initialize_db(db, config);
+
+return;
+
+}
+
+
+
 
 /*
 

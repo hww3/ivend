@@ -1,7 +1,8 @@
 #!/usr/bin/pike -M../src
 
 /* make_key.pike
- *
+ * based upon source from idonex
+ * modified by hww3
  */
 
 int write_file(string filename,string what)
@@ -28,9 +29,16 @@ Crypto.randomness.reasonably_random()->read);
     ("RSA PRIVATE KEY",
      Standards.PKCS.RSA.rsa_private_key(rsa));
 
-  werror(privkey);
+  string pubkey = Tools.PEM.simple_build_pem
+    ("RSA PUBLIC KEY",
+     Standards.PKCS.RSA.rsa_public_key(rsa));
 
-return ({privkey});
+
+
+//  werror(privkey);
+//  werror(pubkey);
+
+return ({privkey, pubkey});
 
 }
 
@@ -42,27 +50,33 @@ int main(int argc, array(string) argv)
   int keysize;
   string response;
 
-  write("Getting Ready to Create a new RSA Keypair...\n\n");
+  if(sizeof(argv)>=3) {
+    keysize=(int)argv[1];
+    name=argv[2];
+  }
 
-  response=readline("Number of bits: ");
-  if((int)response<300) { 
-    werror(response + " is too small. Using 512...\n");
-    keysize=512;
-    }
-  if((int)response>3000) { 
-    werror(response + " is too large. Using 2048...\n");
-    keysize=2048;
-    }
-  keysize=(int)response;
-  response=readline("File in which to place the Key: ");
-  if(response=="") name="rsakey";
-  else name=response;
+  else {
+    write("Getting Ready to Create a new RSA Keypair...\n\n");
+
+    response=readline("Number of bits (512-2048): ");
+    if((int)response<512) { 
+      werror((int)response + " is too small. Using 512...\n");
+      keysize=512;
+      }
+    else if((int)response>2048) { 
+      werror((int)response + " is too large. Using 2048...\n");
+      keysize=2048;
+      }
+    else keysize=(int)response;
+    response=readline("File in which to place the Key: ");
+    if(response=="") name="rsakey";
+    else name=response;
+  }
 
   string * key = generate_keys(keysize);
 
-//  write_file(name + ".pub", Commerce.Security.rsa_to_pub(rsa));
   write_file(name + ".priv", key[0]);
-//  write_file(name + ".pub", key[1]);
+  write_file(name + ".pub", key[1]);
 
   return 0;
 }

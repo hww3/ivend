@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.222 1999-06-14 03:53:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.223 1999-06-16 02:59:17 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -356,11 +356,10 @@ void get_entities(mapping c){
 
 }
 
-mixed register_admin_handler(string c, string mode, mixed f){
+mixed register_admin_handler(string c, mapping f){
 
-    // mode=lower_case(mode);
-    if(functionp(f))
-        admin_handlers[c][mode]=f;
+    if(functionp(f->handler))
+        admin_handlers[c][f->mode]=f;
     else perror("no function provided!\n");
     return;
 }
@@ -377,12 +376,13 @@ void start_store(string c){
 
 
     // perror(config[c]->general->config +"\n\n");
-
-    start_db(config[c]->general);
-    get_dbinfo(config[c]->general);
+    if(!config[c]->general)
+	return;
+    catch(start_db(config[c]->general));
+    catch(get_dbinfo(config[c]->general));
 
     get_entities(config[c]->general);
-    load_modules(config[c]->general->config);
+    catch(load_modules(config[c]->general->config));
 
     numsessions[config[c]->general->config]=0;
     numrequests[config[c]->general->config]=0;
@@ -1435,6 +1435,48 @@ mixed getsessionid(object id) {
 
 }
 
+mapping http_string_answer(string text, string|void type, object|void id)
+{
+perror("http_string_answer()\n");
+if(id){
+perror("we have id.\n");
+if(!id->misc->defines) id->misc->defines=([]);
+perror(sprintf("%O", id->misc->defines) + "\n");
+  return (["data":text,
+           "type":(type||"text/html"),
+           "stat":id->misc->defines[" _stat"],
+           "error":id->misc->defines[" _error"],
+           "rettext":id->misc->defines[" _rettext"],
+           "extra_heads":id->misc->defines[" _extra_heads"],
+           ]);
+}
+else 
+    return ([ "data":text, "type":(type||"text/html") ]);
+}
+
+mapping http_auth_required(string realm, string|void message, object id)
+{
+  if(!message)
+    message = "<h1>Authentication failed.\n</h1>";
+#ifdef HTTP_DEBUG
+  perror("HTTP: Auth required ("+realm+")\n");
+#endif
+                 if(!id->misc->defines)
+                     id->misc->defines=([]);
+                 if(!id->misc->defines[" _extra_heads"])
+                     id->misc->defines[" _extra_heads"]=([]);
+    
+
+id->misc->defines[" _extra_heads"]+=([ 
+	"WWW-Authenticate":"basic realm=\""+realm+"\""]);
+
+  return http_low_answer(401, message)
+    + ([ "extra_heads": id->misc->defines[" _extra_heads"]
+        ]);
+
+}
+
+
 // Start of auth functions.
 
 // we're login' in to the main config interface.
@@ -1451,14 +1493,29 @@ int get_auth(object id){
 int admin_auth(object id)
 
 {
+if(id->cookies->admin_user && id->cookies->admin_user!="")
+ { 
+  id->misc->ivend->admin_user=id->cookies->admin_user;
+  return 1;
+ }
+if(!id->cookies->logging_in || id->cookies->logging_in=="")
+ { 
+add_cookie(id, (["name":"logging_in",
+          "value":"1", "seconds": 120]),([]));
+  return 0;
+ }
+
     array(string) auth=id->realauth/":";
     mixed m;
+#ifdef ENABLE_ADMIN_BACKDOOR
     if(catch(m=iVend.db(
                        CONFIG->dbhost,
                        CONFIG->db,
                        auth[0],
                        auth[1]
-                   ))) {
+                   ))) 
+#endif
+	{
 	{
 	array r=DB->query("SELECT * FROM admin_users WHERE username='" +
 		auth[0] + "'");
@@ -1468,20 +1525,30 @@ int admin_auth(object id)
 		  return 0;
 		id->misc->ivend->admin_user=r[0]->username;
 		id->misc->ivend->admin_user_level=r[0]->level;
+             add_cookie(id, (["name":"admin_user",
+                              "value":r[0]->username, "seconds": 3600]),([]));
+             add_cookie(id, (["name":"logging_in",
+                              "value":"", "seconds": 1]),([]));
 		return 1;
 	  }
 	else return 0;
 	}
     }
+#ifdef ENABLE_ADMIN_BACKDOOR
     else { // the user id they provided was good.
       db[STORE]->handle(DB);
 	id->misc->ivend->admin_user="admin";
 	id->misc->ivend->admin_user_level=0;
         DB=m;
 
+             add_cookie(id, (["name":"admin_user",
+                              "value":"admin", "seconds": 3600]),([]));
+             add_cookie(id, (["name":"logging_in",
+                              "value":"", "seconds": 1]),([]));
 
         return 1;
    }
+#endif
 }
 
 
@@ -1576,6 +1643,16 @@ mixed getmodify(string type, string pid, object id){
 
 }
 
+int my_security_level(object id){
+
+ if(!id->cookies->admin_user) return -1;
+ if(id->cookies->admin_user=="admin") return 9;
+ array r=DB->query("SELECT * FROM admin_users WHERE username='" +
+	id->cookies->admin_user + "'");
+ if(sizeof(r)!=1) return -1;
+   perror("security level: " + r[0]->level + "\n");
+ return (int)(r[0]->level);
+}
 
 mixed have_admin_handler(string type, object id){
     if(!type || type=="")
@@ -1586,21 +1663,27 @@ mixed have_admin_handler(string type, object id){
         int loc= sizeof(h);
         loc-=sizeof(type);
         loc--;
-        if(search(h, type, loc)!=-1)
+        catch{ if(search(h, type, loc)!=-1)
             type=h;
+	};
     }
-    // perror(type + "\n");
+
     if(admin_handlers[STORE][type] &&
-                functionp(admin_handlers[STORE][type]))
-        //  perror("have handler for " + type + " in " + STORE + "\n");
+                functionp(admin_handlers[STORE][type]->handler)){
+	int security_level;
+	if(admin_handlers[STORE][type]->security_level)
+	  security_level=admin_handlers[STORE][type]->security_level;
+	else security_level=0;
+	if(my_security_level(id)>=security_level)
         return type;
+	}
 
 }
 
 mixed handle_admin_handler(string type, object id){
 
     mixed rv;
-    rv=admin_handlers[STORE][type](type, id);
+    rv=admin_handlers[STORE][type]->handler(type, id);
     return rv;
 
 }
@@ -1681,6 +1764,11 @@ string return_to_admin_menu(object id){
              mixed admin_handler(string filename, object id){
 if(CONFIG->admin_enabled=="No")
   return 0;
+if(id->variables->logout){
+   add_cookie(id, (["name":"admin_user",
+                 "value":"", "seconds": 1]),([]));
+return "You have logged out.<p><a href=./>Click here to continue.</a>";
+}
                  if(sizeof(id->prestate)==0) {
                      id->prestate=(<"menu=main">);
                      return http_redirect(id->not_query + (
@@ -1695,10 +1783,12 @@ if(CONFIG->admin_enabled=="No")
 
                  if(id->auth==0)
                      return http_auth_required("iVend Store Administration",
-                                               "Silly user, you need to login!");
+                                               "Silly user, you need to login!"
+						,id);
                  else if(!admin_auth(id))
                      return http_auth_required("iVend Store Administration",
-                                               "Silly user, you need to login!");
+                                               "Silly user, you need to login!",
+						id);
 
                  string retval="";
                  retval+="<title>iVend Store Administration</title>"
@@ -1733,6 +1823,9 @@ if(CONFIG->admin_enabled=="No")
                      string m=h-(mode + (type?"."+type:""));
                      if((m+(mode + (type?"."+type:"")))!=h)
                          valid_handlers+=({h});
+		foreach(valid_handlers, string vh)
+			if(admin_handlers[STORE][vh]->security_level
+>my_security_level(id)) valid_handlers-=({vh});
                  }
                  switch(mode){
 
@@ -1772,7 +1865,7 @@ if(CONFIG->admin_enabled=="No")
 	    "this " + type + ".";
 
 
-                     if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+                     if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
                                                             "face=helvetica,arial>Actions\">"
 				"<table><tr>";
 
@@ -1876,7 +1969,7 @@ if(CONFIG->admin_enabled=="No")
                  case "getmodify":
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
-                     if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+                     if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
                                                             "face=helvetica,arial>Actions\">"
 			"<table><tr>";
 
@@ -2043,7 +2136,7 @@ id->variables->__criteria + "%";
                                       + (id->query?"</a>":"") + "</b></font><p>";
                              if(ADMIN_FLAGS==NO_ACTIONS);
                              else{
-                                 if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+                                 if(sizeof(valid_handlers)) retval+="<obox width=95% title=\"<font "
                                                                         "face=helvetica,arial>Actions\"><table><tr>\n";
 
                                  foreach(valid_handlers, string handler_name) {
@@ -2072,7 +2165,7 @@ id->variables->__criteria + "%";
                          retval+=
                              "<table width=90%>"
                              "<tr><td width=33%>"
-                             "<obox title=\"<font face=helvetica,arial>Groups</font>\">\n"
+                             "<obox width=95% title=\"<font face=helvetica,arial>Groups</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href="+
@@ -2089,7 +2182,7 @@ id->variables->__criteria + "%";
                              +">Delete a Group</a>\n"
                              "</font>"
                              "</obox>"
-                             "<obox title=\"<font face=helvetica,arial>Products</font>\">\n"
+                             "<obox width=95% title=\"<font face=helvetica,arial>Products</font>\">\n"
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href="+
@@ -2119,7 +2212,7 @@ id->variables->__criteria + "%";
                          cats=uniq(cats);
                          sort(cats);
                          foreach(cats, string category){
-                             retval+="<obox title=\"<font face=helvetica,arial>"+ replace(category,
+                             retval+="<obox width=95% title=\"<font face=helvetica,arial>"+ replace(category,
                                      "_", " ") +
                                      "</font>\">\n<font "
                                      "face=helvetica,arial><ul>\n";
@@ -2136,7 +2229,9 @@ id->variables->__criteria + "%";
 
                          retval+="</td></tr></table>"
                                  "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
-                                 "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
+                                 "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup."
+				"<p>Logged in as " +
+				id->misc->ivend->admin_user + ". [ <a href=./?logout=1>Logout</a> ]";
 
                      }
                      else retval+="Sorry, couldn't find handler.";
@@ -2494,6 +2589,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 
                  if(t) cookies += "; expires="+http_date(t+time());
 
+perror("adding cookie: " + m->name + " value: " + m->value + "\n");
                  //obs! no check of the parameter's usability
                  cookies += "; path=" +(m->path||"/");
 
@@ -2546,7 +2642,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 
 
                                  return http_string_answer(retval,
-                                                           id->conf->type_from_filename(id->realfile|| "index.html"));
+					id->conf->type_from_filename(id->realfile|| "index.html"), id);
 
                              }
 
@@ -2671,8 +2767,8 @@ Config.write_section(query("configdir")+
                              if(functionp(o->register_admin))
                                  p = o->register_admin();
                              if(p)
-                                 foreach(indices(p), string np)
-                                 register_admin_handler(c, np, p[np]);
+                                 foreach(p, mapping np)
+                                 register_admin_handler(c, np);
 
                              if(functionp(o->query_tag_callers))
                                  library[c]->tag+=o->query_tag_callers();
@@ -2763,12 +2859,14 @@ db[c->config]->handle(s);
                          mapping write_configuration(object id){
                              string config_file="";
                              array active=({});
+				if(!global->configurations->active)
 
+global->configurations->active=({});
                              if(global->configurations && global->configurations->active)
                                  if(!arrayp(global->configurations->active))
                                      active=({global->configurations->active});
                                  else active=global->configurations->active;
-
+				active-=({0});
                              object privs=Privs("iVend: Writing Config Files");
 
                              foreach(({"global"}) + active, string confname){
@@ -2776,10 +2874,9 @@ db[c->config]->handle(s);
                                  mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
                                  if(confname=="global")
                                      Stdio.write_file(query("configdir")+"global",
-
-Config.write(global));
+					Config.write(global));
                                  else {
-                                     if(config[confname]->global)
+                                     if(config[confname] && config[confname]->global)
                                          m_delete(config[confname], "global");
                                      Stdio.write_file(query("configdir")+confname,
 
@@ -2805,10 +2902,10 @@ Config.write(config[confname]));
 
                              if(id->auth==0)
                                  return http_auth_required("iVend Configuration",
-                                                           "Silly user, you need to login!");
+                                                           "Silly user, you need to login!", id);
                              else if(!get_auth(id))
                                  return http_auth_required("iVend Configuration",
-                                                           "Silly user, you need to login!");
+                                                           "Silly user, you need to login!" ,id);
 
                              if(!c) read_conf();
                              // perror(sprintf("%O\n" , global));
@@ -2861,7 +2958,11 @@ Config.write(config[confname]));
 
                                      if(global->configurations && global->configurations->active
                                                  && arrayp(global->configurations->active))
+
                                          global->configurations->active=Array.uniq(global->configurations->active);
+	if(arrayp(global->configurations->active) 
+	  && sizeof(global->configurations->active)>0)
+		global->configurations->active-=({0});
                                      return write_configuration(id);
 
                                      break;
@@ -3090,7 +3191,7 @@ Config.write(config[confname]));
                                  "</BODY>\n"
                                  "</HTML>\n";
 
-                             return http_string_answer(retval);
+                             return http_string_answer(retval, 0, id);
 
                          }
 

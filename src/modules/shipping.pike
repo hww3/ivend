@@ -260,11 +260,14 @@ return retval;
 
 
 
-mapping register_admin()
+mixed register_admin()
 {
 
-return ([ "menu.main.Store_Administration.Shipping_Administration" :
-shipping_admin ]);
+return ({
+	([ "mode": "menu.main.Store_Administration.Shipping_Administration",
+		"handler": shipping_admin,
+		"security_level": 8 ])
+	});
 
 }
 

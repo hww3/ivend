@@ -252,7 +252,7 @@ string retval="";
 array orders_to_archive;
 orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
 "'");
-
+string t;
   foreach(orders_to_archive, mapping or){
 retval+="<order id=\"" + or->id + "\">\n"
 	"<created>" + or->created + "</created>\n"
@@ -261,7 +261,7 @@ retval+="<order id=\"" + or->id + "\">\n"
 	"<notes>" + (or->notes||"") + "</notes>\n";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info", "lineitems"});
-    foreach(tables, string t){
+    foreach(tables, t){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
 	or->id + "'");
@@ -325,7 +325,7 @@ string|mapping archive_orders(string mode, object id){
 #if constant(Protocols.SMTP.client)
 if(v->method=="Mail Archive" && v->email!=""){
  object dns=Protocols.DNS.client();
-string server=dns->get_primary_mx(gethostname();
+string server=dns->get_primary_mx(gethostname());
 if(!server) server="localhost";
  if(catch(
   Protocols.SMTP.client(server)->simple_mail(v->email, 
@@ -760,14 +760,18 @@ return retval;
 
 }
 
-mapping register_admin(){
+mixed register_admin(){
 
-return ([
+return ({
 
-	"menu.main.Orders.View_Orders" : show_orders,
-	"menu.main.Orders.Archive_Orders" : archive_orders
-
-	]);
+	([ "mode": "menu.main.Orders.View_Orders",
+		"handler": show_orders,
+		"security_level": 1 ]),
+	([ "mode": "menu.main.Orders.Archive_Orders",
+		"handler": archive_orders,
+		"security_level": 1 ])
+	
+	});
 
 }
 

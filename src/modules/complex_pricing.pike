@@ -518,10 +518,14 @@ mapping query_tag_callers(){
 
 mapping register_admin(){
 
-return ([
-	"add.product.Complex_Pricing":action_complexpricing,
-	"getmodify.product.Complex_Pricing":action_complexpricing
+return ({
+	([ "mode": "add.product.Complex_Pricing",
+		"handler": action_complexpricing,
+		"security_level": 0 ]),
+	([ "mode": "getmodify.product.Complex_Pricing",
+		"handler": :action_complexpricing,
+		"security_level": 0 ])
 
-	]);
+	});
 
 }

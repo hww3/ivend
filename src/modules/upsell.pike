@@ -133,7 +133,11 @@ mixed query_event_callers(){
 
 mixed register_admin(){
 
-  return ([ "getmodify.product.Upsell":upsell_handler ]);
+  return ({
+	([ "mode": "getmodify.product.Upsell",
+		"handler": upsell_handler,
+		"security_level": 0 ])
+	});
 }
 
 

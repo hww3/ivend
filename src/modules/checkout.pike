@@ -17,6 +17,8 @@ constant module_type="checkout";
 
 int initialized;
 
+array fields=({});
+
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
@@ -430,7 +432,6 @@ if(!args->noflush)
 	id->variables[encrypt];
     }
   else perror("Can't load public key.\n");
-}
 
 mixed j;
 
@@ -735,13 +736,14 @@ return ([ "checkout" : checkout ]);
 
 }
 
-mapping register_admin(){
+mixed register_admin(){
         
-return ([
-       
-        "menu.main.Store_Administration.Sales_Tax_Setup" : tax_setup
-        
-        ]); 
+return ({
+	([ "mode": "menu.main.Store_Administration.Sales_Tax_Setup",
+		"handler": tax_setup,
+		"security_level": 9        
+        ])
+	}); 
 }
 
 array query_preferences(object id){

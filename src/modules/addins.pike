@@ -86,8 +86,11 @@ mixed query_tag_callers(){
 mixed 
 register_admin(){
 
-  return ([ "menu.main.Store_Administration.Add-ins_Manager" :
-    addin_handler ]);
+  return ({
+	([ "mode": "menu.main.Store_Administration.Add-ins_Manager", 
+		"handler" : addin_handler,
+		"security_level" : 9 ])
+	});
 }
 
 

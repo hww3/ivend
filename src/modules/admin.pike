@@ -573,18 +573,31 @@ string action_reloadstore(string mode, object id){
 
 }
 
-mapping register_admin(){
+mixed register_admin(){
 
-return ([
-	"menu.main.Store_Maintenance.Clean_Stale_Sessions" : action_cleansessions,
-	"menu.main.Store_Maintenance.Reload_Store" : action_reloadstore,
-	"menu.main.Store_Maintenance.Preferences" : action_preferences,
-	"menu.main.Store_Administration.Drop_Down_Menus" : action_dropdown,
-	"menu.main.Store_Administration.Templates" : action_template,
-	"add.product.Item_Options":action_itemoptions,
-	"getmodify.product.Item_Options":action_itemoptions
-
-	]);
+return ({
+	([ "mode": "menu.main.Store_Maintenance.Clean_Stale_Sessions",
+		"handler": action_cleansessions,
+		"security_level": 0 ]),
+	([ "mode": "menu.main.Store_Maintenance.Reload_Store",
+		"handler": action_reloadstore,
+		"security_level": 9 ]),
+	([ "mode": "menu.main.Store_Maintenance.Preferences",
+		"handler": action_preferences,
+		"security_level": 9 ]),
+	([ "mode": "menu.main.Store_Administration.Drop_Down_Menus",
+		"handler": action_dropdown,
+		"security_level": 5 ]),
+	([ "mode": "menu.main.Store_Administration.Templates",
+		"handler": action_template,
+		"security_level": 5 ]),
+	([ "mode": "add.product.Item_Options",
+		"handler": action_itemoptions,
+		"security_level": 0 ]),
+	([ "mode": "getmodify.product.Item_Options",
+		"handler": action_itemoptions,
+		"security_level": 0 ])
+	});
 
 
 }

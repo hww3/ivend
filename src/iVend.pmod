@@ -219,7 +219,7 @@ m+=([name:desc]);
 
 class db {
 
-    inherit Sql.sql;
+    inherit Sql.sql : sqlconn;
 
     // object s;//  sql db connection...
 
@@ -229,50 +229,39 @@ class db {
     string password;
 
     inherit "roxenlib";
-
     void create(mixed host, mixed db, mixed user, mixed password){
 
-        ::create(host, db, user, password);
+        sqlconn::create(host, db, user, password);
 
     }
 
     mixed list_fields(string t, void|string f) {
 
         //         perror("iVend.db: List_fields\n");
-        return ::list_fields(t, f);
+        return sqlconn::list_fields(t, f);
     }
-
     mixed query(string q){
 
         //  perror("iVend.db: Query\n");
-        return ::query(q);
+        return sqlconn::query(q);
 
     }
 
 
 
     string make_safe(string s){
-        if(!s || !stringp(s)) return s;
-        s=(string)s;
-        return replace( (s || ""),({"'","\""}),({"\\'","\\\""}));
+        return sqlconn::quote(s);
 
     }
-    string quote(string s){
-        if(!s || !stringp(s)) return s;
-        s=(string)s;
-        return replace( (s || ""),({"'","\""}),({"\\'","\\\""}));
 
-    }
+
 
     mixed insert_id(){
 
-
-        if(functionp(::master_sql->insert_id))
-            return ::master_sql->insert_id();
-
-        else return -1;
-
+//            return sqlconn::master_sql->insert_id();
+return "";
     }
+
 
     mixed showmatches(string type, string id, string field) {
 
@@ -988,7 +977,6 @@ array(mapping(string:mixed)) r=list_fields(table);
         return retval;
 
     }
-
 }
 
 #if constant(thread_create)
@@ -1019,7 +1007,9 @@ class db_handler
         num_dbs=num;
         mixed err;
         for(int i = 0; i < num; i++) {
-            err=catch( dbs += ({ db(host, db_name, db_user, db_password) }));
+//	perror("creating db: " + host  + " " + db_name + " " + db_user + " " + db_password + "\n");
+            err=catch( dbs += ({ db(host, db_name, db_user,
+		db_password) }));
             if(err)
                 perror("Error creating db object:\n" +
                        describe_backtrace(err)+"\n");
@@ -1031,6 +1021,7 @@ class db_handler
         LOCK();
         int count;
         dbs -= ({0});
+	dbs-=({});
         if(objectp(d)) {
             // werror("returning a db object...\n");
             if(search(dbs, d) == -1) {

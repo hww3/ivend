@@ -35,13 +35,15 @@ if(id->variables->_name=="") {
  ERROR("You must choose a store.");
  return 0;
 }
+// string c;
 foreach(indices(id->misc->ivend->this_object->config), string c){
 
-if(id->misc->ivend->this_object->config[c]->general->name==id->variables->_name)
+if(id->misc->ivend->this_object->config[c]->general->name==id->variables->_name) {
     id->variables->__name=c;
+  id->variables->dbhost=id->misc->ivend->this_object->config[c]->general->dbhost;
+  }
 }
 
-id->variables->dbhost=id->misc->ivend->this_object->config[c]->general->dbhost;
 
 return 0;
 
@@ -145,8 +147,7 @@ return retval;
 
 string wizard_done(object id){
 mapping v=id->variables;
-mapping
-general=id->misc->ivend->this_object->config[id->variables->__name]->general;
+mapping general=id->misc->ivend->this_object->config[id->variables->__name]->general;
 string retval="";
 object privs;
 
@@ -182,6 +183,7 @@ m_delete(id->misc->ivend->this_object->config, v->__name);
 if(stringp(id->misc->ivend->this_object->global->configurations->active))
   m_delete(id->misc->ivend->this_object->global->configurations,
 "active");
+if(arrayp(id->misc->ivend->this_object->global->configurations->active))
 id->misc->ivend->this_object->global->configurations->active-=({v->__name});
 id->misc->ivend->this_object->save_status=0;
 

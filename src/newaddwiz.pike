@@ -49,10 +49,8 @@ object s;
 perror("dbhost: " + id->variables->dbhost + " dblogin: " +
 id->variables->dblogin + " dbpassword: " + id->variables->dbpassword +
 "\n");
-s=Sql.sql(id->variables->dbhost, "", 
-  id->variables->dblogin, id->variables->dbpassword);
  if(catch(
-s=Sql.mysql(id->variables->dbhost, "", 
+s=Sql.sql(id->variables->dbhost , "", 
   id->variables->dblogin, id->variables->dbpassword)
 ))
  {
@@ -181,7 +179,7 @@ string|int page_4(object id){
   "<help><tr><td colspan=2>Copy files into this store "
   "directory?</td></tr></help>"
   "<tr><td>Administrator Email &nbsp;</td><td><var name=adminemail "
-  "type=text></td></tr>"
+  "type=string></td></tr>"
   "<help><tr><td colspan=2>This is an email address for this store's administrator. "
   "</td></tr></help>"
   "</table>";
@@ -272,15 +270,17 @@ object privs;
 object s;
 
 //  if(catch(
-s=Sql.sql(id->variables->dbhost, "", 
-    id->variables->dblogin, id->variables->dbpassword);
+perror("connecting to database as " + id->variables->dbhost + " " + id->variables->dblogin + " " +
+id->variables->dbpassword + "\n");
+s=Sql.sql(id->variables->dbhost , "", 
+  id->variables->dblogin, id->variables->dbpassword);
 /*)) {
     return "An error occurred while connecting to the database server "
 	"as db administrator.";
     }
 */
-s->query("CREATE DATABASE " + v->config);
-if(!s->select_db(v->config))
+catch(s->query("CREATE DATABASE " + v->config));
+if(catch(s->select_db(v->config)))
   return "An error occurred while creating the store database. "
 	"This usually means that either 1) the database already exists, "
 	"or 2) the db administrator account does not have permission to "
@@ -295,7 +295,7 @@ if(v->dbhost=="") v->dbhost=="localhost";
 v->dblogin=v->config;
 v->db=v->config;
 string host=(lower_case(v->dbhost)=="localhost"?"localhost":gethostname());
- v->dbpassword=MIME.encode_base64((string)hash(ctime(time())))[0..7];
+v->dbpassword=MIME.encode_base64((string)hash(ctime(time())))[0..7];
 //perror(v->dbpassword + "\n");
 string vsr;
 if(functionp(s->server_info))
@@ -303,26 +303,25 @@ catch(vsr=s->server_info());
 
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
 	v->config + ".* TO " + v->config +
-	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")); 
+	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")
+   + " IDENTIFIED BY '" + v->dbpassword + "'"); 
 
-s->query("SET PASSWORD FOR " + v->config +
-(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@\"" +
-host + "\""):"") +  
-	" = PASSWORD(\"" + v->dbpassword + "\")");
-
-s->query("INSERT INTO admin_users VALUES('admin','Store Administrator','"
-	+ v->adminemail + "','" + crypt(adminpassword) + "')");
+perror("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
+	v->config + ".* TO " + v->config +
+	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")
+   + " IDENTIFIED BY '" + v->dbpassword + "'"); 
 
 retval+="<b><font face=+1>Store Created Successfully.</b><p></font>"
   "Your store has been successfully created. Please make a note of the "
   "following information:<p>";
 
-retval+= "<b>Admin User:</b> " + adminuser + "<br>\n"
+retval+= "<b>Admin User:</b> admin<br>\n"
   "<b>Admin Password:</b> " + adminpassword + "<br>\n"
   "<b>Data File Location</b>: " + v->root + "<br>\n";
 
 retval+="<p>\nYou may edit $DATALOCATION/store_package "
-  "to customize the overall look of your store.";
+  "to customize the overall look of your store."
+  "<p>Be sure to save your store configurations.";
 
 privs=Privs("iVend: Creating store directory");
 if(v->createdir && !file_stat(v->root)) mkdir(v->root);
@@ -358,6 +357,8 @@ ss=ss[0..sizeof(ss)-2];
 	  statement + "<p>" + s->error();
 }
 
+s->query("INSERT INTO admin_users VALUES('admin','Store Administrator','"
+	+ v->adminemail + "','" + crypt(adminpassword) + "', 9)");
 
 
 privs=Privs("iVend: Copying store files ");

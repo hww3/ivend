@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.290 2004-01-22 21:13:40 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.291 2004-01-22 23:55:52 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -116,7 +116,6 @@ void ivend_report_warning(string error, string|void orderid, string subsys, obje
 */
 
 float get_tax(object id, string orderid){
-//perror("getting tax for orderid: " + orderid + "\n");
 array r;                // result from query
 string query;           // the query
 float totaltax;         // totaltax
@@ -389,21 +388,38 @@ void register_path_handler(string path, function f){
     return;
 }
 
-mixed throw_fatal_error(mixed error, object id) {  
-// we don't do anything with error yet.
+array get_fatal_error(object id)
+{
+  return id->misc->ivend->fatal_event;
+}
+
+array get_warning_error(object id)
+{
+  return id->misc->ivend->warning_event;
+}
+
+mixed throw_fatal_error(string error, object id) {  
 
   if(!id->misc->ivend->had_fatal_event)
     id->misc->ivend->had_fatal_event=1;
   else id->misc->ivend->had_fatal_event ++;
 
+  if(!id->misc->ivend->fatal_event) 
+    id->misc->ivend->fatal_event = ({});
+
+  id->misc->ivend->fatal_event = ({ error });
 }
 
-mixed throw_warning(mixed error, object id) {  
-// we don't do anything with error yet.
+mixed throw_warning(string error, object id) {  
 
   if(!id->misc->ivend->had_warning_event)
     id->misc->ivend->had_warning_event=1;
   else id->misc->ivend->had_warning_event ++;
+
+  if(!id->misc->ivend->warning_event) 
+    id->misc->ivend->warning_event = ({});
+
+  id->misc->ivend->warning_event = ({ error });
 
 }
 
@@ -571,6 +587,10 @@ void start_store(){
     numrequests=0;
 
     load_library();
+
+    register_event(config->general, (["postadditem": 
+       event_postadditem]));
+
     started=1;
 }
 
@@ -615,10 +635,10 @@ int write_config_section(string section, mapping attributes){
     return rv;
 }
 
-void start(object conf){
+void start(int cnt, object conf){
     report_error("Starting iVend 1.2\n");
     num=0;
-    module_dependencies(conf, ({"obox", "123sessions"}) );
+    module_dependencies(conf, ({"obox", "tablify", "123session"}) );
     add_include_path(getmwd() + "src/include");
     add_module_path(getmwd()+"src");
     loaded=1;
@@ -713,9 +733,6 @@ mixed do_complex_items_add(object id, array items){
                                             "options": i->options]));
     }
         
-    if(!COMPLEX_ADD_ERROR)
-    trigger_event("additem",id,(["item": i->item, "quantity":
-                                         i->quantity]));
     }
     return 0;
 }
@@ -790,8 +807,8 @@ int do_low_additem(object id, mixed item, mixed quantity, mixed
   if(!id->misc->session_variables->cart) 
     id->misc->session_variables->cart=({});
 
-  id->misc->session_variables->cart+=({ 
-    ([
+
+mapping ent =    ([
        "item" : item,
        "quantity" : quantity,
        "options" : (args->options||""),
@@ -799,13 +816,35 @@ int do_low_additem(object id, mixed item, mixed quantity, mixed
        "autoadd" : (args->autoadd||0),
        "lock" : (args->lock||0),
        "taxable" : is_item_taxable(id, item)
-    ]) 
+    ]) ;
+                 
+trigger_event("preadditem", id, ent);
+
+if(!had_fatal_error(id))
+{
+  id->misc->session_variables->cart+=({ 
+     ent
   });
 
-  id->misc["ivendstatus"]+= (string) quantity +" " +
-    ITEM + " " + item + " " + ADDED_SUCCESSFULLY +"\n"; 
+trigger_event("postadditem", id, ent );
 
+}
+else 
+{
+  id->misc["ivendstatus"]+= (string) quantity +" " +
+    ITEM + " " + item + " " + ADD_FAILED +"<p>"
+    + (get_fatal_error(id)*"<br>"); 
+
+}
   return 1;
+}
+
+void event_postadditem(string event_name, object id, mapping args)
+{
+
+  id->misc["ivendstatus"]+= (string) args->quantity +" " +
+    ITEM + " " + args->item + " " + ADDED_SUCCESSFULLY +"\n"; 
+
 }
 
 mixed do_additems(object id, array items){
@@ -833,6 +872,32 @@ mixed do_additems(object id, array items){
     }
 }
 
+void delete_cart_item(object id, string item, string series)
+{
+
+    if(id->misc->session_variables->cart[(int)series])
+    {
+	if(id->misc->session_variables->cart[(int)series]->item == item)
+	{
+	    mapping dv= copy_value(id->misc->session_variables->cart[(int)series]);
+	    
+	    trigger_event("predeleteitem", id, dv );
+	    if(!had_fatal_error(id))
+	    {
+                id->misc->session_variables->cart-= ({ id->misc->session_variables->cart[(int)series] });
+		trigger_event("postdeleteitem", id, dv );
+	    }
+	    else
+	    {
+		id->misc["ivendstatus"]+= (string)
+		    ITEM + " " + dv->item + " delete failed.<p>"
+		    + (get_fatal_error(id)*"<br>"); 
+
+	    }
+	}
+    }
+    
+} 
 
 mixed container_icart(string name, mapping args, string contents, object id) {
     string retval="";
@@ -861,118 +926,105 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     //  are we deleting an item from the cart?
     //
 
-    string p, s;
+    string p, s, q;
 
     foreach(indices(id->variables), string v) {
         if(id->variables[v]==DELETE) {
             p=(v/"/")[0];
             s=(v/"/")[1];
-            if(id->misc->session_variables->cart[(int)s])
-            {
-              if(id->misc->session_variables->cart[(int)s]->item == p)
-                id->misc->session_variables->cart-=id->misc->session_variables->cart[(int)s];
-              madechange=1;
-              trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
-            }
-        }
+	    delete_cart_item(id, p, s);
+	}
+	// 
+	//  are we updating an item in the cart?
+	//
+	if(id->variables->update) {
+
+	    for(int i=0; i< (int)id->variables->s; i++) {
+		
+		p=id->variables["p"+(string)i];
+		s=id->variables["s"+(string)i];
+		q=id->variables["q"+(string)i];
+		
+		if((int)q == 0) // we're deleting an item from the cart.
+		{
+		    delete_cart_item(id, p, s);
+		    madechange=1;
+		} 
+		   else // we're updating the quantity, maybe.
+		   {
+		       madechange=1;
+
+		       int q= (int)(id->variables["q"+(string)i]);
+		       string i= id->variables["p"+(string)i];
+		       s= id->variables["s"+(string)i];
+		       
+		       if(id->misc->session_variables->cart[(int)s])
+		       {
+			   if(id->misc->session_variables->cart[(int)s]->item == p)
+			       id->misc->session_variables->cart[(int)s]->quantity = q;
+			   
+			   trigger_event("updateitem", id, (["item" : id->variables["p" +
+										    (string)i] , "series" : id->variables["s" + (string)i],
+							     "quantity": id->variables["q" + (string)i]]) );
+		       }
+		   }
+	       }
+	}
     }
-
-
-    // 
-    //  are we updating an item in the cart?
-    //
-    if(id->variables->update) {
-        for(int i=0; i< (int)id->variables->s; i++){
-            if((int)id->variables["q"+(string)i]==0) {
-               p=id->variables["p"+(string)i];
-               s=id->variables["s"+(string)i];
-               madechange=1;
-              if(id->misc->session_variables->cart[(int)s])
-              {
-                if(id->misc->session_variables->cart[(int)s]->item == p)
-                  id->misc->session_variables->cart-=id->misc->session_variables->cart[(int)s];
-                madechange=1;
-                trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
-              }
-
-              trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , 
-                "series" : id->variables["s" + (string)i]]) );
-            } 
-            else 
-            {
-              madechange=1;
-
-              int q= (int)(id->variables["q"+(string)i]);
-              string i= id->variables["p"+(string)i];
-	      s= id->variables["s"+(string)i];
-
-              if(id->misc->session_variables->cart[(int)s])
-              {
-                if(id->misc->session_variables->cart[(int)s]->item == p)
-                  id->misc->session_variables->cart[(int)s]->quantity = q;
-              }
-
-              trigger_event("updateitem", id, (["item" : id->variables["p" +
-                                  (string)i] , "series" : id->variables["s" + (string)i],
-                                  "quantity": id->variables["p" + (string)i]]) );
-            }
-        }
-    }
-
 
     if(madechange==1){
         array r = copy_value(id->misc->session_variables->cart);
         if(r && sizeof(r)>0) {
-          array items=({});
+	    array items=({});
           id->misc->session_variables->cart=({});
           foreach(r, mapping row) {
-             if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
-	       continue;
-             items+=({ (["item": row->id, "quantity": row->quantity, "options":
-               row->options, "locked": row->locked, "autoadd": row->autoadd ]) });
+	      if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
+		 continue;
+             items+=({ (["item": row->item, "quantity": row->quantity, "options":
+			 row->options, "locked": row->locked, "autoadd": row->autoadd ]) });
           }
           do_additems(id, items);
-       }
+	}
     }
+    
     string field;
-
+    
     //
     //  now that the changes have been made, we can display the cart.
     //
 
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n"
-            "<input type=hidden name=referer value=\"" +
-            id->variables->referer + "\">\n";
-
+	"<input type=hidden name=referer value=\"" +
+	id->variables->referer + "\">\n";
+    
     array r;
 
     if(sizeof(id->misc->session_variables->cart)==0) {
-      if(id->misc->ivend->error)
-         return YOUR_CART_IS_EMPTY +"\n<false>\n";
+	if(id->misc->ivend->error)
+	  return YOUR_CART_IS_EMPTY +"\n<false>\n";
     }
-
+    
     r = ({});
     foreach(id->misc->session_variables->cart, mapping row)
     {
-      array rx;
+	array rx;
       write("SELECT " + extrafields + " FROM products WHERE "
                                 + DB->keys->products + " = '" + row->item + "'");
       if(catch(rx= DB->query("SELECT " + extrafields + " FROM products WHERE "
-                                + DB->keys->products + " = '" + row->item + "'")))
-         return "An error occurred while accessing your cart."
-               "<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
+			     + DB->keys->products + " = '" + row->item + "'")))
+	  return "An error occurred while accessing your cart."
+	     "<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
       if(sizeof(rx))
       {
-         r+=({ rx[0] + row });
+	  r+=({ rx[0] + row });
       }        
+      
+    }
 
-   }
-
-   werror(sprintf("CART: %O\n\n", r));
-   retval+="<cartdata>";
+    retval+="<cartdata>";
    array elements=({});
    foreach(en, field){
-      elements+=({"<cartheader>"+field+"</cartheader>"});
+       elements+=({"<cartheader>"+field+"</cartheader>"});
    }
    elements+=({"<cartheader>" + WORD_OPTIONS + "</cartheader>"});
    elements+=({"<cartheader>" + PRICE +"</cartheader>"});
@@ -981,70 +1033,71 @@ mixed container_icart(string name, mapping args, string contents, object id) {
    elements+=({"<cartheader></cartheader>"});
    retval+="<cartrow>" + elements*"\t";
    retval+="</cartrow>\n";
-
+   
    for (int i=0; i< sizeof(r); i++){
-	elements=({});
-     for (int j=0; j<sizeof(en); j++)
-       if(j==0) elements+=({"<cartcell align=left><INPUT TYPE=HIDDEN NAME=s"
-		+ i + " VALUE="+ i +">"
-                "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
-                "><A HREF=\""+ id->misc->ivend->storeurl  +
-                r[i]->id + ".html\">"
-                +r[i][en[j]]+"</A></cartcell>"});
-
+       elements=({});
+	for (int j=0; j<sizeof(en); j++)
+	 if(j==0) elements+=({"<cartcell align=left><INPUT TYPE=HIDDEN NAME=s"
+			    + i + " VALUE="+ i +">"
+			    "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->item+
+			    "><A HREF=\""+ id->misc->ivend->storeurl  +
+			    r[i]->item + ".html\">"
+			    +r[i][en[j]]+"</A></cartcell>"});
+     
        else elements+=({"<cartcell align=left>"+(r[i][en[j]] || " N/A ")
-	+"</cartcell>"});
-
-  string e="<cartcell align=left>";
+			+"</cartcell>"});
+     
+     string e="<cartcell align=left>";
   array o=r[i]->options/"\n";
 
   array eq=({});
   foreach(o, string opt){
-    array o_=opt/":";
-    catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
-      "product_id='" + r[i]->id + "' AND option_type='" +
-       o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
+      array o_=opt/":";
+      catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
+			      "product_id='" + r[i]->id + "' AND option_type='" +
+			      o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
   }
 	
   e+=(eq*"<br>") + "</cartcell>";
   elements+=({e});
   elements+=({"<cartcell align=right>" + MONETARY_UNIT +
-                sprintf("%.2f",(float)r[i]->price)+"</cartcell>"});
+	      sprintf("%.2f",(float)r[i]->price)+"</cartcell>"});
 
   elements+=({"<cartcell><INPUT TYPE="+
-		(r[i]->locked=="1"?"HIDDEN":"TEXT") +
-		" SIZE=3 NAME=q"+i+" VALUE="+
-                r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
-		+ "</cartcell>"});
+	      (r[i]->locked=="1"?"HIDDEN":"TEXT") +
+	      " SIZE=3 NAME=q"+i+" VALUE="+
+	      r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
+	      + "</cartcell>"});
   elements+=({"<cartcell align=right>" + MONETARY_UNIT
-		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"});
-
+	      +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"});
+  
   e="<cartcell align=left>";
   if(r[i]->autoadd!="1")
-    e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i]->id + "/" + i + "\">";
+      e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i]->item + "/" + i + "\">";
   e+="</cartcell>";
   elements+=({e});
   retval+="<cartrow>" + elements*"\t";
   retval+="</cartrow>\n";
-  }
-  retval+="</cartdata>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-            "<table><tr><td><input name=update type=submit value=\""
-            + UPDATE_CART + "\"></form></td>\n";
+   }
+   retval+="</cartdata>\n<input type=hidden name=s value="+sizeof(r)+">\n"
+      "<table><tr><td><input name=update type=submit value=\""
+      + UPDATE_CART + "\"></form></td>\n";
   if(!id->misc->ivend->checkout)
   {
-    if(args->checkout_url)
-       retval+="<td><form action=\"" + args->checkout_url + "\">";
+      if(args->checkout_url)
+	retval+="<td><form action=\"" + args->checkout_url + "\">";
     else
-       retval+="<td> <form action=\""+ query("mountpoint") + "checkout/"
-                    + "\">";
-       retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
+	retval+="<td> <form action=\""+ query("mountpoint") + "checkout/"
+	   + "\">";
+    retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
   }
     
-  if(!id->misc->ivend->checkout && (args->cont||id->variables->referer)){
-	retval+="<td> <form action=\"" +
+  if(!id->misc->ivend->checkout && (args->cont||id->variables->referer))
+  {
+      retval+="<td> <form action=\"" +
           (args->cont||id->variables->referer) + "\">"
-		"<input type=submit value=\"Continue\"></form></td>";
-	}
+	  "<input type=submit value=\"Continue\"></form></td>";
+  }
   retval+="</tr></table>\n<true>\n"+contents;
   return retval;
 }
@@ -1525,21 +1578,13 @@ items+=({ (["item" : v , "quantity" : quantity]) });
     }
 
     if(id->variables->item)
-items+=({ (["item": id->variables->item,
-            "quantity":
+            items+=({ (["item": id->variables->item,
+                    "quantity":
                     (id->variables[id->variables->item+"quantity"]
                      ||id->variables->quantity || 1)
                    ]) });
     int result=do_additems(id, items);
-    if(result)
-        foreach(items, mapping item) {
-   trigger_event("preadditem", id, (["item": item->item, "quantity":
-	item->quantity]));
-   trigger_event("additem",id,(["item": item->item, "quantity":
-                                     item->quantity]));
-   trigger_event("postadditem",id,(["item": item->item, "quantity":
-                                     item->quantity]));
-  }
+
     return 0;
 }
 
@@ -2933,15 +2978,13 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
                                  if(config->addins[miq]=="load")
                                      mtl+=({miq});
 
- perror("1 Found " + sizeof(mtl) + " modules to load.\n");
 object s=db->handle();
 			if(s->local_settings->pricing_model==COMPLEX_PRICING) {
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }
- perror("2 Found " + sizeof(mtl) + " modules to load.\n");
                              foreach(mtl, string name) { 
-perror("3 loading " + name + "\n");
+perror("iVend: loading " + name + "\n");
                                  err=catch(load_ivmodule(name));
                                  if(err) perror("iVend: The following error occured while loading the module "
                                                     + name + "\n" +  describe_backtrace(err));

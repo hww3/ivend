@@ -298,7 +298,7 @@ id->misc->ivend->this_object->trigger_event("confirmorder", id,
 // do we send a confirmation note? if so, do it.
 
 string note;
-note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/confirm.txt");
+note=Stdio.read_file(T_O->query("storeroot")+"/notes/confirm.txt");
 if(note) {
 
   string subject,sender, recipient;
@@ -333,7 +333,7 @@ else
 
 // do we send an order notification? if so, then do it.
 
-note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/notify.txt");
+note=Stdio.read_file(T_O->query("storeroot")+"/notes/notify.txt");
 if(note) {
 
   string subject,sender, recipient;
@@ -561,12 +561,12 @@ if(id->variables->_backup  && id->variables->_page)
   id->variables->_page=(int)(id->variables->_page)-2;
   if((int)(id->variables->_page) < 1) id->variables->_page=1;
 string retval=
-  Stdio.read_file(id->misc->ivend->config->general->root +
+  Stdio.read_file(T_O->query("storeroot") +
     "/html/checkout/checkout_"+ (id->variables["_page"] || "1") +
     ".html");
 
 if(!retval) return "error loading " +
-id->misc->ivend->config->general->root +
+  T_O->query("storeroot") +
   "/html/checkout/checkout_"+ (id->variables["_page"] || "1") + 
   ".html" ;    
 

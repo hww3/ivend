@@ -68,8 +68,7 @@ void cpbuyxgetx(string event, object id, mapping args){
   "quantity_to_get DESC");
 
  if(!offers || sizeof(offers)<1) {
-  COMPLEX_ADD_ERROR=NO_ADD;
-// perror("exiting buyxgetx...\n");
+  T_O->had_fatal_error(NO_ADD);
   return;
  }
 
@@ -95,8 +94,6 @@ if(args->options){
 else  if(id->variables->options){
    op=T_O->get_options(id, item);
   }
-//  perror(o->surcharge + "\n");
-//  if(o->surcharge) price=(float)price +(float)(o->surcharge);
       int result=T_O->do_low_additem(id, o->bonus_product_id,
        o->quantity_to_get, o->price, ([ "lock":1 ])+op);
       if(!result) perror("an error occurred while adding item " + item
@@ -137,7 +134,7 @@ else if(id->variables->options){
   perror(price +"\n");
   int result=T_O->do_low_additem(id, item, quantity, price, o);
   if(!result) {
-   COMPLEX_ADD_ERROR=ADD_FAILED;
+   T_O->had_fatal_error(ADD_FAILED);
    perror("An error occurred adding item: " + item + " price: " +
     price + "\n");
    }
@@ -214,7 +211,7 @@ else if(id->variables->options){
         (int)(row->quantity_to_add)*(int)(row->quantity),
 	(float)(row->price), o);
   if(!result) {
-   COMPLEX_ADD_ERROR=ADD_FAILED;
+   T_O->had_fatal_error(ADD_FAILED);
    perror("An error occurred adding item: " + item + " price: " +
     row->price + "\n");
    }
@@ -286,7 +283,7 @@ else foreach(r, mapping row){
 
 if(!catch(this_object()["getprice_"+ row->type]) &&
 functionp(this_object()["getprice_"+row->type]) )
- retval+=make_container(row->type, ([]), this_object()["getprice_" +
+ retval+=Caudium.make_container(row->type, ([]), this_object()["getprice_" +
 	row->type](id, args->item, args));
 else retval+="<!-- Can't get pricing display for type " + row->type + ". -->\n";
  }

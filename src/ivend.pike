@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.9 1998-01-07 23:30:37 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.10 1998-01-23 10:22:18 hww3 Exp $";
 
 /*
  *
@@ -626,13 +626,21 @@ return http_redirect(query("mountpoint")+"config", id);
 
 }
 
-int get_auth(object id){
+int get_auth(object id, int|void i){
+if(i){
 // perror(query("config_password")+" "+query("config_user")+"\n");
   array(string) auth=id->realauth/":";
   if(auth[0]!=query("config_user")) return 0;
   else if(query("config_password")==auth[1])
         return 1;
   else return 0;                   
+}
+// perror(query("config_password")+" "+query("config_user")+"\n");
+  array(string) auth=id->realauth/":";
+  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
+  else if(id->misc->ivend->config->config_password==auth[1])
+        return 1;
+  else return 0;
 
 }
 
@@ -640,7 +648,7 @@ mapping configuration_interface(array(string) request, object id){
 
 if(id->auth==0)
   return http_auth_required("iVend Configuration","Silly user, you need to login!"); 
-else if(!get_auth(id)) 
+else if(!get_auth(id,1)) 
   return http_auth_required("iVend Configuration","Silly user, you need to login!");
 
 	string retval="";
@@ -887,6 +895,12 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
    }
 
 mixed admin_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Configuration","Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Configuration","Silly user, you need to login!");
+
 string retval="";
 retval+="<title>iVend Store Administration</title>"
   "<body bgcolor=white text=navy>"

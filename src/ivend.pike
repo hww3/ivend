@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.234 1999-07-31 20:41:21 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.235 1999-08-03 01:35:12 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -800,9 +800,9 @@ array r;
     foreach(en, field){
         retval+="<cartheader>&nbsp; "+field+" &nbsp; </cartheader>\n";
     }
-    retval+="<th bgcolor=maroon><font color=white>&nbsp; " + WORD_OPTIONS
+    retval+="<cartheader>&nbsp; " + WORD_OPTIONS
 +
-" &nbsp;</th>\n"
+" &nbsp;</cartheader>\n"
 	"<cartheader>&nbsp; "
             + PRICE +" &nbsp;</cartheader>\n"
             "<cartheader>&nbsp; "
@@ -811,14 +811,14 @@ array r;
             + TOTAL + " &nbsp;</cartheader><td></td></tr>\n";
     for (int i=0; i< sizeof(r); i++){
      for (int j=0; j<sizeof(en); j++)
-       if(j==0) retval+="<TR><cartcell><INPUT TYPE=HIDDEN NAME=s"+i+ 	
+       if(j==0) retval+="<TR><cartcell align=left><INPUT TYPE=HIDDEN NAME=s"+i+ 	
 		" VALUE="+r[i]->series+">\n"
                 "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
                 ">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl  +
                 r[i]->id + ".html\">"
                 +r[i][en[j]]+"</A> &nbsp;</cartcell>\n";
 
-       else retval+="<cartcell>"+(r[i][en[j]] || " N/A ")+"</cartcell>\n";
+       else retval+="<cartcell align=left>"+(r[i][en[j]] || " N/A ")+"</cartcell>\n";
 
         //    r[i]->price=convert((float)r[i]->price,id);
 
@@ -841,7 +841,7 @@ catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
                 r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
 		+ "</cartcell><cartcell align=right>" + MONETARY_UNIT
 		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"
-                "<cartcell>";
+                "<cartcell align=left>";
 if(r[i]->autoadd!="1")
   retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
    r[i]->id + "/" + r[i]->series + "\">";

@@ -164,7 +164,7 @@ else {
 // do we send a confirmation note? if so, do it.
 
 string note;
-note=Stdio.read_file(id->misc->ivend->config->root+"/notes/confirm.txt");
+note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/confirm.txt");
 if(note) {
 
   string subject,sender, recipient;
@@ -190,7 +190,7 @@ if(note) {
 
 // do we send an order notification? if so, then do it.
 
-note=Stdio.read_file(id->misc->ivend->config->root+"/notes/notify.txt");
+note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/notify.txt");
 if(note) {
 
   string subject,sender, recipient;
@@ -376,11 +376,12 @@ return "";
 mixed checkout(object id){
 
 string retval=
-  Stdio.read_file(id->misc->ivend->config->root +
+  Stdio.read_file(id->misc->ivend->config->general->root +
     "/checkout/checkout_"+ (id->variables["_page"] || "1") +
     ".html");
 
-if(!retval) return "error loading " + id->misc->ivend->config->root +
+if(!retval) return "error loading " +
+id->misc->ivend->config->general->root +
   "/checkout/checkout_"+ (id->variables["_page"] || "1") + 
   ".html" ;    
 

@@ -137,3 +137,5 @@ INSERT INTO status VALUES (4,'Validated','Indicates validated payment informatio
 INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info')\g
 INSERT INTO status VALUES (9,'Shipped','Order has been completely shipped.','orders')\g
 INSERT INTO status VALUES (10,'Error','An error has occurred during order processing.','orders')\g
+INSERT INTO status VALUES (11,'Cancelled','Order has been cancelled.','orders')\g
+

@@ -83,18 +83,20 @@ if(id->variables["_backup"] )
 
 
 // reserve the next order for me please...
+array typer;
 string type;
-catch(type=id->misc->ivend->db->query("SELECT shipping_types.type," 
+catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
 "lineitems.lineitem='shipping' "
 "and shipping_types.name=lineitems.extension"));
-if(!type) type=0;
-
+if(sizeof(typer)<1) type="0";
+else type=typer[0]->type;
   id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0,NULL," +
     type + ",NOW(),NULL,NOW())");
+
   id->misc->ivend->orderid=
-    id->misc->ivend->db->master_sql->insert_id(); // mysql only
+    id->misc->ivend->db->insert_id(); // mysql only
 
 
 
@@ -106,7 +108,7 @@ if(!type) type=0;
 
 // replace sessionid with orderid
 string query;
-mixed error= catch{  
+mixed error; //= catch{  
 for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
@@ -117,7 +119,7 @@ for(int i=0; i<sizeof(r); i++){
 id->misc->ivend->db);
     id->misc->ivend->db->query(query);
   }
-} ;
+// } ;
 if(!error)
 id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
@@ -125,7 +127,8 @@ id->misc->ivend->db->query(
 else {
   id->misc->ivend->error+=
     ({"We were unable to move your order to confirmed status. "
-	" Please contact the administrator of this store for assistance."});
+	" Please contact the administrator of this store for assistance."
+	+ (error*"<br>") });
   return "An error occurred while moving your order to confirmed status.\n";
 }
 // update customer info and payment info with new orderid
@@ -298,7 +301,7 @@ string tag_addentry(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(id->variables["_backup"])
    return "<!-- Backing up. addentry skipped. -->\n";
-if(id->misc->ivend->error) return "";
+if(sizeof(id->misc->ivend->error)>0) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) return "";
 
 mixed j;
@@ -317,22 +320,29 @@ object encryptedid = id;
 
   string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
 
-array e=(args->encrypt-" ")/",";
- for(int i=0; i<sizeof(e); i++){
+  if(!key) {
+    perror("iVend: Could't Load Public Key! Will save data in the clear\n");
+    j=id->misc->ivend->db->addentry(id);
 
-  encryptedid->variables[lower_case(e[i])]=
-    Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
- }
+    }
+  else{
+    array e=(args->encrypt-" ")/",";
+     for(int i=0; i<sizeof(e); i++){
 
- j=id->misc->ivend->db->addentry(encryptedid);
+    encryptedid->variables[lower_case(e[i])]=
+      Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
+   }
+
+   j=id->misc->ivend->db->addentry(encryptedid);
+  }
 
  }
 
 else
   j=id->misc->ivend->db->addentry(id);
     
-if(j!=1) id->misc->ivend->error+=
-	j/"<br>";
+if(!intp(j)) id->misc->ivend->error+=
+	({j});
 
 return "";
 
@@ -463,6 +473,7 @@ return retval;
 string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
+if(sizeof(id->misc->ivend->error)>0) return "";
 mapping tags,containers;
 if(functionp(query_tag_callers2))
  tags=query_tag_callers2();

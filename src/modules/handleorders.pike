@@ -35,7 +35,8 @@ retval="<table width=100%>";
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
      +"</font>\n</td>\n<td>";
 
-   if(field->name=="Card_Number") retval+=Commerce.Security.decrypt(r[0][field->name], key)+"\n</td></tr>\n";
+   if(field->name=="Card_Number" && key)
+     retval+=Commerce.Security.decrypt(r[0][field->name], key)+"\n</td></tr>\n";
      else retval+=r[0][field->name]+"\n</td></tr>\n";
    }
 
@@ -132,8 +133,27 @@ r=s->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
 }
 
 
+void dodelete(string orderid, object id){
+
+  array tables=({"orders", "orderdata", "lineitems", 
+    "customer_info", "payment_info"});
+
+  foreach(tables, string t)
+   id->misc->ivend->db->query("DELETE FROM " + t + " WHERE orderid='"
+	+ orderid +"'");
+
+  return;
+
+}
+
 string show_orders(object id, object s){
 string retval="";
+
+if(id->variables->dodelete && id->variables->orderid){
+  dodelete(id->variables->orderid, id);
+  m_delete(id->variables, "orderid");
+
+  }
 
 if(id->variables->status){
   s->query("UPDATE orders SET status=" + id->variables->status + ","
@@ -155,6 +175,7 @@ if(id->variables->delete){
 }
 
 else if(id->variables->orderid) {
+
 retval+="<a href=./orders?fprint=1&orderid="+ id->variables->orderid+">"
 	"Display for Printing</a><p>";
 retval+=show_orderdetails(id->variables->orderid, s, id);
@@ -170,6 +191,10 @@ foreach(status, mapping v)
   retval+="<option value="+ v->status + ">"+v->name+"\n";
 
 retval+="</select><input type=submit value=Change></form>\n";
+retval+="<form action=./orders>\n"
+	"<input type=hidden value=1 name=dodelete>"
+	"<input type=hidden value=" + id->variables->orderid  +" name=orderid>"
+	"<input type=submit value=Delete></form>\n";
 
 
   }

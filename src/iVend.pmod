@@ -158,6 +158,13 @@ return replace( (s || ""),({"'","\""}),({"\\'","\\\""}));
 
 }     
 
+mixed insert_id(){
+
+  
+  if(functionp(::master_sql->insert_id))
+    return ::master_sql->insert_id();
+
+}
 
 mixed showmatches(string type, string id) {
 

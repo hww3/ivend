@@ -17,11 +17,12 @@ inherit "wizard";
 mapping(string:mapping(string:mixed)) config=([]);
 mapping(string:mixed) global=([]) ;
 object c;			// configuration object
+object g;			// global object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.56 1998-04-26 20:40:47 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.57 1998-04-27 02:43:32 hww3 Exp $";
 
 array register_module(){
 
@@ -501,10 +502,15 @@ string attribute;
 string value;
 
 c=iVend.config();
+g=iVend.config();
 if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
    perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
 else 
    perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
+if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
+   perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
+else 
+   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
 catch(array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n");
 if(!config_file) {
    perror("iVend: ERROR NONEXISTANT ivend.cfg!\n");
@@ -676,7 +682,7 @@ return parse_page(retval, r, f, id);
 
 mixed additem(string item, object id){
 
-  if((int)id->variables->quantity==0) {
+  if(id->variables->quantity && (int)id->variables->quantity==0) {
     id->misc->ivendstatus="Error: You must select a quantity greater than zero.";
     return 0;
     }
@@ -698,7 +704,8 @@ perror(query+"\n");
 if(catch(id->misc->ivend->db->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
-  id->misc["ivendstatus"]+=("Item "+item+ " added successfully.\n"); 
+  id->misc["ivendstatus"]+=((id->variables->quantity || "1")+ " item "
+	+ item + " added successfully.\n"); 
 return 0;
 }
 
@@ -908,22 +915,16 @@ retval+=
 "<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 "Global Variables</FONT><P>\n"
 "<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/global/save\">\n"
-"<TABLE><TR>\n"
-"<TD>Generate Store Index?<BR><FONT SIZE=0>Should iVend create an index of all stores?</FONT></TD>\n"
-"<TD><select NAME=\"create_index\"><OPTION";
+"<TABLE>" +
 
-if(getglobalvar("create_index")=="yes")
-retval+=" SELECTED>yes<OPTION>no</SELECT>\n";
-else retval+=">yes<OPTION SELECTED>no</SELECT>\n";
-retval+="</TD></TR>\n"
-"<tr>"
-"<TD>Move only store up 1 level?<BR><FONT SIZE=0>Should iVend move the only store to the iVend root?</FONT></TD>\n"
-"<TD><select NAME=\"move_onestore\"><OPTION";
+	(g->genform(
+	global || 0,
+	query("lang"), 
+	query("root")+"/modules")
+	  ||"Error Loading Configuration Definitions!")+
 
-if(getglobalvar("move_onestore")=="yes")
-retval+=" SELECTED>yes<OPTION>no</SELECT>\n";
-else retval+=">yes<OPTION SELECTED>no</SELECT>\n";
-retval+="</TD></TR>\n"
+
+
 "<TR><TD><INPUT TYPE=SUBMIT VALUE=\" Update Variables \"></TD><TD>&nbsp;</TD></TR>\n" 
 "</TABLE></FORM>\n</TD></TR>";
 		break;
@@ -1403,12 +1404,12 @@ mixed find_file(string file_name, object id){
     }
 
 
-  if(sizeof(config)==1 && getglobalvar("move_onestore")=="yes") 
+  if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
     id->misc->ivend->st=indices(config)[0];
   else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
 
     { 
-    if(getglobalvar("create_index")=="yes")
+    if(getglobalvar("create_index")=="Yes")
       retval=create_index(id);
     else  retval="you must enter through a store!\n";
     }

@@ -202,9 +202,12 @@ return "Method: Shipping Cost Based on Order Total\n<br>" + retval;
 
 float|string tag_shipping(float amt, mixed type, object id){
 
-return id->misc->ivend->s->query("SELECT value FROM lineitems WHERE "
+
+array r=id->misc->ivend->db->query("SELECT value FROM lineitems WHERE "
   "lineitem='shipping' AND orderid='"+ id->misc->ivend->SESSIONID +
-  "'")[0]->value;
+  "'");
+if(sizeof(r)>0) return r[0]->value;
+else  return "";
 
 }
 
@@ -214,7 +217,7 @@ array r;
 
 perror("type: " + type + " amt: " + sprintf("%.2f", amt)+"\n");
 
-r=id->misc->ivend->s->query("SELECT charge FROM shipping_ot WHERE type=" +
+r=id->misc->ivend->db->query("SELECT charge FROM shipping_ot WHERE type=" +
   (string)type +  " AND min <= " + 
   sprintf("%.2f",amt) + " AND max >= " +
   sprintf("%.2f",amt) );
@@ -232,7 +235,7 @@ float calculate_shippingtotal(object id){
 float subtotal=0.00;
 array r;
 
-r=id->misc->ivend->s->query("SELECT "
+r=id->misc->ivend->db->query("SELECT "
   "SUM(products.price*sessions.quantity) as "
   "shippingtotal FROM sessions,products WHERE sessions.sessionid='" +
   id->misc->ivend->SESSIONID + "' AND products.id=sessions.id");
@@ -284,7 +287,7 @@ array r;
 string query=("SELECT extension FROM lineitems where orderid='" +
   id->misc->ivend->SESSIONID + "' AND lineitem='shipping'");
 perror(query);
-r=id->misc->ivend->s->query(query);
+r=id->misc->ivend->db->query(query);
 
 if(sizeof(r)!=1) return "Error Finding Shipping Data.";
 else return r[0]->extension;
@@ -302,11 +305,11 @@ string retval;
 total=calculate_shippingtotal(id);
 
 charge=calculate_shippingcost(total, id->variables->type, id);
-string typename=id->misc->ivend->s->query("SELECT name FROM shipping_types "
+string typename=id->misc->ivend->db->query("SELECT name FROM shipping_types "
   "WHERE type=" + id->variables->type )[0]->name;
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
-id->misc->ivend->s->query("INSERT INTO lineitems VALUES('" +
+id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
   id->misc->ivend->SESSIONID + "', 'shipping', " + charge + ",'" +
   typename + "')");
 
@@ -319,7 +322,7 @@ string tag_showalltypes (string tag_name, mapping args,
 
 string retval="";
 array r;
-r=id->misc->ivend->s->query("SELECT * from shipping_types");
+r=id->misc->ivend->db->query("SELECT * from shipping_types");
 
 foreach(r, mapping row)
 retval+="<dt><input type=radio name=type value="

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.205 1999-05-29 03:21:09 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.206 1999-05-29 03:38:45 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -703,11 +703,16 @@ trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
     if(id->variables->update) {
         for(int i=0; i< (int)id->variables->s; i++){
             if((int)id->variables["q"+(string)i]==0) {
+		array mr=DB->query("SELECT autoadd, locked FROM sessions "
+			"WHERE SESSIONID='" + id->misc->ivend->SESSIONID + 
+			"' AND id='" + id->variables["p" + (string)i] + "'"
+			" AND series=" + id->variables["s" + (string)i]);
+		if(mr[0]->locked==0) 
+                  madechange=1;
                 DB->query("DELETE FROM sessions WHERE SESSIONID='"
                           +id->misc->ivend->SESSIONID+
                           "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
                           id->variables["s"+(string)i] );
-                madechange=1;
 trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
             } else {
                 madechange=1;
@@ -722,7 +727,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
             }
         }
     }
-madechange=0;
+// madechange=0;
     if(madechange==1){
         array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd "
                           " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");
@@ -795,7 +800,7 @@ items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
 		+ "</td><td align=right>" + MONETARY_UNIT
                 +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td>"
                 "<td>";
-if(r[i]->autoadd=="1")
+if(r[i]->autoadd!="1")
   retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
    r[i][KEYS->products] + "/" + r[i]->series + "\">";
                 retval+="</td></tr>\n";

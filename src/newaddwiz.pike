@@ -299,6 +299,8 @@ retval+= "<b>Admin User:</b> " + adminuser + "<br>\n"
   "<b>Admin Password:</b> " + adminpassword + "<br>\n"
   "<b>Data File Location</b>: " + v->root + "<br>\n";
 
+retval+="<p>\nYou may edit $DATALOCATION/store_package "
+  "to customize the overall look of your store."
 
 if(file_stat(v->root + "/schema.mysql")){
 

@@ -457,7 +457,7 @@ string|void container_ia(string name, mapping args,
    mapping arguments=([]);
 
    arguments["_parsed"]="1";
-
+   if(args->parse) args->href=parse_rxml(args->href, id);
    if (args->external)
       arguments["href"]=args->href;
    else if (args->referer)

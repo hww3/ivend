@@ -2281,13 +2281,8 @@ mixed return_data(mixed retval, object id){
                                          c->dbpassword
                                        ));
 
-            if(err) 
- 	{
-  perror("iVend: Error creating DB for " + c->name + ".\n");
-  perror("will try again in 60 seconds.\n");
-   call_out(start, 60);
+            if(err) perror("iVend: Error creating DB for " + c->name + ".\n");
 
-  }
                return;
 
             }

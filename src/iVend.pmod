@@ -1,3 +1,6 @@
+#define REQUIRED "Required" 
+// for translations
+
 class config {
 
 mapping (string:mixed) config_setup=([]);
@@ -155,7 +158,7 @@ for (int i=0; i<sizeof(r); i++){
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="blob") query+="'"+id->variables[r[i]->name]+"',";
 
-  else query+=id->variables[r[i]->name]+",";
+  else query+=(id->variables[r[i]->name]||"NULL")+",";
 
   }
 query=query[0..sizeof(query)-2]+")";
@@ -218,7 +221,7 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
     " MAXLEN="+r[i]->length+">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
-      "SIZE=-1><I> Required\n";
+      "SIZE=-1><I> "+ REQUIRED +"\n";
         }
 
 else if(r[i]->type=="var string"){
@@ -233,7 +236,7 @@ else if(r[i]->type=="var string"){
       "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
-      "SIZE=-1><I> Required\n";
+      "SIZE=-1><I> "+REQUIRED+"\n";
         }
 
 else if(r[i]->type=="string"){
@@ -408,7 +411,7 @@ else if(r[i]->type=="var string"){
 	  +
 	(r[i]->length)
 	+" >\n";
-	if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> Required\n";	
+	if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
 	}
 
 else if(r[i]->type=="string"){
@@ -425,7 +428,7 @@ else if(r[i]->type=="string"){
 	else {
 	  retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+
 	(r[i]->length)+">\n";
-	  if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> Required\n";	
+	  if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
 	  }
 	}
 

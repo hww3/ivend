@@ -23,9 +23,15 @@ string retval="";
 
 int page;
 
-if(id->variables["_page"]=="3"){
+ if(id->variables["_page"]=="4"){
+   if(id->variables->shipsame=="1");
+   else mixed j=s->addentry(id);
+retval="testin'";
+ }
 
-  
+else if(id->variables["_page"]=="3"){
+
+  mixed j=s->addentry(id);
 
   retval+="<font size=+2>3. Shipping Address</font>\n"
   	"<form action="+id->not_query+">";
@@ -33,8 +39,11 @@ if(id->variables["_page"]=="3"){
 	"<select name=shipsame>"
 	"<option value=1>Yes\n<option value=0>No\n</select>"
 	"<p>If not, complete the following information:<br><table>\n";
-  retval+=s->generate_form_from_db("customer_info", ({"id","updated"}));
+  retval+=s->generate_form_from_db("customer_info", ({"orderid","type","updated"}));
   retval+="</table>"
+        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
+	"<input type=hidden name=type value=1>"
+        "<input type=hidden name=table value=customer_info>"
 	"<input type=submit value=Continue>"
 	"<input type=hidden name=_page value=4></form>\n";
 
@@ -43,9 +52,12 @@ if(id->variables["_page"]=="3"){
 else if(id->variables["_page"]=="2"){
   retval+="<font size=+2>2. Billing Address</font>\n";
   retval+="<form action="+id->not_query+"><table>\n";
-  retval+=s->generate_form_from_db("customer_info", ({"id","updated"}));
+  retval+=s->generate_form_from_db("customer_info", ({"orderid","type","updated"}));
   retval+="</table>"
-	"<input type=submit value=Continue>"
+	"<input type=hidden name=type value=0>"	
+        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
+       "<input type=hidden name=table value=customer_info>" 
+       "<input type=submit value=Continue>"
 	"<input type=hidden name=_page value=3></form>\n";
   }
 

@@ -627,8 +627,66 @@ return contents;
 
 string tax_setup(string mode, object id){
 
-string retval="";
+if(id->variables->deleterule)
+  DB->query("DELETE FROM taxrates WHERE id=" + id->variables->deleterule);
+if(id->variables->addrule)
+  DB->query("INSERT INTO taxrates VALUES(" +
+  ((float)id->variables->taxrate/100) + 
+  ",'C','" + id->variables->field_name +
+  "','" + upper_case(id->variables->value) + "',NULL)");
+ 
+string retval="<font size=+1><b>Sales Tax Setup</b></font><p>";
+array r=DB->query("SELECT * FROM taxrates");
+if(sizeof(r)==0){
+  retval+="You have not set any tax rules yet.<p>";
+  }
 
+else {
+  retval+="<b>Current Tax Rules:</b><p>"
+    "<table>\n"
+    "<tr><th><font face=helvetica,arial>Table.Field Name</font></th>"
+    "<th><font face=helvetica,arial>Match Value</th>"
+    "<th><font face=helvetica,arial>Tax Rate</th><th>&nbsp;</th></tr>\n";
+  
+  foreach(r, mapping row){
+    retval+="<tr><td><font face=helvetica,arial>" + 
+	row->field_name + "</font></td><td><font face=helvetica,arial>" + 
+	row->value + "</font></td><td><font face=helvetica,arial>" + 
+        sprintf("%.2f",(((float)row->taxrate)*100)) + 
+      "%</font></td><td><font face=helvetica,arial>"
+      " &nbsp; <a href=\"./?deleterule=" +
+      row->id  + "\">DeleteRule</a></font></td></tr>\n";
+    }
+  retval+="</table>";
+  }
+retval+="<p>\n";
+retval+="<form action=\"./\" method=post>"
+  "<table>"
+  "<tr><th><font face=helvetica,arial>Table.Field</font></th>"
+  "<th><font face=helvetica,arial>Match Value</font></th>"
+  "<th><font face=helvetica,arial>Tax Rate (%)</font></th></tr>";
+
+retval+="<tr><td><select name=\"field_name\">";
+
+r=DB->list_fields("customer_info");
+foreach(r, mapping f)
+  retval+="<option>customer_info." + f->name + "\n";
+
+r=DB->list_fields("payment_info");
+foreach(r, mapping f)
+  retval+="<option>payment_info." + f->name + "\n";
+
+retval+="</select></td><td><input type=text size=15 name=\"value\">"
+  "</td><td><input type=text size=5 name=taxrate></td><td>\n"
+  "<input type=submit value=\"Add Rule\" name=\"addrule\"></td></tr>"
+   "</table></form>";
+
+retval+="<b>How Tax is Calculated:</b><p>"
+  "Tax is calculated by adding the tax percentage of all taxable "
+  "items in the purchase transaction shipping (if applicable) to the "
+  "previous subtotal. "
+  "<p>The tax percentage is taken by adding all of the percentages for "
+  "fields in the order data that match rules listed in the rules table above.";
 return retval;
 
 }

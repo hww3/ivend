@@ -103,11 +103,13 @@ void build_database(object id){
 perror("Building searchwords database.\n");
   array r=DB->query("SELECT " + KEYS->groups + " from groups order by " + KEYS->groups);
   foreach(r, mapping row){
-	event_adminadd("adminadd", id, (["id": row[KEYS->groups], "type": "group"]));
+	event_adminadd("adminadd", id, (["id": row[DB->keys->groups],
+"type": "group"]));
   }
   array r=DB->query("SELECT " + KEYS->products + " from products order by " + KEYS->products);
   foreach(r, mapping row){
-	event_adminadd("adminadd", id, (["id": row[KEYS->products], "type": "product"]));
+	event_adminadd("adminadd", id, (["id": row[DB->keys->products],
+"type": "product"]));
   }
 
 
@@ -166,7 +168,7 @@ perror("found " + sizeof(k) + " searchable words.\n");
 // are we left with any good words?
 if(sizeof(k)<1) return "No searchable words supplied for search. Please try again with more specific words.";
 
-string query="SELECT id, type, sum(occ) as occ, word FROM searchwords WHERE ";
+string query="SELECT id, type, (sum(occ)*count(id)) as occ, word FROM searchwords WHERE ";
 array qp=({});
 foreach(k, string word) {
   if(word[0..0]=="+") word=word[1..];
@@ -199,7 +201,10 @@ else // we aren't requiring words to be present...
 	mapping grow=DB->query("SELECT name "
 	", description FROM groups WHERE " + DB->keys->groups + "='" +
 row->id + "'")[0];
-	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" + grow->name + "</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><dd>" + grow->description + "</dd><p>";
+	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") +
+(id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" +
+grow->name + "</a> (" + row->occ + " / " +maxocc +  ")</dt><dd>" +
+grow->description + "</dd><p>";
 	}
     else {
 	if(numproducts>15) continue;
@@ -211,7 +216,7 @@ row->id + "'")[0];
 	productresults+="<dt><a href=\"" + T_O->query("mountpoint") +
 (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" +
 grow[CONFIG_ROOT[module_name]->productnamefield] +
-"</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><p>";
+"</a> (" + row->occ + " / " + maxocc  +  ")</dt><p>";
 
       }
     }
@@ -273,7 +278,8 @@ void event_adminadd(string event, object id, mapping args){
 array f=CONFIG_ROOT[module_name][args->type + "searchfields"];
 
 mapping r;
-
+perror("event_adminadd in search.pike " + args->type + " " + args->id +
+"\n");
 r=DB->query("SELECT " + (f*",") + " FROM " + args->type + 
 			  "s WHERE " + DB->keys[args->type + "s"] + "='" + 
 			  args->id + "'")[0];
@@ -320,6 +326,8 @@ foreach(indices(wc), string word){
 }
 
 void event_adminmodify(string event, object id, mapping args){
+
+perror(sprintf("args: %O\n", args));
 
 // first we delete the existing searchwords.
 

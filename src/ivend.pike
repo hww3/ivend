@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.281 2000-12-27 18:17:05 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.282 2000-12-28 19:16:15 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2120,7 +2120,8 @@ if(!intp(r)){
                          type=(id->variables->table-"s");
 			 //                         destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
-		"id": id->variables[DB->keys[type + "s"]] ]) );
+		"id": id->variables[lower_case(DB->keys[type + "s"])] ])
+);
                        return (retval+"<br>"+capitalize(type)+" Added Sucessfully.")
 				+"</body></html>";
 
@@ -2137,7 +2138,8 @@ if(!intp(r)){
                      }
 //                     destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
-		"id": id->variables[DB->keys[type + "s"]] ]) );
+		"id": id->variables[lower_case(DB->keys[type + "s"])] ])
+);
 
                      return retval +"<br>"+ capitalize(type) + " Modified Sucessfully."
 				+"</body></html>";
@@ -2185,8 +2187,9 @@ if(!intp(r)){
 "s"]]==0 || id->variables[DB->keys[type + "s"]]=="")
                              retval+="<p>You must select an existing ID to act upon!<br>";
                          else {
-				foreach(id->variables[DB->keys[type
-+"s"]]/"\000", string d) {
+
+foreach(id->variables[lower_case(DB->keys[type
++"s"])]/"\000", string d) {
 				 retval+="<p>\n"+DB->dodelete(type,
                       			d, DB->keys[type+"s"] ); 
              trigger_event("admindelete", id, (["type": type, 
@@ -2197,7 +2200,7 @@ if(!intp(r)){
                          if(id->variables->match) {
                              mixed n=DB->showmatches(type,
 
-id->variables[DB->keys[type+ "s"]],
+id->variables[lower_case(DB->keys[type+ "s"])],
                                                      DB->keys[type+"s"], id);
                              if(n)
                                  retval+="<form _parsed=1 name=form action=\"" +

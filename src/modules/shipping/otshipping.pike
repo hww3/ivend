@@ -168,7 +168,7 @@ if(amt<0.00) {
   return -1.00;
   }
 
-// perror("type: " + type + " amt: " + sprintf("%.2f", amt)+"\n");
+ perror("type: " + type + " amt: " + sprintf("%.2f", amt)+"\n");
 
 r=id->misc->ivend->db->query("SELECT charge FROM shipping_ot WHERE type=" +
   (string)type +  " AND min <= " + 

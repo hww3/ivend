@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.194 1999-05-12 00:18:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.195 1999-05-14 01:08:55 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -244,11 +244,11 @@ void trigger_event(string event, object|void id, mapping|void args){
 }
 
 void register_event(mapping config, mapping events){
-
    if(!library[config->config]->event)
       library[config->config]->event=([]);
 
    foreach(indices(events), string ename){
+      perror("Registering event " + ename + "\n");
       if(!library[config->config]->event[ename])
          library[config->config]->event[ename]=({});
       library[config->config]->event[ename]+=({events[ename]});
@@ -553,11 +553,78 @@ void|string container_form(string name, mapping args,
 
 }
 
+mixed do_complex_items_add(object id, array items){
+ foreach(items, mapping i){ 
+  array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
+   + i->item + "'");
+  if(!r || sizeof(r)<1)
+   perror("No Pricing Configuration for " + i->item + ".\n");
+  foreach(r, mapping row) {
+   perror("triggering an event, cp." + row->type + " for " + i->item +
+"\n");
+   trigger_event("cp." + row->type,id,(["item": i->item, "quantity":
+     i->quantity]));
+   }
+  if(!COMPLEX_ADD_ERROR)
+   trigger_event("additem",id,(["item": i->item, "quantity":
+    i->quantity]));
+  else perror("AN error occurred while adding an item.\n");
+  }
+ return 0;
+}
+
+int do_low_additem(object id, mixed item, mixed quantity, mixed
+price, mapping|void args){
+if(!args) args=([]);
+      int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
+                               id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
+      string query="INSERT INTO sessions VALUES('"+
+id->misc->ivend->SESSIONID+
+      "','"+item+"',"+ quantity +","+(max+1)+",'Standard','"+(time(0)+
+                             (int)CONFIG->session_timeout)+"'," + price + 
+ "," + (args->autoadd||0) +")";
+
+      if(catch(DB->query(query) )) {
+         id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
+   return 0;
+   }
+      else {
+         id->misc["ivendstatus"]+= (string) quantity +" " +
+            ITEM + " " + item + " " + ADDED_SUCCESSFULLY +"\n";
+return 1;
+  }
+}
+
+
+mixed do_additems(object id, array items){
+
+// we should add complex pricing models to this algorithm.
+  if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
+    perror("DOING COMPLEX PRICE CALCULATIONS...\n");
+	return do_complex_items_add(id, items);
+    }
+  else{
+   foreach(items, mapping item){
+      float price=DB->query("SELECT price FROM products WHERE " 
+                            + KEYS->products +  "='" + item->item +
+                           "'")[0]->price;
+
+//      price=convert((float)price,id);
+      mapping m=([]);
+      int result=do_low_additem(id, item->item, item->quantity, price, m);
+    }
+      return;
+  }
+}
+
+
 mixed container_icart(string name, mapping args, string contents, object id) {
   string retval="";
   string extrafields="";
   array ef=({});
   array en=({});
+  int madechange=0;
+  
   
   if(args->fields){
     ef=args->fields/",";
@@ -569,7 +636,8 @@ mixed container_icart(string name, mapping args, string contents, object id) {
       extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
     }
   }
-  
+
+
   foreach(indices(id->variables), string v) {
     if(id->variables[v]==DELETE) {
       string p=(v/"/")[0];
@@ -577,6 +645,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
       DB->query("DELETE FROM sessions WHERE SESSIONID='"
 		+id->misc->ivend->SESSIONID+
 		"' AND id='"+ p +"' AND series=" +s );
+      madechange=1;
       trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
     }
   }
@@ -590,8 +659,11 @@ mixed container_icart(string name, mapping args, string contents, object id) {
 		  +id->misc->ivend->SESSIONID+
 		  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
 		  id->variables["s"+(string)i] );
+        madechange=1;
 	trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
       } else {
+madechange=1;
+perror("updating cart..." + id->variables["q" + (string)i] + "\n");
 	DB->query("UPDATE sessions SET "
 		  "quantity="+(int)(id->variables["q"+(string)i])+
 		  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
@@ -603,6 +675,22 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     }
   }
 
+if(madechange==1){
+ array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd "
+   " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");  
+perror(sprintf("%O", r));
+ if(r && sizeof(r)>0) {
+  array items=({});
+  DB->query("DELETE FROM sessions WHERE sessionid='" +
+   id->misc->ivend->SESSIONID + "'");
+  foreach(r, mapping row)
+   if((int)(row->autoadd)==1) continue;
+   items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
+     row->qualifier, "series": row->series ]) });
+perror(sprintf("%O", items));
+  do_additems(id, items);
+  }
+ }
   string field;
   
   retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n"
@@ -1132,49 +1220,6 @@ mixed find_page(string page, object id){
    return (retval);
 }
 
-int do_low_additem(object id, mixed item, mixed quantity, mixed
-price, mapping args){
-
-      int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
-                               id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
-      string query="INSERT INTO sessions VALUES('"+
-id->misc->ivend->SESSIONID+
-      "','"+item+"',"+(id->variables[item+"quantity"]
-                       ||id->variables->quantity ||
-1)+","+(max+1)+",'Standard','"+(time(0)+
-                             (int)CONFIG->session_timeout)+"'," + price
-+")";
-
-      if(catch(DB->query(query) )) {
-         id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
-   return 0;
-   }
-      else {
-         id->misc["ivendstatus"]+=((id->variables[item+"quantity"] ||
-                                    id->variables->quantity || "1")+" " +
-ITEM
-                                   + " " + item + " " + ADDED_SUCCESSFULLY
-+"\n");
-return 1;
-  }
-}
-
-mixed do_complex_item_add(object id, array items){
- foreach(items, mixed i){ 
-  array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
-   + i + "'");
-  if(!r || sizeof(r)<1)
-   perror("No Pricing Configuration for " + i + ".\n");
-  foreach(r, mapping row)
-  trigger_event(row->type,id,(["item": i, "quantity":
-   (id->variables[i+"quantity"] ||id->variables->quantity ||"1")]));
-  if(!COMPLEX_ADD_ERROR)
-  trigger_event("additem",id,(["item": i, "quantity":
-   (id->variables[i+"quantity"] ||id->variables->quantity ||"1")]));
-  }
- return 0;
-}
-
 mixed additem(object id){
 
    if(id->variables->quantity && (int)id->variables->quantity==0) {
@@ -1184,33 +1229,26 @@ mixed additem(object id){
    }
    array items=({});
    foreach(indices(id->variables), string v){
-      if(id->variables[v]=="ADDITEM")
-         items+=({v});
+      if(id->variables[v]=="ADDITEM") {
+        int quantity=(id->variables[v+"quantity"]
+         ||id->variables->quantity || 1);         
+        items+=({ (["item" : v , "quantity" : quantity]) });
+        }
    }  
 
  if(id->variables->item)
-        items+=({id->variables->item});          
+        items+=({ (["item": id->variables->item,
+                    "quantity":
+(id->variables[id->variables->item+"quantity"]
+        ||id->variables->quantity || 1)
+               ]) });          
 
-// we should add complex pricing models to this algorithm.
-  if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
-    perror("DOING A COMPLEX PRICE CALCULATION...\n");
-	return do_complex_item_add(id, items);
-    }
-  else{
-   foreach(items, string item){
-      float price=DB->query("SELECT price FROM products WHERE " 
-                            + KEYS->products +  "='" + item + "'")[0]->price;
-
-//      price=convert((float)price,id);
-      int quantity=(id->variables[item+"quantity"]  
-        ||id->variables->quantity || 1);
-      mapping m=([]);
-      int result=do_low_additem(id, item, quantity, price, m);
-
+   int result=do_additems(id, items);
       if(result)
-       trigger_event("additem",id,(["item": item, "quantity": quantity]));
-      }
-    }
+       foreach(items, mapping item)
+       trigger_event("additem",id,(["item": item->item, "quantity":
+         item->quantity]));
+
    return 0;
 }
 
@@ -2344,13 +2382,13 @@ privs=0;
                mixed m;
 
             if(!modules[c]) modules[c]=([]);
-// perror("loading module " + name + ".\n");
+perror("loading module " + name + ".\n");
 string filen;
 filen=query("root")+"/src/modules/"+name;
              if(file_stat(filen));
 	     else {
-		filen=config[c]->general->root + "/addins/" + name;
-perror(filen + "\n");
+		filen=config[c]->general->root + "/modules/" + name;
+// perror(filen + "\n");
 		if(file_stat(filen));
 		else return ({"Unable to find module " + name + "."});
                }		
@@ -2360,18 +2398,21 @@ perror(filen + "\n");
                   return (err);
                }
                modules[c]+=([  m->module_name : m  ]);
-            if(functionp(modules[c][m->module_name]->start))
-                  modules[c][m->module_name]->start(config[c]);
+      mixed o=modules[c][m->module_name];
+            if(functionp(o->start)) {
+		perror("calling start() for " + m->module_name + ".\n");
+                  o->start(config[c]);
+                  }
                mapping p;
 
-            if(functionp(modules[c][m->module_name]->register_paths))
-                  p = modules[c][m->module_name]->register_paths();
+            if(functionp(o->register_paths))
+                  p = o->register_paths();
             if(p)
                   foreach(indices(p), string np)
                   register_path_handler(c, np, p[np]);
             int need_to_save=0;
-            if(functionp(modules[c][m->module_name]->query_preferences)){
-              array pr=modules[c][m->module_name]->query_preferences(config[c]);
+            if(functionp(o->query_preferences)){
+              array pr=o->query_preferences(config[c]);
 //	perror("got " + sizeof(pr) + " prefs...\n");
               foreach(pr, array pref){
 		if(!config[c]) config[c]=([]);
@@ -2394,19 +2435,18 @@ Config.write_section(query("configdir")+
                  }
               }
 
-            if(functionp(modules[c][m->module_name]->register_admin))
-                  p = modules[c][m->module_name]->register_admin();
+            if(functionp(o->register_admin))
+                  p = o->register_admin();
             if(p)
                   foreach(indices(p), string np)
                   register_admin_handler(c, np, p[np]);
-      mixed o=modules[c][m->module_name];
 
       if(functionp(o->query_tag_callers))
          library[c]->tag+=o->query_tag_callers();
       if(functionp(o->query_container_callers))
          library[c]->container+=o->query_container_callers();
       if(functionp(o->query_event_callers))
-         register_event(config[c], o->event_callers());
+         register_event(config[c]->general, o->query_event_callers());
 
                return 0;
 
@@ -2426,6 +2466,12 @@ Config.write_section(query("configdir")+
                                        ));
 
             if(err) perror("iVend: Error creating DB for " + c->config + ".\n");
+
+   catch(object s=db[c->config]->handle());
+            if(s) {
+              if(sizeof(s->list_fields("sessions","autoadd"))!=1)
+		s->query("alter table sessions add autoadd integer");
+              }
 
                return;
 

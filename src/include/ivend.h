@@ -16,6 +16,10 @@
 
 #define COMPLEX_ADD_ERROR id->misc->ivend->complex_add_error
 
+#define ADD_FAILED 1
+#define NO_ADD 2
+#define ADD_SUCCESSFUL 0
+
 #define NO_BORDER 1
 #define NO_ACTIONS 2
 

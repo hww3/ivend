@@ -77,3 +77,10 @@ $type=password
 $endescription=Password for Store Administration
 $sidescription=Password for Store Administration
 
+$varname=keybase
+$enname=Public Key Basepath
+$siname=Public Key Basepath
+$type=string
+$endescription=Base File Path for keys (minus extensions)
+$sidescription=Base File Path for keys (minus extensions)
+

@@ -26,8 +26,16 @@ int page;
 
  if(id->variables["_page"]=="5"){
 
-  if(Commerce.CreditCard.cc_verify(id->variables->Card_Number))
- retval+="card number okay...<p>";
+if(!Commerce.CreditCard.cc_verify(id->variables->Card_Number,id->variables->Card_Type))
+{
+
+  retval+="card number okay...<p>";
+  string key=Stdio.read_file(id->misc->ivend->config->keyfile+".pub");
+  id->variables->Card_Number=
+    Commerce.Security.encrypt(id->variables->Card_Number,key);
+}
+
+return "You have supplied an ivalid Credit Card Number!";
 
    if( Commerce.CreditCard.expdate_verify(id->variables->Expiration_Date))
  retval+="expdate okay...<p>";

@@ -23,7 +23,7 @@ constant card_digits =([ "VISA":16, "AMEX":15, "MasterCard":16 ]);
 
 
 // subroutine creditcheck() starts here
-int creditcheck(string ccn, string card_type)
+int cc_verify(string ccn, string card_type)
 {
 
 // clear spaces & non numeric characters here

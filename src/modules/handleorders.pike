@@ -288,10 +288,26 @@ if(id->variables->orderid) status=DB->query(
 
  if(id->variables->valpay && id->variables->orderid){
 
+  string cn;
+string key="";
+if(id->misc->ivend->config->general->privatekey)
+  key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
+
+array r=DB->query("SELECT payment_info.*, status.name as status from "
+	 "payment_info,status WHERE orderid=" + id->variables->orderid +
+	 " AND status.status=payment_info.status");
+cn=Commerce.Security.decrypt(r[0]->card_number,key);
+cn-=" ";
+array cn2=cn/"";
+int j=sizeof(cn2);
+for(int l=0; l<(j-4); l++)
+ cn2[l]="X";
+cn=cn2*"";
    array r=DB->query(
        "SELECT status FROM status WHERE name='Validated'");
    DB->query("UPDATE payment_info SET status=" + 
-       r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
+       r[0]->status + ", card_number='" + cn + "'"
+	" WHERE orderid='" + id->variables->orderid+"'");
 
    array r=DB->query(
        "SELECT status.name, orders.status from status, orders "
@@ -325,10 +341,7 @@ if(id->variables->orderid) status=DB->query(
  } 
 
  if(id->variables->docancel && id->variables->orderid){
-   DB->query(
-     "UPDATE payment_info SET Card_Number='',Expiration_Date='' WHERE orderid='" +
-     id->variables->orderid +"'");
-
+   
    array r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
    DB->query("UPDATE payment_info SET status=" + 

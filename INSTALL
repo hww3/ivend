@@ -189,7 +189,8 @@ must be  present:
 products and groups tables
 1. image* char
 2. price float (products only)
-3. primary key
+3. taxable char(1)
+4. primary key
 
 The above fields are considered 'special' by iVend, and are expected to
 be present. The presence of additional fields is purely optional, however
@@ -321,6 +322,7 @@ group. The following attributes affect this tag:
   names: a comma separated list of alternate names for fields included in
      the table.
   template: specify an alternate template to generate subpages from.
+  show: show items with all status types: active, inactive, etc.
 
 <category_output></category_output> will repeat the contents the container
 once for each record found, replacing values of each field where instances
@@ -332,6 +334,7 @@ container takes the following attributes:
     restriction="manufacturer='kodak'" must follow sql format rules.
   random: optional, when used with formrotate, the template to be used 
     will be chosen at random from those provided.
+  show: show items with all status types: active, inactive, etc.
 
 <formrotate></formrotate> is used within the category_output container. it
 provides multiple templates to rotate through while processing records. if

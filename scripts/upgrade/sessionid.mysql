@@ -1,0 +1,5 @@
+ALTER TABLE customer_info CHANGE orderid orderid CHAR(16) NOT NULL;
+ALTER TABLE payment_info CHANGE orderid orderid CHAR(16) NOT NULL;
+ALTER TABLE lineitems CHANGE orderid orderid CHAR(16) NOT NULL;
+ALTER TABLE sessions CHANGE sessionid sessionid CHAR(16) NOT NULL;
+ALTER TABLE shipments CHANGE orderid orderid CHAR(16) NOT NULL;

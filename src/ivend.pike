@@ -291,7 +291,7 @@ if(id->variables->update) {
 	  id->variables["s"+(string)i] );
     else
    id->misc->ivend->db->query("UPDATE sessions SET "
-      "quantity="+id->variables["q"+(string)i]+
+      "quantity="+(int)(id->variables["q"+(string)i])+
 	  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
 
@@ -407,9 +407,17 @@ contents=parse_html(contents,([]),
   if(!args->type) return YOU_MUST_SUPPLY_A_CATEGORY_TYPE;
 
   query="SELECT * FROM " + lower_case(args->type);
-  
+
+  if(!args->show)
+    query+=" WHERE status='A' ";
+
+  else if(args->show && args->restriction)
+    query+=" WHERE ";
+  if(!args->show && args->restriction)
+    query+=" AND ";
+
   if(args->restriction)
-    query+=" WHERE " + args->restriction;
+    query+=args->restriction;
 
   array r=id->misc->ivend->db->query(query);
 
@@ -463,14 +471,22 @@ array r;
 if(args->type=="groups") {
   query="SELECT " + keys[id->misc->ivend->st]->groups + " AS pid " +
 	extrafields+ " FROM groups";
+  if(!args->show)
+    query+=" WHERE status='A' ";
+
    r=id->misc->ivend->db->query(query);
   }
 else {
   query="SELECT product_id AS pid "+ extrafields+
 	" FROM product_groups,products where group_id='"+
-	     id->misc->ivend->page+"'"
-	" AND products." +  keys[id->misc->ivend->st]->products +
+	     id->misc->ivend->page+"'";
+
+  if(!args->show)
+    query+=" and status='A' ";
+ 
+  query+=" AND products." +  keys[id->misc->ivend->st]->products +
 	"=product_id";
+
   r=id->misc->ivend->db->query(query);
 }
 

@@ -1,0 +1,3 @@
+ALTER TABLE products ADD status CHAR(1) DEFAULT 'A' NOT NULL;
+ALTER TABLE groups ADD status CHAR(1) DEFAULT 'A' NOT NULL;
+

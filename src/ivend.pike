@@ -1329,16 +1329,19 @@ mixed err;
     break;
     case "admin":
     retval=admin_handler(request*"/", id);
+     if(objectp(id->misc->ivend->db))
     destruct(id->misc->ivend->db);
     return return_data(retval,id);
     break;
     case "orders":
     retval=order_handler(request*"/", id);
+     if(objectp(id->misc->ivend->db))
     destruct(id->misc->ivend->db);
     return return_data(retval,id);
     break;
     case "shipping":
     retval=shipping_handler(request*"/", id);
+     if(objectp(id->misc->ivend->db))
     destruct(id->misc->ivend->db);
     return return_data(retval,id);
     break;

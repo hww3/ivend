@@ -1,5 +1,12 @@
 <procedure event="shipall">
+//
 // send an invoice to the email address of billee.
+// you need to add the sql database module to the vs ivend runs on.
+// configure a sql database alias "db" that points to the ivend store db.
+//
+// see: notes/invoice.txt
+//
+
 string cc_recipient="orders@foo.com";
 string note;
 note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/invoice.txt");

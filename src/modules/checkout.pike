@@ -129,6 +129,9 @@ return retval;
 string tag_addentry(string tag_name, mapping args,
 		     object id, mapping defines) {
 
+if(id->misc->ivend->error) return "";
+if((int)id->variables->shipsame==1) return "";
+
  object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
@@ -198,96 +201,15 @@ return "";
 
 mixed checkout(object id){
 
-string retval="<title>checkout</title><body bgcolor=white text=navy>"
-		"<font face=helvetica>";
+string retval=
+  Stdio.read_file(id->misc->ivend->config->root +
+    "/checkout/checkout_"+ (id->variables["_page"] || "1") +
+    ".html");
 
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
+if(!retval) return "error loading " + id->misc->ivend->config->root +
+  "/checkout/checkout_"+ (id->variables["_page"] || "1") + 
+  ".html" ;    
 
-int page;
-
- if(id->variables["_page"]=="5"){
-
-  {
-
-  retval+="\n<checkout>\n<addentry encrypt=\"Card_Number\">\n"
-    "<font size=+2>5. Confirm Order</font>\n"
-    "<table>\n"
-    "<tr><th align=left>Quantity</th><th align=left>Product Name</th>"
-    "<th align=left>Unit Price</th><th align=left>Subtotal</th></tr>"
-    "<showorder convert>\n"	
-    "<tr></td></td><td></td><td></td><td align=right>"
-    "Subtotal:</td><td align=right><subtotal convert></td></tr>\n"
-    "<tr></td></td><td></td><td></td><td align=right>"
-    "Sales Tax:</td><td align=right><salestax convert></td></tr>\n"
-    "<tr></td></td><td></td><td></td><td align=right>"
-    "Grand Total:</td><td align=right><grandtotal convert>"
-	"</table></checkout>\n";
-  }
-}
-else if(id->variables["_page"]=="4"){
-  retval+="<font size=+2>4. Payment Information</font>\n<checkout>\n";
-   if((string)id->variables->shipsame=="1");
-   else {
-     retval+="<addentry>\n";
-	}
-retval+=
-    "<table><generateform table=payment_info hide=\""
-    "orderid,type\">"
-    "</table>\n"
-    "<input type=submit value=\" >> \">"
-    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-    "</checkout>\n";
-
- }
-
-else if(id->variables["_page"]=="3"){
-
-
-  retval+=
-
-    "<checkout>"
-    "<addentry>"
-    "<font size=+2>3. Shipping Address</font>\n"
-    "Is this order to be shipped to the Billing address?\n"
-    "<select name=shipsame>"
-    "<option value=1>Yes\n<option value=0>No\n</select>"
-    "<p>If not, complete the following information:<br><table>\n"
-    "<generateform table=customer_info hide=orderid,type,updated "
-    "exclude=\"Fax,Daytime_Phone,Evening_Phone,"
-    "EMail_Address\"></table>"
-    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-	"<input type=hidden name=type value=1>"
-    	"<input type=submit value=\"  >> \">"
-	"</checkout>\n";
-
-  }
-
-else if(id->variables["_page"]=="2"){
-  retval+="<font size=+2>2. Billing Address</font>\n";
-  retval+="<checkout><table>\n";
-  retval+="<generateform table=customer_info hide=\""
-    "orderid,type,updated\">"
-    "</table>"
-    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-	"<input type=hidden name=type value=0>"	
-       "<input type=submit value=\" >> \">"
-	"</checkout>\n";
-  }
-
-else
-
-  retval+="<title>Checkout</title>\n"
-    "<font size=+2>1. Confirm Cart</font>\n"
-    "<icart fields=\"qualifier\"></icart>"
-    "<checkout>"
-    "<input type=submit value=\" >> \"></checkout>";
-
-retval="<ivml>"+retval+"</ivml>";
 retval=parse_rxml(retval,id);
 
 return retval;

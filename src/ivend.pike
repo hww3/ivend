@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.18 1998-02-11 18:10:49 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.19 1998-02-11 21:39:56 hww3 Exp $";
 
 /*
  *
@@ -84,6 +84,18 @@ string query_name()
 
 {
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
+}
+
+int load_ivmodule(object id){
+
+ if (id->variables->reload || 
+	! objectp(modules[id->misc->ivend->config->checkout_module]))
+modules+=([ id->misc->ivend->config->checkout_module :
+    (object)clone(compile_file(id->misc->ivend->config->root+"/modules/"+
+    id->misc->ivend->config->checkout_module)) ]);
+
+return 1;
+
 }
 
 
@@ -233,6 +245,14 @@ if(id->variables->update) {
 	foreach(args->fields / ",",field){
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
+
+if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
+	load_ivmodule(id);
+
+if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert))
+	  r[i]->price=
+	  modules[id->misc->ivend->config->checkout_module
+	  ]->currency_convert(r[i]->price,id);
 
 	retval+="<td align=right>"
 	+sprintf("$%.2f",(float)r[i]->price)+"</td>\n"
@@ -424,6 +444,7 @@ void start(){
 
 }
 
+
 mixed handle_error(string error, object id){
 string retval;
 if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml")))
@@ -450,14 +471,25 @@ if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
 
 }
 
-mixed parse_page(string page, array(mapping(string:string)) r, array desc){
+mixed parse_page(string page, array(mapping(string:string)) r, array
+desc, object|void id){
 
 string field;
 array fields=indices(r[0]);
 
 for(int i=0; i<sizeof(desc); i++){
   // page+=field +": "+r[0][field];
-  if(desc[i]->type=="decimal") {
+  if(desc[i]->type=="decimal" && desc[i]->name=="price") {
+if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
+	load_ivmodule(id);
+
+	r[0][desc[i]->name]=
+		  modules[id->misc->ivend->config->checkout_module]->currency_convert(r[0][desc[i]->name],id);
+
+    string  page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
+  }
+
+else  if(desc[i]->type=="decimal") {
     string 
 page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
   }
@@ -505,7 +537,7 @@ if (catch(sizeof(retval)))
   return 0;
 
 // retval="find_page("+page+", s, id)";
-return parse_page(retval, r, f);
+return parse_page(retval, r, f, id);
 }
 
 mixed additem(string item, object id){
@@ -571,11 +603,9 @@ mapping ivend_image(array(string) request, object id){
 
 mixed handle_checkout(object id){
 mixed retval;
- if (id->variables->reload || 
-	! objectp(modules[id->misc->ivend->config->checkout_module]))
-modules+=([ id->misc->ivend->config->checkout_module :
-    (object)clone(compile_file(id->misc->ivend->config->root+"/modules/"+
-    id->misc->ivend->config->checkout_module)) ]);
+
+if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
+	load_ivmodule(id);
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 

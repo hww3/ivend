@@ -84,3 +84,22 @@ retval=parse_rxml(retval,id);
 return retval;
 
 }
+
+/*
+
+  currency_convert
+
+  v is price
+
+*/
+
+mixed currency_convert(mixed v, object id){
+  float exchange=3.0;
+  float customs=2.0;
+  float our_fee=3.0;
+
+  // calculate the exchange rate...
+  v=( exchange * (float)v);
+  v+=( (customs*(float)v) + (our_fee*(float)v) );
+  return v;
+}

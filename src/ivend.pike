@@ -363,6 +363,33 @@ return retval;
  
 }
 
+string tag_upsell(string tag_name, mapping args,
+                    object id, mapping defines) {
+
+string retval="";
+
+array r=DB->query("SELECT upsell.id,products.* FROM upsell,products "
+	"WHERE upsell.id='" + id->misc->ivend->page + 
+	"' AND products.id=upsell.upsell");
+
+if(sizeof(r)>0) {
+  retval+="<table>\n"
+	"<tr><td colspan=2 bgcolor=black><font color=white>Accessories</td></tr>\n";
+  foreach(r, mapping row) {
+    retval+="<tr><td><input type=checkbox name=\"" + row->id + "\"></td><td>" 
+	"<a href=\"/" + row->id + ".html\">"
+	"<font size=-1>"+ row->name +"</a><br><font color=maroon>$" +
+	row->price + "</td></tr>\n";
+  retval+="<tr><td colspan=2><font size=1>Check one or more of"
+	"these great accessories to be added to your cart when order this item."
+	"</td></tr>\n</table>";
+  }
+}
+
+return retval;
+
+}
+
 string tag_additem(string tag_name, mapping args,
                     object id, mapping defines) {
 if(!args->item) return "<!-- you must specify an item " +
@@ -1408,6 +1435,7 @@ if(args->extrafields)
  mapping tags=    ([
 	"ivstatus":tag_ivstatus, 
 	"ivmg":tag_ivmg, 
+	"upsell":tag_upsell,
 	"listitems":tag_listitems,
 	"generateviews":tag_generateviews
     ]);

@@ -19,6 +19,7 @@ CREATE TABLE customer_info (
 
 CREATE TABLE groups (
   id varchar(12) DEFAULT '' NOT NULL,
+  parent varchar(12) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
   image varchar(24),
@@ -143,3 +144,10 @@ INSERT INTO status VALUES (9,'Shipped','Order has been completely shipped.','ord
 INSERT INTO status VALUES (10,'Error','An error has occurred during order processing.','orders')\g
 INSERT INTO status VALUES (11,'Cancelled','Order has been cancelled.','orders')\g
 
+CREATE TABLE item_options (
+  product_id VARCHAR(16) NOT NULL,
+  option_type VARCHAR(6) NOT NULL,
+  option_code VARCHAR(6) NOT NULL,
+  description CHAR(36),
+  surcharge decimal(7,2)
+)\g

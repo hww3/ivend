@@ -448,17 +448,18 @@ else {
 
   array s=DB->query("SELECT status, name from status where tablename='orders'");
 
-  foreach(s, mapping row) {
+//  foreach(s, mapping row) {
 int numlines=(int)CONFIG_ROOT[module_name]->showlines ||10;
-  int i=(int)(DB->query("SELECT count(*) as c from orders where status=" +
-row->status)[0]->c);
+  int i=(int)(DB->query("SELECT count(*) as c from orders"))[0]->c;
+// " where status=" + row->status)[0]->c);
   array r=DB->query("SELECT id, "
 //	"DATE_FORMAT(updated, 'm/d/y h:m') as 
 	"updated, notes "
 	"FROM orders "
-	"WHERE status=" + row->status + " ORDER BY updated DESC LIMIT "
-	+(id->variables["page"+ row->status]?
-		((((int)id->variables["page" + row->status])*numlines
+//	"WHERE status=" + row->status + 
+        " ORDER BY updated DESC LIMIT "
+	+(id->variables->page?
+		((((int)id->variables->page)*numlines
 -numlines) +
 ","):"") + numlines);
 
@@ -470,25 +471,21 @@ if((int)i%numlines) numpages ++;
   if(sizeof(r)>0) {
   retval+="<table cellspacing=0 cellpadding=0>\n<tr>"
 	"<td colspan=4 align=center>";
-  retval+="<font size=+1>" + row->name + "</font><br>";
+//  retval+="<font size=+1>" + row->name + "</font><br>";
 
   retval+="<i><font size=2>" +
-(((int)id->variables["page" +
-    row->status]||1 )>1?("<a href=\"./?page" + row->status +"="+
-(((int)id->variables["page" + row->status]) -1) +"\">"):"")+
+(((int)id->variables->page||1 )>1?("<a href=\"./?page="+
+(((int)id->variables->page) -1) +"\">"):"")+
 
 "&lt;&lt;" +
-((((int)id->variables["page" +
-    row->status]||1 )>1)?"</a>":"") 
+((((int)id->variables->page||1 )>1)?"</a>":"") 
  +" &nbsp; Showing page " +
-(((int)id->variables["page" + row->status])||1 )+ " of " + 
+(((int)id->variables->page)||1 )+ " of " + 
 numpages + " &nbsp; " +
-(((int)id->variables["page" +
-    row->status]||1 )<numpages?("<a href=\"./?page" + row->status +"="+
-(((int)id->variables["page" + row->status]||1) +1) +"\">"):"")+
+(((int)id->variables->page||1 )<numpages?("<a href=\"./?page="+
+(((int)id->variables->page||1) +1) +"\">"):"")+
   "&gt;&gt;" + 
-((((int)id->variables["page" +
-    row->status]||1 )<numpages)?"</a>":"") 
+((((int)id->variables->page ||1 )<numpages)?"</a>":"") 
 
 + "<br></font></i>";
 
@@ -518,7 +515,7 @@ numpages + " &nbsp; " +
 
     retval+="</table>\n";
   }
- }
+// }
 }
 
 return retval;

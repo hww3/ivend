@@ -509,8 +509,7 @@ array(mapping(string:mixed)) r=list_fields(table);
                                         "method=post>\n"
                                         "<INPUT TYPE=HIDDEN NAME=table VALUE=\""+table+"\">\n"
                                         "<INPUT TYPE=HIDDEN NAME=mode VALUE=\""+
-                                        (record?"domodify":"doadd") +"\">\n";
-        "<TABLE>\n";
+                                        (record?"domodify":"doadd") +"\">\n<TABLE>\n";
 
         if(!record) record=([]);
         for(int i=0; i<sizeof(r);i++){          // Generate form from schema
@@ -540,6 +539,18 @@ array(mapping(string:mixed)) r=list_fields(table);
                         "<input type=checkbox name=taxable value=Y " +
                         (record[r[i]->name]=="N"?"":"CHECKED") +">\n";
 
+            }
+
+            else if(lower_case(r[i]->name)=="parent"){
+
+                retval+="<TR>\n"
+                        "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
+                        +"parent group"+
+                        "</FONT></TD>\n"
+                        "<TD>\n"
+			"<select name=\"parent\">"
+			"<option value=\"\">Top Level\n";
+             	retval+="</select>";
             }
 
             else if(r[i]->type=="blob"){

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.198 1999-05-17 19:29:20 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.199 1999-05-19 00:51:39 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -555,7 +555,7 @@ void|string container_form(string name, mapping args,
 }
 
 mixed do_complex_items_add(object id, array items){
-    perror("doing complex item add...\n");
+//    perror("doing complex item add...\n");
     foreach(items, mapping i){
         array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
                           + i->item + "'");
@@ -627,7 +627,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     array en=({});
     int madechange=0;
 
-    perror("doing cart...\n");
+//    perror("doing cart...\n");
     if(args->fields){
         ef=args->fields/",";
         if(args->names)
@@ -665,7 +665,7 @@ trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
 trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
             } else {
                 madechange=1;
-                perror("updating cart..." + id->variables["q" + (string)i] + "\n");
+//              perror("updating cart..." + id->variables["q" +(string)i] + "\n");
                 DB->query("UPDATE sessions SET "
                           "quantity="+(int)(id->variables["q"+(string)i])+
                           " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
@@ -690,7 +690,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
 items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
             row->qualifier, "series": row->series ]) });
             }
-            perror(sprintf("%O", items));
+//            perror(sprintf("%O", items));
             do_additems(id, items);
         }
     }
@@ -841,7 +841,7 @@ string container_category_output(string name, mapping args,
                    id->misc->ivend->page + "' AND "
                    + lower_case(args->type) + "." +
                    KEYS[lower_case(args->type)] + "=product_groups.product_id ";
-            perror(query + "\n");
+//            perror(query + "\n");
             if(!args->show)
                 query+=" AND status='A' ";
 
@@ -853,15 +853,12 @@ string container_category_output(string name, mapping args,
     else {
 
         query="SELECT * FROM " + lower_case(args->type);
-
-        if(args->restriction || args->show)
-            query+=" WHERE ";
+            query+=" WHERE parent='" +
+            (id->variables->parent||args->parent||"") + "' ";
         if(args->restriction)
-            query+=args->restriction;
-        if(args->restriction &&  args->show)
-            query+=" AND ";
+            query+="AND " + args->restriction;
         if(args->show)
-            query+="status='A'";
+            query+="AND status='A'";
 
         if(args->order)
             query+=" ORDER BY " + args->order;
@@ -957,8 +954,10 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     else if(args->type=="groups") {
         query="SELECT " + KEYS->groups + " AS pid " +
               extrafields+ " FROM groups";
+        query+=" WHERE parent='" + (id->variables->parent || args->parent 
+|| "") + "' ";
         if(!args->show)
-            query+=" WHERE status='A' ";
+            query+="AND status='A' ";
         tablename="groups";
     }
     else {
@@ -1249,7 +1248,7 @@ items+=({ (["item": id->variables->item,
                     (id->variables[id->variables->item+"quantity"]
                      ||id->variables->quantity || 1)
                    ]) });
-    perror(sprintf("%O", items));
+//    perror(sprintf("%O", items));
     int result=do_additems(id, items);
     if(result)
         foreach(items, mapping item)
@@ -2387,7 +2386,7 @@ string return_to_admin_menu(object id){
                              mixed m;
 
                              if(!modules[c]) modules[c]=([]);
-                             perror("loading module " + name + ".\n");
+//                             perror("loading module " + name + ".\n");
                              string filen;
                              filen=query("root")+"/src/modules/"+name;
                              if(file_stat(filen));

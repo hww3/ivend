@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.29 1998-03-02 20:58:22 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.30 1998-03-05 02:48:47 hww3 Exp $";
 
 /*
  *
@@ -52,10 +52,15 @@ void create(){
           "This is where the module will be inserted in the "
           "namespace of your server.");
 
-   defvar("datadir", "/home/roxen/share/ivend/", "iVend Root Location",
+   defvar("root", "/home/roxen/share/ivend/" , "iVend Root Location",
           TYPE_DIR,
           "This is location where iVend will store "
           "various files nessecary for operation.");
+
+   defvar("datadir", query("root")+"data" , "iVend Data Location",
+          TYPE_DIR,
+          "This is location where iVend will store "
+          "data and configuration files nessecary for operation.");
 
    defvar("config_user", "ivend", "Configuration User",
 	  TYPE_STRING,
@@ -96,7 +101,7 @@ int load_ivmodule(object id){
  if (id->variables->reload || 
 	! objectp(modules[id->misc->ivend->config->checkout_module]))
 modules+=([ id->misc->ivend->config->checkout_module :
-    (object)clone(compile_file(query("datadir")+"/modules/"+
+    (object)clone(compile_file(query("root")+"/modules/"+
     id->misc->ivend->config->checkout_module)) ]);
 
 return 1;
@@ -149,7 +154,7 @@ if (args["_parsed"]) return;
 
 if (args->add) 
   return "<a _parsed=1 href=\""+query("mountpoint")
-  +id->misc->ivend->st+"/"+id->misc->ivend->page+".ivml?SESSIONID="
+  +id->misc->ivend->st+"/"+id->misc->ivend->page+".html?SESSIONID="
   +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page+
   "\">"+contents+"</a>";
 else if(args->cart)
@@ -331,7 +336,7 @@ foreach(r,row){
 //	perror(t);  
 
       if(n==0)
-        thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</A>");
+        thisrow[n]=("<A HREF=\""+row->pid+".html\">"+row[t]+"</A>");
       else
         thisrow[n]=row[t]; 
       n++;
@@ -484,7 +489,7 @@ return fs;
 
 mixed handle_error(string error, object id){
 string retval;
-if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml")))
+if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
   retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
 	"The following error has occurred:<p><error><p>\n"
 	"Please contact the administrator for assistance.";
@@ -500,8 +505,8 @@ perror("iVend: handling cart for "+st+"\n");
 #endif
 
 string retval;
-if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
-  return handle_error(id->misc->ivend->config->root+"/cart.ivml",id);
+if(!(retval=Stdio.read_bytes(id->misc->ivend->config->root+"/cart.html")))
+  return handle_error(id->misc->ivend->config->root+"/cart.html",id);
  
 return retval;    
 
@@ -551,7 +556,7 @@ object s=Sql.sql(
 		 id->misc->ivend->config->dbpassword
 		 );
 
-page=page-".ivml";	// get to the core of the matter.
+page=page-".html";	// get to the core of the matter.
 id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
@@ -559,13 +564,13 @@ array f;
 r=s->query("SELECT * FROM groups WHERE id='"+page+"'");
 if (sizeof(r)==1){
   id->misc->ivend->type="group";
-  template="group_template.ivml";
+  template="group_template.html";
   f=s->list_fields("groups");
   }
 else {
   r=s->query("SELECT * FROM products WHERE id='"+page+"'");
   id->misc->ivend->type="product";
-  template="product_template.ivml";
+  template="product_template.html";
   f=s->list_fields("products");
 
   }
@@ -605,15 +610,15 @@ mixed handle_page(string page, object id){
 perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
 #endif
 
-id->misc->ivend["page"]=page-".ivml";
+id->misc->ivend["page"]=page-".html";
 if(id->variables->ADDITEM) additem(id->variables->ADDITEM,id);
 mixed retval;
 
 switch(page){
 
-  case "index.ivml":
-    id->realfile=id->misc->ivend->config->root+"/index.ivml";
-    retval= Stdio.read_bytes(id->misc->ivend->config->root+"/index.ivml"); 
+  case "index.html":
+    id->realfile=id->misc->ivend->config->root+"/index.html";
+    retval= Stdio.read_bytes(id->misc->ivend->config->root+"/index.html"); 
     break;
 
   case "search":
@@ -648,7 +653,7 @@ if(!objectp(modules[id->misc->ivend->config->checkout_module]))
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
-if(retval==-1) return handle_page("index.ivml",id);
+if(retval==-1) return handle_page("index.html",id);
 else 
 return retval;    
 }
@@ -1096,7 +1101,7 @@ return http_string_answer(data, "image/gif");
 
 string create_index(object id){
 string retval="";
-retval=Stdio.read_bytes(query("datadir")+"/index.ivml");
+retval=Stdio.read_bytes(query("datadir")+"/index.html");
 // retval=parse_rxml(file,id);
 return retval;
 }
@@ -1169,16 +1174,13 @@ else {
 
 	      switch(request[1]) {
 		    case "":
-	        case "index.ivml":
-		  perror("INDEX.IVML!\n");
-		  retval=(handle_page("index.ivml", id));
+	        case "index.html":
+		  retval=(handle_page("index.html", id));
 	          break;
 		case "cart":
-		  perror("CART.IVML!\n");
 		  retval=(handle_cart(request[0],id));
 		  break;
 		case "checkout":
-		  perror("CHECKOUT!\n");
 		  retval=(handle_checkout(id));
 		  break;
 		case "images":

@@ -1,18 +1,62 @@
-INSTALL
+iVend INSTALL
 
-A note about compatibility
+iVend version 1.0.20 of 29 august 1998 
+coding by Bill Welliver <hww3@riverweb.com>
+
+these directions are very preliminary and need much work in order to be 
+considered anywhere near complete. when all else fails, read the source! :) 
+
+
+What is iVend?
+--------------
+
+iVend is a module for the Roxen Challenger web server which allows electronic
+commerce functions to be provided quickly and easily. iVend supports 
+multiple stores from a single installation, and provides direct support 
+for SQL databases to handle product and order tracking.
+
+iVend is currently in the early stages of development, and as such 
+there will be bugs and missing features. Hopefully with the support of 
+alpha and beta testers iVend will grow up to be a mature, powerful and 
+useful tool.
+
+What do I need for iVend to work?
+---------------------------------
+
+* A system running Roxen Challenger version 1.2 or higher. See the
+  section "A Note About Compatibility" below.
+* A copy of Pike in your PATH for running the setup scripts.
+* An SQL database server supported by Pike and Roxen Challenger.
+  (iVend was developed using mysql, however other dbms systems should 
+  work as well with minimal changes to the code.) 
+* Admistrative rights to the database system, as well as Roxen.
+* A working knowledge of HTML, SQL databases, and Unix.
+
+
+A Note About Compatibility
 --------------------------
 
-iVend has been tested with Roxen 1.(2/3).25 and up. If you are using iVend
-with Roxen 1.(2/3).25 through 29, you will need to replace the file
-RSA.pmod in server/lib/pike/modules/Standards.pmod/PKCS.pmod with a copy
-of RSA.pmod available from the same location you downloaded iVend.  
-Releases after .29 do not require any patches to the Roxen base release. 
+iVend has been tested with Roxen releases 1.(2/3).25 and up. Because of
+added security features in iVend, certain releases of Roxen and Pike are 
+missing functions that are required to function.
 
-download site: http://hww3.riverweb.com/dist/patches
+If you are using iVend with Roxen release 1.2.25+ or 1.3.25 through
+29, you will need to replace the file RSA.pmod located in
+server/lib/pike/modules/Standards.pmod/PKCS.pmod with a copy of RSA.pmod
+available from the patches directory at the same location you downloaded
+iVend. 
+
+You will also need to upgrade the same file in any instalations of 
+Pike. 
+
+Releases 1.3.30 and higher do not require any patches to the Roxen base
+release. 
+
+  download site: http://hww3.riverweb.com/dist/patches
 
 iVend was written to work with the mySQL database system. There is very
 little reason that another RDBMS would not work. Your mileage may vary.
+
 
 Installation Instructions
 -------------------------
@@ -20,24 +64,39 @@ Installation Instructions
 1. Unpack the iVend distribution using this command:
 
     tar xzvf ivend-1.0.XX.tar.gz (XX is the build number)
+ or zcat ivend-1.0.XX.tar.gz | tar xvf -
 
 This should give you a directory called ivend/. We'll call this
 directory the iVend distribution directory. Do not move or rename
-files in this directory.
+files in this directory. For example, if you unpacked the distribution
+file under /usr/local/roxen, your iVend distribution directory would be
+/usr/local/roxen/ivend.
 
-2. Make sure that the iVend distribution directory is in Roxen's module
-search path. 
+2. Make sure that the "src" directory within the iVend distribution
+directory is in Roxen's module search path, located in the "Global
+Variables" section of the Roxen Configuration Interface. For the example
+above, you'd add /usr/local/roxen/ivend/src to your module search path. 
 
 3. Be sure to set all the directories in the iVend section of the Roxen
-Config Interface. If you don't provide the correct directory information,
-iVend will not work properly:
+Config Interface. iVend will try to guess the proper values when you add 
+the module the first time. If you don't provide the correct directory
+information, iVend will not work properly:
 
   a. iVend Root Directory: This is the iVend distribution directory.
   b. iVend Config Directory: This is usually ivend/configurations.
   c. iVend Data Directory: This is usually ivend/data.
+  d. Mount Path: this is where iVend will be located within your server's
+     virtual filesystem. The default is /ivend/.
 
 4. Assign values for any other configuration variables such as config user
 and password.
+
+5. Save your changes.
+
+You should now have a functional iVend installation. At this point, you'll
+probably want to start adding stores. See the section "Setting Up a New
+Store" for more information.
+
 
 Setting Up a New Store
 ----------------------
@@ -52,15 +111,30 @@ script assumes that you have already created a database and have a
 username and password that has create/update permissions for that database
 before you start. 
 
-1. Create a directory and fill it with the proper html files. You can
-duplicate the examples/ directory as a starting point (ie cp -r examples
-someplace else).
+1. Create a database where iVend will store all store related
+  transactions. mysSQL users can use the 'mysqladmin create dbname'
+  command, where dbname is the name of the database you're creating.
+  Normally, you'll want to select a name that correlates with 
+  your store's actual name. Other systems may vary in the commands and
+  procedures required to do this. Provide select/insert/delete access to a
+  user so that iVend can connect and use this db.
 
-2. Create a database with the sql server of your choice and generate the
-nessecary tables. Again, you can use the sample database schema located in
-the examples/ directory.
+*IMPORTANT NOTE* Please note that iVend uses database access permissions
+  to determine who has permission to administer your iVend store. Because
+  of this, make sure that you don't grant access permission to this
+  database to anyone that you would not allow store admin priveledges.
+  This feature also allows multiple logins with access to a store, as well
+  as read-only access to store admin features. 
 
-3. Create an RSA keypair using the scripts/make_keys.pike script.
+2. Use the script create_store.sh to add a new store configuration. To do
+  this, change directories to ivend/scripts and execute this command:
+
+  sh create_store.sh
+
+The script will step you through various questions that are required for
+creating a new store, including setting up database tables.
+
+>> INSERT MORE DETAILED INSTRUCTIONS HERE <<
 
 4. Using the administration interface, provide the required information
 to activate the new store.
@@ -68,6 +142,30 @@ to activate the new store.
 5. Add groups and products using the store's administration interface.
 
 
-for more information, see doc/README.
+
+Notes about data security
+-------------------------
+
+As with any application of this nature, one must be extremely sensitive
+when designing and implimenting electronic commerce solutions. Improperly
+implimented designs and security can open holes through which data, such
+as account numbers or addresses might be compromised. 
+
+iVend was written with this in mind, and therefore will use, if available,
+the cryptography toolkit built into pike to secure sensitive data.
+Sensitive data is never stored in the clear in databases or transmitted in
+the clear over unsecure lines. 
+
+The encryption methods used by iVend include RSA public key encryption.
+This means that access to data encrypted with an entity's public key must
+be made through the corresponding private key. For this reason, it is
+*highly* recommended that the two keys be kept in separate directories,
+preferably on different systems. This way, if the system running iVend is
+compromised, it would not be possible to decrypt secured information
+because the required private key would not be present.
+
+*NOTE* You should make sure that your RSA keyfiles are readable only by
+trusted users.
+
 
 19 june 1998

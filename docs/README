@@ -1,62 +1,3 @@
-iVend version 1.0a1 of 24 march 1998 
-coding by Bill Welliver <hww3@riverweb.com>
-
-these directions are very preliminary and need much work in order to be 
-considered anywhere near complete. when all else fails, read the source! :) 
-
-for the checkout process, your best bet is to look at the sample checkout
-pages under examples/checkout/*
-
-What is iVend?
-
-iVend is a module for the Roxen Challenger web server which allows electronic
-commerce functions to be provided quickly and easily. iVend supports 
-multiple stores from a single installation, and provides direct support 
-for SQL databases to handle product and order tracking.
-
-iVend is currently in the very early stages of development, and as such 
-there will be bugs and missing features. Hopefully with the support of 
-alpha and beta testers iVend will grow up to be a mature, powerful and 
-useful tool.
-
-What do I need for iVend to work?
-
-* A system running Roxen Challenger version 1.2 or higher.
-* An SQL database server supported by Roxen Challenger.
-  (iVend was developed using mysql, however other dbms systems should 
-  work as well.) 
-* A working knowledge of HTML, SQL databases, and Unix.
-
-Installing iVend
-
-1. Untar the ivend distribution file. You should get a directory called 
-ivend. This directory contains the module, data files and example store.
-
-2. Add the ivend directory to your module search path using the Roxen 
-Administration interface.
-
-3. Choose 'Add Module' to a virtual server.
-
-4. Set the configuration username and password, as well as the module's root
-and configuration directory. This is normally ivend/ and ivend/data/
-respectively.
-
-5. Save the settings and you're ready to go! iVend will be mounted by 
-default on /ivend/, and configuration is located at /ivend/config/.
-
-
-Adding a new store
-------------------
-
-1. Create a directory where all store related files will be kept. You
-should copy all of the files and directories in the examples directory to
-this new location using "cp -r examples newlocation". This will ensure
-that all of the files required for operation are present.
-
-2. Create a database where iVend will store all store related 
-transactions. mysql users can use the 'mysqladmin create dbname' command. 
-Other systems may vary. Provide select/insert/delete access to a user so 
-that iVend can connect and use this db.
 
 3. Create data tables in that database for iVend to use. A sample schema 
 file is located in the examples directory called schema.mysql. It's
@@ -204,29 +145,6 @@ using the contents of the first container and every even record will be
 processed using the second container as the template.
 
 
-Notes about data security
--------------------------
-
-As with any application of this nature, one must be extremely sensitive
-when designing and implimenting electronic commerce solutions. Improperly
-implimented designs and security can open holes through which data, such
-as account numbers or addresses might be compromised. 
-
-iVend was written with this in mind, and therefore will use, if available,
-the cryptography toolkit built into pike to secure sensitive data.
-Sensitive data is never stored in the clear in databases or transmitted in
-the clear over unsecure lines. 
-
-The encryption methods used by iVend include RSA public key encryption.
-This means that access to data encrypted with an entity's public key must
-be made through the corresponding private key. For this reason, it is
-*highly* recommended that the two keys be kept in separate directories,
-preferably on different systems. This way, if the system running iVend is
-compromised, it would not be possible to decrypt secured information
-because the required private key would not be present.
-
-*NOTE* Currently both private and public keys are held in the same file.
-You should make sure that this file is readable only a trusted user.
 
 Email Notification
 ------------------

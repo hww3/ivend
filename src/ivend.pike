@@ -287,7 +287,7 @@ if(id->variables->update) {
 
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
 
-    if(!args->fields) return "Incomplete cart configuration!";
+//    if(!args->fields) return "Incomplete cart configuration!";
     array r= id->misc->ivend->db->query(
       "SELECT sessions.id,series,quantity,name,sessions.price "+ 
 	extrafields+" FROM sessions,products "

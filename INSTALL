@@ -9,6 +9,8 @@ RSA.pmod in server/lib/pike/modules/Standards.pmod/PKCS.pmod with a copy
 of RSA.pmod available from the same location you downloaded iVend.  
 Releases after .29 do not require any patches to the Roxen base release. 
 
+download site: http://hww3.riverweb.com/dist/patches
+
 iVend was written to work with the mySQL database system. There is very
 little reason that another RDBMS would not work. Your mileage may vary.
 

@@ -53,9 +53,9 @@ mapping defines) {
   array r=DB->query("SELECT * FROM item_options WHERE product_id='" +
 args->item + "' GROUP BY option_type ORDER BY option_type ASC");
 
-  if(!r || sizeof(r)<1) return 0;
+  if(!r || sizeof(r)<1) return "<!-- no item options found --><false>";
 
-retval+="<input type=hidden name=options value=1>\n";
+  retval+="<input type=hidden name=options value=1>\n";
   foreach(r, mapping row){
   retval+="  <select name=\"" +  row->option_type + "\">\n";
     foreach(DB->query("SELECT * FROM item_options WHERE product_id='" +
@@ -67,7 +67,7 @@ row2->description +
 ((float)(row2->surcharge)!=0.00? " " + MONETARY_UNIT + (sprintf("%.2f",
 (float)(row2->surcharge))) + " surcharge":"") + "\n"; 
  
-  retval+="</select>\n";
+  retval+="</select><true>\n";
   }
 
 return retval;

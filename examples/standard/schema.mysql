@@ -25,16 +25,26 @@ CREATE TABLE customer_info (
 );
 
 #
+# Dumping data for table 'customer_info'
+#
+
+
+#
 # Table structure for table 'groups'
 #
 CREATE TABLE groups (
   id varchar(12) DEFAULT '' NOT NULL,
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
-  image varchar(12),
+  image varchar(24),
   image2 varchar(24),
   PRIMARY KEY (id)
 );
+
+#
+# Dumping data for table 'groups'
+#
+
 
 #
 # Table structure for table 'orderdata'
@@ -45,8 +55,15 @@ CREATE TABLE orderdata (
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   qualifier varchar(24),
-  status int(11) DEFAULT '0' NOT NULL
+  status int(11) DEFAULT '0' NOT NULL,
+  cost decimal(6,2) DEFAULT '0.00' NOT NULL,
+  taxable enum('Y','N') DEFAULT 'Y'
 );
+
+#
+# Dumping data for table 'orderdata'
+#
+
 
 #
 # Table structure for table 'orders'
@@ -63,6 +80,11 @@ CREATE TABLE orders (
 );
 
 #
+# Dumping data for table 'orders'
+#
+
+
+#
 # Table structure for table 'payment_info'
 #
 CREATE TABLE payment_info (
@@ -71,8 +93,14 @@ CREATE TABLE payment_info (
   Card_Number varchar(255) DEFAULT '' NOT NULL,
   Expiration_Date varchar(10) DEFAULT '' NOT NULL,
   orderid varchar(12) DEFAULT '' NOT NULL,
+  status int(11) DEFAULT '3' NOT NULL,
   PRIMARY KEY (orderid)
 );
+
+#
+# Dumping data for table 'payment_info'
+#
+
 
 #
 # Table structure for table 'product_groups'
@@ -81,6 +109,10 @@ CREATE TABLE product_groups (
   group_id char(12),
   product_id char(12)
 );
+
+#
+# Dumping data for table 'product_groups'
+#
 
 #
 # Table structure for table 'products'
@@ -98,14 +130,19 @@ CREATE TABLE products (
   price decimal(7,2),
   qualifiers varchar(24),
   image varchar(12),
+  taxable enum('Y','N') DEFAULT 'N',
   PRIMARY KEY (id)
 );
+
+#
+# Dumping data for table 'products'
+#
 
 #
 # Table structure for table 'sessions'
 #
 CREATE TABLE sessions (
-  sessionid int(11) DEFAULT '0' NOT NULL,
+  sessionid varchar(12) DEFAULT '' NOT NULL,
   id varchar(12) DEFAULT '0' NOT NULL,
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
@@ -114,13 +151,31 @@ CREATE TABLE sessions (
 );
 
 #
+# Dumping data for table 'sessions'
+#
+
+
+#
 # Table structure for table 'status'
 #
 CREATE TABLE status (
   status int(11) DEFAULT '0' NOT NULL,
   name char(24) DEFAULT '' NOT NULL,
+  description char(128),
+  tablename char(20) DEFAULT '' NOT NULL,
   PRIMARY KEY (status)
 );
+
+#
+# Dumping data for table 'status'
+#
+
+INSERT INTO status VALUES (0,'Unprocessed','Indicates an order awating initial processing.','orders');
+INSERT INTO status VALUES (1,'Shipped','Indicates an order that has been shipped.','orders');
+INSERT INTO status VALUES (2,'PShipped','Indicates an order that has not completely shipped.','orders');
+INSERT INTO status VALUES (3,'Unprocessed','Indicates unprocessed payment information','payment_info');
+INSERT INTO status VALUES (4,'Validated','Indicates validated payment information','payment_info');
+INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info');
 
 #
 # Table structure for table 'taxrates'
@@ -132,11 +187,26 @@ CREATE TABLE taxrates (
 );
 
 #
-# Table structure for table 'test'
+# Dumping data for table 'taxrates'
 #
-CREATE TABLE test (
-  t enum('One','Two','Three') DEFAULT 'One',
-  z int(11) DEFAULT '0' NOT NULL,
-  PRIMARY KEY (z)
+
+INSERT INTO taxrates VALUES ('PA',0.06);
+
+#
+# Table structure for table 'type'
+#
+CREATE TABLE type (
+  type int(11) DEFAULT '0' NOT NULL,
+  name char(24),
+  description char(128),
+  tablename char(20) DEFAULT '' NOT NULL,
+  PRIMARY KEY (type)
 );
+
+#
+# Dumping data for table 'type'
+#
+
+INSERT INTO type VALUES (0,'Billing Address','Customer Billing Address','customer_info');
+INSERT INTO type VALUES (1,'Shipping Address','Customer Shipping Address if different than Billing Address','customer_info');
 

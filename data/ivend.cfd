@@ -88,13 +88,6 @@ $default_value=3600
 $endescription=Number of seconds before a session is cleared from database.
 $sidescription=Number of seconds before a session is cleared from database.
 
-$varname=config_user
-$enname=Configuration Username
-$siname=Configuration Username
-$type=string
-$endescription=Username for Store Administration
-$sidescription=Username for Store Administration
-
 $varname=privatekey
 $enname=RSA Private Key
 $siname=RSA Private Key

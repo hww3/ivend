@@ -225,3 +225,76 @@ To aid in the generation of a list of lists, a special container called
 formoutput container in that field names from store configurations that
 are surrounded by #s like this: #name# will be replaced with that store's
 value. For a better example, see the file data/index.html.
+
+
+
+
+SOME NOTES ABOUT MYSQL AND SETTING UP A DATABASE
+_________________________________________________________________________
+
+Step #1 ... Make sure mysql is installed and running on your server before 
+you compile and install roxen and pike.  Also make sure you have the full 
+Crypto version of Roxen and GMP installed. 
+
+Step #2 ... Changing root's mysql password for security reasons enter mysql
+with this command:
+
+mysql mysql
+
+Than enter this at the mysql prompt, change rootpass to whatever you want 
+roots password to be, make sure your logged in as root when doing all this. 
+(adjust as necessary):
+
+update user set password=password('rootpass') where user='root';
+
+Of coursse now you have to type mysql mysql --password=rootpass
+
+Step #2 ...  Creating the store's database, its a good idea to name dbname
+something relavant to the store's hostname like "wizstoredb" or something
+similar that you can remember it being a db .. wizstoredb = whatever you
+want it to be named .. you can use something like funkdb  or thetstoredatabase:
+
+mysqladmin create wizstoredb
+
+Step #3 ... Create a database admin for the store's database, enter the mysql 
+with:
+
+mysql mysql --password=rootpass
+
+Now type this while in the session:
+
+insert into user (host,user,password) values('localhost','wizstoreadmin',password('wizpass'));
+
+(Notice the user is a name relevant to the storesdb for easy remembering
+and wizpass = the password you chose for that user)
+
+Step #4 ... Now finally set the access rights for the db user you just 
+created so he has complete access to edit/modify that wizstoredb sql
+data.  Notice that the values of the localhost and the stores database
+name and the than WHO gets the rights to it.  6 'yes's means the user
+wizstoreadmin gets FULL complete rights to edit/add modify those records:
+
+insert into db values('localhost','wizstoredb','wizstoreadmin','Y','Y','Y','Y','Y','Y');
+
+Now type quit, to exit the mysql:
+
+quit
+
+Step #5 ... Go ahead and test it buddy! Enter at the prompt:
+
+mysqladmin reload --password=rootpass
+
+Than enter a session: 
+
+mysql -u htmlwizadmin -p wizstore
+
+(Enter your password next and yer in as a user!@)
+
+
+
+
+Now go setup your shop by running the create_store.sh script
+
+cd /usr/local/roxen/server/ivend/scripts
+sh ./create_store.sh
+

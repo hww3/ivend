@@ -155,7 +155,8 @@ catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type,"
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
 "lineitems.lineitem='shipping' "
 "and shipping_types.name=lineitems.extension"));
-if(sizeof(typer)<1) type="0";
+
+if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
   id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0," +
     type + ",NOW(),NULL,NOW())");

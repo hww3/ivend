@@ -430,7 +430,8 @@ if(!id->variables->print)
       "status.status=payment_info.status");
 if(r[0]->name!="Validated")
    retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
-    "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n";
+    "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
+    "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; ";
 else if(sizeof(DB->query(
 	"SELECT id FROM orderdata WHERE orderid='" +    
 	id->variables->orderid + "' AND status !=" +status))>0)

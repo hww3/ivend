@@ -569,7 +569,7 @@ class db {
             else if(!catch(CONFIG) && file_stat(CONFIG->general->root +
 "/db/" +
                               lower_case(table) + 
-                              "_" + lower_case(r[i]->name) + ".val"))
+                              "." + lower_case(r[i]->name)))
 
             {
                retval+="<TR>\n"
@@ -582,7 +582,8 @@ class db {
 
                array vals;
                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
-                                               "db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
+
+"db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                   vals-=({""});
                   if(sizeof(vals)>0) {
                      for(int j=0; j<sizeof(vals); j++)
@@ -814,7 +815,8 @@ class db {
 
                array vals;
                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
-                                               "db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
+
+"db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                   vals-=({""});
                   if(sizeof(vals)>0) {
                      for(int j=0; j<sizeof(vals); j++)
@@ -923,7 +925,8 @@ class db {
 
                array vals;
                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
-                                               "db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
+
+"db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                   vals-=({""});
                   if(sizeof(vals)>0) {
                      for(int j=0; j<sizeof(vals); j++)

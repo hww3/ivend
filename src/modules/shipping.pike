@@ -124,8 +124,8 @@ string showmainmenu(object id)
 string retval="";
 retval+="<b>Configured Shipping Types</b><p>";
 
-array r=DB->query("SELECT * FROM shipping_types ORDER BY type");
-if(sizeof(r)==0)
+catch(array r=DB->query("SELECT * FROM shipping_types ORDER BY type"));
+if(!r || sizeof(r)==0)
     retval+="No Shipping Types Configured.";
 else {
     foreach(r, mapping row)
@@ -320,7 +320,10 @@ else return r[0]->extension;
 string tag_shippingadd (string tag_name, mapping args,
                     object id, mapping defines) {  
 
+if(id->variables->no_shipping_options)
+return "<!-- No shipping options were available. -->";
 int type= (args->type || id->variables->type || 0); 
+
 if(! type)
   return "Error.";
 
@@ -356,7 +359,10 @@ string tag_shippingtypes (string tag_name, mapping args,
 
 string retval="";
 array r;
-r=id->misc->ivend->db->query("SELECT * from shipping_types order by type");
+catch(
+r=id->misc->ivend->db->query("SELECT * from shipping_types order by type"));
+if(!r || sizeof(r)==0)
+  return "No shipping options are currently available.<input type=hidden name=no_shipping_options value=1>";
 int t=0;
 foreach(r, mapping row){
 args->type=row->type;

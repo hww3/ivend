@@ -392,7 +392,7 @@ generate_form		generate a form from the database
   table=tablename	this is the table to get data for.
   hide=field1,field2    hide these fields in the list.
   pulldown=field1,...	generate a pulldown from fields in the
-			db/table_field.val file.
+			db/table.field file.
 confirmemail
   field=fieldname	name of field containing email address to check.
 
@@ -436,7 +436,7 @@ Other Stuff
 * The database schema to use currently is located in examples/schema.mysql
 
 * The form generator will look for sets of values in a file called 
-	storeroot/db/tablename_fieldname.val ... to create dropdowns.
+	storeroot/db/tablename.fieldname ... to create dropdowns.
 
 * iVend will send email messages following certain events. These messages
         are found in the notes directory of your store.

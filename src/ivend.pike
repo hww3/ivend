@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.99 1998-08-18 00:32:40 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.100 1998-08-18 23:56:45 hww3 Exp $";
 
 array register_module(){
 
@@ -306,7 +306,7 @@ if(id->variables->update) {
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
 //	error(YOUR_CART_IS_EMPTY, id);
-      return YOUR_CART_IS_EMPTY +"\n";
+      return YOUR_CART_IS_EMPTY +"\n<false>\n";
     }
     retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
 	
@@ -339,7 +339,7 @@ if(id->variables->update) {
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<input type=hidden value=1 name=update>\n<input type=submit value=\"" 
-	+ UPDATE_CART + "\"></form>\n";
+	+ UPDATE_CART + "\"></form>\n<true>\n";
 return retval;    
  
 }
@@ -1438,7 +1438,7 @@ return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
 
 mixed get_image(string filename, object id){
 
-// perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
+perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
 	id->misc->ivend->config->root+"/"+filename);

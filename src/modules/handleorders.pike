@@ -246,6 +246,7 @@ string archive_orders(string mode, object id){
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
   retval+="Archiving " + sizeof(orders_to_archive) + " orders:<p>";
   foreach(orders_to_archive, mapping o){
+retval+="<pre>" + sprintf("%O", o) + "</pre>";
 retval+="Records for " + o->id+ "<br>";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info"});

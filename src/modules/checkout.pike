@@ -439,7 +439,7 @@ if(args->autofill) {
  if(r && sizeof(r)==1){
   record=r[0];
  foreach(indices(record), string f)  // remove all encrypted fields...
-  if(record[f][0..3]=="iVEn")
+  if(record[f] && sizeof(record[f])>4 && record[f][0..3]=="iVEn")
    record[f]="";
 
 //  perror("got a record...");

@@ -64,7 +64,7 @@ return;
 
 string addrangemenu(string type, object id){
 
-  string retval="<form action="+id->not_query +"><tr></tr>\n"+
+  string retval="<form action=./><tr></tr>\n"+
     "<tr><td><font face=helvetica><b>From $</b></font></td>\n"
     "<td><font face=helvetica><b>To $</b></font></td>\n"
     "<td><font face=helvetica><b>Charge</b></font></td></tr>\n"
@@ -123,8 +123,7 @@ string showtype(object id, mapping row){
       "Charge</td></tr>\n";
     foreach(r, mapping row) {
       retval+="<tr><td>" + row->min + "</td><td>"+ row->max + "</td><td>"
-	+ row->charge + " <font size=2 face=helvetica>(<a href=" +
-	id->not_query+"?mode=showtype&showtype=" + type;
+	+ row->charge + " <font size=2 face=helvetica>(<a href=./?mode=showtype&showtype=" + type;
       retval+="&id=" +row->id + "&dodelete=1>Delete</a>)</font></td></tr>";
     }
 

@@ -117,7 +117,7 @@ mixed query_tag_callers(){
 
 mixed register_admin(){
 
-  return ([ "getmodify_product.Upsell":upsell_handler ]);
+  return ([ "getmodify.product.Upsell":upsell_handler ]);
 }
 
 

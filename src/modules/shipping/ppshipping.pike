@@ -64,7 +64,7 @@ else {
 
 string addlookup(object id, mixed type){
 
-  string retval="<form action=" + id->not_query + ">"
+  string retval="<form action=./>"
     "<select name=fieldname>";
 
   array f=id->misc->ivend->db->list_fields("products");
@@ -120,12 +120,12 @@ string retval="<tr><td><b>Method:</b></td><td>Charge based on "
       array r=id->misc->ivend->db->query("SELECT fieldname FROM "
 	"shipping_pp WHERE type=" + row->type );
       if(sizeof(r)==0)
-        retval+="No Lookup Field Specified. ( <a href=" + id->not_query +
+        retval+="No Lookup Field Specified. ( <a href=./"
 		"?mode=showtype&showtype=" + row->type + "&addlookup=" +
 		row->type + ">Add Lookup Field</a> )\n";
       if(sizeof(r)>0)
         retval+="<p><b>Lookup Field:</b> " + r[0]->fieldname + "\n"
-	"( <a href=" + id->not_query + "?mode=showtype&showtype=" +
+	"( <a href=./?mode=showtype&showtype=" +
 	row->type + "&deletetype=" + row->type + ">Delete Lookup Field</a> )";
 	
 return retval;

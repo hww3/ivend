@@ -79,6 +79,8 @@ return;
 mapping available_modules(mapping config)
 {
 object m;
+
+
 string moddir=config->global->general->root + "/src/modules/shipping";
 mapping am=([]);
 
@@ -143,7 +145,7 @@ string addtypemenu(object id)
   string retval="<form action=\"./\">\n"
     "Shipping Type Name: <input type=text size=40 name=name><br>\n"
     "Calculation method: <select name=module>\n";
-  mapping am=available_modules(CONFIG);
+  mapping am=available_modules(id->misc->ivend->config);
   foreach(indices(am),string method)
     retval+="<option value=\"" +method + "\">" + am[method] + "\n";
   retval+="</select><br>\nDescription:" 
@@ -199,28 +201,17 @@ mixed doaddtype(object id)
   return showmainmenu(id);
 }
 
-mixed shipping_admin (string p, object id, object this_object)
+mixed shipping_admin (string p, object id)
 { 
- if(id->auth==0)
-      return http_auth_required("iVend Store Orders",
-                                "Silly user, you need to login!");
-   else if(!this_object->admin_auth(id))
-      return http_auth_required("iVend Store Orders",
-                                "Silly user, you need to login!");
- 
 
-if(id->not_query[sizeof(id->not_query)-1..]!="/")
-  return http_redirect(id->not_query + "/" + (id->query?("?" +
-id->query):""), id);
+// perror(sprintf("%O", config));
+
 
 if(id->variables->initialize)
   initialize_db(id);
 
-string retval="<title>iVend Shipping Administration</title>\n"
-	"<body bgcolor=white text=navy>\n"
-	"<font face=\"helvetica,arial\">"
-	"<h2>Shipping Administration</h2>\n"
-	"<a href=../>Storefront</a> &gt; <A href=./>Shipping Admin</a><p>";
+string retval=
+	"<h2>Shipping Administration</h2>\n";
 
 if(!initialized) {
   retval+="This module has not been initialized."
@@ -266,10 +257,12 @@ return retval;
 }
 
 
-mapping register_paths()
+
+mapping register_admin()
 {
 
-return ([ "shipping" : shipping_admin ]);
+return ([ "menu.main.Store_Administration.Shipping_Administration" :
+shipping_admin ]);
 
 }
 

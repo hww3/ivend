@@ -29,8 +29,6 @@ mixed getglobalvar(string var);
 mixed return_data(mixed retval, object id);
 mixed  get_image(string filename, object id, object this_object);
 mixed admin_handler(string filename, object id, object this_object);
-mixed shipping_handler(string filename, object id, object this_object);
-mixed order_handler(string filename, object id, object this_object);
 mixed handle_cart(string filename, object id, object this_object);
 #endif
 
@@ -337,10 +335,8 @@ void start_store(string c){
 
    if(!paths[c]) paths[c]=([]);
    if(!admin_handlers[c]) admin_handlers[c]=([]);
-
    register_path_handler(c, "images", get_image);
    register_path_handler(c, "admin", admin_handler);
-   register_path_handler(c, "orders", order_handler);
    register_path_handler(c, "cart", handle_cart);
 
 
@@ -1190,7 +1186,10 @@ mixed m;
       return 0;
       }
    else {
-      destruct(m);
+   db[STORE]->handle(DB);
+ DB=m;
+ //   destruct(m);
+	
       return 1;
     }
 }
@@ -1249,79 +1248,6 @@ void background_session_cleaner(){
    call_out(background_session_cleaner, 900);
 }
 
-
-mixed order_handler(string filename, object id, object this_object){
-
-if(id->not_query[sizeof(id->not_query)-1..]!="/")
-  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
-	(id->query?("?" + id->query):""), id);
-
-   if(id->auth==0)
-      return http_auth_required("iVend Store Orders",
-                                "Silly user, you need to login!"); 
-   else if(!admin_auth(id))
-      return http_auth_required("iVend Store Orders",
-                                "Silly user, you need to login!");
-
-   string retval="";
-   retval+="<title>iVend Store Orders</title>"
-   "<body bgcolor=white text=navy>"
-   "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-   "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-   "<gtext fg=maroon nfont=bureaothreeseven black>"
-   + CONFIG->name+
-   " Orders</gtext><p>"
-   "<font face=helvetica,arial size=+1>";
-if(!id->variables->print) retval+=
-   "<a href=../>Storefront</a> &gt; <a href=" + 
-	add_pre_state(id->misc->ivend->storeurl + "admin",
-(<"menu=main">)) +
-	">Admin</a> &gt; <a href=./>Orders</a><p>\n";
-
-
-   mixed d=MODULES->order->show_orders(id, DB);
-   if(stringp(d))
-      retval+=d;
-
-
-   return retval;
-
-}
-
-mixed shipping_handler(string filename, object id, object this_object){
-
-if(id->not_query[sizeof(id->not_query)-1..]!="/")
-  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
-        (id->query?("?" + id->query):""), id);  
-
-   if(id->auth==0)
-      return http_auth_required("iVend Store Shipping",
-                                "Silly user, you need to login!"); 
-   else if(!admin_auth(id))
-      return http_auth_required("iVend Store Shipping",
-                                "Silly user, you need to login!");
-
-   string retval="";
-   retval+="<title>iVend Shipping Administration</title>"
-   "<body bgcolor=white text=navy>"
-   "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-   "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-   "<gtext fg=maroon nfont=bureaothreeseven black>"
-   + CONFIG->name+
-   " Shipping</gtext><p>"
-   "<font face=helvetica,arial size=+1>"
-   "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
-   "href=shipping>Shipping</a><p>\n";
-
-
-   mixed d=MODULES->shipping->shipping_admin(id);
-   if(stringp(d))
-      retval+=d;
-
-
-   return retval;
-
-}
 
 mixed getmodify(string type, string pid, object id){
 
@@ -1399,8 +1325,8 @@ retval+="<SCRIPT LANGUAGE=javascript>"
 "        if (palette!=null) palette.opener=mainWin; \n"
 "}\n"
 	"</SCRIPT>"
-	"<form target=" + lower_case(name) + 
-	" ACTION=\"" + add_pre_state(id->not_query, (<lower_case(mode)>))
+	"<form target=" + name + 
+	" ACTION=\"" + add_pre_state(id->not_query, (<mode>))
 	+"\">";
 foreach(indices(options), string o){
 
@@ -1409,9 +1335,9 @@ foreach(indices(options), string o){
 	}
 
 retval+="<input type=hidden name=mode value=\""  +mode + "\">"
-	"<input onclick=popup('" +lower_case(name) +"','" +
+	"<input onclick=popup('" +name +"','" +
 	add_pre_state(id->not_query,
-(<lower_case(name)>))  + "',300,300) type=submit value=\"" + name + "\">"
+(<mode>))  + "',300,300) type=submit value=\"" + name + "\">"
 	"</form>"
 	"</TD></TR></TABLE>";
 
@@ -1427,17 +1353,28 @@ return "<a href=\""  + 	   add_pre_state(id->not_query,
              (<"menu=main">))+   "\">"
          "Return to Store Administration</a>.\n";
 
+}
 
+string action_clearsessions(string mode, object id){
 
+          string retval="";
+
+         int r =clean_sessions(id);
+         retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
+          return_to_admin_menu(id);
+
+         return retval;
 }
 
 mixed admin_handler(string filename, object id, object this_object){
-//   numsessions[STORE]--;
-//   numrequests[STORE]--;
 
-if(id->not_query[sizeof(id->not_query)-1..]!="/")
-  return http_redirect(add_pre_state(id->not_query, id->prestate) + "/" +
+if(sizeof(id->prestate)==0) {
+  id->prestate=(<"menu=main">);
+  return http_redirect(id->not_query + (
+   (id->not_query[sizeof(id->not_query)-1..]!="/")?"/":"") +
         (id->query?("?" + id->query):""), id);  
+  }
+
 
 string mode, type;
 
@@ -1471,32 +1408,36 @@ if(id->prestate && sizeof(id->prestate)>0){
 }
 
 array valid_handlers=({});
-perror(sprintf("%O\n", admin_handlers[STORE]));
 
 foreach(indices(admin_handlers[STORE]), string h)
-  if(search(h, mode + "_" + type)!=-1)
+  if(search(h, mode + "." + type||"")!=-1)
     valid_handlers+=({h});
 
-perror(sprintf("%O\n", valid_handlers));
    switch(mode){
 
       case "doadd":
          mixed j=DB->addentry(id,id->referrer);
          retval+="<br>";
-         if(!intp(j))
+         if(!intp(j)){
+		destruct(DB);
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
-
-	if(!type)
+            }
+	if(!type){
          type=(id->variables->table-"s");
+	destruct(DB);
          return retval+type+" Added Sucessfully.";
+	  
+	  }
          break;
 
       case "domodify":
          mixed j=DB->modifyentry(id,id->referrer);
          retval+="<br>";
-         if(stringp(j))
+         if(stringp(j)){
+		destruct(DB);
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
-
+		}
+		destruct(DB);
 
          return retval + capitalize(type) + " Modified Sucessfully.";
          break;
@@ -1585,10 +1526,14 @@ KEYS[type+"s"]);
       case "getmodify":
    retval+="&gt <b>Modify " + capitalize(type)
    +"</b><br>\n";
-         foreach(valid_handlers, string handler_name)
-	 retval+=open_popup(((handler_name/".")[1]||handler_name) +" &nbsp;",
+         foreach(valid_handlers, string handler_name) {
+		string name;
+		array a=handler_name/".";
+		name=a[sizeof(a)-1];
+		
+	 retval+=open_popup( name,
 	id->not_query, handler_name , (["id" : id->variables->id]) ,id);
-
+	}
          retval+=getmodify(type,
                            id->variables[KEYS[type+"s"]], id);
 
@@ -1680,16 +1625,24 @@ KEYS[type+"s"]);
          break;
 
          default:
-	  perror(mode + "\n");
 	 if(have_admin_handler(mode, id)){
-	   retval=handle_admin_handler(mode,id);
+	   string rv=handle_admin_handler(mode,id);
+perror(id->query+"\n");
+	  if(ADMIN_FLAGS==NO_BORDER)
+            retval=rv;
+	  else{ array mn=mode/".";
+		mode=mn[sizeof(mn)-1];
+		retval+= " &gt; <b>" + (id->query?"<a href=./>":"") +  
+			replace(mode,({"_"}),({" "}))
+		 + (id->query?"</a>":"") + "</b><p>" + rv;
+		}
 	 }
          else   {
- retval+= "<ul>\n"
-                  "<li><a href=\"../orders\">Orders</a>\n"
-                  "</ul>\n"
-                  "<ul>\n"
-                  "<li>Groups\n"
+ retval+= 
+                "<table width=90%>"
+		"<tr><td width=33%>" 
+		 "<obox title=\"<font face=helvetica,arial>Groups</font>\">\n"
+		"<font face=helvetica,arial>"
                   "<ul>"
                   "<li><a href="+
 add_pre_state(id->not_query,(<"show=group">))
@@ -1706,8 +1659,10 @@ add_pre_state(id->not_query,(<"delete=group">))
                   "<li><a href="+
 add_pre_state(id->not_query,(<"dump=group">))
 	+">Dump Groups</a>\n"
-                  "</ul>"
-                  "<li>Products\n"
+		"</font>"
+                  "</obox>"
+"<obox title=\"<font face=helvetica,arial>Products</font>\">\n"
+		"<font face=helvetica,arial>"
                   "<ul>"
                   "<li><a href="+
 add_pre_state(id->not_query,(<"show=product">))
@@ -1724,42 +1679,42 @@ add_pre_state(id->not_query,(<"delete=product">))
                   "<li><a href="+
 add_pre_state(id->not_query,(<"dump=product">))
 	+">Dump Products</a>\n"
-
-
-                  "</ul>"
+		"</font>"
+                  "</obox>"
                   "</ul>\n"
-                  "<ul>\n"
-
-                  "<li><a href=" 
-+add_pre_state(id->not_query,(<"clearsessions">))+
- ">Clear Stale Sessions</a>\n"
-                  "<li><a href="
-+add_pre_state(id->not_query,(<"restartstore">))+
-">Restart Store</a>\n"
-                  "</ul>\n"
-                  "<ul>\n"		
-                  "<li><a href=\"../shipping\">Shipping Administration</a>\n"
-		  "</ul>\n"
-		  "<ul>\n"
-		  "<li><a href="
-+add_pre_state(id->not_query,(<"addins">))+
-">Add-ins Manager</a>\n"
-		  "</ul>\n"
+		"</td><td width=33%>\n"
 		  "<p><ul>";
-foreach(indices(admin_handlers[STORE]), string hn){
-  if(search(hn, "menu_main.")!=-1)
-    retval+="<li><a href=" + add_pre_state(id->not_query, (<hn>)) + ">"
-	+ replace(hn,({"_","menu_main."}),({" ",""})) + "</a>\n";
+array cats=({});
+foreach(valid_handlers, string hn){
+	string m=hn-(mode+"." + (type||"") + ".");
+	if(sizeof(m/".")==1)
+		cats+=({m});
+	else { m=(m/".")[0]; cats+=({m}); }	
+  }
+cats=uniq(cats);
+foreach(cats, string category){
+    retval+="<obox title=\"<font face=helvetica,arial>"+ replace(category,
+"_", " ") +
+	"</font>\">\n<font "
+      "face=helvetica,arial><ul>\n";
+  foreach(valid_handlers, string hn)
+    if(search(hn, category)!=-1)
+      retval+="<li><a href=" + add_pre_state(id->not_query, (<hn>)) + ">"
+	+ replace(hn,({"_",mode + "." + (type||"") +"." +category
++"."}),({" ",""})) +
+      "</a>\n";
+    retval+="</ul></font></obox>";
 }
 
-retval+=       "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
+retval+="</td></tr></table>"
+       "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
 
 }
          break;
 
    }
-
+   destruct(DB);
    return retval;
 
 }
@@ -2291,7 +2246,7 @@ perror(filen + "\n");
                mixed err;
             if(!c) return;
             if(!config[c]) return;
-            array mtl=({"shipping.pike",
+            array mtl=({"shipping.pike", "admin.pike",
 			"checkout.pike", "addins.pike",
 			"handleorders.pike"});
             if(config[c]->addins)

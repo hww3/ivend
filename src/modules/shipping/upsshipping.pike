@@ -62,7 +62,7 @@ string addtype(object id){
 
 string addrange(string type, object id){
 
-  string retval="<form action="+id->not_query +"><tr></tr>\n"+
+  string retval="<form action=./><tr></tr>\n"+
     "<tr><td><font face=helvetica><b>From $</b></font></td>\n"
     "<td><font face=helvetica><b>To $</b></font></td>\n"
     "<td><font face=helvetica><b>Charge</b></font></td></tr>\n"
@@ -100,8 +100,8 @@ string show_type(string type, object id){
       "Charge</td></tr>\n";
     foreach(r, mapping row) {
       retval+="<tr><td>" + row->min + "</td><td>"+ row->max + "</td><td>"
-	+ row->charge + " <font size=2 face=helvetica>(<a href=" +
-	id->not_query+"?";
+	+ row->charge + " <font size=2 face=helvetica>(<a href="
+	"./?";
       foreach(({"showall", "viewtype"}), string var)
 	retval+=var+"="+id->variables[var]+"&";
       retval+="&id=" +row->id + "&dodelete=1>Delete</a>)</font></td></tr>";
@@ -172,7 +172,7 @@ string retval="";
     array r=id->misc->ivend->db->query("SELECT * FROM shipping_types");
     foreach(r, mapping row) {
       retval+="<li><a href=shipping?viewtype="+row->type+ ">" + row->name
-        +"</a>\n<font size=2>( <a href="+id->not_query+"?dodeletetype="+
+        +"</a>\n<font size=2>( <a href=./?dodeletetype="+
 	row->type +">Delete"+"</a> )"
         "<dd>"+ row->description+"</font>\n\n";
       if (row->type==id->variables->viewtype || id->variables->showall=="1")

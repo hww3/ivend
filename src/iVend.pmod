@@ -554,7 +554,7 @@ array(mapping(string:mixed)) r=list_fields(table);
 o+=query("SELECT id,parent,name FROM groups");
 		foreach(o, mapping r) 
                  retval+="<option value=\"" + r->id + "\" "
-			+ ((record&&record->parent==r->parent)
+			+ ((record&&record->parent==r->id)
 			?"SELECTED":"") +">" + r->name +
 			(r->parent==""?" (TLG)":"") + "\n";
 

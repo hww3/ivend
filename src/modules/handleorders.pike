@@ -270,11 +270,11 @@ retval+="<order id=\"" + or->id + "\">\n"
   	}
     retval+="</record>\n";
           }
-    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'");
+catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
       
         }
     retval+="</order>\n";
-    DB->query("DELETE FORM orders WHERE id='" + or->id + "'");
+catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
      } 
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "orders.xml");

@@ -480,7 +480,11 @@ if(args->autofill) {
 
  if(r && sizeof(r)==1){
   record=r[0];
-  perror("got a record...");
+ foreach(indices(record), string f)  // remove all encrypted fields...
+  if(record[f][0..3]=="iVEn")
+   record[f]="";
+
+//  perror("got a record...");
   }
 }
 

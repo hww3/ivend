@@ -304,6 +304,17 @@ This tag takes no attributes.
 
 <CONFIRMEMAIL>
 
+Checks a given email address for validity. Contacts the remote SMTP server
+and attempts to validate the address. This tag runs only in the forward
+direction of the checkout.
+
+ATTRIBUTES
+Note: One of the following attributes is requred.
+
+ADDRESS This is the actual address to be checked (Optional).
+FIELD This is the field name containing the address to check (Optional). 
+
+
 <CONFIRMORDER>
 discount 
 salestax

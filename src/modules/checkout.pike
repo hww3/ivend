@@ -134,31 +134,30 @@ return retval;
 
 string tag_confirmemail(string tag_name, mapping args,
 		     object id, mapping defines) {
-perror("confirmemail... ");
 if(id->variables["_backup"] || id->misc->ivend->skip_page)
   {
-   perror("done\n");
    return "<!-- confirmemail skipped. -->\n";
   }
 if(error_happened(id) || stop_error(id)) 
   {
-   perror("done\n");
    return "<!-- skipping email confirmation because of errors.-->";
   }
 int good_email;
-if(!args->field) 
+string addr;
+if(args->address)
+ addr=args->address;
+else if(args->field) 
+ addr=id->variables[lower_case(args->field)];
+else
   return "";
 mixed err;
-if(id->variables[lower_case(args->field)] &&
-id->variables[lower_case(args->field)]=="")
+if(addr=="")
   throw_error(INVALID_EMAIL_ADDRESS, id);
- err=catch(good_email=Commerce.Sendmail.check_address(
-id->variables[lower_case(args->field)]));
+ err=catch(good_email=Commerce.Sendmail.check_address(addr));
 if(err) {
  T_O->report_error("Error Running Check Address" + (err*"\n"),
 id->misc->ivend->orderid ||"NA",
         "checkout", id); {
-perror("done\n");
   return "<!-- An error occurred while checking the email address.-->";
   }
 }

@@ -1591,7 +1591,7 @@ mixed admin_handler(string filename, object id, object this_object){
       case "doadd":
          mixed j=DB->addentry(id,id->referrer);
          retval+="<br>";
-         if(stringp(j))
+         if(!intp(j))
             return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
 
 
@@ -2274,8 +2274,13 @@ mixed return_data(mixed retval, object id){
                                          c->dbpassword
                                        ));
 
-            if(err) perror("iVend: Error creating DB for " + c->name + ".\n");
+            if(err) 
+ 	{
+  perror("iVend: Error creating DB for " + c->name + ".\n");
+  perror("will try again in 60 seconds.\n");
+   call_out(start, 60);
 
+  }
                return;
 
             }

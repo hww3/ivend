@@ -68,9 +68,16 @@ return retval;
 
 string tag_confirmemail(string tag_name, mapping args,
 		     object id, mapping defines) {
+int good_email;
 if(!args->field) 
   return "";
-else if(Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]))
+mixed err;
+err=catch(good_email=Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]));
+if(err) {
+  id->misc->ivend->this_object->report_ivend_error("Error Running Check Address", id, err);
+  return "<!-- An error occurred while checking the email address.-->";
+}
+else if(good_email)
   return "";
  else id->misc->ivend->error+=({
 	INVALID_EMAIL_ADDRESS});

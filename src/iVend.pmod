@@ -300,7 +300,8 @@ class db {
       }
 
       mixed addentry(object id, string referrer){
-         array errors=({});
+// perror("eaddentry\n");        
+ array errors=({});
          array(mapping(string:mixed)) r=list_fields(id->variables->table);
          for (int i=0; i<sizeof(r); i++)
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -375,7 +376,7 @@ class db {
          q=q[0..sizeof(q)-2]+")";
          if (sizeof(errors)>0) return errors;
          query(q);
-         if(id->variables->jointable) {
+        if(id->variables->jointable) {
             array jointable;
             catch(jointable=id->variables[id->variables->jointable]/"\000");
             if(jointable)

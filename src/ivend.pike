@@ -15,6 +15,7 @@ inherit "roxenlib";
 inherit "module";
 inherit "wizard";
 
+#if __VERSION__ < 0.6  
 int read_conf();          // Read the config data.
 void load_modules(string c);
 void start_db(mapping c);
@@ -53,6 +54,11 @@ int num;
 int save_status=1;              // 1=we've saved 0=need to save.
 int db_info_loaded=0;
 
+void report_ivend_error(mixed msg, object id, mixed err){
+ perror(msg + ": " + id->remoteaddr + ": " + id->misc->ivend->sessionid +
+"\n" + " " + err[0]);
+
+}
 
 array register_module(){
 
@@ -395,6 +401,7 @@ void start_store(string c){
 //   register_admin_handler(c, "upsell", upsell_handler);
 
 //   perror("Loading: modules ");
+perror(config[c]->general->config +"\n\n");
    load_modules(config[c]->general->config);
 //   perror("db ");
    start_db(config[c]->general);

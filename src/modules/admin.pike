@@ -49,7 +49,8 @@ string tag_itemoptions(string tag_name, mapping args, object id, mapping
   string retval=""; 
 
   array r=DB->query("SELECT * FROM item_options WHERE product_id='" +
-args->item + "' GROUP BY option_type ORDER BY option_type ASC");
+args->item + "' GROUP BY option_type ORDER BY option_type "+
+(args->order||"ASC"));
 
   if(!r || sizeof(r)<1) return NO_OPTIONS_AVAILABLE;
 

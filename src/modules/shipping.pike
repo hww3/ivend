@@ -97,7 +97,7 @@ return 0;
 
 }
 
-mixed shipping_admin (object id){ 
+mixed shipping_admin (string p, object id){ 
 
 string retval="";
 
@@ -126,5 +126,12 @@ else {
   }
 }
 return retval;
+
+}
+
+
+mapping register_paths() {
+
+return ([ "shipping" : shipping_admin ]);
 
 }

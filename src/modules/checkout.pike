@@ -379,7 +379,7 @@ id->misc->ivend->error+=
 return "";
 }
 
-mixed checkout(object id){
+mixed checkout(string p, object id){
 
 string retval=
   Stdio.read_file(id->misc->ivend->config->general->root +
@@ -569,7 +569,11 @@ return ([ "checkout" : container_checkout]);
 
 }
 
+mapping register_paths() {
 
+return ([ "checkout" : checkout ]);
+
+}
 
 
 

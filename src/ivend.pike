@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.270 2000-09-13 15:31:28 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.271 2000-11-28 19:02:39 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -56,7 +56,6 @@ mapping config=([]);
 mapping global=([]);
 mapping numsessions=([]);
 mapping numrequests=([]);
-mapping local_settings=([]);
 mapping admin_user_cache=([]);
 
 int num;
@@ -115,7 +114,7 @@ float taxrate=0.00;
 mapping lookup=([]);
 
 // do we have tax exemption support?
-if(local_settings[STORE]->tax_exemption_support==TRUE){
+if(DB->local_settings->tax_exemption_support==TRUE){
   query="SELECT tax_exempt FROM customer_info WHERE orderid='"
 	+ orderid + "' AND type=0 AND (tax_exempt<>0)";
   r=DB->query(query);
@@ -352,63 +351,6 @@ void create(){
            "This is a file containing words that will be used to generate "
            "config passwords. On Solaris and Linux, this is usually "
            "/usr/dict/words, and on FreeBSD /usr/share/dict/words.");
-
-}
-
-void get_dbinfo(mapping c){
-    mixed err;
-    err=catch(object s=db[c->config]->handle());
-    keys[c->config]=([]); // make the entry.
-    if(err) {
-        perror("An error occurred while trying to grab a db object.\n");
-        db_info_loaded=0;
-        return;
-    }
-    foreach(({"products", "groups"}), string t) {
-        array r;
-        err=catch(r=s->query("SHOW INDEX FROM " + t ));  // MySQL dependent?
-        if(err)
-            perror("iVend: Unable to show indices from " + t + ".\n");
-        if(sizeof(r)==0)
-            keys[c->config][t]="id";
-        else {
-            string primary_key;
-            foreach(r, mapping key){
-                if(key->Key_name=="PRIMARY")
-                    primary_key=key->Column_name;
-            }
-            keys[c->config][t]=primary_key;
-        }
-    }
-    if(!local_settings[c->config])
-        local_settings[c->config]=([]);
-    local_settings[c->config]->pricing_model=SIMPLE_PRICING;
-    array n=s->list_fields("products", "price");
-    if(sizeof(n)<1)
-        // we're doing complex pricing
-        local_settings[c->config]->pricing_model=COMPLEX_PRICING;
-    array n=s->list_fields("products", "handling_charge");
-    if(sizeof(n)>0)
-        // we're doing individual handling charges
-        local_settings[c->config]->handling_charge=PER_ITEM;
-    array n=s->list_fields("products", "handling_charge_aggregation");
-    if(sizeof(n)>0)
-        // we're doing aggregated handling charges
-        local_settings[c->config]->handling_charge_aggregate=TRUE;
-    array n=s->list_fields("customer_info", "tax_exempt");
-    if(sizeof(n)>0)
-        // we're doing individual handling charges
-        local_settings[c->config]->tax_exemption_support=TRUE;
-
-/*
-    if(local_settings[c->config]->pricing_model==COMPLEX_PRICING)
-        perror("We're doing complex pricing.\n");
-    else
-        perror("We're doing regular (simple) pricing.\n");
-*/
-	
-    db_info_loaded=1;
-    return;
 
 }
 
@@ -911,7 +853,7 @@ DB->error());
 mixed do_additems(object id, array items){
 
     // we should add complex pricing models to this algorithm.
-    if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
+    if(DB->local_settings->pricing_model==COMPLEX_PRICING) {
         //    perror("DOING COMPLEX PRICE CALCULATIONS...\n");
         return do_complex_items_add(id, items);
     }
@@ -2701,10 +2643,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
-		 id->misc->ivend->local_settings=local_settings[STORE];
                  if(!db_info_loaded) {
-                     start_store(STORE);
-			if(!db_info_loaded)
 				return return_data("This store is currently unavailable.", id);
 			}
                  MODULES=modules[STORE];
@@ -3302,7 +3241,7 @@ db[c->config]->handle(s);
                                  foreach(indices(config[c]->addins), string miq)
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
-			     if(local_settings[config[c]->general->config]->pricing_model==COMPLEX_PRICING) {
+			     if(DB->local_settings->pricing_model==COMPLEX_PRICING) {
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }

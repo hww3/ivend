@@ -426,7 +426,7 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
 {
   float charge=0.00;
 
-  if(id->misc->ivend->local_settings->handling_charge==PER_ITEM) {
+  if(DB->local_settings->handling_charge==PER_ITEM) {
 	array r=DB->query("SELECT sum(products.handling_charge*sessions.quantity) as hc "
 	  "from products,sessions where sessions.sessionid='" 
 	  + args->orderid + "' and products." +

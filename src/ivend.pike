@@ -2659,7 +2659,8 @@ else return res;                        }
 
                               int n=search(global->configurations->active, request[1]);
                            if(n) global->configurations->active[n]="";
-                              global->configurations->active-=({""});
+                           if(arrayp(global->configurations->active)) 	
+				global->configurations->active-=({""});
                               
                               config=m_delete(config,request[1]);
                               save_status=0;

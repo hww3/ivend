@@ -190,12 +190,13 @@ int write_file(string filename,string what)
 {
   int ret;
   object f = Stdio.File();
-
+object privs=Privs("iVend: Writing Key File");
   if(!f->open(filename,"twc"))
     throw( ({ "Couldn't open file "+filename+".\n", backtrace() }) );
   
   ret=f->write(what);
   f->close();
+privs=0;
   return ret;
 }
 
@@ -243,10 +244,13 @@ v->copyfiles-="\0000";
 string retval="";
 if(v->createdir && !file_stat(v->root)) mkdir(v->root);
 // if((int)v->overwrite) 
-if(v->copyfiles=="yes")
+if(v->copyfiles=="yes"){
+object privs=Privs("iVend: Copying store files ");
 mixed result=Process.system("/bin/cp -rf " +
    id->misc->ivend->this_object->query("root") + "examples/" +
    v->style +"/* " + v->root);
+privs=0;
+}
 // else mixed result=Process.system("/bin/cp -r  " +
 //   id->misc->ivend->this_object->query("root") + "examples/" +
 //   v->style + "/* " + v->root);

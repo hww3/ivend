@@ -26,7 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.67 1998-05-25 01:01:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.68 1998-05-25 02:11:44 hww3 Exp $";
 
 array register_module(){
 
@@ -279,18 +279,18 @@ if(id->variables->update) {
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
-	error("Your Cart is Empty", id);
-      return "Your Cart is Empty.\n";
+	error(YOUR_CART_IS_EMPTY, id);
+      return YOUR_CART_IS_EMPTY +"\n";
     }
-    retval+="<tr><th bgcolor=maroon><font color=white>Code</th>\n"
-	"<th bgcolor=maroon><font color=white>Product</th>\n";
+    retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n"
+	"<th bgcolor=maroon><font color=white>"+ PRODUCT +"</th>\n";
 	
     foreach(args->fields / ",",field){
 	retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
 	}
-    retval+="<th bgcolor=maroon><font color=white>&nbsp; Price &nbsp;</th>\n"
-    	"<th bgcolor=maroon><font color=white>&nbsp; Qty &nbsp;</th>\n"
-	"<th bgcolor=maroon><font color=white>&nbsp; Total &nbsp;</th></tr>\n";
+    retval+="<th bgcolor=maroon><font color=white>&nbsp; "+ PRICE +" &nbsp;</th>\n"
+    	"<th bgcolor=maroon><font color=white>&nbsp; "+ QUANTITY +" &nbsp;</th>\n"
+	"<th bgcolor=maroon><font color=white>&nbsp; "+ TOTAL + " &nbsp;</th></tr>\n";
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
 	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+">&nbsp; \n"
@@ -310,7 +310,8 @@ if(id->variables->update) {
 	+sprintf("$%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-	"<input type=hidden value=1 name=update>\n<input type=submit value=\"Update Cart\"></form>\n";
+	"<input type=hidden value=1 name=update>\n<input type=submit value=\"" 
+	+ UPDATE_CART + "\"></form>\n";
 return retval;    
  
 }
@@ -319,9 +320,9 @@ string tag_additem(string tag_name, mapping args,
                     object id, mapping defines) {
 if(!args->item) return "<!-- you must specify an item id. -->\n";
 string retval="<form action=" + id->not_query + ">";
-retval+="Quantity: <input type=text size=2 value=" + (args->quantity ||
+retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity ||
 "1") + " name=quantity> ";
-retval+="<input type=submit value=\"Add to Cart\">\n";
+retval+="<input type=submit value=\"" + ADD_TO_CART + "\">\n";
 retval+="<input type=hidden name=ADDITEM value=\""+args->item+"\">\n";
 retval+="</form>\n";
 return retval;
@@ -363,7 +364,7 @@ contents=parse_html(contents,([]),
   string retval="";
   string query;
 
-  if(!args->type) return "You must supply a category type.";
+  if(!args->type) return YOU_MUST_SUPPLY_A_CATEGORY_TYPE;
 
   query="SELECT * FROM " + lower_case(args->type);
   
@@ -431,7 +432,7 @@ else {
   r=id->misc->ivend->db->query(query);
 }
 
-if(sizeof(r)==0) return "Sorry, No Products are Available.";
+if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
 
 mapping row;
 
@@ -491,7 +492,7 @@ array|int size=size_of_image(filename);
 
 
 // file doesn't exist
-if(size==-1) return "<couldn't find the image: "+filename+"... -->";
+if(size==-1) return "<!-- couldn't find the image: "+filename+"... -->";
 // it's not a gif file
 else if(size==0)	
 	return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
@@ -733,7 +734,8 @@ return parse_page(retval, r, f, id);
 mixed additem(string item, object id){
 
   if(id->variables->quantity && (int)id->variables->quantity==0) {
-    id->misc->ivendstatus="Error: You must select a quantity greater than zero.";
+    id->misc->ivendstatus= ERROR_QUANTITY_ZERO;
+
     return 0;
     }
   
@@ -755,7 +757,7 @@ if(catch(id->misc->ivend->db->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
   id->misc["ivendstatus"]+=((id->variables->quantity || "1")+ " item "
-	+ item + " added successfully.\n"); 
+	+ item + " " + ADDED_SUCCESSFULLY +"\n"); 
 return 0;
 }
 
@@ -788,7 +790,7 @@ switch(page){
 	}
     else retval=find_page(page, id);
   }
-  if (!retval) error("Unable to find product or page "+page,id);
+  if (!retval) error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
   return retval;
 
 }

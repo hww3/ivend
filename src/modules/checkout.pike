@@ -7,6 +7,8 @@
 
 inherit "roxenlib";
 
+#include "../include/messages.h"
+
 constant module_name="Default Checkout Module";
 constant module_type="checkout";
 
@@ -67,7 +69,7 @@ if(!args->field)
 else if(Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]))
   return "";
  else id->misc->ivend->error+=({
-	"You have provided an invalid email address."});
+	INVALID_EMAIL_ADDRESS});
 
 return "";
 
@@ -126,8 +128,7 @@ id->misc->ivend->db->query(
 
 else {
   id->misc->ivend->error+=
-    ({"We were unable to move your order to confirmed status. "
-	" Please contact the administrator of this store for assistance."
+    ({ UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>") });
   return "An error occurred while moving your order to confirmed status.\n";
 }
@@ -359,7 +360,7 @@ if(Commerce.CreditCard.cc_verify(
 	      || id->variables->expiration_date))
 
 id->misc->ivend->error+=
-  ({"You have supplied improper credit card information."});
+  ({INVALID_CREDIT_CARD});
 
 
 return "";

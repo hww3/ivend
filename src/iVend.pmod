@@ -409,7 +409,7 @@ return retval;
 string|int showdepends(string type, string id){
 string query="";
 if(type=="" || id=="")
-return "Delete unsuccessful.\n";
+return DELETE_UNSUCCESSFUL +"\n";
 string retval="";
 
 if(type=="group"){
@@ -446,7 +446,7 @@ string dodelete(string type, string id){
 string query="";
 
 if(type=="" || id=="")
-return DELETE_UNSUCCESSFUL+".\n";
+return DELETE_UNSUCCESSFUL+"\n";
 
 if(type=="group") {
   query="DELETE FROM groups WHERE id='"+id+"'";
@@ -461,7 +461,7 @@ else if(type="product") {
   query="DELETE FROM product_groups WHERE product_id='"+id+"'";
   ::query(query);
   }
-return capitalize(type)+" "+id+" deleted successfully.\n";
+return capitalize(type)+" "+id+ DELETED_SUCCESSFULLY +"\n";
 
 }
 
@@ -510,10 +510,10 @@ if(search(pulldown,lower_case(r[i]->name))!=-1) {
 	for(int j=0; j<sizeof(vals); j++)
 	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
 	}
-    else retval+="<option>No Options Available\n";
+    else retval+="<option>" + NO_OPTIONS_AVAILABLE + "\n";
    
 	}
-    else retval+="<option>No Options Available\n";
+    else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
     retval+="</select></td></tr>";
     
     }
@@ -590,10 +590,10 @@ else if(r[i]->type=="enum" ){
 	for(int j=0; j<sizeof(vals); j++)
 	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
 	}
-    else retval+="<option>No Options Available\n";
+    else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
    
 	}
-    else retval+="<option>No Options Available\n";
+    else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
     retval+="</select></td></tr>";
     
     }

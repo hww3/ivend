@@ -20,7 +20,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.43 1998-04-10 20:34:45 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.44 1998-04-10 20:57:54 hww3 Exp $";
 
 array register_module(){
 
@@ -1173,7 +1173,6 @@ return http_string_answer(data,
 string create_index(object id){
 string retval="";
 retval=Stdio.read_bytes(query("datadir")+"index.html");
-// retval=parse_rxml(file,id);
 return retval;
 }
 

@@ -309,7 +309,7 @@ if((int)id->variables->shipsame==1) return "";
 mixed j;
 
  if(id->variables->aeexclude){
-   array aeexclude=id->variables->aeexclude /",";
+   array aeexclude=(lower_case(id->variables->aeexclude)-" ") /",";
    string exclude;
    foreach(aeexclude, exclude) {
      id->variables[exclude]="N/A";

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.216 1999-06-07 01:23:35 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.217 1999-06-07 02:25:09 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -769,7 +769,7 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
             id->variables->referer + "\">\n";
     // if(!args->fields) return "Incomplete cart configuration!";
     if(catch(  array r= DB->query(
-                                "SELECT sessions.id +
+                                "SELECT sessions.id" +
                                 ",series,quantity,sessions.price, "
 				"sessions.locked, sessions.autoadd, " 
 				"sessions.options " +
@@ -885,8 +885,9 @@ string tag_additem(string tag_name, mapping args,
 
 string tag_ivendlogo(string tag_name, mapping args,
                      object id, mapping defines) {
-
-    return "<a external href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
+if(args->large) return "<img src=\"" + query("mountpoint") +
+  "ivend-image/ivendlogo.gif\" border=0>";
+else  return "<a external href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
            query("mountpoint")+"ivend-image/ivendbutton.gif\" border=0></a>";
 
 }
@@ -1311,7 +1312,7 @@ array(mapping(string:string)) r;
     // perror(page + " is a " + type + "\n");
     if(!type)
         return 0;
-id->misc->ivend->template="";
+// id->misc->ivend->template="";
     if(id->variables->template)
 id->misc->ivend->template=id->variables->template;
     if(id->misc->ivend->template=="DEFAULT")
@@ -2963,6 +2964,7 @@ id->variables->__criteria + "%";
                                          }
                                          retval+="<P><FONT FACE=\"times\" SIZE=+1>To View or Modify a Configuration, Click on it's name in the list above.</FONT><P>\n"
                                                  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; "
+                                                 "<A HREF=\""+query("mountpoint")+"config/delete\">Delete Configuration</A> &nbsp; ";
                                                  "<A HREF=\""+query("mountpoint")+"config/reload\">Reload Configurations</A> &nbsp; ";
                                          if(save_status!=1)
                                              retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";
@@ -3027,8 +3029,6 @@ id->variables->__criteria + "%";
                                          if(save_status!=1)
                                              retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A> &nbsp; ";
                                          retval+=
-                                             "<A HREF=\""+ query("mountpoint")
-                                             +"config/configs/"+ request[1]+"?config_delete=1\">Delete Configuration</A>"
                                              "</FORM>"
                                              "</TD></TR>";
 

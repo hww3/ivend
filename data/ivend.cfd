@@ -70,7 +70,7 @@ $type=string
 $endescription=Pathname of RSA Public Key
 $sidescription=Pathname of RSA Public Key
 
-$varname=config_enabled
+$varname=admin_enabled
 $enname=Enable Store Administration
 $siname=Enable Store Administration
 $type=multiple

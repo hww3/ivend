@@ -310,7 +310,7 @@ perror("copying store files...\n");
 privs=Privs("iVend: Copying store files ");
 mixed result=Process.system("/bin/cp -rf " +
    id->misc->ivend->this_object->query("root") + "examples/" +
-   v->style +"/* " + v->root);
+   v->style +"/* " + v->root + "/");
 #if efun(chmod)
 chmod(v->root, 0775);
 #endif

@@ -225,6 +225,11 @@ if(note) {
   return;
 }
 
+string archive_orders(string mode, object id){
+ string retval="";
+ return "";
+}
+
 string show_orders(string mode, object id){
 string retval="";
 string status="";
@@ -581,7 +586,8 @@ mapping register_admin(){
 
 return ([
 
-	"menu.main.Orders.View_Orders" : show_orders
+	"menu.main.Orders.View_Orders" : show_orders,
+	"menu.main.Orders.Archive_Orders" : archive_orders
 
 	]);
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.247 1999-09-11 21:08:37 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.248 1999-10-26 01:23:13 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -932,9 +932,10 @@ if(r[i]->autoadd!="1")
                     + "\">";
         retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
     }
-    if(args->cont||id->variables->referer){
+    if(!id->misc->ivend->checkout &&
+(args->cont||id->variables->referer)){
 	retval+="<td> <form action=\"" +
-(args->cont||id->variables->referer) + "\">"
+ (args->cont||id->variables->referer) + "\">"
 		"<input type=submit value=\"Continue\"></form></td>";
 	}
     retval+="</tr></table>\n<true>\n"+contents;
@@ -2047,21 +2048,24 @@ if(!intp(r)){
                  case "dodelete":
                      //  perror("doing delete...\n");
                      if(id->variables->confirm){
-                         if(id->variables->id==0 || id->variables->id=="")
-                             retval+="You must select an ID to act upon!<br>";
+                         if(id->variables[KEYS[type +
+"s"]]==0 || id->variables[KEYS[type + "s"]]=="")
+                             retval+="<p>You must select an existing ID to act upon!<br>";
                          else {
+				foreach(id->variables[KEYS[type
++"s"]]/"\000", string d) {
 				 retval+="<p>\n"+DB->dodelete(type,
-                                                       id->variables[KEYS[type +"s"]],
-                                                       KEYS[type +"s"]);
+                      			d, KEYS[type+"s"] ); 
              trigger_event("admindelete", id, (["type": type, 
-		"id": id->variables[KEYS[type + "s"]] ]) );
-
+		"id": d]) );
+}
 				} }
                      else {
                          if(id->variables->match) {
                              mixed n=DB->showmatches(type,
-                                                     id->variables->id,
-                                                     KEYS[type+"s"]);
+
+id->variables[KEYS[type+ "s"]],
+                                                     KEYS[type+"s"], id);
                              if(n)
                                  retval+="<form _parsed=1 name=form action=\"" +
 					add_pre_state(id->not_query,(<"dodelete=" + type>)) +"\">\n"
@@ -2071,23 +2075,27 @@ if(!intp(r)){
                              else retval+="<br>No " + capitalize(type +"s") + " found.";
                          }
                          else {
-                             mixed n= DB->showdepends(type,
-                                                      id["variables"][ KEYS[type+"s"] ]
-                                                      , KEYS[type+"s"],
-                                                      (type=="group"?KEYS->products:0));
-                             if(n){
                                  retval+="<form name=form action=\"" +
                                          add_pre_state(id->not_query,(<"dodelete=" + type>))
                                          + "\">\n"
-                                         "<input type=hidden name=id value=\""+id->variables[
-                                             KEYS[type+"s"] ]+"\">\n"
                                          "Are you sure you want to delete the following?<p>";
-                                 retval+=n
-					+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
-                             }
-                             else retval+="Couldn't find "+capitalize(type) +" "
+perror("Input: " + id->variables[KEYS[type +"s"]] + "\n");
+	foreach(id->variables[KEYS[type +"s"]]/"\000", string d){
+                        perror(d  + "\n"); 
+                             mixed n= DB->showdepends(type,
+							d
+                                                      , KEYS[type+"s"], (type=="group"?KEYS->products:0), id);
+                             if(n){  retval+=
+                                         "<input type=checkbox name=\"" +
+					KEYS[type+"s"] + "\" value=\"" +d 
+                                             +"\" checked>\n";
+         retval+=n;
+			}
+                             else retval+="<p>Couldn't find "+capitalize(type) +" "
                                               +id->variables[ KEYS[
                                                                   type+"s"]]+".<p>";
+                             }
+retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                          }
 
                      }
@@ -2150,7 +2158,9 @@ if(!intp(r)){
                      retval+="<form name=form action=\"./\">\n"
                              "<input type=hidden name=mode value=show>\n"
                              "<input type=hidden name=type value="+ type + ">\n"
-                             "<table><tr><td><input type=submit value=Show></td><td>\n";
+                             "<table><tr><td><input type=submit value=Show>"
+				"<br><input type=reset value=\"Clear\">"
+				"</td><td>\n";
                      retval+="<td><font face=helvetica,arial size=2><b>Show fields:</b> ";
                      array f=DB->list_fields(type+"s");
                      array k;
@@ -2219,7 +2229,7 @@ if(!intp(r)){
 	+ "\" name=__criteria size=12></font></td>";
 		     retval+="</tr></table>"
                              "<input type=hidden name=primary_key value=\"" +
-                             primary_key + "\"></form>";
+                             primary_key + "\"></form>\n";
                      string query="SELECT ";
                      array fields=({});
                      foreach(f, mapping v)
@@ -2241,12 +2251,21 @@ id->variables->__criteria + "%";
 			}
                          array r=DB->query(query);
                          if(sizeof(r)>0) {
-                             retval+="<table>\n<tr><td></td>\n";
+                             retval+="<form action=\"" +
+add_pre_state(id->not_query,(<"dodelete=" + type >))  
+				+ "\" method=post>"
+				"<table>\n<tr><td>"
+				"<input type=submit name=\"__delete_marked\" value=\"Delete Marked Items\">"
+				"</td>\n";
                              foreach(fields, string f)
                              retval+="<td><b><font face=helvetica,arial>" + f + "</b></td>\n";
                              retval+="</tr>";
                              foreach(r, mapping row){
                                  retval+="<tr>\n<td><font face=helvetica,arial size=0>"
+					"<input type=checkbox name=\""
+					+ id->variables->primary_key + "\" "
+					"value=\"" +
+					row[id->variables->primary_key] + "\"> "
                                          "<a href=\"" + add_pre_state(id->not_query,
                                                                       (<"getmodify=" + type>))+
                                          "?" +id->variables->primary_key + "=" +
@@ -2259,7 +2278,7 @@ id->variables->__criteria + "%";
                                  retval+="<td>" + row[fld] + "</td>\n";
                              }
                              retval+="</tr>\n";
-                             retval+="</table></body></html>";
+                             retval+="</table></form></body></html>";
                          }
                          else retval+="Sorry, No Records were found.";
                      }

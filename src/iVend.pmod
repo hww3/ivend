@@ -1,4 +1,5 @@
 #include "include/messages.h"
+#include "include/ivend.h"
 // #define perror(X) werror(X)
 // for translations
 
@@ -266,11 +267,12 @@ return "";
     }
 
 
-    mixed showmatches(string type, string id, string field) {
+    mixed showmatches(string type, string id, string field, object request_id) {
 
         string retval;
 
-        string q="SELECT " + field + ",name FROM " + type + "s WHERE name like '%"
+        string q="SELECT " + field + "," + request_id->misc->ivend->config["Admin Interface"]->productnamefield + " FROM " + type + "s WHERE "
+		+ request_id->misc->ivend->config["Admin Interface"]->productnamefield +" like '%"
                  + id + "%' or " + field +" like '%" + id + "%' group by "+ field;
 
         array r=query(q);
@@ -447,10 +449,11 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
         }
         q=q[0..sizeof(q)-2]+" WHERE " +
           id->misc->ivend->keys[id->variables->table]
-          +"='" + id->variables[id->misc->ivend->keys[id->variables->table]] +
+          +"='" +
+id->variables[lower_case(id->misc->ivend->keys[id->variables->table])] +
           "'";
         // if (sizeof(errors)>0) return errors;
-        // perror("running query\n" + q);
+         perror("running query\n" + q);
         query(q);
         if(id->variables->jointable) {
             array jointable;
@@ -514,9 +517,11 @@ array(mapping(string:mixed)) r=list_fields(table);
 
         if(!record) record=([]);
         for(int i=0; i<sizeof(r);i++){          // Generate form from schema
-            if(record[r[i]->name]) record[lower_case(r[i]->name)]=record[r[i]->name];
+            if(record[r[i]->name]) record[lower_case(r[i]->name)]
+		=record[r[i]->name];
             r[i]->name=lower_case(r[i]->name);
-            // perror("existing data for " + r[i]->name +": " + record[r[i]->name] + "\n");
+string def=r[i]["default"] || "";
+//		  r[i]->default="";
             if(r[i]->name[0..4]=="image"){
                 retval+="<TR>\n"
                         "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
@@ -584,8 +589,7 @@ o=query("SELECT id,parent,name FROM groups where parent <> '' order by name asc"
                         +replace(r[i]->name,"_"," ")+
                         " <b>$</b></FONT></TD>\n"
                         "<TD>\n"
-			+ ::input(r[i]->name,  record[r[i]->name] ||"",
-40)
+			+ ::input(r[i]->name,  (record[r[i]->name] || def), 40)
 			+ "\n";
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
@@ -639,7 +643,7 @@ o=query("SELECT id,parent,name FROM groups where parent <> '' order by name asc"
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
 
                 else retval+=::input(lower_case(r[i]->name),
-record[r[i]->name] ||"", r[i]->length)
+record[r[i]->name] || def, r[i]->length)
                         + "\n"; 
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
@@ -683,7 +687,8 @@ record[r[i]->name] ||"", r[i]->length)
                         +replace(r[i]->name,"_"," ")+
                         "</FONT></TD>\n<td><!-- long -->"  ;
 			retval+= ::input(r[i]->name,  record[r[i]->name] 
-				||"", r[i]->length) + "\n"; 
+				|| def, r[i]->length) +
+"\n"; 
 
             }
 
@@ -729,7 +734,7 @@ record[r[i]->name] ||"", r[i]->length)
     }
 
     string|int showdepends(string type, string id, string field, string|void
-                           field2){
+                           field2, object|void request_id){
         string q="";
         if(type=="" || id=="")
             return DELETE_UNSUCCESSFUL +"\n";
@@ -760,14 +765,14 @@ record[r[i]->name] ||"", r[i]->length)
 
         else if(type=="product") {
             q="SELECT " + field +
-              ",name FROM products WHERE " + field + "='"+id+"'";
+              "," + request_id->misc->ivend->config["Admin Interface"]->productnamefield
+		+ " FROM products WHERE " + field + "='"+id+"'";
             array j=query(q);
             if(sizeof(j)!=1) return 0;
-            else retval+="<blockquote>"+j[0][ field ] +" "
-                             "( "+j[0]->name+" )<br>\n";
+            else retval+=j[0][ field ] +" ( "
++j[0][request_id->misc->ivend->config["Admin Interface"]->productnamefield]+" )<br>\n";
         }
 
-        retval+="</blockquote>\n";
         return retval;
     }
 
@@ -777,6 +782,7 @@ record[r[i]->name] ||"", r[i]->length)
 
         if(type=="" || id=="")
             return DELETE_UNSUCCESSFUL+"\n";
+	if(!field) field="id";
 
         if(type=="group") {
             q="SELECT parent FROM groups WHERE " + field + "='" + id + "'";

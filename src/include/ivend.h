@@ -14,6 +14,8 @@
 
 #define ADMIN_FLAGS id->misc->ivend->admin_flags
 
+#define COMPLEX_ADD_ERROR id->misc->ivend->complex_add_error
+
 #define NO_BORDER 1
 #define NO_ACTIONS 2
 

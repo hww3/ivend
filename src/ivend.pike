@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.193 1999-05-11 23:01:57 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.194 1999-05-12 00:18:15 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1132,6 +1132,49 @@ mixed find_page(string page, object id){
    return (retval);
 }
 
+int do_low_additem(object id, mixed item, mixed quantity, mixed
+price, mapping args){
+
+      int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
+                               id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
+      string query="INSERT INTO sessions VALUES('"+
+id->misc->ivend->SESSIONID+
+      "','"+item+"',"+(id->variables[item+"quantity"]
+                       ||id->variables->quantity ||
+1)+","+(max+1)+",'Standard','"+(time(0)+
+                             (int)CONFIG->session_timeout)+"'," + price
++")";
+
+      if(catch(DB->query(query) )) {
+         id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
+   return 0;
+   }
+      else {
+         id->misc["ivendstatus"]+=((id->variables[item+"quantity"] ||
+                                    id->variables->quantity || "1")+" " +
+ITEM
+                                   + " " + item + " " + ADDED_SUCCESSFULLY
++"\n");
+return 1;
+  }
+}
+
+mixed do_complex_item_add(object id, array items){
+ foreach(items, mixed i){ 
+  array r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
+   + i + "'");
+  if(!r || sizeof(r)<1)
+   perror("No Pricing Configuration for " + i + ".\n");
+  foreach(r, mapping row)
+  trigger_event(row->type,id,(["item": i, "quantity":
+   (id->variables[i+"quantity"] ||id->variables->quantity ||"1")]));
+  if(!COMPLEX_ADD_ERROR)
+  trigger_event("additem",id,(["item": i, "quantity":
+   (id->variables[i+"quantity"] ||id->variables->quantity ||"1")]));
+  }
+ return 0;
+}
+
 mixed additem(object id){
 
    if(id->variables->quantity && (int)id->variables->quantity==0) {
@@ -1151,6 +1194,7 @@ mixed additem(object id){
 // we should add complex pricing models to this algorithm.
   if(local_settings[STORE]->pricing_model==COMPLEX_PRICING) {
     perror("DOING A COMPLEX PRICE CALCULATION...\n");
+	return do_complex_item_add(id, items);
     }
   else{
    foreach(items, string item){
@@ -1158,26 +1202,15 @@ mixed additem(object id){
                             + KEYS->products +  "='" + item + "'")[0]->price;
 
 //      price=convert((float)price,id);
+      int quantity=(id->variables[item+"quantity"]  
+        ||id->variables->quantity || 1);
+      mapping m=([]);
+      int result=do_low_additem(id, item, quantity, price, m);
 
-      int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
-                               id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
-      string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
-      "','"+item+"',"+(id->variables[item+"quantity"] 
-                       ||id->variables->quantity || 1)+","+(max+1)+",'Standard','"+(time(0)+
-                             (int)CONFIG->session_timeout)+"'," + price +")";
-
-      if(catch(DB->query(query) ))
-         id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n"); 
-      else {
-         id->misc["ivendstatus"]+=((id->variables[item+"quantity"] || 
-                                    id->variables->quantity || "1")+" " + ITEM
-                                   + " " + item + " " + ADDED_SUCCESSFULLY +"\n"); 
-         trigger_event("additem",id,(["item": item, "quantity":
-                                      (id->variables[item+"quantity"] ||id->variables->quantity
-                                       ||"1")]));
+      if(result)
+       trigger_event("additem",id,(["item": item, "quantity": quantity]));
       }
     }
-  }
    return 0;
 }
 

@@ -766,6 +766,7 @@ string tag_generateviews(string tag_name, mapping args,
    return retval;
 }
 
+/*
 string tag_listitems(string tag_name, mapping args,
                      object id, mapping defines)
 
@@ -849,6 +850,124 @@ string tag_listitems(string tag_name, mapping args,
    return retval;
 
 }
+
+*/
+
+string tag_listitems(string tag_name, mapping args, object id, mapping defines) {
+  
+  string retval="";
+  string query;
+  mixed cnt, cnt2;
+  
+  // default table colors : headline-bg, headline-font, list-bg, list-font
+  array(string) tcolors = ({ "navy", "white", "white", "navy" });
+
+  if (args["tcolors"]) { 
+    array(string) custom_tcolors = args["tcolors"] / ",";
+    if( sizeof(custom_tcolors) == 4) {  // if all custom colors specified, use them
+      foreach(indices(custom_tcolors),cnt ) {
+	tcolors[cnt] = custom_tcolors[cnt];
+      }
+    }
+  }
+    
+  if(!id->misc->ivend->page) 
+    return "no page!";
+  
+  string extrafields="";
+  array ef=({});
+  array en=({});
+  
+  if(args->fields) {
+    ef=args->fields/",";
+    if(args->names)
+      en=args->names/",";
+    else en=({});
+    for(int i=0; i<sizeof(ef); i++) {
+      if(catch(en[i]) || !en[i])  en+=({ef[i]});
+      extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
+    }
+  }
+  
+  array r;
+  if(args->type=="groups") {
+    query="SELECT " + KEYS->groups + " AS pid " +
+      extrafields+ " FROM groups";
+    if(!args->show)
+      query+=" WHERE status='A' ";
+    
+  }
+  else {
+    query="SELECT product_id AS pid "+ extrafields+
+      " FROM product_groups,products where group_id='"+
+	id->misc->ivend->page+"'";
+    
+    if(!args->show)
+      query+=" AND status='A' ";
+    if(args->limit)
+      query+=" AND " + args->limit;
+    
+    query+=" AND products." + KEYS->products +
+      "=product_id";
+    
+  }
+  
+  if(args->order)
+    query+=" ORDER BY " + args->order;
+  
+  r=DB->query(query);
+  
+  if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
+  
+  mapping row;
+  
+  array(array(string)) rows=allocate(sizeof(r));
+  int p=0;
+  foreach(r,row){
+    array thisrow=allocate(sizeof(row)-1);
+    string t;
+    int n=0;
+      
+    foreach(en, t){
+
+      if(n==0) {
+	thisrow[n]=("<A " + (args->template?("TEMPLATE=\"" +
+					     args->template + "\""):"") +
+		    " HREF=\""+row->pid+".html\">"+row[t]+"</A>");
+      }
+      else
+	thisrow[n]=row[t]; 
+      n++;
+    }
+    rows[p]=thisrow;
+    p++;
+  }
+  
+  if(args->title) retval+="<h2>" + args->title + "</h2>\n";
+   
+  retval += "<table bgcolor=#000000 cellpadding=1 cellspacing=0 border=0>";
+  retval += "<tr><td><table border=0 cellspacing=0 cellpadding=4><tr bgcolor=" + tcolors[0] + ">\n";
+
+  foreach (indices(en), cnt) {
+    retval += sprintf("<th nowrap align=left><font color=%s>%s&nbsp; </font></th>\n",
+		      tcolors[1], (string)en[cnt]);
+  }
+
+  retval +="<tr bgcolor=" + tcolors[2] +">\n";
+
+  foreach(indices(rows), cnt) {
+    foreach(indices(rows[cnt]), cnt2) {
+      retval += sprintf("<td nowrap><font color=%s>%s&nbsp;&nbsp;</td>\n",
+			tcolors[3], (string)rows[cnt][cnt2]);
+    }
+  }
+ 
+  retval += "</tr></table></td></tr></table><br>";
+
+  return retval;
+
+}
+
 
 
 string tag_ivstatus(string tag_name, mapping args,

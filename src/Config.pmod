@@ -47,7 +47,7 @@ string write(mapping config){
     return s;
 }
 
-array get_section_names(contents){
+array get_section_names(string contents){
 array sections=({});
 return sections;
 

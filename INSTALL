@@ -304,14 +304,33 @@ sessionid. This tag takes the following attributes:
 
 <form></form> has been modified to automatically handle session tracking.
 
-<listitems> generates a table of products which fall in a particular
-group. The following attributes affect this tag:
+<listitems> 
+generates a table of products which fall in a particular group.
+The following attributes affect this tag:
 
-  fields: a comma separated list of fields to include in the table.
-  names: a comma separated list of alternate names for fields included in
-     the table.
-  template: specify an alternate template to generate subpages from.
-  show: show items with all status types: active, inactive, etc.
+  fields: 
+	a comma separated list of fields to include in the table.
+  
+  names:
+	a comma separated list of alternate names for fields included in
+     	the table. 
+  
+  template: 
+	specify an alternate template to generate subpages from.
+ 	The standard template is 'group_template.html'
+  
+  show: 
+	If this agrument is supplied, all items will be displayed.
+	If not, only items with a status of 'A' will be shown.	
+
+  title:
+	Displays the following sting as a headline for the
+	following item table in <H2> font.
+
+  tcolors:
+	a comma seperated list of four HTML-color values:
+	tcolors="table-head-back, table-head-font, list-back, list-font"
+	where the table-head-* is the first line of the table.
 
 <category_output></category_output> will repeat the contents the container
 once for each record found, replacing values of each field where instances

@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.79 1998-07-10 19:49:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.80 1998-07-16 03:34:39 hww3 Exp $";
 
 array register_module(){
 
@@ -281,7 +281,7 @@ if(id->variables->update) {
 
 //    if(!args->fields) return "Incomplete cart configuration!";
     array r= id->misc->ivend->db->query(
-      "SELECT sessions.id,series,quantity,name,sessions.price "+ 
+      "SELECT sessions.id,series,quantity,sessions.price "+ 
 	extrafields+" FROM sessions,products "
       "WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");

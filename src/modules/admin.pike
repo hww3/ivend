@@ -1,4 +1,6 @@
 #!NOMODULE
+
+
 #include <ivend.h>
 #include <messages.h>
 inherit "roxenlib";
@@ -44,15 +46,15 @@ int do_clean_sessions(object db){
    return sizeof(r);
 }     
 
-string tag_itemoptions(string tag_name, mapping args, object id, mapping 
-  defines) {
+void|mixed tag_itemoptions(string tag_name, mapping args, object id,
+mapping defines) {
  
   string retval=""; 
 
   array r=DB->query("SELECT * FROM item_options WHERE product_id='" +
 args->item + "' GROUP BY option_type ORDER BY option_type ASC");
 
-  if(!r || sizeof(r)<1) return NO_OPTIONS_AVAILABLE;
+  if(!r || sizeof(r)<1) return 0;
 
 retval+="<input type=hidden name=options value=1>\n";
   foreach(r, mapping row){

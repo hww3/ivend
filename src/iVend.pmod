@@ -7,6 +7,43 @@
 #define CONFIG id->misc->ivend->config
 
 
+class error {
+
+mixed stop_error(object id){
+  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
+    return (id->misc->ivend->error *"\n");
+}
+
+void|mixed error_happened(object id){
+  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
+    return 1;
+  if(id->misc->ivend->error_happened)
+    return 1;
+}
+
+void|mixed throw_error(string error, object id){
+  id->misc->ivend->error+=({error});
+  return;
+}
+
+void load_lineitems(object id){
+
+id->misc->ivend->lineitems=([]);
+
+  array r=DB->query("SELECT lineitem,value from lineitems "
+    "WHERE orderid='" + (id->misc->ivend->orderid ||
+	id->misc->ivend->SESSIONID) + "'");
+
+  foreach(r, mapping row)
+   id->misc->ivend->lineitems+=([ row->lineitem : (float) row->value ]);
+
+  return;    
+
+}
+
+
+}
+
 class config {
 
 inherit "html";
@@ -234,13 +271,14 @@ inherit "html";
     string password;
 
 mapping keys=([]);// db keys cache
+mapping local_settings=([]);// local settings cache
 int db_info_loaded=0;
 
 
     inherit "roxenlib";
-    void create(mixed host, mixed db, mixed user, mixed password){
+    void create(mixed host){
 
-        sqlconn::create(host, db, user, password);
+        sqlconn::create(host);
 
     }
 
@@ -404,9 +442,12 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
             catch(jointable=id->variables[id->variables->jointable]/"\000");
             if(jointable)
                 for(int i=0; i<sizeof(jointable); i++){
-                    q="DELETE FROM "
-                      + id->variables->joindest +" WHERE product_id='"+
-			+id->variables[lower_case(KEYS[id->variables->table])]+"'";
+		    string key=KEYS[id->variables->table];
+		    string field=id->variables[key];
+                    q="DELETE FROM " 
+		        + id->variables->joindest + 
+			" WHERE product_id='"+
+			field + "'";
                     if(catch(query(q)))
 			return ({sqlconn::error() || "You have provided invalid data."});
                 
@@ -1072,35 +1113,35 @@ mapping local_settings=([]);
     static inherit Thread.Mutex;
 #endif
     array (object) dbs = ({});
-    string db_name, db_user, db_password, host;
+    string host;
     int num_dbs;
-    void create(string|void _host, string _db, int num, string|void _user,
-                string|void _password) {
-        db_name = _db;
+    void create(string|void _host, int num) {
+//	perror("Creating " + num  + " database connections.\n");
         host = _host;
-        db_user = _user;
-        db_password = _password;
         num_dbs=num;
         mixed err;
         for(int i = 0; i < num; i++) {
-//	perror("creating db: " + host  + " " + db_name + " " + db_user + " " + db_password + "\n");
-            err=catch( dbs += ({ db(host, db_name, db_user,
-		db_password) }));
+//	perror("creating db: " + host  +  "\n");
+            err=catch( dbs += ({ db(host) }));
             if(err)
                 perror("Error creating db object:\n" +
                        describe_backtrace(err)+"\n");
-	    else(get_dbinfo());
         }
+//	perror("created all handlers.\n");
+	    if(!err) 	get_dbinfo();
+//	perror("got db info.\n");
+	return;
     }
 
     void|object handle(void|object d)
     {
+	if(d) perror("Returning a DB to the stack.\n");
+	else perror("Taking a DB from the stack.\n");
         LOCK();
         int count;
         dbs -= ({0});
 	dbs-=({});
         if(objectp(d)) {
-            // werror("returning a db object...\n");
             if(search(dbs, d) == -1) {
                 if(sizeof(dbs)>(2*num_dbs)) {
                     werror("Dropping db because of inventory...\n");
@@ -1108,20 +1149,19 @@ mapping local_settings=([]);
                 }
                 else {
                     dbs += ({d});
-                    //werror("Handler ++ ("+sizeof(dbs)+")\n");
+//                    werror("Handler ++ ("+sizeof(dbs)+")\n");
                 }
             }
             else {
-                //               werror("Handler: duplicate return: \n");
+                               werror("Handler: duplicate return: \n");
             }
             //      destruct(d);
         }
 
         else {
-            // werror("requesting a db object...\n");
             if(!sizeof(dbs)) {
                 werror("Handler: New DB created (none left).\n");
-                d = db(host, db_name, db_user, db_password);
+                d = db(host);
                 //d->set_timeout(60);
             } else {
                 d = dbs[0];
@@ -1134,9 +1174,9 @@ mapping local_settings=([]);
     }
 
 void get_dbinfo(){
-perror("Getting DB Info in iVend.pmod.\n");
+// perror("Getting DB Info in iVend.pmod.\n");
     mixed err;
-    err=catch(object s=handle());
+object s=handle();
     keys=([]); // make the entry.
     if(err) {
         perror("An error occurred while trying to grab a db object.\n");
@@ -1146,7 +1186,7 @@ perror("Getting DB Info in iVend.pmod.\n");
         array r;
         err=catch(r=s->query("SHOW INDEX FROM " + t ));  // MySQL dependent?
         if(err)
-            perror("iVend: Unable to show indices from " + t + ".\n");
+            perror("iVend: Unable to show indices from " + t + ".\n" + err[0]+ "\n");
         if(sizeof(r)==0)
             keys[t]="id";
         else {
@@ -1158,8 +1198,7 @@ perror("Getting DB Info in iVend.pmod.\n");
             keys[t]=primary_key;
         }
     }
-    if(!local_settings)
-        local_settings=([]);
+// perror("got key info.\n");
     local_settings->pricing_model=SIMPLE_PRICING;
     array n=s->list_fields("products", "price");
     if(sizeof(n)<1)
@@ -1177,12 +1216,17 @@ perror("Getting DB Info in iVend.pmod.\n");
     if(sizeof(n)>0)
         // we're doing individual handling charges
         local_settings->tax_exemption_support=TRUE;
+// perror("got local_settings info.\n");
+	handle(s);
+// perror("returned the connection.\n");
     foreach(dbs, object d)
      {
 	d->keys=keys;
 	d->db_info_loaded=1;
 	d->local_settings=local_settings;
      }
+perror("updated the handlers.\n");
+
     return;
 
 }

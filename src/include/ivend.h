@@ -48,3 +48,5 @@ import ".";
 #define PER_ITEM 1
 
 #define _extra_heads id->misc->defines[" _extra_heads"]
+
+#define NULL 0

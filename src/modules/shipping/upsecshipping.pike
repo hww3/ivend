@@ -1,5 +1,7 @@
 #!NOMODULE
 
+inherit iVend.error;
+
 constant module_name = "UPS EC Shipping";
 constant module_type = "shipping";
 
@@ -50,30 +52,34 @@ mixed findrate(string zip, string weight, mapping|void options, object id){
     query_variables+=options;
 mapping request_headers;
 
-string q="AppVersion=1.2&AcceptUPSLicenseAgreement=YES&\r\n"
-	"ResponseType=application/x-ups-rrs&ActionCode=3&\r\n"
-//	"ResidentialInd=" + (options->ResidentialInd||"0") + "&" +
-//	"PackagingType=" + (options->PackagingType||"00") 
-//+"&" + Protocols.HTTP.http_encode_query(query_variables) + "\r\n";
-+"ServiceLevelCode=1DA&RateChart=Regular+Daily+Pickup&\r\n"
-"ShipperPostalCode=30008&ConsigneePostalCode=10190&\r\n"
-"ConsigneeCountry=US&PackageActualWeight=10&\r\n"
-"ResidentialInd=1&PackagingType=00";
+query_variables+=([	"AppVersion":"1.2",
+		"AcceptUPSLicenseAgreement":"YES",
+		"ResponseType":"application/x-ups-rss",
+		"ActionCode":"3",
+		"ResidentialInd" : (options->ResidentialInd||"0"),
+		"PackagingType" : (options->PackagingType||"00")
+//+"ServiceLevelCode=1DA&RateChart=Regular+Daily+Pickup&\r\n"
+//"ShipperPostalCode=30008&ConsigneePostalCode=10190&\r\n"
+//"ConsigneeCountry=US&PackageActualWeight=10&\r\n"
+//"ResidentialInd=1&PackagingType=00";
+]);
+object h=Protocols.HTTP();
+mixed result=Protocols.HTTP.post_url(ECURL, query_variables, ([]));
+object message=MIME.Message((string)(result));
+array r=((message->body_parts[1]->getdata())/"%");
+perror(sprintf("BEGIN>%O<END", r));
 
-object con=master()->resolv("Protocols")["HTTP"]["Query"]();
-   con->sync_request(ECHOST,ECPORT,
-                     "POST "+ ECPATH +" HTTP/1.0",
-                     (["user-agent":
-                       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
-                     (["content-type":
-                       "application/x-www-form-urlencoded"]),
-                     q);
+if(r[2]=="0000"){ // Success!
 
-perror("Request: " + q + "\n");
-   if (!con->ok) return -2.00;
-mixed result=con->data();
-  perror("UPSEC RESULT: " + sprintf("<pre>%O</pre>", result)+ "\n");
-  return sprintf("<pre>%O</pre>", result);
+return r[14];
+
+}
+
+else {  // Error!
+  throw_error("A UPS OnLine error occurred: " + r[2]+ ": "+ r[3][4..] ,id);
+  return "-1.00";
+
+}
 
 }
 
@@ -149,7 +155,7 @@ mapping options=(["PackagingType": id->variables->packagingtype,
 	"OversizeInd": (id->variables->oversize||"N"),
 	"ServiceLevelCode": row->service_level,
 	"ShipperPostalCode": row->origin,
-	"RateChart": replace(row->rate_chart," ", "+")
+	"RateChart": replace(row->rate_chart," ", " ")
 	]);
 
 if(id->variables->dolookup)
@@ -197,19 +203,38 @@ id->variables->showtype + ">"
 	retval+="<OPTION VALUE=\"" + ServiceLevelCodes[slc] + "\">" + slc
 	+ "\n";
   retval+="</SELECT>\n<br>"
-	"Rate Chart: <SELECT NAME=\"rate_chart\"";
+	"Rate Chart: <SELECT NAME=\"rate_chart\">";
   foreach(indices(RateCharts), string rc)
 	retval+="<OPTION VALUE=\"" + RateCharts[rc] + "\">" + rc
 	+ "\n";
   retval+="</SELECT>\n<br>"
 	"Package Origin: <INPUT TYPE=TEXT SIZE=5 NAME=origin> (ZIP Code)<br>\n"
+	"Destination Postal Code Field: <SELECT NAME=consigneepostalcode><br>\n";
+  array f=DB->list_fields("customer_info");
+  foreach(f, mapping field){
+    if(!(field->type=="integer" || field->type=="float" ||
+	field->type=="long" || field->type=="decimal"))
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+retval+="</SELECT>\n</br>\n"
+	"Destination Country Field: <SELECT NAME=consigneecountry><br>\n";
+	"<option value=\"NONE\">None (Default US)\n";
+  array f=DB->list_fields("customer_info");
+  foreach(f, mapping field){
+    if(!(field->type=="integer" || field->type=="float" ||
+	field->type=="long" || field->type=="decimal"))
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+retval+="</SELECT>\n<br>"
 	"Markup: <INPUT TYPE=TEXT SIZE=5 NAME=charge> (Amount or Percent)<br>\n"
 	"Markup Type: <SELECT NAME=chargetype>\n"
 	"<OPTION VALUE=\"C\">Cash\n"
 	"<OPTION VALUE=\"P\">Percentage\n"
 	"</SELECT>\n<br>"
  	"Weight Field: <SELECT NAME=\"field_name\">\n"
-	"<option value=\"NONE\">None\n";
+	"<option value=\"NONE\">None (Default is Letter Package)\n";
 
   array f=DB->list_fields("products");
   foreach(f, mapping field){
@@ -219,13 +244,44 @@ id->variables->showtype + ">"
 	  + "products." + field->name + "\n";
     }
 
+ retval+="</SELECT><br>"
+	"Package Length Field: <SELECT NAME=\"length_field\">\n"
+	"<option value=\"NONE\">None\n";
+  array f=DB->list_fields("products");
+  foreach(f, mapping field){
+    if( field->type=="float" ||
+	field->type=="long" || field->type=="decimal")
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+ retval+="</SELECT><br>"
+	"Package Width Field: <SELECT NAME=\"width_field\">\n"
+	"<option value=\"NONE\">None\n";
+  array f=DB->list_fields("products");
+  foreach(f, mapping field){
+    if( field->type=="float" ||
+	field->type=="long" || field->type=="decimal")
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+
+ retval+="</SELECT><br>"
+	"Package Height Field: <SELECT NAME=\"height_field\">\n"
+	"<option value=\"NONE\">None\n";
+  array f=DB->list_fields("products");
+  foreach(f, mapping field){
+    if( field->type=="float" ||
+	field->type=="long" || field->type=="decimal")
+	retval+="<option value=\"products." + field->name + "\">"
+	  + "products." + field->name + "\n";
+    }
+
  retval+="</SELECT>"
+
 	"Oversize Indicator: <SELECT NAME=\"oversize_field\">\n"
 	"<option value=\"NONE\">None\n";
   array f=DB->list_fields("products");
   foreach(f, mapping field){
-    if( field->type!="float" &&
-	field->type!="long" && field->type!="decimal")
 	retval+="<option value=\"products." + field->name + "\">"
 	  + "products." + field->name + "\n";
     }

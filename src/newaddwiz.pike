@@ -51,16 +51,12 @@ if(id->variables->create_db=="No" && id->variables->db==""){
   ERROR("You must supply a database name if you don't want to have one created.");
 return 1;
 }
- if(catch(
-s=Sql.sql(id->variables->dbhost ,
-(id->variables->create_db=="No"?id->variables->db:""), 
-  id->variables->dblogin, id->variables->dbpassword)
+ if(catch(s=Sql.sql(id->variables->dbhost)
 ))
  {
 
-  ERROR("Unable to connect to database" +
-(id->variables->create_db=="No"?" "+id->variables->db:" server") 
-+ ". Please verify your connection setup.");
+  ERROR("Unable to connect to database" + id->variables->dbhost + 
+	". Please verify your connection setup.");
   return 1;
   }
 else 
@@ -130,20 +126,10 @@ if(id->variables->create_db=="Yes") retval+=
 "<tr><td colspan=2>Please provide the logon credentials for a "
 "user authorized to perform database creation for your database "
 "server.</td></tr>"
-"<tr><td>DB Host &nbsp</td><td> "
+"<tr><td>DB Host URL &nbsp</td><td> "
 " <var type=\"string\" name=\"dbhost\" value=\"\"></td></tr>"
 "<help><tr><td colspan=2>"
-"Hostname of SQL Database Server.</td></tr>"
-"</help>"
-"<tr><td>DB Administrator &nbsp</td><td> "
-" <var type=\"string\" name=\"dblogin\" value=\"\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Username with administrative access permissions to Database."
-"</td></tr></help>"
-"<tr><td>DB Administrator's Password &nbsp </td>"
-"<td> <var type=\"password\" name=\"dbpassword\" value=\"\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Password for DB Administrator.</td></tr>"
+"SQL URL for Database server (do not specify a database).</td></tr>"
 "</help>"
 "</table>"
 ;
@@ -151,26 +137,11 @@ if(id->variables->create_db=="Yes") retval+=
 else retval+=
 "<tr><td colspan=2>Please provide the logon and database information"
 " for your store database.</td></tr>"
-"<tr><td>DB Host &nbsp</td><td> "
+"<tr><td>DB URL &nbsp</td><td> "
 " <var type=\"string\" name=\"dbhost\" value=\"\"></td></tr>"
 "<help><tr><td colspan=2>"
-"Hostname of SQL Database Server.</td></tr>"
+"SQL URL for Database.</td></tr>"
 "</help>"
-"<tr><td>DB Username &nbsp</td><td> "
-" <var type=\"string\" name=\"dblogin\" value=\"\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Username with access permissions to Store Database."
-"</td></tr></help>"
-"<tr><td>Password &nbsp </td>"
-"<td> <var type=\"password\" name=\"dbpassword\" value=\"\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Password for DB user listed above.</td></tr>"
-"</help>"
-"<tr><td>Database Name &nbsp</td><td> "
-" <var type=\"string\" name=\"db\" value=\"\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Name of Store Database."
-"</td></tr></help>"
 "</table>"
 ;
 
@@ -338,8 +309,7 @@ string adminpassword=
 
 if(v->create_db=="Yes"){
 
-  s=Sql.sql(id->variables->dbhost , "", 
-    id->variables->dblogin, id->variables->dbpassword);
+  s=Sql.sql(id->variables->dbhost);
 
   catch(s->query("CREATE DATABASE " + v->config));
   if(catch(s->select_db(v->config)))
@@ -349,28 +319,30 @@ if(v->create_db=="Yes"){
 	"create new databases.";
   string adminuser=(sizeof(v->config + "admin")<=16?(v->config +
     "admin"):(v->config + "admin")[0..15]);
-
-  if(v->dbhost=="") v->dbhost=="localhost";
-  v->dblogin=v->config;
-  v->db=v->config;
-  string host=(lower_case(v->dbhost)=="localhost"?"localhost":gethostname());
-  v->dbpassword=MIME.encode_base64((string)hash(ctime(time())))[0..7];
-  //perror(v->dbpassword + "\n");
+  string dt,dn,du,dh,dp;
+  perror("Old Database URL: " + v->dbhost + "\n");
+  sscanf(v->dbhost, "%s://%s@%s", dt, du, dh);
+  array tmps=dh/"/";
+  if(sizeof(tmps)>1) { dh=tmps[0]; dn=tmps[1]; }
+  dp=MIME.encode_base64((string)hash(ctime(time())))[0..7];  
+  du=v->config;
+  dn=v->config;
+  du+=":"+dp;
+  v->dbhost=dt + "://" + du + "@" + dh + "/" + dn;
+  perror("New Database URL: " + v->dbhost + "\n");
   string vsr;
   if(functionp(s->server_info))
   catch(vsr=s->server_info());
 
   s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, ALTER, CREATE on "
-     + v->config + ".* TO " + v->config +
-	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")
-     + " IDENTIFIED BY '" + v->dbpassword + "'"); 
+     + dn + ".* TO " + dn
+     + " IDENTIFIED BY '" + dp + "'"); 
 
 }
 
 else {  // We have our own database...
 
-  if(v->dbhost=="") v->dbhost=="localhost";
-  s=Sql.sql(v->dbhost, v->db, v->dblogin, v->dbpassword);
+  s=Sql.sql(v->dbhost);
 
 }
 
@@ -405,10 +377,9 @@ privs=0;
 if(file_stat(v->root + "/schema.mysql") && v->populatedb=="Yes"){
 
   array ss=Stdio.read_file(v->root +  "/schema.mysql")/"\\g\n";
-  if(catch(object s=Sql.sql(v->dbhost, v->db , 
-    v->dblogin, v->dbpassword))) {
+  if(catch(object s=Sql.sql(v->dbhost))) {
     return "An error occurred while connecting to the store database" 
-	"as " + v->config + " with password " + v->dbpassword + "."
+	"as " + v->dbhost + "."
 	"<p>This is sometimes due to improper host table setup on "
 	"the database host.";
 //	+ s->error();

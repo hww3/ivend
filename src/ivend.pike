@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.271 2000-11-28 19:02:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.272 2000-11-28 21:52:18 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -143,7 +143,6 @@ foreach(indices(tables), string tname){
 query="SELECT " + (tables[tname]*", ") + " FROM " + tname +
   " WHERE " + tname + ".orderid='" + orderid + "'";
 
-// perror(query + "\n");
 
  r=DB->query(query);
 string fname;
@@ -153,7 +152,8 @@ string fname;
  }
 
 if(sizeof(lookup)==0) {
-  perror("iVend: Unable to find order info for tax calculation!\n");
+  report_error("iVend: Unable to find order info for tax calculation!\n",
+	NULL, "TAXCALC", id);
   return -1.00;
   }
 
@@ -164,7 +164,6 @@ else {          // calculate the tax rate as sum of all matches.
     query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
       "value='" + lookup[fname] + "'";
 
-//    perror(query + "\n");
     r=DB->query(query);
 
     if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
@@ -191,14 +190,11 @@ return (-1.00);
 } 
 
 string is_lineitem_taxable(object id, string item, string orderid){
-// perror("is lineitem " +item + " taxable?\n");
   if(item=="taxable") return "Y";
   if(item=="shipping" &&
 CONFIG_ROOT["Default Checkout Module"]->shipping_taxable=="Yes") return
 	"Y";
   else {
-//  perror(CONFIG_ROOT["Default Checkout Module"]->shipping_taxable+"\n");
-//  perror("N!\n");
  return "N";
   } 
 }
@@ -241,7 +237,6 @@ return subtotal;
 
 float get_grandtotal(object id, string orderid){
 
- perror("get grand total " + orderid + "\n");
 float grandtotal=0.00;
 
 
@@ -251,11 +246,9 @@ array r=DB->query("SELECT SUM(value) as gt FROM lineitems "
 if(r && sizeof(r)==1) grandtotal=(float)(r[0]->gt);
 else throw(({"Unable to find order lineitems.", backtrace()}));
 
-perror("getting salestax for orderid: " + orderid + "\n");
 
 float salestax=get_tax(id, orderid);
 
-perror("got tax: " + salestax + " \n");
 
 if(((float)salestax)) {
   grandtotal+= (float)salestax;
@@ -353,7 +346,6 @@ void create(){
            "/usr/dict/words, and on FreeBSD /usr/share/dict/words.");
 
 }
-
 
 mixed handle_path(string s, string p, object id) {
 
@@ -566,7 +558,6 @@ void start_store(string c){
     if(!config[c]->general)
 	return;
     catch(start_db(config[c]->general));
-    catch(get_dbinfo(config[c]->general));
 
     get_entities(config[c]->general);
     catch(load_modules(config[c]->general->config));
@@ -755,7 +746,7 @@ trigger_event("cp." + row->type,id,(["item": i->item, "quantity":
         if(!COMPLEX_ADD_ERROR)
 trigger_event("additem",id,(["item": i->item, "quantity":
                                          i->quantity]));
-        else perror("AN error occurred while adding an item.\n");
+//        else perror("An error occurred while adding an item.\n");
     }
     return 0;
 }
@@ -807,7 +798,8 @@ string is_item_taxable(object id, string item){
 
 if(!item) return "Y";
 
-array r=DB->query("SELECT taxable FROM products where " + KEYS->products +
+array r=DB->query("SELECT taxable FROM products where " +
+DB->keys->products +
 "='" + item + "'");
 
 if(r && sizeof(r)==1)
@@ -861,19 +853,15 @@ mixed do_additems(object id, array items){
         foreach(items, mapping item){
             float price;
 	catch(price=(float)(DB->query("SELECT price FROM products WHERE "
-                                  + KEYS->products +  "='" + item->item +
+                                  + DB->keys->products +  "='" +
+item->item +
                                   "'")[0]->price));
 		array opt=({});
 		mapping o=([]);
 	if(item->options) o=get_options(id, item->item, item->options);
 		else if(id->variables->options)
 		 o=get_options(id, item->item);
-            //      price=convert((float)price,id);
-//		if(o->surcharge)
-// perror(o->surcharge +"\n");
 		 price=(float)price + (float)(o->surcharge);
-// perror(price+"\n");
-// if(item->options) o+=item->options;
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
         return 0;
@@ -906,7 +894,6 @@ mixed container_icart(string name, mapping args, string contents, object id) {
             catch(DB->query("DELETE FROM sessions WHERE SESSIONID='"
                       +id->misc->ivend->SESSIONID+
                       "' AND id='"+ p +"' AND series=" +s ));
-// perror("DELETED ITEM " + p + " SERIES " + s + "\n");
             madechange=1;
 trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
         }
@@ -932,7 +919,7 @@ trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
 trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
             } else {
                 madechange=1;
-//              perror("updating cart..." + id->variables["q" +(string)i] + "\n");
+
                 catch(DB->query("UPDATE sessions SET "
                           "quantity="+(int)(id->variables["q"+(string)i])+
                           " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
@@ -950,7 +937,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
 	catch(r=DB->query("SELECT id, price, quantity, series, options, autoadd, locked "
                           " FROM sessions WHERE sessionid='" +
 			id->misc->ivend->SESSIONID + "'"));
-        // perror(sprintf("%O", r));
+
         if(r && sizeof(r)>0) {
             array items=({});
             catch(DB->query("DELETE FROM sessions WHERE sessionid='" +
@@ -962,7 +949,6 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
             row->options, "series": row->series, "locked": row->locked,
 "autoadd": row->autoadd ]) });
             }
-//            perror(sprintf("%O", items));
             do_additems(id, items);
         }
     }
@@ -982,7 +968,7 @@ array r;
                                 "WHERE sessions.SESSIONID='"
                                 +id->misc->ivend->SESSIONID+"' AND sessions."
                                 "id=products." +
-                                KEYS->products
+                                DB->keys->products
                             )))
         return "An error occurred while accessing your cart."
                "<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
@@ -1152,7 +1138,6 @@ string container_category_output(string name, mapping args,
                    id->misc->ivend->page + "' AND "
                    + lower_case(args->type) + "." +
                    KEYS[lower_case(args->type)] + "=product_groups.product_id ";
-//            perror(query + "\n");
             if(!args->show)
                 query+=" AND status='A' ";
 
@@ -1178,7 +1163,6 @@ string container_category_output(string name, mapping args,
 
     }
     array r;
-// perror("CATEGORY_OUTPUT QUERY: " + query + "\n\n");
 	catch(r=DB->query(query));
 
     if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
@@ -1285,7 +1269,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
           id->misc->ivend->page + "'"));
 	if(r && sizeof(r)>0) args->parent=r[0]->id;
 	else args->parent="";
-        query="SELECT " + KEYS->groups + " AS pid " +
+        query="SELECT " + DB->keys->groups + " AS pid " +
               extrafields+ " FROM groups";
         query+=" WHERE parent='" + args->parent
 // (id->variables->parent || args->parent 
@@ -1309,7 +1293,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
         if(args->limit)
             query+=" AND " + args->limit;
 
-        query+=" AND products." + KEYS->products +
+        query+=" AND products." + DB->keys->products +
                "=product_id";
 
     }
@@ -1318,7 +1302,6 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
         query+=" ORDER BY " + args->order;
 
     catch(r=DB->query(query));
-    // perror("Query: " +query + "\n");
 
     if(sizeof(r)==0 && !args->quiet) return "<false>\n";
     else if(sizeof(r)==0 && args->quiet) return "<!-- " +
@@ -1382,7 +1365,6 @@ string tag_ivstatus(string tag_name, mapping args,
                     object id, mapping defines)
 {
 
-// perror(id->misc->ivendstatus + "\n");
 
     return "<status>" + (((id->misc->ivendstatus || "")
 	/"\n")*"</status><status>") +
@@ -1427,7 +1409,6 @@ string tag_ivmg(string tag_name, mapping args,
         args->width=(string)size[0];
     }
 
-    // perror(sprintf("%O", args));
     return make_tag("img", args);
 
 
@@ -1455,7 +1436,7 @@ string container_ivindex(string name, mapping args,
 
 mixed handle_cart(string filename, object id){
 #ifdef MODULE_DEBUG
-    // perror("iVend: handling cart for "+st+"\n");
+    perror("iVend: handling cart for "+st+"\n");
 #endif
 
     string retval;
@@ -1520,18 +1501,17 @@ string container_itemoutput(string name, mapping args,
 string get_type(string page, object id){
 
     array r;
-// perror(page+"\n");
     catch(r=DB->query("SELECT * FROM groups WHERE " +
-                KEYS->groups +
+                DB->keys->groups +
                 "='"+page+"'"));
-    if (sizeof(r)==1) { 
+    if (r && sizeof(r)==1) { 
 	id->misc->ivend->template=r[0]->template;
 	return "group";
 	}
     catch(r=DB->query("SELECT * FROM products WHERE " +
-                KEYS->products + "='" + page + "'"));
+                DB->keys->products + "='" + page + "'"));
 
-    if(sizeof(r)==1) {
+    if(r && sizeof(r)==1) {
 	id->misc->ivend->template=r[0]->template;
 	return "product";
 	}
@@ -1542,7 +1522,7 @@ string get_type(string page, object id){
 mixed find_page(string page, object id){
 
 #ifdef MODULE_DEBUG
-    // perror("iVend: finding page "+ page+" in "+ ST +"\n");
+    perror("iVend: finding page "+ page+" in "+ ST +"\n");
 #endif
 
     string retval;
@@ -1555,7 +1535,6 @@ array(mapping(string:string)) r;
     string type=get_type(page, id);
     id->misc->ivend->type=type;
     id->misc->ivend->page=page;
-    // perror(page + " is a " + type + "\n");
     if(!type)
         return 0;
 // id->misc->ivend->template="";
@@ -1568,13 +1547,10 @@ type+"_template.html";
     else id->misc->ivend->template=CONFIG->root + "/templates/" +
 id->misc->ivend->template +".html";
 
-//  perror(id->misc->ivend->template + "\n");
     retval=Stdio.read_bytes(id->misc->ivend->template);
     if (catch(sizeof(retval)))
         return 0;
     id->realfile=id->misc->ivend->template;
-    // perror(id->realfile+"\n");
-    // perror(retval + "\n");
     return (retval);
 }
 
@@ -1603,7 +1579,6 @@ items+=({ (["item": id->variables->item,
                     (id->variables[id->variables->item+"quantity"]
                      ||id->variables->quantity || 1)
                    ]) });
-//    perror(sprintf("%O", items));
     int result=do_additems(id, items);
     if(result)
         foreach(items, mapping item) {
@@ -1619,7 +1594,7 @@ items+=({ (["item": id->variables->item,
 
 mixed handle_page(string page, object id){
 #ifdef MODULE_DEBUG
-    // perror("iVend: handling page "+ page+ " in "+ STORE +"\n");
+    perror("iVend: handling page "+ page+ " in "+ STORE +"\n");
 #endif
 
 
@@ -1687,11 +1662,8 @@ mixed getsessionid(object id) {
 
 mapping http_string_answer(string text, string|void type, object|void id)
 {
-// perror("http_string_answer()\n");
 if(id){
-// perror("we have id.\n");
 if(!id->misc->defines) id->misc->defines=([]);
-// perror(sprintf("%O", id->misc->defines) + "\n");
   return (["data":text,
            "type":(type||"text/html"),
            "stat":id->misc->defines[" _stat"],
@@ -1731,7 +1703,6 @@ id->misc->defines[" _extra_heads"]+=([
 
 // we're login' in to the main config interface.
 int get_auth(object id){
-perror("doing get_auth\n");
     array(string) auth=id->realauth/":";
     if(auth[0]!=query("config_user")) return 0;
     else if(crypt(auth[1], query("config_password")))
@@ -1884,6 +1855,7 @@ void background_session_cleaner(){
 
     foreach(indices(config), string st){
         mapping store=config[st]->general;
+perror("taking a db object in background_session_cleaner()\n");
         err=catch(d=db[st]->handle());
         if(err)
             perror("iVend: BackgroundSessionCleaner failed."
@@ -2209,7 +2181,6 @@ if(!intp(r)){
                      break;
 
                  case "dodelete":
-                     //  perror("doing delete...\n");
                      if(id->variables->confirm){
                          if(id->variables[KEYS[type +
 "s"]]==0 || id->variables[KEYS[type + "s"]]=="")
@@ -2242,12 +2213,12 @@ id->variables[KEYS[type+ "s"]],
                                          add_pre_state(id->not_query,(<"dodelete=" + type>))
                                          + "\">\n"
                                          "Are you sure you want to delete the following?<p>";
-perror("Input: " + id->variables[KEYS[type +"s"]] + "\n");
+//perror("Input: " + id->variables[KEYS[type +"s"]] + "\n");
 	foreach(id->variables[KEYS[type +"s"]]/"\000", string d){
-                        perror(d  + "\n"); 
                              mixed n= DB->showdepends(type,
 							d
-                                                      , KEYS[type+"s"], (type=="group"?KEYS->products:0), id);
+                                                      , KEYS[type+"s"],
+(type=="group"?DB->keys->products:0), id);
                              if(n){  retval+=
                                          "<input type=checkbox name=\"" +
 					KEYS[type+"s"] + "\" value=\"" +d 
@@ -2467,7 +2438,6 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      string m;
                      if(m=have_admin_handler(mode, id)){
                          mixed rv=handle_admin_handler(m,id);
-                         // perror(id->query+"\n");
                          if(!stringp(rv)) return rv;
 			else if(ADMIN_FLAGS==NO_BORDER) retval="";
                          else{ array mn=mode/".";
@@ -2643,22 +2613,24 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
-                 if(!db_info_loaded) {
-				return return_data("This store is currently unavailable.", id);
-			}
-                 MODULES=modules[STORE];
-                 KEYS=keys[STORE];
                  mixed err;
-                 numrequests[STORE]+=1;
-                 id->misc->ivend->storeurl=query("mountpoint")+
-                                           (id->misc->ivend->moveup?"": STORE+ "/");
-
-                 if(!objectp(DB))
-                     err=catch(DB=db[STORE]->handle());
+                 if(!objectp(DB)) {
+			perror("taking a db object in find_file() 1\n");
+                     DB=db[STORE]->handle();
+			}
                  if(err || config[STORE]->error) {
                      error(err[0] || config[STORE]->error, id);
                      return return_data(retval, id);
                  }
+                 if(!DB->db_info_loaded) {
+				return return_data("This store is currently unavailable.", id);
+			}
+                 MODULES=modules[STORE];
+                 KEYS=keys[STORE];
+                 numrequests[STORE]+=1;
+                 id->misc->ivend->storeurl=query("mountpoint")+
+                                           (id->misc->ivend->moveup?"": STORE+ "/");
+
 
                  handle_sessionid(id);
                  if(request*"/" && have_path_handler(STORE, request*"/"))
@@ -2749,9 +2721,10 @@ return http_redirect(rx, id);
                  mapping t=([]);
 if(STORE){
 
-                 if(!objectp(DB))
+                 if(!objectp(DB)) {
+			perror("taking a db object in container_ivml()\n");
                      err=catch(DB=db[STORE]->handle());
-
+			}
                  foreach(indices(
                              library[STORE]->tag), string n)
                  t[n]=generic_tag_handler;
@@ -2822,7 +2795,6 @@ if(STORE)
 
                  if(catch(CONFIG) || !CONFIG)
                      return ({ 33204,0,time(),time(),time(),0,0 });
-                 //  perror("iVend: statting "+ CONFIG->root+"/html/"+f+"\n");
 
                  if(f=="." || f=="..")
                      f="/";
@@ -2865,7 +2837,6 @@ if(STORE)
                      retval=Stdio.read_file(
                                 CONFIG->root+"/html/error.html");
 
-                 // perror("error: " + retval + "\n");
 
                  if(!retval) retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
                                         "<b>One or more errors have occurred. Please review the following "
@@ -2934,7 +2905,6 @@ mapping to=id->misc->defines[" _extra_heads"];
 
                  if(t) cookies += "; expires="+http_date(t+time());
 
-// perror("adding cookie: " + m->name + " value: " + m->value + "\n");
                  //obs! no check of the parameter's usability
                  cookies += "; path=" +(m->path||"/");
 
@@ -2955,7 +2925,6 @@ return SessionID;
 
              void handle_sessionid(object id) {
 
-// perror("handle_sessionid\n");
                  if(!id->cookies->SESSIONID && !id->variables->SESSIONID) {
                      id->misc->ivend->SESSIONID=
                          generate_sessionid(id);
@@ -2997,7 +2966,6 @@ if(id->cookies->SESSIONID)
 
                              if(mappingp(retval))
                                  return retval;
-                             // perror(typeof(retval));
 
                              if(stringp(retval)){
                                  if(id->conf->type_from_filename(id->realfile || "index.html")
@@ -3055,7 +3023,6 @@ if(id->cookies->SESSIONID)
                              privs=Privs("iVend: Reading Config Files");
 
                              foreach(configfiles, string confname) {
-                                 // perror(confname + "\n");
                                  config_file= Stdio.read_file(query("configdir") + confname);
                                  mapping c;
                                  c=Config.read(config_file);
@@ -3079,7 +3046,6 @@ if(id->cookies->SESSIONID)
                              if(file_stat(filen));
                              else {
                                  filen=config[c]->general->root + "/modules/" + name;
-                                 // perror(filen + "\n");
                                  if(file_stat(filen));
                                  else return ({"Unable to find module " + name + "."});
                              }
@@ -3091,7 +3057,6 @@ if(id->cookies->SESSIONID)
                          modules[c]+=([  m->module_name : m  ]);
                              mixed o=modules[c][m->module_name];
                              if(functionp(o->start)) {
-                                 perror("calling start() for " + m->module_name + ".\n");
                                  o->start(config[c]);
                              }
                              mixed p;
@@ -3104,19 +3069,16 @@ if(id->cookies->SESSIONID)
                              int need_to_save=0;
                              if(functionp(o->query_preferences)){
                                  array pr=o->query_preferences(config[c]);
-                                 //	perror("got " + sizeof(pr) + " prefs...\n");
                                  foreach(pr, array pref){
                                      if(!config[c]) config[c]=([]);
                                      if(!config[c][m->module_name])
                                          config[c][m->module_name]=([]);
                                      if(!config[c][m->module_name][pref[0]]){
                                          config[c][m->module_name][pref[0]]= pref[4];
-//                                         perror("found a new pref (" + m->module_name + "/" + pref[0] + "), so we need to save...\n");
                                          need_to_save=1;
                                      }
                                  }
                                  if(need_to_save) {
-                                     //                perror("writing config file " + config[c]->general->config + "\n");
                                      object privs=Privs("iVend: Writing Config File " +
                                                         config[c]->general->config);
 
@@ -3146,23 +3108,16 @@ Config.write_section(query("configdir")+
 
 
                          void start_db(mapping c){
-
                              mixed err;
 
-                             err=catch(db[c->config]=iVend.db_handler(
+                             db[c->config]=iVend.db_handler(
                                                          c->dbhost,
-                                                         c->db,
-                                                         2,
-                                                         c->dblogin,
-                                                         c->dbpassword
-                                                     ));
-
-                             if(err) perror("iVend: Error creating DB for " + c->config + ".\n");
-
-                             catch(object s=db[c->config]->handle());
+                                                         4 );
+                             if(err) perror("iVend: rror creating DB for " + c->config + ".\n");
+perror("taking db object in start_db()\n");
+                             object s=db[c->config]->handle();
                              if(s) {
 
-perror("Checking tables...\n");
 
 if(sizeof(s->list_tables("comments"))!=1) {
   s->query("CREATE TABLE comments ("
@@ -3191,12 +3146,12 @@ if(sizeof(s->list_fields("sessions","taxable"))!=1)
   s->query("alter table sessions add taxable char(1) default 'Y'");
 
 if(sizeof(s->list_fields("lineitems","taxable"))!=1) {
-  perror("ADDING TAXABLE FIELD TO LINEITEMS\n");
+  //perror("ADDING TAXABLE FIELD TO LINEITEMS\n");
   s->query("alter table lineitems add taxable char(1) default 'Y'");
   }
 
 if(sizeof(s->list_tables("admin_users"))!=1) {
-  perror("adding admin_users table...\n");
+  //perror("adding admin_users table...\n");
 	s->query("CREATE TABLE admin_users ("
 		"username char(16) not null primary key, "
 		"real_name char(24) not null, "
@@ -3207,7 +3162,7 @@ if(sizeof(s->list_tables("admin_users"))!=1) {
 }
 
 if(sizeof(s->list_tables("activity_log"))!=1) {
-  perror("adding activity_log table...\n");
+  //perror("adding activity_log table...\n");
 	s->query("CREATE TABLE activity_log ("
 		"subsystem char(16) not null, "
 		"orderid char(64) not null, "
@@ -3219,8 +3174,8 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
 
  }
 
-db[c->config]->handle(s);
                              }
+if(s) db[c->config]->handle(s);
 
                              return;
 
@@ -3241,12 +3196,18 @@ db[c->config]->handle(s);
                                  foreach(indices(config[c]->addins), string miq)
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
-			     if(DB->local_settings->pricing_model==COMPLEX_PRICING) {
+perror("taking a db object in load_modules()\n");
+ perror("1 Found " + sizeof(mtl) + " modules to load.\n");
+object s=db[c]->handle();
+perror("got db.\n");
+			if(s->local_settings->pricing_model==COMPLEX_PRICING) {
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }
-perror("Found " + sizeof(mtl) + " modules to load.\n");
-                             foreach(mtl, string name) {
+ perror("2 Found " + sizeof(mtl) + " modules to load.\n");
+db[c]->handle(s);
+                             foreach(mtl, string name) { 
+perror("loading " + name + "\n");
                                  err=load_ivmodule(c,name);
                                  if(err) perror("iVend: The following error occured while loading the module "
                                                     + name + "\n" +  describe_backtrace(err));
@@ -3309,7 +3270,7 @@ Config.write(config[confname]));
                          }
 
                          mapping configuration_interface(array(string) request, object id){
-perror("Started into config_interface!\n");
+//perror("Started into config_interface!\n");
                              if(id->auth==0)
                                  return http_auth_required("iVend Configuration",
                                                            "Silly user, you need to login!", id);
@@ -3317,7 +3278,7 @@ perror("Started into config_interface!\n");
                              else if(!get_auth(id))
                                  return http_auth_required("iVend Configuration",
                                                            "Silly user, you need to login!" ,id);
-perror("Passed Auth!\n");
+//perror("Passed Auth!\n");
 
                              if(!c) read_conf();
                              // perror(sprintf("%O\n" , global));

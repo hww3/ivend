@@ -8,6 +8,7 @@
  */
 
 inherit "roxenlib";
+inherit iVend.error;
 
 #include <ivend.h>
 #include <messages.h>
@@ -27,14 +28,14 @@ mixed stop_error(object id){
     return (id->misc->ivend->error *"\n");
 }
 
-mixed error_happened(object id){
+void|mixed error_happened(object id){
   if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
     return 1;
   if(id->misc->ivend->error_happened)
     return 1;
 }
 
-mixed throw_error(string error, object id){
+void|mixed throw_error(string error, object id){
   id->misc->ivend->error+=({error});
   return;
 }
@@ -79,8 +80,7 @@ void start(mapping config){
 
 object db;
 
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword))) {
+if(catch(db=iVend.db(config->general->dbhost))) {
     perror("iVend: Checkout: Error Connecting to Database.\n");
     return;
   }

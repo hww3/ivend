@@ -13,33 +13,12 @@ $type=string
 $endescription=One word used to uniquely identfy this store.
 $sidescription=One word used to describe this store (slovenian).
 
-$varname=dblogin
-$enname=DB User
-$siname=DB User
-$type=string
-$endescription=Username with access permissions to Database.
-$sidescription=Username with access permissions to Database (slovenian).
-
 $varname=dbhost
-$enname=DB Host
-$siname=DB Host
+$enname=DB URL
+$siname=DB URL
 $type=string
-$endescription=Hostname of SQL Database Server.
-$sidescription=Hostname of SQL Database Server (slovenian).
-
-$varname=dbpassword
-$enname=DB Password
-$siname=DB Password
-$type=password
-$endescription=Password for DB User.
-$sidescription=Password for DB User (slovenian).
-
-$varname=db
-$enname=DB Name
-$siname=DB Name
-$type=string
-$endescription=Name of the Database containing Store data.
-$sidescription=Name of the Database containing Store data (slovenian).
+$endescription=URL of SQL Database [ex: mysql://user:password@host/db].
+$sidescription=URL of SQL Database (slovenian).
 
 $varname=root
 $enname=Store Root

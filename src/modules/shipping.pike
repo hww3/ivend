@@ -44,8 +44,7 @@ object db;
 handlers=([]);
 
 
-db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword);
+db=iVend.db(config->general->dbhost);
 
 perror("got the database connection.\n");
 
@@ -262,7 +261,7 @@ string retval=
 
 if(!initialized) {
   retval+="This module has not been initialized."
-	"<p>Click <a href=./shipping/?initialize=1>here</a> to do this now.";
+	"<p>Click <a _parsed=1 href=./?initialize=1>here</a> to do this now.";
   return retval;
  }
 

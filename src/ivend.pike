@@ -29,7 +29,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.75 1998-06-22 00:53:24 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.76 1998-06-23 02:57:10 hww3 Exp $";
 
 array register_module(){
 
@@ -176,13 +176,13 @@ if (args->add)
   "\">"+contents+"</a>";
 else if(args->cart)
   return "<a _parsed=1 href=\""+query("mountpoint")+
-(id->misc->ivend->moveup?"":id->misc->ivend->store+ "/")
+(id->misc->ivend->moveup?"":id->misc->ivend->st+ "/")
 +"cart?SESSIONID="
   +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->checkout)
   return "<a _parsed=1 href=\""+query("mountpoint")+
-  (id->misc->ivend->moveup?"":id->misc->ivend->store + "/")
+  (id->misc->ivend->moveup?"":id->misc->ivend->st + "/")
 +"checkout?SESSIONID="
   +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
@@ -933,11 +933,11 @@ void error(mixed error, object id){
 mixed handle_error(object id){
 string retval;
 
-// if(!id->misc->ivend->config[id->misc->ivend->st])
+if(id->misc->ivend->st && id->misc->ivend->config[id->misc->ivend->st])
+  retval=Stdio.read_file(
+    id->misc->ivend->config[id->misc->ivend->st]->root+"/error.html");
 
-if(!(retval=Stdio.read_file(
-  id->misc->ivend->config[id->misc->ivend->st]->root+"/error.html")))
-  retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
+if(!retval) retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
     "<b>One or more errors have occurred. Please review the following "
     "information and, if necessary, make any changes on the previous page "
     "before continuing.<p>If you feel that this is a configuration error, "

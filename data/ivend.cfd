@@ -13,7 +13,7 @@ $type=string
 $endescription=One word used to describe this store.
 $sidescription=One word used to describe this store (slovenian).
 
-$varname=user
+$varname=dblogin
 $enname=DB User
 $siname=DB User
 $type=string
@@ -35,7 +35,7 @@ $module_type=checkout
 $endescription=Name of Checkout Module to Use.
 $sidescription=Name of Checkout Module to Use (slovenian).
 
-$varname=password
+$varname=dbpassword
 $enname=DB Password
 $siname=DB Password
 $type=password
@@ -60,6 +60,7 @@ $varname=session_timeout
 $enname=Session Timeout
 $siname=Session Timeout
 $type=int
+$default_value=3600
 $endescription=Number of seconds before a session is cleared from database.
 $sidescription=Number of seconds before a session is cleared from database.
 

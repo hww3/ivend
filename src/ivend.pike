@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.287 2003-11-18 02:14:37 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.288 2003-11-18 02:19:38 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2627,7 +2627,6 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
 
              mixed find_file(string file_name, object id){
-// perror("REQUEST find_file: " + file_name + "\n");
                  id->misc["ivend"]=([]);
                  id->misc["ivendstatus"]="";
                  mixed retval;
@@ -2635,60 +2634,21 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  id->misc->ivend->this_object=this_object();
                  array(string) request=(file_name / "/") - ({""});
                  if(catch(request[0])) request+=({""});
-                 switch(request[0]){
 
-                 case "config":
-                     request=request[1..];
-                     return configuration_interface(request, id);
-                     break;
-
-                 case "ivend-image":
+                 if(request[0]== "ivend-image") {
                      request=request[1..];
                      return ivend_image(request, id);
-                     break;
+		}
 
-                 default:
-
-                     break;
-
-                 }
-
-
-                 if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") {
                      STORE=indices(config)[0];
-                     id->misc->ivend->moveup=1;
-                 }
-                 else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]]))
-
-                 {
-                     if(getglobalvar("create_index")=="Yes")
-                         retval=create_index(id);
-                     else  retval="you must enter through a store!\n";
-                 }
-                 else {
-                     STORE=request[0];
-                     request=request[1..];
-                 }
-
-                 if(retval) return return_data(retval, id);
-                 else if(!config[STORE]) {
-                     return return_data("NO SUCH STORE!", id);
-                 }
-                 else if(catch(request[0])) {
-                     request+=({""});
-
-                 }
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
                  mixed err;
                  if(!DB) {
-
-
-if(STORE) 
+		   if(STORE) 
                      DB=db[STORE]->handle();
-//perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
-			}
+		}
                  if(err || config[STORE]->error) {
                      error(err[0] || config[STORE]->error, id);
                      return return_data(retval, id);
@@ -2699,8 +2659,7 @@ if(STORE)
 			}
                  MODULES=modules[STORE];
                  numrequests[STORE]+=1;
-                 id->misc->ivend->storeurl=query("mountpoint")+
-                                           (id->misc->ivend->moveup?"": STORE+ "/");
+                 id->misc->ivend->storeurl=QUERY(mountpoint);
 
 
                  handle_sessionid(id);

@@ -22,26 +22,21 @@ string retval="";
     );
 
 int page;
-if(id->variables->page) page=id->variables->page+1;
-else page=1;
-if(!id->variables->page){
 
-  retval+="<icart fields=\"qualifier\"></icart>";
-  }
-
-else if(id->variables->page==2){
+if(id->variables["_page"]=="2"){
   retval+="<form action=.><table>\n";
   retval+=s->generate_form_from_db("customer_info", ({"id","updated"}));
   retval+="</table></form>\n";
-  return retval;
+
   }
 
+else
+  retval+="<icart fields=\"qualifier\"></icart>"
+	"<form action=checkout><input type=hidden name=\"_page\" value=2>"
+	"<input type=hidden name=SESSIONID value=\""+id->variables->SESSIONID+"\">"
+	"<input type=submit value=\"Continue\"></form>";
+
 retval=parse_rxml(retval,id);
-retval=replace(retval,({"</form>","</FORM>"}),
-  ({
-  "<input type=hidden name=page value="+page+"</form>",
-  "<input type=hidden name=page value="+page+"</form>"
-  }));
 
 return retval;
 

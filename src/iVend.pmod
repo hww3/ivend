@@ -831,7 +831,7 @@ array(mapping(string:mixed)) r=list_fields(table);
 		record[lower_case(r[i]->name)]=record[r[i]->name];
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
 		}
-perror(sprintf("%O", record));
+// perror(sprintf("%O", record));
         if(exclude)
             for(int i=0; i<sizeof(exclude); i++)
                 exclude[i]=lower_case(exclude[i]);

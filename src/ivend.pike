@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.252 1999-11-30 02:17:11 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.253 1999-12-06 21:51:57 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -714,7 +714,8 @@ DB->query(query)
 DB->error());
         return 0;
     }
-    else {
+    else { 
+//perror("added successfully.\n");
         id->misc["ivendstatus"]+= (string) quantity +" " +
                                   ITEM + " " + item + " " + ADDED_SUCCESSFULLY +"\n";
         return 1;
@@ -862,60 +863,70 @@ array r;
         if(id->misc->ivend->error)
             return YOUR_CART_IS_EMPTY +"\n<false>\n";
     }
-    retval+="<tr>";
-//<th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
 
+retval+="<cartdata>";
+array elements=({});
     foreach(en, field){
-        retval+="<cartheader>&nbsp; "+field+" &nbsp; </cartheader>\n";
+        elements+=({"<cartheader>"+field+"</cartheader>"});
     }
-    retval+="<cartheader>&nbsp; " + WORD_OPTIONS
-+
-" &nbsp;</cartheader>\n"
-	"<cartheader>&nbsp; "
-            + PRICE +" &nbsp;</cartheader>\n"
-            "<cartheader>&nbsp; "
-            + QUANTITY +" &nbsp;</cartheader>\n"
-            "<cartheader>&nbsp; "
-            + TOTAL + " &nbsp;</cartheader><td></td></tr>\n";
+    elements+=({"<cartheader>" + WORD_OPTIONS
++ "</cartheader>"});
+elements+=({
+	"<cartheader>"
+            + PRICE +"</cartheader>"});
+elements+=({"<cartheader>"
+            + QUANTITY +"</cartheader>"});
+elements+=({"<cartheader>"
+            + TOTAL + "</cartheader>"});
+elements+=({"<cartheader></cartheader>"});
+retval+="<cartrow>" + elements*"\t";
+retval+="</cartrow>\n";
     for (int i=0; i< sizeof(r); i++){
+	elements=({});
      for (int j=0; j<sizeof(en); j++)
-       if(j==0) retval+="<TR><cartcell align=left><INPUT TYPE=HIDDEN NAME=s"+i+ 	
-		" VALUE="+r[i]->series+">\n"
+       if(j==0) elements+=({"<cartcell align=left><INPUT TYPE=HIDDEN NAME=s"
+		+ i + " VALUE="+r[i]->series+">"
                 "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
-                ">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl  +
+                "><A HREF=\""+ id->misc->ivend->storeurl  +
                 r[i]->id + ".html\">"
-                +r[i][en[j]]+"</A> &nbsp;</cartcell>\n";
+                +r[i][en[j]]+"</A></cartcell>"});
 
-       else retval+="<cartcell align=left>"+(r[i][en[j]] || " N/A ")+"</cartcell>\n";
+       else elements+=({"<cartcell align=left>"+(r[i][en[j]] || " N/A ")
+	+"</cartcell>"});
 
-        //    r[i]->price=convert((float)r[i]->price,id);
-
-	retval+="<cartcell align=left>";
+string e="<cartcell align=left>";
 array o=r[i]->options/"\n";
 
+  array eq=({});
 foreach(o, string opt){
-
   array o_=opt/":";
-catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
+catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
    "product_id='" + r[i]->id + "' AND option_type='" +
-   o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description +"<br>");
+   o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
 }
-	retval+="</cartcell>\n";
-        retval+="<cartcell align=right>" + MONETARY_UNIT +
-                sprintf("%.2f",(float)r[i]->price)+"</cartcell>\n"
-                "<cartcell><INPUT TYPE="+
+	e+=(eq*"<br>") + "</cartcell>";
+elements+=({e});
+elements+=({"<cartcell align=right>" + MONETARY_UNIT +
+                sprintf("%.2f",(float)r[i]->price)+"</cartcell>"});
+
+elements+=({"<cartcell><INPUT TYPE="+
 		(r[i]->locked=="1"?"HIDDEN":"TEXT") +
 		" SIZE=3 NAME=q"+i+" VALUE="+
                 r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
-		+ "</cartcell><cartcell align=right>" + MONETARY_UNIT
-		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"
-                "<cartcell align=left>";
+		+ "</cartcell>"});
+elements+=({"<cartcell align=right>" + MONETARY_UNIT
+		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"});
+
+e="<cartcell align=left>";
 if(r[i]->autoadd!="1")
-  retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
+  e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
    r[i]->id + "/" + r[i]->series + "\">";
-                retval+="</cartcell></tr>\n";
+e+="</cartcell>";
+elements+=({e});
+retval+="<cartrow>" + elements*"\t";
+retval+="</cartrow>\n";
     }
-    retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
+    retval+="</cartdata>\n<input type=hidden name=s value="+sizeof(r)+">\n"
             "<table><tr><Td><input name=update type=submit value=\""
             + UPDATE_CART + "\"></form></td>\n";
     if(!id->misc->ivend->checkout){
@@ -1040,7 +1051,7 @@ string container_category_output(string name, mapping args,
 
     }
     array r;
-perror("CATEGORY_OUTPUT QUERY: " + query + "\n\n");
+// perror("CATEGORY_OUTPUT QUERY: " + query + "\n\n");
 	catch(r=DB->query(query));
 
     if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
@@ -1250,6 +1261,8 @@ string tag_ivstatus(string tag_name, mapping args,
                     object id, mapping defines)
 {
 
+// perror(id->misc->ivendstatus + "\n");
+
     return "<status>" + (((id->misc->ivendstatus || "")
 	/"\n")*"</status><status>") +
 		"</status>";
@@ -1426,12 +1439,14 @@ array(mapping(string:string)) r;
 // id->misc->ivend->template="";
     if(id->variables->template)
 id->misc->ivend->template=id->variables->template;
-    if(id->misc->ivend->template=="DEFAULT")
+   else if(id->misc->ivend->template=="DEFAULT" ||
+		id->misc->ivend->template==0)
 	id->misc->ivend->template=CONFIG->root+ "/html/" +
 type+"_template.html";
     else id->misc->ivend->template=CONFIG->root + "/templates/" +
 id->misc->ivend->template +".html";
-perror(id->misc->ivend->template + "\n");
+
+//  perror(id->misc->ivend->template + "\n");
     retval=Stdio.read_bytes(id->misc->ivend->template);
     if (catch(sizeof(retval)))
         return 0;
@@ -1909,6 +1924,7 @@ string return_to_admin_menu(object id){
              mixed admin_handler(string filename, object id){
 if(CONFIG->admin_enabled=="No")
   return 0;
+                 string mode, type;
 if(id->variables->logout){
    add_cookie(id, (["name":"admin_user",
                  "value":"", "seconds": 1]),([]));
@@ -1925,23 +1941,11 @@ return "You have logged out.<p><a href=\"./\">Click here to continue.</a>";
                  }
 
 
-                 string mode, type;
-//                     err=catch(DB=db[STORE]->handle());
 
 mixed r=admin_auth(id);
 if(!intp(r)){
   return r;
 }
-/*
-                 if(id->auth==0)
-                     return http_auth_required("iVend Store Administration",
-                                               "Silly user, you need to login!"
-						,id);
-                 else if(!admin_auth(id))
-                     return http_auth_required("iVend Store Administration",
-                                               "Silly user, you need to login!",
-						id);
-*/
 
                  string retval="";
                  retval+="<html><head><title>iVend Store Administration</title></head>"
@@ -2677,7 +2681,6 @@ if(STORE)
 
                  fs = file_stat(
                           CONFIG->root + "/html/" + f);
-                 /* No security currently in this function */
 
 #ifndef THREADS
                  privs = 0;

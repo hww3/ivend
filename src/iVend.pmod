@@ -334,16 +334,7 @@ filename );
 
 Stdio.write_file(CONFIG->general->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
-<<<<<<< iVend.pmod
- perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
-  CONFIG->general->root + "/images/" + id->variables->table + "/" +
-filename + 
-".\n");
-=======
- // perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
-// id->misc->ivend->config->root + "/images/" + id->variables->table + "/"
-// + filename +  ".\n");
->>>>>>> 1.57
+
     q+=r[i]->name+"='"+filename+"',";
 }
 else perror("ARGH! Can't get image's original filename from browser!\n");

@@ -1261,8 +1261,8 @@ catch(k=DB->query("SHOW INDEX FROM " +
     "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
     "</ul>\n"
     "<ul>\n"
-    "<li><a href=\"shipping\">Shipping Administration</a>\n";
-
+    "<li><a href=\"shipping\">Shipping Administration</a>\n"
+    "<p>" + numsessions[STORE] + " sessions cleaned since last startup.";
 
 
   break;

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.261 2000-05-26 19:14:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.262 2000-06-02 15:26:30 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -139,9 +139,9 @@ query="SELECT " + (tables[tname]*", ") + " FROM " + tname +
 // perror(query + "\n");
 
  r=DB->query(query);
-
+string fname;
  if(sizeof(r)!=0)
-  foreach(indices(r[0]), string fname)
+  foreach(indices(r[0]), fname)
     lookup+=([tname + "." + fname: r[0][fname]]);
  }
 
@@ -1216,7 +1216,7 @@ string container_category_output(string name, mapping args,
     if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
 
     if(!id->misc->fr)
-        retval+=do_output_tag( args, r||({}), contents, id );
+        retval=do_output_tag( args, r||({}), contents, id );
 
     else {
         int n=0;
@@ -1356,30 +1356,24 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     else if(sizeof(r)==0 && args->quiet) return "<!-- " +
 	NO_PRODUCTS_AVAILABLE + " -->\n<false>\n";
     else retval+="<true><!-- returned true -->\n";
-    mapping row;
 
-    array(array(string)) rows=allocate(sizeof(r));
-    int p=0;
-    foreach(r,row){
-        array thisrow=allocate(sizeof(row)-1);
-        string t;
-        int n=0;
-
-        foreach(en, t){
-
-            if(n==0) {
-                thisrow[n]=("<A " + (args->template?("TEMPLATE=\"" +
+    array tab=({});
+string fname;
+    foreach(r, mapping row){
+    array rw=({});
+    int z=0;
+	foreach(en, fname) {
+		if(z==0)
+                rw+=({("<A " + (args->template?("TEMPLATE=\"" +
                                                      args->template + "\""):"") +
-                            " HREF=\""+row->pid+".html\">"+row[t]+"</A>");
-            }
-            else
-                thisrow[n]=row[t];
-            n++;
-        }
-        rows[p]=thisrow;
-        p++;
+                            " HREF=\""+row->pid+".html\">"+
+				row[fname]+"</A>")});
+		else
+			rw+=({row[fname]});
+		z++;
+	}
+	tab+=({rw});
     }
-    //  array flds=DB->list_fields(table);
 
     if(args->title) retval+="<listitemstitle>" + args->title +
 		"</listitemstitle>\n";
@@ -1394,21 +1388,21 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     retval+="</tr>\n";
     int i=0;
     int m = (int)(args->modulo?args->modulo:1);
-    foreach(indices(rows), cnt) {
+    foreach(tab, array r) {
 
         retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
-        foreach(indices(rows[cnt]), cnt2) {
+        foreach(r, string va) {
             string align;
             align="left";
             retval += sprintf("<td nowrap align=" + align + "><font color=%s>%s&nbsp;&nbsp;</td>\n",
-                              listfontcolor, (string)rows[cnt][cnt2]);
+                              listfontcolor, (string)va);
 
             i++;
         }
         retval+="</tr>\n";
     }
 
-    retval += "</table></td></tr></table><br>";
+    retval += "</table></td></tr></table>";
 
     return retval;
 
@@ -1891,7 +1885,7 @@ int do_clean_sessions(object db){
     array r;
 	catch(r=db->query(query));
     foreach(r,mapping record){
-        foreach(({"customer_info","payment_info","orderdata","lineitems",
+        foreach(({"customer_info","payment_info","lineitems",
 		"comments"}),
                 string table)
         catch(db->query("DELETE FROM " + table + " WHERE orderid='"

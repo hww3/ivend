@@ -41,7 +41,7 @@ initialized=0;
 object db;
 handlers=([]);
 
-perror(sprintf("%O\n", config));
+// perror(sprintf("%O\n", config));
 
 if(catch(db=iVend.db(config->general->dbhost, config->general->db,
   config->general->dblogin, config->general->dbpassword)))

@@ -2207,9 +2207,16 @@ mixed return_data(mixed retval, object id){
 
             if(!modules[c]) modules[c]=([]);
 perror("loading module " + name + ".\n");
-             
-  err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
-                                                      name)));
+string filen;
+filen=query("root")+"/src/modules/"+name;
+             if(file_stat(filen));
+	     else {
+		filen=config[c]->general->root + "/addins/" + name;
+perror(filen + "\n");
+		if(file_stat(filen));
+		else return ({"Unable to find module " + name + "."});
+               }		
+  err=catch(m=(object)clone(compile_file(filen)));
             if(err) {
 
                   return (err);

@@ -18,6 +18,8 @@ if(!id->misc->ivend->config->addins) {
 mapping a=iVend.config()->scan_modules("addin",
 id->misc->ivend->this_object->query("root") +
 "src/modules");
+a+=iVend.config()->scan_modules("addin",
+CONFIG->root + "/addins");
 
 if(id->variables->write_config){
 

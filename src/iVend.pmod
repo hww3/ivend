@@ -151,10 +151,34 @@ inherit "roxenlib";
 
 string make_safe(string s){
 
-return replace(s,({"'","\""}),({"\\'","\\\""}));
+return replace( (s || ""),({"'","\""}),({"\\'","\\\""}));
 
 }     
 
+
+mixed showmatches(string type, string id) {
+
+string retval;
+
+string query="SELECT id,name FROM " + type + "s WHERE name like '%" 
+  + id + "%' or id like '%" + id + "%' group by id";
+
+array r=s->query(query);
+
+if(sizeof(r)==0) return 0; 
+
+retval="<input type=hidden name=type value=" + type +">\n"
+  "<table><tr><td>Delete?</td><td>ID</td><td>Name</td></tr>";
+
+foreach(r, mapping row)
+  retval+="<tr><td><input type=checkbox name=id value=\"" + row->id + 
+    "\"></td><td> " + row->id + "</td><td>" + row->name + "</td></tr>\n";
+
+retval+="</table>";
+
+return retval;
+
+}
 
 int|string addentry(object id, string referrer){
 string errors="";
@@ -221,7 +245,7 @@ for (int i=0; i<sizeof(r); i++){
  if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
 	stringp(r[i]->name)
-	) query+="'"+data[r[i]->name]+"',";
+	) query+="'"+make_safe(data[r[i]->name])+"',";
 
 
   else query+=(data[r[i]->name]||"NULL")+",";

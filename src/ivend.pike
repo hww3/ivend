@@ -20,7 +20,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.45 1998-04-11 01:04:57 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.46 1998-04-11 22:15:35 hww3 Exp $";
 
 array register_module(){
 
@@ -1028,7 +1028,8 @@ string retval="";
 retval+="<title>iVend Store Orders</title>"
   "<body bgcolor=white text=navy>"
   "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=helvetica black>"
+  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
   +id->misc->ivend->config->name+
   " Orders</gtext><p>"
   "<font face=helvetica,arial size=+1>"
@@ -1045,6 +1046,39 @@ if(! objectp(modules[id->misc->ivend->config->order_module]))
     );
 
  mixed d=modules[id->misc->ivend->config->order_module]->show_orders(id, s);
+ if(stringp(d))
+ retval+=d;
+
+
+return retval;
+
+}
+
+mixed shipping_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Shipping Administration</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Shipping</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./shipping>Shipping</a><p>\n";
+
+if(! objectp(modules[id->misc->ivend->config->shipping])) 
+	load_ivmodule(id, "shipping_module");
+
+
+ mixed d=modules[id->misc->ivend->config->shipping_module]->shipping_admin(id);
  if(stringp(d))
  retval+=d;
 
@@ -1072,11 +1106,12 @@ string retval="";
 retval+="<title>iVend Store Administration</title>"
   "<body bgcolor=white text=navy>"
   "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=helvetica black>"
+  "<img src=\"/ivend/ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
   +id->misc->ivend->config->name+
   " Administration</gtext><p>"
   "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a><p>\n";
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a>\n";
 
 switch(id->variables->mode){
 
@@ -1088,30 +1123,29 @@ switch(id->variables->mode){
     id->misc->ivend->config->dbpassword
     );
   mixed j=s->addentry(id,id->referrer);
-//  return http_redirect(id->referrer, id);
-string type=(id->variables->table-"s");
+  retval+="<br>";
+  if(stringp(j))
+    return retval+= "The following errors occurred:<p>" + j;
+
+
+  string type=(id->variables->table-"s");
   return http_string_answer(parse_rxml(retval+type+" Added Sucessfully.",id));
   break;
 
-  case "addproduct":
+  case "add":
   object s=iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
     id->misc->ivend->config->dblogin,
     id->misc->ivend->config->dbpassword
     );
-  retval+="<table>\n"+s->gentable("products","./admin","groups", 
-	"product_groups", id)+"</table>\n";
-  break;
+  retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
 
-  case "addgroup":
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
+  if(id->variables->type="group")
+    retval+="<table>\n"+s->gentable("products","./admin","groups", 
+	"product_groups", id)+"</table>\n";
+  else if(id->variables->type=="product")
+    retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
   break;
 
   case "dodelete":
@@ -1123,29 +1157,44 @@ string type=(id->variables->table-"s");
     id->misc->ivend->config->dbpassword
     );
   if(id->variables->confirm){
-    retval+=s->dodelete(id->variables->type, id->variables->id);  }
+    if(id->variables->id==0 || id->variables->id=="") 
+      retval+="You must select an ID to act upon!<br>";
+    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
   else {
-    mixed n=s->showdepends(id->variables->type, id->variables->id);
-    if(n){ 
-    retval+="<form action=./admin>\n"
-      "<input type=hidden name=mode value=dodelete>\n"
-      "<input type=hidden name=type value="+id->variables->type+">\n"
-      "<input type=hidden name=id value="+id->variables->id+">\n"
-      "Are you sure you want to delete the following?<p>";
-      retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
+    if(id->variables->match) {
+    mixed n=s->showmatches(id->variables->type, id->variables->id);
+    if(n)
+      retval+="<form action=./admin>\n"
+        + n +
+        "<input type=hidden name=mode value=dodelete>\n"
+        "<input type=submit value=Delete>\n</form>";
+    else retval+="No " + capitalize(id->variables->type) + " found.";
+    }
+    else {
+      mixed n=s->showdepends(id->variables->type, id->variables->id);
+      if(n){ 
+        retval+="<form action=./admin>\n"
+          "<input type=hidden name=mode value=dodelete>\n"
+          "<input type=hidden name=type value="+id->variables->type+">\n"
+          "<input type=hidden name=id value="+id->variables->id+">\n"
+          "Are you sure you want to delete the following?<p>";
+          retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
+        }
+      else retval+="Couldn't find "+capitalize(id->variables->type) +" "
+        +id->variables->id+".<p>";
       }
-    else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-      +id->variables->id+".<p>";
+
     }
 
     case "delete":
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
-      "ID to Delete: \n"
+      +capitalize(id->variables->type) + " ID to Delete: \n"
       "<input type=text size=10 name=id>\n"
-      "&nbsp; <input type=radio name=type default value=product>\n"
-      "Product &nbsp; <input type=radio name=type value=group>\n"
-      "Group<p>"
+      "<input type=hidden name=type value=" + id->variables->type + ">\n"
+      "<br><font size=2>If using FindMatches, you may type any part of an ID"
+      " or Name to search for.<br></font>"
+      "<input type=submit name=match value=FindMatches> &nbsp; \n"
       "<input type=submit value=Delete>\n</form>";
   break;
 
@@ -1177,13 +1226,26 @@ string type=(id->variables->table-"s");
     "<li><a href=\"orders\">Orders</a>\n"
     "</ul>\n"
     "<ul>\n"
-    "<li><a href=\"admin?mode=addproduct\">Add New Product</a>\n"
-    "<li><a href=\"admin?mode=addgroup\">Add New Group</a>\n"
-    "<li><a href=\"admin?mode=modify\">Modify a Product/Group</a>\n"
-    "<li><a href=\"admin?mode=delete\">Delete a Product/Group</a>\n"
+    "<li>Groups\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
+    "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
+    "(Non Functional)\n"
+    "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
+    "</ul>"
+    "<li>Products\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
+    "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
+    "(Non Functional)\n"
+    "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
+    "</ul>"
     "</ul>\n"
     "<ul>\n"
-    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n";
+    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
+    "</ul>\n"
+    "<ul>\n"
+    "<li><a href=\"shipping\">Shipping Administration</a>\n";
 
 
 
@@ -1308,6 +1370,10 @@ else {
 		case "orders":
 		  perror("ORDERS!\n");
 		  retval=order_handler(restofrequest, id);
+		  break;
+		case "shipping":
+		  perror("SHIPPING!\n");
+		  retval=shipping_handler(restofrequest, id);
 		  break;
 		default:
 		  perror("DEFAULT!\n");

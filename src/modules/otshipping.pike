@@ -4,6 +4,12 @@ constant module_type = "shipping";
 mapping query_tag_callers2();
 mapping query_container_callers2();    
 
+mixed shipping_admin(object id){
+
+return "Method: Shipping Cost Based on Order Total";
+
+}
+
 float|string tag_shipping(float amt, mixed type, object id){
 
 return id->misc->ivend->s->query("SELECT value FROM lineitems WHERE "

@@ -1,0 +1,10 @@
+orderguy@foo.com
+Email_Address
+Your order has been confirmed.
+This is just a note to confirm that the order you recently placed is
+currently being processed. your order number is #orderid#.
+
+Thanks,
+
+The iVend Order Guy
+orderguy@foo.com

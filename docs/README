@@ -201,3 +201,12 @@ Checkout Tags
 confirmemail
   field=fieldname	name of field containing email address to check.
 
+
+Other Stuff
+-----------
+
+The database schema to use currently is located in examples/schema.mysql
+
+If the form generator finds an enum type (must be using patched mysql for
+this), it will look for values in a file called 
+	storeroot/db/tablename_fieldname.val ...

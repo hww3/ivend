@@ -9,18 +9,22 @@ if (zonefile=="") return 0;
 int loc=search(zonefile,"\"ZONES\"\n");
 zonefile=zonefile[(loc+8)..];
 array z=zonefile/"\n";
-array t=z[0]/",";
+array t=z[0]/","; // shipping types
 for(int i=2; i<sizeof(z);i++){
-
   array a=z[i]/",";
   mapping line=([]);
+  if(sizeof(a)!=sizeof(t))
+    continue;
+  if(a[0]=="")
+    continue;
   for(int j=1;j<sizeof(a);j++){
-    line[t[j]]=a[j];  
+    line[
+	t[j]]=
+	a[j];  
     }
   zonedata[a[0]]=([]);
   zonedata[a[0]]=line;
 }
-// write(sprintf("%O",zonedata));
 t=t-({"Dest. ZIP"});
 return 1;
 }
@@ -34,7 +38,8 @@ array z=ratefile/"\n";
 array t=z[0]/",";
 ratedata[type]=([]);
 for(int i=1; i<sizeof(t); i++){
-  ratedata[type][t[i]-"Zone "]=([]);
+  t[i]=t[i]-" ";
+  ratedata[type][t[i]-"Zone"]=([]);
 }
 
 for(int i=1; i<sizeof(z); i++){
@@ -42,10 +47,13 @@ for(int i=1; i<sizeof(z); i++){
   array a=z[i]/",";
 
   for(int j=1;j<sizeof(a);j++){
-    ratedata[type][t[j]-"Zone "][a[0]-" "]=a[j];
+    a[j]=a[j]-"$";
+    ratedata[type][t[j]-"Zone"][a[0]-" "]=(a[j]-" ");
     }
 
 }
+
+// write(sprintf("%O",ratedata));
 
 return 1;
 
@@ -53,16 +61,18 @@ return 1;
 
 int load_all_zones(string dir){
 if( dir=="") return 0;
-else array d=get_dir(dir);
-d=d-({"CVS",".",".."});
-for(int i=0; i<sizeof(d); i++){
-  if(d[i]=="zones.csv") {
-    string data=Stdio.read_file(dir+"/"+d[i]);
-    if(!load_zonefile(data)) return 0;
-    }
-  else {
-    string data=Stdio.read_file(dir+"/"+d[i]);
-    if(!load_ratefile(data)) return 0;
+else {
+  array d=get_dir(dir);
+  d=d-({"CVS",".",".."});
+  for(int i=0; i<sizeof(d); i++){
+    if(d[i]=="zones.csv") {
+      string data=Stdio.read_file(dir+"/"+d[i]);
+      if(!load_zonefile(data)) return 0;
+      }
+    else {
+      string data=Stdio.read_file(dir+"/"+d[i]);
+      if(!load_ratefile(data)) return 0;
+      }
     }
   }
 return 1;
@@ -74,9 +84,16 @@ array z=indices(zonedata);
 z=sort(z);
 for(int i=0; i<sizeof(z); i++){
 
-  if((int)zipcode<(int)z[i][0..2])
-  return z[i-1];
+  if((int)zipcode<(int)z[i][0..2]){
+    return z[i-1];
+    }
   }
+}
+
+int|array showtypes(){
+
+return indices(ratedata) || 0;
+
 }
 
 float|mapping(string:float) findrate(string zipcode, 
@@ -95,8 +112,9 @@ if(!type){
       }
    return retval;
    }
-if(catch(string cost=ratedata[type][zone][weight])) return 0.00;
-return ((float)(cost[1..]));
+string cost;
+if(catch(cost=ratedata[type][zone][weight])) return 0.00;
+return ((float)(cost));
 
 }
 

@@ -30,14 +30,14 @@ mixed currency_convert(mixed v, object id){
   return v;
 }
 
-
 /*
 
   calculate tax
 
 */
 
-float calculate_tax(object id) {
+string tag_salestax(string tag_name, mapping args,
+		     object id, mapping defines) {
 
 array r;		// result from query
 string query;		// the query
@@ -71,15 +71,29 @@ else {
   +"' and SESSIONID='"+ id->misc->ivend->SESSIONID +"')";
 perror(query+"\n");
   r=s->query(query);
-  if(sizeof(r)==1 && r[0]->salestax)
-    return r[0]->salestax;
-  else return (0.00);
+  if(sizeof(r)==1 && r[0]->salestax) {
+ if(!id->misc->ivend->lineitems) 
+   id->misc->ivend+= (["lineitems":([])]);
+
+
+    id->misc->ivend->lineitems+=(["salestax":(float)r[0]->salestax]);
+    if(args->convert && functionp(currency_convert))
+      return sprintf("%.2f",currency_convert((float)r[0]->salestax,id));
+    else
+      return sprintf("%.2f",(float)r[0]->salestax);
+
+  }
+  else {
+ if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
+    id->misc->ivend->lineitems+=(["salestax":0.00]);
+    return ("0.00");
+  }
 }
-
-return (0.00);
+ if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
+id->misc->ivend->lineitems+=(["salestax":0.00]);
+return ("0.00");
 
 }
-
 
 
 mixed checkout(object id){
@@ -122,16 +136,19 @@ else */
 
   retval+="<font size=+2>5. Confirm Order</font>\n"
   	"<form action="+id->not_query+"><table>\n"
-	"<tr><th>Quantity</th><th>Description</th>"
-	"<th>Unit Price</th><th>Subtotal</th></tr>"
-	"<orderlines>\n";	
+	"<tr><th align=left>Quantity</th><th align=left>Product Name</th>"
+	"<th align=left>Unit Price</th><th align=left>Subtotal</th></tr>"
+	"<showorder convert>\n";	
   
 
 
-  retval+="<tr></td></td><td></td><td></td><td>Sales Tax:</td><td>$" +
-	 sprintf("%.2f",(float)calculate_tax(id))+"</td></tr>"
+  retval+="<tr></td></td><td></td><td></td><td align=right>"
+    "Subtotal:</td><td align=right><subtotal convert></td></tr>\n"
+    "<tr></td></td><td></td><td></td><td align=right>"
+    "Sales Tax:</td><td align=right><salestax convert></td></tr>\n"
+    "<tr></td></td><td></td><td></td><td align=right>"
+    "Grand Total:</td><td align=right><grandtotal convert>"
 	"</table>\n";
-
   }
 }
 else if(id->variables["_page"]=="4"){
@@ -197,10 +214,133 @@ else {
 	"<form action=checkout><input type=hidden name=_page value=2>"
 	"<input type=submit value=\" >> \"></form>";
   }
-retval="<ivml>blahblahblah"+retval+"</ivml>";
+retval="<ivml>"+retval+"</ivml>";
 retval=parse_rxml(retval,id);
 
 return retval;
 
 }
+
+
+string tag_subtotal(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+   if(args->convert && functionp(currency_convert) ) {
+     perror("converting currency...\n");
+  return(sprintf("%.2f",
+    (float)currency_convert(id->misc->ivend->lineitems->subtotal,id))) ;
+   }
+else return sprintf("%.2f",
+    (float)id->misc->ivend->lineitems->subtotal);
+
+
+
+}
+
+string tag_grandtotal(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+float grandtotal=0.00;
+string item;
+ foreach(indices(id->misc->ivend->lineitems), item)
+   grandtotal+=id->misc->ivend->lineitems[item];
+
+
+   if(args->convert && functionp(currency_convert) ) {
+     perror("converting currency...\n");
+  return(sprintf("%.2f",(float)currency_convert(grandtotal,id))) ;
+   }
+else return sprintf("%.2f",(float)grandtotal);
+
+}
+
+string tag_showorder(string tag_name, mapping args,
+		     object id, mapping defines) {
+float subtotal=0.00;
+string retval="";
+
+ object s=Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+string query="SELECT sessions.quantity, "
+  "products.name, products.price, "
+  "sessions.quantity*products.price AS linetotal FROM "
+  "sessions,products WHERE products.id=sessions.id AND "
+  "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
+
+perror("QUERY:\n\n"+query+"\n\n");
+
+array r=s->query(query);
+perror("sizeof result: "+sizeof(r)+"\n");
+ for(int i=0; i < sizeof(r); i++) {
+   retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n"
+     "<td>"+ r[i]->name + "</td>\n"
+     "<td align=right>";
+
+   if(args->convert && functionp(currency_convert) ) {
+     perror("converting currency...\n");
+  retval+=sprintf("%.2f",(float)currency_convert(r[i]->price,id)) ;
+   }
+else retval+=r[i]->price;
+   retval+= "</td>\n"
+     "<td align=right>";
+   if(args->convert && functionp(currency_convert) ) {
+     perror("converting currency...\n");
+  retval+=sprintf("%.2f",(float)currency_convert(r[i]->linetotal,id)) ;
+   }
+else retval+=r[i]->linetotal;
+subtotal+=(float)r[i]->linetotal;
+retval+= "</td></tr>\n"; 
+ }
+
+
+ if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
+id->misc->ivend->lineitems+=(["subtotal":(float)subtotal]);
+
+
+return retval;
+
+}
+
+
+
+
+
+mapping query_tag_callers() {
+
+return (["showorder" : tag_showorder,
+	"grandtotal" : tag_grandtotal,
+	"subtotal" : tag_subtotal,
+	  "salestax" : tag_salestax 
+	]);
+
+}
+
+mapping query_container_callers() {
+
+return ([]);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

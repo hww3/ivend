@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.24 1998-02-21 00:17:00 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.25 1998-02-21 04:32:50 hww3 Exp $";
 
 /*
  *
@@ -149,8 +149,8 @@ if (args["_parsed"]) return;
 
 if (args->add) 
   return "<a _parsed=1 href=\""+query("mountpoint")
-  +id->misc->ivend->st+"/"+id->misc->page+".ivml?SESSIONID="
-  +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->page+
+  +id->misc->ivend->st+"/"+id->misc->ivend->page+".ivml?SESSIONID="
+  +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page+
   "\">"+contents+"</a>";
 else if(args->cart)
   return "<a _parsed=1 href=\""+query("mountpoint")+
@@ -283,7 +283,7 @@ string tag_listitems(string tag_name, mapping args,
 
 string retval="";
 
-if(!id->misc->page) return "no page!";
+if(!id->misc->ivend->page) return "no page!";
 string st=id->misc->ivend->st;
 
 object s=Sql.sql(config[st]->dbhost, config[st]->db, 
@@ -295,7 +295,8 @@ if(args->type=="groups") {
 else {
 
   r=s->query("SELECT product_id AS pid,"+args->fields+
-	" FROM product_groups,products where group_id='"+id->misc->page+"'"
+	" FROM product_groups,products where group_id='"+
+	     id->misc->ivend->page+"'"
 	" AND products.id=product_id");
 }
 
@@ -522,14 +523,18 @@ page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->
 return page;
 }
 
-mixed find_page(string page, string st, object id){
+mixed find_page(string page, object id){
 #ifdef MODULE_DEBUG
-perror("iVend: finding page "+ page+" in "+st+"\n");
+perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
 #endif
 
 string retval;
-object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->dblogin, config[st]->dbpassword);
+object s=Sql.sql(
+		 id->misc->ivend->config->dbhost, 
+		 id->misc->ivend->config->db, 
+		 id->misc->ivend->config->dblogin, 
+		 id->misc->ivend->config->dbpassword
+		 );
 
 page=page-".ivml";	// get to the core of the matter.
 id->misc->ivend->id=page;
@@ -552,10 +557,10 @@ else {
 if (sizeof(r)!=1) 
 return 0;
 
-retval=Stdio.read_bytes(config[st]->root+"/"+template);
+retval=Stdio.read_bytes(id->misc->ivend->config->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
-id->realfile=config[st]->root+"/"+template;
+id->realfile=id->misc->ivend->config->root+"/"+template;
 // retval="find_page("+page+", s, id)";
 return parse_page(retval, r, f, id);
 }
@@ -580,20 +585,20 @@ else
 return 0;
 }
 
-mixed handle_page(string page,string st,object id){
+mixed handle_page(string page, object id){
 #ifdef MODULE_DEBUG
-perror("iVend: handling page "+st+" "+ page+"\n");
+perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
 #endif
 
-id->misc["page"]=page-".ivml";
+id->misc->ivend["page"]=page-".ivml";
 if(id->variables->ADDITEM) additem(id->variables->ADDITEM,id);
 mixed retval;
 
 switch(page){
 
   case "index.ivml":
-    id->realfile=config[st]->root+"/index.ivml";
-    retval= Stdio.read_bytes(config[st]->root+"/index.ivml"); 
+    id->realfile=id->misc->ivend->config->root+"/index.ivml";
+    retval= Stdio.read_bytes(id->misc->ivend->config->root+"/index.ivml"); 
     break;
 
   case "search":
@@ -601,14 +606,14 @@ switch(page){
     break;
 
   default:
-//	perror("reading " +config[st]->root+ "/"+page+".\n");
-    if(retval=Stdio.read_bytes(config[st]->root+"/"+lower_case(page))) break;
-    else retval=find_page(page, st, id);
+
+    if(retval=Stdio.read_bytes(id->misc->ivend->config->root+
+	    "/"+lower_case(page))) break;
+    else retval=find_page(page, id);
   }
   if (!retval) return handle_error("Unable to find product "+page, id);
- 
+  else return retval;
 
-// return (string)(retval+" "+page+" "+dump_id(id));
 }
 
 mapping ivend_image(array(string) request, object id){
@@ -628,7 +633,7 @@ if(!objectp(modules[id->misc->ivend->config->checkout_module]))
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
-if(retval==-1) return handle_page("index.ivml",id->misc->ivend->st,id);
+if(retval==-1) return handle_page("index.ivml",id);
 else 
 return retval;    
 }
@@ -1088,6 +1093,7 @@ mixed find_file(string file_name, object id){
    	array(string) request=explode(file_name,"/");
 	string restofrequest=request[2..]*"/";
 
+
 if(file_name==""){
 	  if (config->global->create_index=="yes")
 	    retval=create_index(id);
@@ -1121,31 +1127,35 @@ else	switch(request[0]){
 	m_delete(id->variables,"SESSIONID");
 
 	if(request[0] && catch(request[1])) 
-		return http_redirect(query("mountpoint")+file_name+"/?SESSIONID="+
+		return http_redirect(query("mountpoint")+
+	       	     file_name+"/?SESSIONID="+
 	         id->misc->ivend->SESSIONID);
 
 	if(config[request[0]])
 	  {
-	    if(!config[request[0]]) return http_string_answer("NO SUCH STORE!");
-            id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
+           if(!config[request[0]]) 
+	     return http_string_answer("NO SUCH STORE!");
 
-	    if(catch(request[1])) {
-//	      perror("iVend: no product specified.\n");
-	      retval=handle_page("index.ivml", request[0], id);
-	    }
-	    else {
-perror("finding request...\n");
-              id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
-// perror(sprintf("%O",id));	
+	    if(catch(request[1]))
+	      request+=({""});
+
+// load id->misc->ivend with the good stuff...   
+  id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
+
+
+
 	      switch(request[1]) {
 		    case "":
 	        case "index.ivml":
-		  retval=(handle_page("index.ivml", request[0], id));
+		  perror("INDEX.IVML!\n");
+		  retval=(handle_page("index.ivml", id));
 	          break;
 		case "cart":
+		  perror("CART.IVML!\n");
 		  retval=(handle_cart(request[0],id));
 		  break;
 		case "checkout":
+		  perror("CHECKOUT!\n");
 		  retval=(handle_checkout(id));
 		  break;
 		case "images":
@@ -1156,14 +1166,20 @@ perror("finding request...\n");
 		  retval=admin_handler(restofrequest, id);
 		  break;
 		default:
-		  retval=(handle_page(request[1], request[0], id));
-		}
+		  perror("DEFAULT!\n");
+		  retval=(handle_page(request[1], id));
+
 	    }
 	  }
+
+	//
+	// send it all out the door: 
+	//
 
 #ifdef MODULE_DEBUG	
 //	retval+=dump_id(id);
 #endif
+perror("RETVAL:\n\n"+retval+"\n\n");
 	retval=parse_rxml(retval, id);
    	return http_string_answer(retval);
 
@@ -1175,19 +1191,29 @@ string|void container_ivml(string name, mapping args,
 
 if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 
-return "<html>"+parse_html(contents,
-    ([
+ mapping tags=    ([
 	"ivstatus":tag_ivstatus, 
 	"ivmg":tag_ivmg, 
 	"listitems":tag_listitems
-    ]),
+    ]);
 
-    ([
+
+ mapping containers= ([
 	"a":container_ia, 
 	"form":container_form,
 	"icart":container_icart, 
 	"ivindex":container_ivindex	
-    ]),id) +"</html>";
+    ]);
+
+if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
+	load_ivmodule(id);
+
+containers+= modules[id->misc->ivend->config->checkout_module]->query_container_callers();
+tags+= modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
+
+
+ return "<html>"+parse_html(contents,
+       tags,containers,id) +"</html>";
 
 }
 

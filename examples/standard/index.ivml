@@ -1,4 +1,4 @@
-
+<ivml>
 <title>Welcome to iVend!</title>
 <body bgcolor=white text=navy>
 <img src="/ivend/ivend-image/ivendlogo.gif"><p>
@@ -16,3 +16,5 @@ Please direct questions or comments to &lt; <a
 href="mailto:hww3@riverweb.com">hww3@riverweb.com</a> &gt;.
 <br>
 Last modified <modified>.
+</ivml>
+

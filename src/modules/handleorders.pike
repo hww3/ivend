@@ -4,6 +4,8 @@
 
 #define CONFIG id->misc->ivend->config
 
+inherit "roxenlib";
+
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
@@ -225,7 +227,7 @@ if(note) {
   return;
 }
 
-string archive_orders(string mode, object id){
+string|mapping archive_orders(string mode, object id){
  string retval="";
  mapping v=id->variables;
 

@@ -256,7 +256,7 @@ void|string container_form(string name, mapping args,
 
 }
 
-string container_icart(string name, mapping args,
+mixed container_icart(string name, mapping args,
                       string contents, object id)
 {
 string st;
@@ -281,10 +281,6 @@ array en=({});
 
 if(id->variables->update) {
 
-    if(id->variables->update !=UPDATE_CART)
-    return http_redirect(query("mountpoint") +
-(  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
-        ?"":st+"/")+"checkout/?SESSIONID=" + id->misc->ivend->SESSIONID);
 
     for(int i=0; i< (int)id->variables->s; i++){
 
@@ -353,10 +349,15 @@ if(id->variables->update) {
 	+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td></tr>\n";
       }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-	"<input name=update type=submit value=\"" 
-	+ UPDATE_CART + "\">"
-	"<input name=update type=submit value=\" Check Out \">"
-	"</form>\n<true>\n"+contents;
+	"<table><tr><Td><input name=update type=submit value=\"" 
+	+ UPDATE_CART + "\"></form></td>\n";
+if(!args->checkout)
+	retval+="<td> <form action=\""+ query("mountpoint") +
+(  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
+        ?"":st+"/")+"checkout/?SESSIONID=" + id->misc->ivend->SESSIONID
+	+ "\">"
+	"<input name=update type=submit value=\" Check Out \"></form></td>";
+retval+="</tr></table>\n<true>\n"+contents;
 return retval;    
  
 }

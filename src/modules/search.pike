@@ -307,8 +307,7 @@ foreach(indices(r), string f){
 }
 
 wordstoadd=lower_case(wordstoadd);
-
-wordstoadd=replace(wordstoadd, ({"!", ".", "?", ",", "-", "\n", "\r", "\t", "\m"}), ({" ", " ", " ", " ", " ", " ", " ", " ", " "}));
+wordstoadd=(Array.filter((wordstoadd/""),Regexp("[ a-z0-9]")->match))*"";
 array w=wordstoadd/" ";
 w-=({""});
 mapping wc=([]);

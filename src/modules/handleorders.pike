@@ -273,12 +273,15 @@ string|mapping archive_orders(string mode, object id){
  if(!v->archive){
  // return the usage screen.
  retval+="<form action=\"./\">\n"
-	"<input type=hidden name=archive value=1>\n";
+	"<input type=hidden name=archive value=1>\n"
+	"Please select the orders you would like to archive.<p>";
 
- retval+="Archive all closed/cancelled orders more than "
-	"<input type=text size=3 name=days value=30> days old.<p>"; 
-// retval+="Archive order #"
-//	"<input type=text size=5 name=orderid>.";
+ retval+="<input type=radio name=archiveby value=days checked> "
+	"Archive all closed/cancelled orders more than "
+	"<input type=text size=3 name=days value=30> days old.<br>"; 
+ retval+="<input type=radio name=archiveby value=orderid> "
+	"Archive order #"
+	"<input type=text size=5 name=orderid>.<p>";
  retval+="<input type=submit value=\"Archive\"></form>\n";
  }
 
@@ -286,11 +289,11 @@ string|mapping archive_orders(string mode, object id){
 
   if(v->doit){
   array orders_to_archive;
-//  if(v->orderid)
-//   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
-//	"(status.name='Shipped' or status.name='Cancelled') AND "
-//	"id='" + v->orderid + "'");
-//  else
+  if(v->archiveby=="orderid")
+   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"(status.name='Shipped' or status.name='Cancelled') AND "
+	"id='" + v->orderid + "' AND orders.status=status.status");
+  else if(v->archiveby=="days")
    orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
 	+ " AND (status.name='Shipped' or status.name='Cancelled') "
@@ -299,19 +302,34 @@ string|mapping archive_orders(string mode, object id){
   foreach(orders_to_archive, mapping or){
 	retval+=archive_order(or->id, id);
      } 
+#if constant(Protocols.SMTP.client)
+if(v->method=="Mail Archive" && v->email!=""){
+ if(catch(
+  Protocols.SMTP.client("localhost")->simple_mail(v->email, 
+	"Archive Orders " + (orders_to_archive*", "), "ivend@" +
+	gethostname(), retval)))
+	return retval;
+  return "Your orders have been mailed to " + v->email + ".<p>\n"
+	"<a href=./>Click here to continue.</a>\n";
+}
+else {
+#endif
       T_O->add_header(id, "Content-Disposition", 
-	"inline; filename=" + "orders.xml");
+	"inline; filename=" + "order" +(sizeof(orders_to_archive)==1?("_"+
+orders_to_archive[0]->id):"") + ".xml");
     return http_rxml_answer(retval, id, 0, "text/archive");
-
+#if constant(Protocols.SMTP.client)
+    }
+#endif
    }
   else {
 
   array orders_to_archive;
-  if(v->orderid)
+  if(v->archiveby=="orderid")
    orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
 	"(status.name='Shipped' or status.name='Cancelled') AND "
-	"id='" + v->orderid + "'");
-  else
+	"id='" + v->orderid + "' AND orders.status=status.status");
+  else if(v->archiveby=="days")
    orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
 	+ " AND (status.name='Shipped' or status.name='Cancelled') "
@@ -326,7 +344,14 @@ string|mapping archive_orders(string mode, object id){
 	"<form action=\"./\">\n"
 	"<input type=hidden name=archive value=1>\n"
 	"<input type=hidden name=days value=" + v->days + ">\n"
-	"<input type=submit name=doit value=\"Archive\">\n"
+	"<input type=hidden name=orderid value=" + v->orderid + ">\n"
+	"<input type=hidden name=archiveby value=" + v->archiveby +">\n"
+	"<input type=hidden name=doit value=1>\n"
+#if constant(Protocols.SMTP.client)
+	"<input type=text size=40 name=email> Email Address<br>\n"
+	"<input type=submit name=method value=\"Mail Archive\">\n"
+#endif
+	"<input type=submit name=method value=\"Download Archive\">\n"
 	"</form>";
   else retval+="<p><a href=\"./\">Click here to start over.</a>";
 
@@ -352,7 +377,9 @@ if(id->misc->ivend->config->general->privatekey)
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
-cn=Commerce.Security.decrypt(r[0]->card_number,key);
+if(r[0]->Card_Number[0..3]=="iVen"){
+ cn=Commerce.Security.decrypt(r[0]->Card_Number,key);
+} else cn=r[0]->Card_Number;
 cn-=" ";
 array cn2=cn/"";
 int j=sizeof(cn2);
@@ -488,9 +515,11 @@ cn=cn2*"";
        if(sizeof(n)==0) shipped_all=1;
 
        if(shipped_all) {
+/*
 	 DB->query(
              "UPDATE payment_info SET Card_Number='',Expiration_Date='' WHERE orderid='" +
 	     id->variables->orderid +"'");
+*/
 	 DB->query("UPDATE orders SET status=" + status
 	   + ", updated=NOW() WHERE id='" + id->variables->orderid + "'");    
        array r=DB->query( 

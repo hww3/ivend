@@ -1,6 +1,6 @@
 iVend INSTALL
 
-iVend version 1.0.20 of 29 august 1998 
+iVend version 1.0.30 of 13 april 1999 
 coding by Bill Welliver <hww3@riverweb.com>
 
 these directions are very preliminary and need much work in order to be 
@@ -29,7 +29,7 @@ What do I need for iVend to work?
   electronic commerce without crypto anyhow.)
 * A copy of Pike in your PATH for running the setup scripts.
 * An SQL database server supported by Pike and Roxen Challenger.
-  (iVend was developed using mysql, however other dbms systems should 
+  (iVend was developed using mysql3.22, however other dbms systems should 
   work as well with minimal changes to the code.) 
 * Admistrative rights to the database system, as well as Roxen.
 * A working knowledge of HTML, SQL databases, and Unix.
@@ -56,10 +56,11 @@ release.
 
   download site: http://hww3.riverweb.com/dist/patches
 
-iVend was written tested to work with the mySQL database system. There is
-very little reason that another RDBMS would not work with minor
-modifications. Your mileage may vary. If you do try another RDBMS, please
-let me know of your results.
+iVend was written tested to work with the mySQL3.22 database system. There
+is very little reason that another RDBMS would not work with minor
+modifications. The setup wizard does require that your chosen RDBMS
+support the GRANT statement, such as mySQL3.22 or higher. Your mileage may
+vary. If you do try another RDBMS, please let me know of your results.
 
 
 Installation Instructions
@@ -81,7 +82,7 @@ directory is in Roxen's module search path, located in the "Global
 Variables" section of the Roxen Configuration Interface. For the example
 above, you'd add /usr/local/roxen/ivend/src to your module search path. 
 
-3. Add the iVend module to a virtual server.
+3. Add the iVend 1.0 module to a virtual server.
 
 4. Be sure to set all the directories in the iVend section of the Roxen
 Config Interface. If you don't provide the correct directory information,
@@ -93,6 +94,14 @@ iVend will not work properly:
   d. Mount Path: this is where iVend will be located within your server's
      virtual filesystem. The default is /ivend/. You can change this to
      anything you'd like.
+
+You can have multiple instances of iVend running on the same server by
+giving each instance it's own configuration directory. By doing this, you
+can have iVend running on multiple virtual servers without conflict.
+
+To have iVend stores share the same configuration, such as having a store
+duplicated on an SSL3 virtual server for checkout, see the section below
+titled "Setting Up a New Store".
 
 5. Assign values for any other configuration variables such as config user
 and password.
@@ -107,67 +116,99 @@ Store" below for more information.
 Setting Up a New Store
 ----------------------
 
-For each store you set up you'll need to do the following:
+For each store you set up you'll need the following:
 
-1. Create a database where iVend will store all store related
-  transactions. mysSQL users can use the 'mysqladmin create dbname'
-  command, where dbname is the name of the database you're creating.
-  Normally, you'll want to select a name that correlates with 
-  your store's actual name. Other systems may vary in the commands and
-  procedures required to do this. 
+Database administrator username and password. The iVend setup wizard will
+automatically create the store database and setup an administrative user
+for you. For iVend to be able to do this, you must have a db account which
+has permissions to create databases and database users.
 
-  Provide select/insert/delete access to a user so that iVend can connect
-  and use this db. This document does not attempt to make you a dba 
-  (database administrator). You must have a good grasp of db
-  administration and security techniques before you can properly set
-  up iVend in a production environment. Since you will be dealing
-  with sensitive information, please take this area of store setup
-  very seriously. Helpful tips for new MySQL users are located in
-  Appendix E: Tips for New MySQL Users.
+*IMPORTANT NOTE* 
 
-*IMPORTANT NOTE* Please note that iVend uses database access permissions
-  to determine who has permission to administer your iVend store. Because
-  of this, make sure that you don't grant access permission to this
-  database to anyone that you would not allow store admin priveledges. By
-  default, MySQL installs global permissions to a passwordless user called
-  root. This means that unless you change the default access configuration
-  by adding a password for root, anyone can access any database (and
-  therefore store administration area just by logging in as "root" without
-  a password.  This feature also allows multiple logins with access to a
-  store, as well as read-only access to store admin features. While this
-  may seem more complex at first, it allows much more flexible setup of
-  store administrators. Be sure you know who (or what) has access to your
-  dbs at all times.
+You must have a good grasp of db administration and security techniques
+before you can properly set up iVend in a production environment. Since
+you will be dealing with sensitive information, please take this area of
+store setup very seriously. Helpful tips for new MySQL users are located
+in Appendix E: Tips for New MySQL Users.
 
-2. Use the iVend Configuration interface to add a new store. The process
-of adding a new store is wizard based and should be fairly straitforward.
+Please note that iVend uses database access permissions to determine who
+has permission to administer your iVend store. Because of this, make sure
+that you don't grant access permission to this database to anyone that you
+would not allow store admin priveledges. By default, MySQL installs global
+permissions to a passwordless user called root. This means that unless you
+change the default access configuration by adding a password for root,
+anyone can access any database (and therefore store administration area
+just by logging in as "root" without a password.  This feature also allows
+multiple logins with access to a store, as well as read-only access to
+store admin features. While this may seem more complex at first, it allows
+much more flexible setup of store administrators. Be sure you know who (or
+what) has access to your dbs at all times.
+
+Use the iVend Configuration interface to add a new store. Click on "New 
+Configuration." The process of adding a new store is wizard based and
+should be fairly straitforward.
 
 The wizard will even create and populate the store directory and set up
 the proper tables in your database.
+
+  Store Name
+    A short (25 characters or less) description of your store.
 
   Store ID
     This is the unique identifier for this store. This is one word,
     alphanumeric characters are allowed. If you have numerous
     stores, this store will be mounted on the directory /mountpoint/id.
 
-  Store Description
-    A short (25 characters or less) description of your store.
-
   Database Host
     Host your database is located on. Ususally this is localhost.
 
-  Database Name
-    Name of the database that will contain the store's records.
-
   Database User / Password
-    Username and password which has read/write access to the Database
-    listed in the previous question.
+    Username and password which has administrative rights for the database
+    server.
+
+After you provide the information, the wizard will let you know what it's
+about to do. After the wizard completes this work, you will be given a
+store administration username and password, as well as the location of
+your store's data files.
+
+You should be presented with a list of active stores. Click on "Save
+Configurations." Your new store should appear in the list.
+
+
+If this is the first time you have entered the configuration interface,
+you should also review the settings under the "Global" tab. After you've
+done this, click on the "modify settings" button, then save the changes to
+your global configurations using the "save changes" link.
+
+For more information about store and global settings, see Appendix A.
+
+At this point, you can enter the new store's administration interface.
+The administration interface is located at /mountpoint/storeid/admin.
+You'll be prompted for a username and password which has access to the
+store's SQL database. If you have a properly set up database server, you
+should use the information given to you by the New Store Wizard.
+
+From this interface, you can add, delete, and modify products and groups;
+set up shipping charges and rules; set up sales tax charges; as well as
+view and process incoming orders. 
+
+If you want to use another program to add or manage your products, you
+have a few options: ODBC, exported data, or other client interfaces. ODBC
+allows compliant programs to access data from other database systems. You
+can use ODBC to access your store's products and orders through programs
+such as MS Access, Excel and so forth. You can also find scripts in the
+scripts directory that will export and import tab delimited text files
+from iVend. If you decide to "roll your own" administration interface, be
+sure to send a copy to hww3@riverweb.com so I can see what other ways are
+being used.
+
+
+Customizing the Database
  
 After you create the store, you can use standard SQL statements to fine
-tune the database files to your specific needs. It's probably a good idea
-to start with the example schema and work from there. These tables can
-contain as  many and varied fields as you like, but at least the following
-must be  present:
+tune the database files to your specific needs.  These tables can contain
+as many and varied fields as you like, but at least the following must be
+present:
 
 products and groups tables
 1. image* char
@@ -215,46 +256,7 @@ payment_info fields. Note that the field that is to contain your
 customer's credit card numbers must be type char(255) in order to hold the
 encrypted card number data.
 
-4. You should be presented with a list of active stores. To load the new
-store, click on the link "Reload Configurations." Your new store should
-appear in the list.
-
-5. Click on the name of the new store. You will be presented with a
-configuration settings page. You should review this information, selecting
-the proper modules based upon your store's requirements. 
-
-6. After you are finished reviewing these settings, click on the "modify
-settings" button at the bottom of the page. iVend will make the requested
-changes and indicate that it is able to save the changes permanently by
-showing a link labelled "Save Changes". You should select this link to
-make your changes permanent.
-
-7. If this is the first time you have entered the configuration interface,
-you should also review the settings under the "Global" tab. After you've
-done this, click on the "modify settings" button, then save the changes to
-your global configurations using the "save changes" link.
-
-For more information about store and global settings, see Appendix A.
-
-8. At this point, you can enter the new store's administration interface.
-The administration interface is located at /mountpoint/storeid/admin.
-You'll be prompted for a username and password which has access to the
-stores SQL database.
-
-From this interface, you can add, delete, and modify products and groups;
-set up shipping charges and rules; as well as view and process incoming
-orders. 
-
-If you want to use another program to add or manage your products, you
-have a few options: ODBC, exported data, or other client interfaces. ODBC
-allows compliant programs to access data from other database systems. You
-can use ODBC to access your store's products and orders through programs
-such as MS Access, Excel and so forth. You can also find scripts in the
-scripts directory that will export and import tab delimited text files
-from iVend. If you decide to "roll your own" administration interface, be
-sure to send a copy to hww3@riverweb.com so I can see what other ways are
-being used.
-
+Customizing your store
 
 Appendix A
 ----------
@@ -616,4 +618,4 @@ trusted users.
 
 
 
-14 august 1998
+13 april 1999

@@ -19,7 +19,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.40 1998-03-25 03:39:29 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.41 1998-04-10 02:52:16 hww3 Exp $";
 
 array register_module(){
 
@@ -203,18 +203,17 @@ string st;
 
 if(id->variables->update) {
 
-  object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->dblogin, config[st]->dbpassword);
 
     for(int i=0; i< (int)id->variables->s; i++){
 
     if((int)id->variables["q"+(string)i]==0)
-	s->query("DELETE FROM sessions WHERE SESSIONID='"
+	id->misc->ivend->s->query("DELETE FROM sessions WHERE SESSIONID='"
 	+id->misc->ivend->SESSIONID+
 	  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
 	  id->variables["s"+(string)i] );
     else
-        s->query("UPDATE sessions SET quantity="+id->variables["q"+(string)i]+
+   id->misc->ivend->s->query("UPDATE sessions SET "
+      "quantity="+id->variables["q"+(string)i]+
 	  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
 
@@ -228,10 +227,10 @@ if(id->variables->update) {
   if(!id->misc->ivend->SESSIONID) return retval+"blah";
   else {
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
-    object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->dblogin, config[st]->dbpassword);
+
     if(!args->fields) return "Incomplete cart configuration!";
-    array r= s->query("SELECT sessions.id,series,quantity,name,price,"+ 
+    array r= id->misc->ivend->s->query(
+      "SELECT sessions.id,series,quantity,name,sessions.price,"+ 
 	args->fields+" FROM sessions,products "
       "WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
@@ -303,15 +302,13 @@ string retval="";
 if(!id->misc->ivend->page) return "no page!";
 string st=id->misc->ivend->st;
 
-object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->dblogin, config[st]->dbpassword);
 array r;
 if(args->type=="groups") {
-  r=s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
+  r=id->misc->ivend->s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
   }
 else {
 
-  r=s->query("SELECT product_id AS pid,"+args->fields+
+  r=id->misc->ivend->s->query("SELECT product_id AS pid,"+args->fields+
 	" FROM product_groups,products where group_id='"+
 	     id->misc->ivend->page+"'"
 	" AND products.id=product_id");
@@ -364,9 +361,8 @@ string st=id->misc->ivend->st;
 string filename="";
 array r;
 if(args->field!=""){
-  object s=Sql.sql(config[st]->dbhost, config[st]->db, 
-	config[st]->dblogin, config[st]->dbpassword);
-  r=s->query("SELECT "+args->field+ " FROM "+id->misc->ivend->type+"s WHERE "
+  r=id->misc->ivend->s->query("SELECT "+args->field+ " FROM "+ 
+    id->misc->ivend->type+"s WHERE "
 	" id='"+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else filename=config[id->misc->ivend->st]->root+"/images/"+
@@ -514,6 +510,9 @@ for(int i=0; i<sizeof(desc); i++){
 if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
 	load_ivmodule(id, "checkout_module");
 
+
+if(functionp(
+    modules[id->misc->ivend->config->checkout_module]->currency_convert))
 	r[0][desc[i]->name]=
 		  modules[id->misc->ivend->config->checkout_module]->currency_convert(r[0][desc[i]->name],id);
 
@@ -539,29 +538,23 @@ perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
 #endif
 
 string retval;
-object s=Sql.sql(
-		 id->misc->ivend->config->dbhost, 
-		 id->misc->ivend->config->db, 
-		 id->misc->ivend->config->dblogin, 
-		 id->misc->ivend->config->dbpassword
-		 );
 
 page=page-".html";	// get to the core of the matter.
 id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
 array f;
-r=s->query("SELECT * FROM groups WHERE id='"+page+"'");
+r=id->misc->ivend->s->query("SELECT * FROM groups WHERE id='"+page+"'");
 if (sizeof(r)==1){
   id->misc->ivend->type="group";
   template="group_template.html";
-  f=s->list_fields("groups");
+  f=id->misc->ivend->s->list_fields("groups");
   }
 else {
-  r=s->query("SELECT * FROM products WHERE id='"+page+"'");
+  r=id->misc->ivend->s->query("SELECT * FROM products WHERE id='"+page+"'");
   id->misc->ivend->type="product";
   template="product_template.html";
-  f=s->list_fields("products");
+  f=id->misc->ivend->s->list_fields("products");
 
   }
 if (sizeof(r)!=1) 
@@ -577,18 +570,22 @@ return parse_page(retval, r, f, id);
 
 mixed additem(string item, object id){
 
-object s=Sql.sql(config[id->misc->ivend->st]->dbhost, 
-	config[id->misc->ivend->st]->db, 
-	config[id->misc->ivend->st]->dblogin, 
-	config[id->misc->ivend->st]->dbpassword);
+float price=id->misc->ivend->s->query("SELECT price FROM products WHERE id='" 
+  + item + "'")[0]->price;
 
-int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID='"+
+if(functionp(modules[id->misc->ivend->config->checkout_module]->currency_convert))
+	  price=
+	  modules[id->misc->ivend->config->checkout_module
+	  ]->currency_convert(price,id);
+
+
+int max=sizeof(id->misc->ivend->s->query("select id FROM sessions WHERE SESSIONID='"+
   id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
 string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
   "','"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
-  (int)id->misc->ivend->config->session_timeout)+"')";
+  (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
 perror(query+"\n");
-if(catch(s->query(query) ))
+if(catch(id->misc->ivend->s->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
   id->misc["ivendstatus"]+=("Item "+item+ " added successfully.\n"); 
@@ -1200,6 +1197,12 @@ else {
 // load id->misc->ivend with the good stuff...   
   id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
 
+  id->misc->ivend->s=Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
 
 
 	      switch(request[1]) {
@@ -1279,15 +1282,32 @@ if(id->misc->ivend->st){
 if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
 	load_ivmodule(id, "checkout_module");
 
-if(functionp(modules[id->misc->ivend->config->checkout_module]->query_container_callers))
+if(! objectp(modules[id->misc->ivend->config->shipping_module])) 
+	load_ivmodule(id, "shipping_module");
+
+if(functionp(
+  modules[id->misc->ivend->config->checkout_module]->query_container_callers))
 containers+= 
   modules[id->misc->ivend->config->checkout_module]->query_container_callers();
 
-if(functionp(modules[id->misc->ivend->config->checkout_module]->query_tag_callers))
+if(functionp(
+  modules[id->misc->ivend->config->checkout_module]->query_tag_callers))
 tags+= 
   modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
+
+if(functionp(
+  modules[id->misc->ivend->config->shipping_module]->query_container_callers))
+containers+= 
+  modules[id->misc->ivend->config->shipping_module]->query_container_callers();
+
+if(functionp(
+  modules[id->misc->ivend->config->shipping_module]->query_tag_callers))
+tags+= 
+  modules[id->misc->ivend->config->shipping_module]->query_tag_callers();
 }
 
+
+  id->misc->ivend->modules=modules;
  return "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
 

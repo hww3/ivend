@@ -137,13 +137,13 @@ string retval="";
 
 if(id->variables->status){
   s->query("UPDATE orders SET status=" + id->variables->status + ","
-	"updated=NULL WHERE "
+	"updated=NOW() WHERE "
 	"id=" + id->variables->orderid);
   }
 
 if(id->variables->notes){
   s->query("UPDATE orders SET notes=" + id->variables->notes + ","
-	"updated=NULL WHERE "
+	"updated=NOW() WHERE "
 	"id=" + id->variables->orderid);
   }
 

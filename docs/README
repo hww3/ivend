@@ -4,6 +4,9 @@ coding by Bill Welliver <hww3@riverweb.com>
 these directions are very preliminary and need much work in order to be 
 considered anywhere near complete. when all else fails, read the source! :) 
 
+for the checkout process, your best bet is to look at the sample checkout
+pages under examples/checkout/*
+
 What is iVend?
 
 iVend is a module for the Roxen Challenger web server which allows electronic

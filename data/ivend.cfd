@@ -35,6 +35,14 @@ $module_type=checkout
 $endescription=Name of Checkout Module to Use.
 $sidescription=Name of Checkout Module to Use (slovenian).
 
+$varname=shipping_module
+$enname=Shipping Module
+$siname=Shipping Module
+$type=module
+$module_type=shipping
+$endescription=Name of Shipping Module to Use.
+$sidescription=Name of Shipping Module to Use (slovenian).
+
 $varname=order_module
 $enname=Order Module
 $siname=Order Module
@@ -92,4 +100,12 @@ $siname=Public Key Basepath
 $type=string
 $endescription=Base File Path for keys (minus extensions)
 $sidescription=Base File Path for keys (minus extensions)
+
+$varname=shipping_taxable
+$enname=Shipping Taxable?
+$siname=Shipping Taxable?
+$type=multiple
+$options=Yes|No
+$endescription=Should shipping charges be included in taxable goods?
+$sidescription=Should shipping charges be included in taxable goods?
 

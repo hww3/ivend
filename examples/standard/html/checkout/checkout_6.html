@@ -1,19 +1,69 @@
 <ivml>
-<checkout>
-<confirmorder currency_convert> 
-</checkout>
 <head>
 <title>Checkout</title>
 </head>
 <body bgcolor=white text=navy>
 <font face=helvetica>
-<font size=+2>Order Confirmed!</font>
-<br>
-Your order has been successfully confirmed. You should receive an email message confirming
-this shortly. Please note that this is only a demo and you will not actually receive any
-goods or services.
+<checkout>
+<comment>
+<addentry encrypt=card_number>
+</comment>
+<font size=+2>5. Confirm Order</font>
+<table>
+<tr>
+<th align=left>Quantity</th>
+<th align=left>Product Name</th>
+<th align=left>Unit Price</th>
+<th align=left>Subtotal</th>
+</tr>
+<showorder convert>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right>Discount:</td>
+<td align=right><discount percent=15 convert></td>
+</tr>
+
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right>Subtotal:</td>
+<td align=right><subtotal convert></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right><shippingtype>:</td>
+<td align=right><shipping></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right>Sales Tax:</td>
+<td align=right><salestax></td>
+</tr>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right>Grand Total:</td>
+<td align=right><grandtotal></td>
+</table>
+
 <p>
-<a href=./>Return to the Storefront</a>.</ivml>
+Click the button below to confirm and place your order.
+<p>
+<input type=submit value=" Confirm ">
+<input type=hidden name=orderid value="<sessionid>"> 
+</checkout>
+
+</ivml>
+
+
+
+
+
+
+
 
 
 

@@ -20,7 +20,7 @@ CREATE TABLE customer_info (
   Evening_Phone char(32),
   FAX char(32),
   EMail_Address char(64) DEFAULT '' NOT NULL,
-  updated timestamp(14) DEFAULT '',
+  updated timestamp(14),
   type int(11) DEFAULT '0' NOT NULL
 );
 
@@ -28,7 +28,6 @@ CREATE TABLE customer_info (
 # Dumping data for table 'customer_info'
 #
 
-INSERT INTO customer_info VALUES (1,'Bill','Welliver','Harris Phlegmiconductor','125 Crestwood Rd.','','Mountaintop','PA','18707','717 474 6761','','','hww3@riverweb.com',19980329233049,0);
 
 #
 # Table structure for table 'groups'
@@ -46,13 +45,15 @@ CREATE TABLE groups (
 # Dumping data for table 'groups'
 #
 
+
 #
 # Table structure for table 'lineitems'
 #
 CREATE TABLE lineitems (
   orderid char(12) DEFAULT '' NOT NULL,
   lineitem char(12) DEFAULT '' NOT NULL,
-  value float(10,2) DEFAULT '0.00' NOT NULL
+  value float(10,2) DEFAULT '0.00' NOT NULL,
+  extension char(24)
 );
 
 #
@@ -87,7 +88,7 @@ CREATE TABLE orders (
   status int(11) DEFAULT '0' NOT NULL,
   tracking_code varchar(16),
   shipping_type int(11) DEFAULT '0' NOT NULL,
-  updated timestamp(14) DEFAULT '',
+  updated datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   notes text,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
@@ -128,6 +129,7 @@ CREATE TABLE product_groups (
 # Dumping data for table 'product_groups'
 #
 
+
 #
 # Table structure for table 'products'
 #
@@ -152,6 +154,7 @@ CREATE TABLE products (
 # Dumping data for table 'products'
 #
 
+
 #
 # Table structure for table 'sessions'
 #
@@ -161,13 +164,54 @@ CREATE TABLE sessions (
   quantity int(11) DEFAULT '0' NOT NULL,
   series int(11) DEFAULT '0' NOT NULL,
   qualifier varchar(24),
-  timeout bigint(21)
+  timeout bigint(21),
+  price float(5,2) DEFAULT '0.00' NOT NULL
 );
 
 #
 # Dumping data for table 'sessions'
 #
 
+
+#
+# Table structure for table 'shipping_ot'
+#
+CREATE TABLE shipping_ot (
+  type int(11) DEFAULT '0' NOT NULL,
+  charge float(5,2) DEFAULT '0.00' NOT NULL,
+  min float(5,2) DEFAULT '0.00' NOT NULL,
+  max float(5,2) DEFAULT '0.00' NOT NULL
+);
+
+#
+# Dumping data for table 'shipping_ot'
+#
+
+INSERT INTO shipping_ot VALUES (1,5.95,0.00,25.00);
+INSERT INTO shipping_ot VALUES (1,7.95,25.01,100.00);
+INSERT INTO shipping_ot VALUES (1,9.95,100.01,500.00);
+INSERT INTO shipping_ot VALUES (2,6.95,0.00,25.00);
+INSERT INTO shipping_ot VALUES (2,8.95,25.01,100.00);
+INSERT INTO shipping_ot VALUES (2,15.95,100.01,500.00);
+INSERT INTO shipping_ot VALUES (1,24.95,350.00,10000.00);
+INSERT INTO shipping_ot VALUES (2,30.95,350.00,10000.00);
+
+#
+# Table structure for table 'shipping_types'
+#
+CREATE TABLE shipping_types (
+  type int(11) DEFAULT '0' NOT NULL auto_increment,
+  name varchar(64) DEFAULT '' NOT NULL,
+  description blob,
+  PRIMARY KEY (type)
+);
+
+#
+# Dumping data for table 'shipping_types'
+#
+
+INSERT INTO shipping_types VALUES (1,'UPS 3 Day Select','UPS 3 Day Select delivers your package within 3 business days to most addresses.');
+INSERT INTO shipping_types VALUES (2,'UPS 2 Day Select','UPS 2 Day Select delivers your package within 2 business days to addresses within the continental United States.');
 
 #
 # Table structure for table 'status'
@@ -205,7 +249,6 @@ CREATE TABLE taxrates (
 #
 
 INSERT INTO taxrates VALUES ('PA',0.06);
-
 
 #
 # Table structure for table 'type'

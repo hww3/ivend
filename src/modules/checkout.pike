@@ -14,6 +14,21 @@ constant module_type="checkout";
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
+void load_lineitems(object id){
+
+id->misc->ivend->lineitems=([]);
+
+  array r=id->misc->ivend->s->query("SELECT lineitem,value from lineitems "
+    "WHERE orderid='" + (id->misc->ivend->orderid ||
+	id->misc->ivend->SESSIONID) + "'");
+
+  foreach(r, mapping row)
+   id->misc->ivend->lineitems+=([ row->lineitem : (float) row->value ]);
+
+  return;    
+
+}
+
 /*
 
   currency_convert
@@ -21,7 +36,7 @@ mapping query_container_callers2();
   v is price
 
 */
-
+/*
 mixed currency_convert(mixed v, object id){
   float exchange=3.0;
   float customs=2.0;
@@ -33,6 +48,7 @@ mixed currency_convert(mixed v, object id){
   return v;
 }
 
+*/
 
 string tag_shipping(string tag_name, mapping args,
 		     object id, mapping defines) {
@@ -62,22 +78,26 @@ string tag_confirmorder(string tag_name, mapping args,
 
   string retval="";
 
-  object s=Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );   
 
 // reserve the next order for me please...
 
-  s->query("INSERT INTO orders VALUES(NULL,0,NULL,0,NULL,NULL,NOW())");
-  id->misc->ivend->orderid=s->master_sql->insert_id(); // mysql only
+array r=  id->misc->ivend->s->query("SELECT shipping_types.type, "
+"lineitems.extension FROM shipping_types,lineitems WHERE "
+"lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
+"lineitems.lineitem='shipping' "
+"and shipping_types.name=lineitems.extension");
+
+  id->misc->ivend->s->query("INSERT INTO orders VALUES(NULL,0,NULL," +
+    r[0]->type + ",NOW(),NULL,NOW())");
+  id->misc->ivend->orderid=
+    id->misc->ivend->s->master_sql->insert_id(); // mysql only
+
 
 
 // get the order from sessions
 
-  array r=s->query("SELECT sessions.*,products.price, products.taxable from sessions,products  WHERE sessionid='"
+  array r=id->misc->ivend->s->query(
+	"SELECT sessions.*,sessions.price, products.taxable from sessions,products  WHERE sessionid='"
 	+id->misc->ivend->SESSIONID+ "' and products.id=sessions.id");
 
 // replace sessionid with orderid
@@ -87,16 +107,15 @@ mixed error= catch{  for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
     r[i]->status=0;
-    if(args->currency_convert && functionp(currency_convert))
-       r[i]->price=currency_convert((float)r[i]->price, id);
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
-    query=iVend.db()->generate_query(r[i], "orderdata", s);
-    s->query(query);
+    query=iVend.db()->generate_query(r[i], "orderdata", id->misc->ivend->s);
+    id->misc->ivend->s->query(query);
   }
 } ;
 if(!error)
-s->query("DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
+id->misc->ivend->s->query(
+  "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
   id->misc->ivend->error+="ERROR MOVING ORDER TO CONFIRMED STATUS!";
@@ -104,15 +123,15 @@ else {
 }
 // update customer info and payment info with new orderid
     
-  s->query("UPDATE customer_info SET orderid='"+
+  id->misc->ivend->s->query("UPDATE customer_info SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-  s->query("UPDATE payment_info SET orderid='"+
+  id->misc->ivend->s->query("UPDATE payment_info SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-  s->query("UPDATE lineitems SET orderid='" +
+  id->misc->ivend->s->query("UPDATE lineitems SET orderid='" +
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
@@ -124,7 +143,7 @@ if(note) {
 
   string subject,sender, recipient;
   sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
-  array r=s->query("SELECT " + recipient + " from customer_info WHERE "
+  array r=id->misc->ivend->s->query("SELECT " + recipient + " from customer_info WHERE "
 		   "orderid='"+id->misc->ivend->orderid+"' AND "
 		   "type=0");
   recipient=r[0][recipient];
@@ -193,11 +212,6 @@ id->misc->ivend->lineitems->taxable=
 id->misc->ivend->lineitems->nontaxable=
 	(float)id->misc->ivend->lineitems->nontaxable - (float)ntdiscount;
 
-if(args->convert && functionp(currency_convert) ) {
-    tdiscount=currency_convert(tdiscount,id) ;
-    ntdiscount=currency_convert(ntdiscount,id) ;
-    }
-
 
 return sprintf("%.2f", tdiscount + ntdiscount);
 
@@ -220,17 +234,10 @@ string locality;	// fieldname of locality
 
 locality=(args->locality||"state");
 
-  object s=Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-
 query=
 "select " + locality + " from customer_info where orderid='"+
 	id->misc->ivend->SESSIONID +"'";
-r=s->query(query);
+r=id->misc->ivend->s->query(query);
 
 if(!r) perror("iVend: ERROR locating customerinfo!\n");
 
@@ -239,29 +246,22 @@ else {
   query=
   "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
 
-  r=s->query(query);
-  if(sizeof(r)==1) {
-    totaltax=(float)r[0]->taxrate *
-      (id->misc->ivend->lineitems->taxable || 0.00);
- if(!id->misc->ivend->lineitems) 
-   id->misc->ivend+= (["lineitems":([])]);
-    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
-if(args->convert && functionp(currency_convert) ) {
-    totaltax=currency_convert(totaltax,id) ;
-    }
-	
-      return sprintf("%.2f",(float)totaltax);
 
+  r=id->misc->ivend->s->query(query);
+  if(sizeof(r)==1) {
+    if(id->misc->ivend->config->shipping_taxable=="Yes")
+      totaltax=(float)r[0]->taxrate *
+        ((id->misc->ivend->lineitems->taxable +
+         id->misc->ivend->lineitems->shipping) || 0.00);
+    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
+      return sprintf("%.2f",(float)totaltax);
+    }
+
+  else return ("0.00");
   }
-  else {
- if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
-    id->misc->ivend->lineitems+=(["salestax":0.00]);
-    return ("0.00");
-  }
-}
- if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
+
 id->misc->ivend->lineitems+=(["salestax":0.00]);
-return ("0.00");
+return ("ERROR");
 
 }
 
@@ -389,10 +389,6 @@ float subtotal;
 subtotal=(float)id->misc->ivend->lineitems->taxable + 
 	(float)id->misc->ivend->lineitems->nontaxable;
 
-if(args->convert && functionp(currency_convert) ) {
-    subtotal=currency_convert(subtotal,id) ;
-    }
-
 
 return sprintf("%.2f", subtotal);
 
@@ -414,18 +410,14 @@ string tag_grandtotal(string tag_name, mapping args,
 float grandtotal=0.00;
 string item;
  foreach(indices(id->misc->ivend->lineitems), item) {
-   grandtotal+=id->misc->ivend->lineitems[item];
    float i= id->misc->ivend->lineitems[item];
-   if(args->convert && functionp(currency_convert) ) {
-	i=currency_convert(i, id);
-	}
-   s->query("INSERT INTO lineitems VALUES('"+ id->variables->orderid + 
-	"','" + item + "',"+ i + ")");
+   grandtotal+=i;
+   if(item=="shipping");
+   else s->query("INSERT INTO lineitems VALUES('"+ id->variables->orderid + 
+	"','" + item + "',"+ i + ",NULL)");
   }
-   if(args->convert && functionp(currency_convert) ) {
-  return(sprintf("%.2f",(float)currency_convert(grandtotal,id))) ;
-   }
-else return sprintf("%.2f",(float)grandtotal);
+
+  return sprintf("%.2f",(float)grandtotal);
 
 }
 
@@ -454,16 +446,10 @@ array r=s->query(query);
      "<td>"+ r[i]->name + "</td>\n"
      "<td align=right>";
 
-   if(args->convert && functionp(currency_convert) ) {
-  retval+=sprintf("%.2f",(float)currency_convert(r[i]->price,id)) ;
-   }
-else retval+=r[i]->price;
+retval+=r[i]->price;
    retval+= "</td>\n"
      "<td align=right>";
-   if(args->convert && functionp(currency_convert) ) {
-  retval+=sprintf("%.2f",(float)currency_convert(r[i]->linetotal,id)) ;
-   }
-else retval+=r[i]->linetotal;
+retval+=r[i]->linetotal;
 if(r[i]->taxable=="N") nontaxable+=(float)r[i]->linetotal;
   else taxable+=(float)r[i]->linetotal;
 retval+= "</td></tr>\n"; 
@@ -498,6 +484,8 @@ contents="<form action=\"" + id->not_query + "\">\n<input type=hidden name=_page
   "value=" + (id->misc->ivend->next_page || "2") + ">\n"
   +contents+ "</form>\n";
 
+load_lineitems(id);
+
 contents=parse_html(contents,
 		  tags,
 		  containers,
@@ -507,7 +495,9 @@ contents=parse_html(contents,
 	"<b>An error occurred while processing your request.</b><p>" 
 	"Please review the cause of this error and go back to correct it:<p>" 
 	+ (id->misc->ivend->error[1..]);
-else return contents;
+else { 
+  return contents;
+  }
 }
 
 

@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.98 1998-08-18 00:28:31 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.99 1998-08-18 00:32:40 hww3 Exp $";
 
 array register_module(){
 
@@ -690,7 +690,7 @@ switch(page){
       }
     else if(fs[1]<=0) {
 //      perror("we've got a directory!\n"
-	"trying " + page + "/index.html\n");
+//	"trying " + page + "/index.html\n");
       fs=stat_file(page+"/index.html",id);
 //  perror(sprintf("%O",fs));
 	

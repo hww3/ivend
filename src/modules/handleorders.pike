@@ -255,7 +255,7 @@ retval+="<order id=\"" + or->id + "\">\n";
 	or->id + "'");
       foreach(r, mapping row){	
 	retval+="<record>\n";
-	retval+="<table name=\"" + t + "\">\n";
+	retval+="<table>" + t + "</table>\n";
         foreach(fields, mapping f){
 	  retval+="<data field=\"" + f->name + "\" type=\"" + f->type +
 	    "\">" + row[f->name] + "</data>\n";
@@ -266,7 +266,7 @@ retval+="<order id=\"" + or->id + "\">\n";
       }
   retval+="</order>\n";
     }
-
+  return http_string_answer(retval, "text/archive");
 
  }
 

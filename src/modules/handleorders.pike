@@ -229,6 +229,7 @@ if(note) {
 
 string|int archive_order(string orderid, object id){
 string retval="";
+array orders_to_archive;
 orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
 "'");
 

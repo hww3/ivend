@@ -61,8 +61,9 @@ return 1;	// good address!
 
 }
 
-int sendmail(string sender, string recipient, string message){
+int sendmail(string sender, string|array recipient, string message){
 int code;
+array recip=({});
 object f=Stdio.FILE();
 if(!f->connect("localhost", 25)) {
   werror("ERROR ESTABLISHING SMTP CONNECTION!\n");
@@ -81,15 +82,22 @@ if(readcode(f)/100 !=2){
   }
 f->write("MAIL FROM: " + sender + "\n");
 readcode(f);
-f->write("RCPT TO: " + recipient + "\n");
-readcode(f);
+if(!arrayp(recipient)) recip=({recipient});
+else recip=recipient;
+foreach(recip, string rc){
+  f->write("RCPT TO: " + rc + "\n");
+  if(readcode(f)!=250) werror("SEND FAILED FOR " + rc + "\n");
+
+  }
 f->write("DATA\n");
 if(readcode(f)!=354){
     f->close();
     return 0;
     }
 f->write(message);
-f->write(".\n");
+if(message[(sizeof(message)-1)..]=="\n")
+  f->write(".\n");
+else f->write("\n.\n");
 readcode(f);
 f->write("QUIT\n");
 readcode(f);

@@ -5,7 +5,6 @@
 #define KEYS id->misc->ivend->keys
 #define CONFIG id->misc->ivend->config
 
-inherit "html.pike";
 
 class config {
 
@@ -119,7 +118,7 @@ m+=([name:desc]);
 
             case "string":
             default:
-                    retval+=input(vars[i],  config[vars[i]] ||
+                    retval+=::input(vars[i],  config[vars[i]] ||
                               config_setup[vars[i]]->default_value ||"", 40);
                 break;
 
@@ -217,6 +216,8 @@ m+=([name:desc]);
 
 
 class db {
+
+inherit "html";
 
     inherit Sql.sql : sqlconn;
 
@@ -570,7 +571,8 @@ o+=query("SELECT id,parent,name FROM groups");
                         +replace(r[i]->name,"_"," ")+
                         " <b>$</b></FONT></TD>\n"
                         "<TD>\n"
-			+ input(r[i]->name,  record[r[i]->name] ||"", 40)
+			+ ::input(r[i]->name,  record[r[i]->name] ||"",
+40)
 			+ "\n";
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
@@ -623,7 +625,7 @@ o+=query("SELECT id,parent,name FROM groups");
                     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
 
-                else retval+=input(lower_case(r[i]->name),
+                else retval+=::input(lower_case(r[i]->name),
 record[r[i]->name] ||"", r[i]->length)
                         + "\n"; 
 
@@ -647,7 +649,8 @@ record[r[i]->name] ||"", r[i]->length)
                 else if(r[i]->flags["primary_key"] && record[r[i]->name])
                     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
-                else retval+= input(r[i]->name,  record[r[i]->name] ||"",
+                else retval+= ::input(r[i]->name,  record[r[i]->name]
+||"",
 				r[i]->length)
                         + "\n"; 
             }
@@ -666,7 +669,7 @@ record[r[i]->name] ||"", r[i]->length)
                         "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
                         +replace(r[i]->name,"_"," ")+
                         "</FONT></TD>\n<td><!-- long -->"  ;
-			retval+= input(r[i]->name,  record[r[i]->name] 
+			retval+= ::input(r[i]->name,  record[r[i]->name] 
 				||"", r[i]->length) + "\n"; 
 
             }
@@ -727,7 +730,8 @@ record[r[i]->name] ||"", r[i]->length)
             else {
                 retval+= GROUP + j[0]->id+" ( "+j[0]->name+" ) " + IS_LINKED +
                          PRODUCTS +":<p>";
-                q="SELECT product_groups.product_id,products.name FROM "
+		string n=list_fields("products")[1]->name;
+                q="SELECT product_groups.product_id,products." + n +" FROM "
                   "products,product_groups WHERE product_groups.group_id='"
                   +id+"' AND products." + field2  +
                   "=product_groups.product_id";
@@ -885,7 +889,8 @@ array(mapping(string:mixed)) r=list_fields(table);
                         "</FONT></TD>\n"
                         "<TD>\n";
 
-                retval+=input(lower_case(r[i]->name),  record[r[i]->name] 
+                retval+=::input(lower_case(r[i]->name),
+record[r[i]->name] 
 ||"", r[i]->length)
                         + "\n"; 
                 if(r[i]->flags->not_null)
@@ -916,7 +921,7 @@ array(mapping(string:mixed)) r=list_fields(table);
                                                      record[r[i]->name]=="N")?"SELECTED":"")+
                             ">No\n</SELECT>\n";
                 else {
-                    retval+= input(lower_case(r[i]->name), 
+                    retval+= ::input(lower_case(r[i]->name), 
 			record[r[i]->name] ||"", r[i]->length) + "\n"; 
 
                     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";

@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.5 1997-12-17 00:57:07 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.6 1998-01-05 00:43:47 hww3 Exp $";
 
 /*
  *
@@ -82,11 +82,6 @@ void create(){
 /*
  *
  *  check_variable(): check validity of config variables...
- *
- *  check conf interface variables for sanity.
- *
- *  variable is the name of the variable we're checking
- *  set_to is the value being tested
  *
  */
 
@@ -155,105 +150,6 @@ array|int size_of_image(string filename){
 
 }
 
-string tag_listitems(string tag_name, mapping args,
-                    object id, mapping defines)
-
-{
-
-string retval="";
-
-if(!id->misc->page) return "no page!";
-string st=id->misc->ivend->st;
-
-object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
-array r;
-if(args->type=="groups") {
-  r=s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
-  }
-else {
-
-  r=s->query("SELECT product_id AS pid,"+args->fields+
-	" FROM product_groups,products where group_id='"+id->misc->page+"'"
-	" AND products.id=product_id");
-}
-
-if(sizeof(r)==0) return "Sorry, No Products are Available.";
-
-mapping row;
-
-array(string) titles=(args->fields/",");
-array(array(string)) rows=allocate(sizeof(r));
-int p=0;
-foreach(r,row){
-  array thisrow=allocate(sizeof(row)-1);
-  string t;
-  int n=0;
-// perror(indices(row)*" - ");
-  foreach(titles, t){
-//	perror(t);  
-
-      if(n==0)
-        thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</A>");
-      else
-        thisrow[n]=row[t]; 
-      n++;
-
-    }
-  rows[p]=thisrow;
-  p++;
-  }
-
-retval+=html_table(titles, rows);
-return retval;
-
-// return "<dumpid>";
-
-}
-
-string tag_ivstatus(string tag_name, mapping args,
-                    object id, mapping defines)
-{
-
-return replace(id->misc->ivendstatus || "","\n","<br>");
-
-}
-string tag_ivmg(string tag_name, mapping args,
-                    object id, mapping defines)
-
-{
-string filename="";
-if(args->src!="") 
-filename=config[id->misc->ivend->st]->root+"/images/"+args->src+".gif";
-// perror("getting image "+filename+"\n");
-
-array|int size=size_of_image(filename);
-
-if(size==0) return "";
-else return ("<IMG SRC=\""+query("mountpoint")+id->misc->ivend->st+"/images/"+args->src+"\" "
-	"HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
-
-
-}
-
-string container_ivindex(string name, mapping args,
-                      string contents, object id)
-{
-string retval="";
-array(string)a=indices(config);
-string c;
-foreach(a,c){
-  string s=contents;
-  if(c=="global") continue;
-string d="";
-foreach(indices(config[c]),d){
-  s=replace(s,("#"+d+"#"),config[c][d]);
-  }
-  s=replace(s,"#id#",c);
-  retval+=s;
-}
-
-return parse_rxml(retval,id);
-}
 string|void container_ia(string name, mapping args,
                       string contents, object id)
 
@@ -339,6 +235,116 @@ string container_icart(string name, mapping args,
 }
 
 
+string tag_listitems(string tag_name, mapping args,
+                    object id, mapping defines)
+
+{
+
+string retval="";
+
+if(!id->misc->page) return "no page!";
+string st=id->misc->ivend->st;
+
+object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+array r;
+if(args->type=="groups") {
+  r=s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
+  }
+else {
+
+  r=s->query("SELECT product_id AS pid,"+args->fields+
+	" FROM product_groups,products where group_id='"+id->misc->page+"'"
+	" AND products.id=product_id");
+}
+
+if(sizeof(r)==0) return "Sorry, No Products are Available.";
+
+mapping row;
+
+array(string) titles=(args->fields/",");
+array(array(string)) rows=allocate(sizeof(r));
+int p=0;
+foreach(r,row){
+  array thisrow=allocate(sizeof(row)-1);
+  string t;
+  int n=0;
+// perror(indices(row)*" - ");
+  foreach(titles, t){
+//	perror(t);  
+
+      if(n==0)
+        thisrow[n]=("<A HREF=\""+row->pid+".ivml\">"+row[t]+"</A>");
+      else
+        thisrow[n]=row[t]; 
+      n++;
+
+    }
+  rows[p]=thisrow;
+  p++;
+  }
+
+retval+=html_table(titles, rows);
+    return parse_html(retval,([]),(["a":container_ia]),id);
+
+    }
+
+
+string tag_ivstatus(string tag_name, mapping args,
+                    object id, mapping defines)
+{
+
+return replace(id->misc->ivendstatus || "","\n","<br>");
+
+}
+string tag_ivmg(string tag_name, mapping args,
+                    object id, mapping defines)
+
+{
+string st=id->misc->ivend->st;
+string filename="";
+array r;
+if(args->field!=""){
+  object s=Sql.sql(config[st]->dbhost, config[st]->db, config[st]->user, config[st]->password);
+  r=s->query("SELECT "+args->field+ " FROM "+id->misc->ivend->type+"s WHERE "
+	" id='"+id->misc->ivend->id+"'");
+  if (sizeof(r)!=1) return "";
+  else filename=config[id->misc->ivend->st]->root+"/images/"+
+    id->misc->ivend->type+"s/"+r[0][args->field]+".gif";
+  }  
+else if(args->src!="") 
+filename=config[id->misc->ivend->st]->root+"/images/"+args->src+".gif";
+// perror("getting image "+filename+"\n");
+
+array|int size=size_of_image(filename);
+
+if(size==0) return "";
+else return ("<IMG SRC=\""+query("mountpoint")+st+"/images/"
+      +id->misc->ivend->type+"s/"+r[0][args->field]+".gif\""
+	" HEIGHT=\""+size[1]+"\" WIDTH=\""+size[0]+"\">");
+
+
+}
+
+string container_ivindex(string name, mapping args,
+                      string contents, object id)
+{
+string retval="";
+array(string)a=indices(config);
+string c;
+foreach(a,c){
+  string s=contents;
+  if(c=="global") continue;
+string d="";
+foreach(indices(config[c]),d){
+  s=replace(s,("#"+d+"#"),config[c][d]);
+  }
+  s=replace(s,"#id#",c);
+  retval+=s;
+}
+
+return parse_rxml(retval,id);
+}
+
 int read_conf(){          // Read the config data.
 
 string current_config="";
@@ -402,9 +408,12 @@ void start(){
 
 }
 
-mixed handle_error(string page, string st, object id){
+mixed handle_error(string error, object id){
+string retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml");
+perror("ERROR~!");
+return replace(retval,"<error>",error);
 
-return "error!  "+page+" in "+st;
+// return "error!  "+page+" in "+st;
 
 }
 
@@ -433,7 +442,7 @@ if(id->variables->update) {
 }
 string retval;
 if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
-  return handle_error(id->misc->ivend->config->root+"/cart.ivml",id->misc->ivend->st,id);
+  return handle_error(id->misc->ivend->config->root+"/cart.ivml",id);
  
    return parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id);
 
@@ -469,26 +478,29 @@ object s=Sql.sql(config[st]->dbhost, config[st]->db,
 	config[st]->user, config[st]->password);
 
 page=page-".ivml";	// get to the core of the matter.
+id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
 array f;
 r=s->query("SELECT * FROM groups WHERE id='"+page+"'");
 if (sizeof(r)==1){
+  id->misc->ivend->type="group";
   template="group_template.ivml";
   f=s->list_fields("groups");
   }
 else {
   r=s->query("SELECT * FROM products WHERE id='"+page+"'");
+  id->misc->ivend->type="product";
   template="product_template.ivml";
   f=s->list_fields("products");
 
   }
 if (sizeof(r)!=1) 
-return http_redirect(query("mountpoint")+st+"/nosuch.ivml");
+return 0;
 
 retval=Stdio.read_bytes(config[st]->root+"/"+template);
 if (catch(sizeof(retval)))
-  return handle_error(config[st]->root+"/"+template,st,id);
+  return 0;
 
 // retval="find_page("+page+", s, id)";
 return parse_page(retval, r, f);
@@ -517,14 +529,13 @@ perror("iVend: handling page "+st+" "+ page+"\n");
 
 id->misc["page"]=page-".ivml";
 if(id->variables->ADDITEM) additem(id->variables->ADDITEM,id);
-string retval;
+mixed retval;
 
 switch(page){
 
   case "index.ivml":
 // perror("reading "+config[st]->root+"/index.ivml");
-    if(!(retval= Stdio.read_bytes(config[st]->root+"/index.ivml")) )
-return handle_error(id->misc->ivend->config->root+"/index.ivml",id->misc->ivend->st,id);
+    retval= Stdio.read_bytes(config[st]->root+"/index.ivml"); 
     break;
 
   case "search":
@@ -535,7 +546,7 @@ return handle_error(id->misc->ivend->config->root+"/index.ivml",id->misc->ivend-
     if(retval=Stdio.read_bytes(config[st]->root+"/"+lower_case(page))) break;
     else retval=find_page(page, st, id);
   }
-
+  if (!retval) return handle_error("Unable to find product "+page, id);
     return parse_rxml(parse_html(retval,([]),(["a":container_ia]),id),id);
 
 
@@ -848,7 +859,7 @@ retval+="<title>iVend Store Administration</title>"
   +id->misc->ivend->config->name+
   " Administration</gtext><p>"
   "<font face=helvetica,arial size=+1>"
-  "<a href=./>To Storefront</a><p>\n";
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a><p>\n";
 
 switch(id->variables->mode){
 
@@ -861,7 +872,7 @@ switch(id->variables->mode){
     );
   mixed j=s->addentry(id,id->referrer);
 //  return http_redirect(id->referrer, id);
-  return http_string_answer(parse_rxml("<DUMPID>",id));
+  return http_string_answer(parse_rxml(retval+"Product Added Sucessfully.",id));
   break;
 
   case "addproduct":
@@ -896,16 +907,15 @@ switch(id->variables->mode){
   if(id->variables->confirm){
     retval+=s->dodelete(id->variables->type, id->variables->id);  }
   else {
-    retval+="Are you sure you want to delete the following?<p>";
     mixed n=s->showdepends(id->variables->type, id->variables->id);
-    if(n){ retval+=n;
+    if(n){ 
     retval+="<form action=./admin>\n<input type=hidden value="+
       id->variables->SESSIONID+ " NAME=SESSIONID>\n"
       "<input type=hidden name=mode value=dodelete>\n"
       "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=hidden name=id value="+id->variables->id+">\n"
-      "<input type=submit name=confirm value=\" Delete \">"
-      " &nbsp; <input type=submit value=\" Cancel \">\n</form>";  
+      "Are you sure you want to delete the following?<p>";
+      retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
       }
     else retval+="Couldn't find "+capitalize(id->variables->type) +" "
       +id->variables->id+".<p>";
@@ -945,7 +955,7 @@ switch(id->variables->mode){
 mixed get_image(string filename, object id){
 
 string 
-data=Stdio.read_bytes(config[id->misc->ivend->st]->root+"/images/"+filename+".gif");
+data=Stdio.read_bytes(config[id->misc->ivend->st]->root+"/images/"+filename);
 
 return http_string_answer(data, "image/gif");
 

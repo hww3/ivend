@@ -1,4 +1,4 @@
-iVend version 1.0pa1 of 12 december 1997 
+iVend version 1.0a1 of 3 january 1998 
 coding by Bill Welliver <hww3@riverweb.com>
 
 What is iVend?
@@ -55,7 +55,7 @@ products		groups			product_groups
 
 id string key		id string key		group string
 name string		name string		product string
-image string		image string
+image* string		image* string
 price decimal(2)	price decimal(2)
 
 orders

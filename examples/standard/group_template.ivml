@@ -3,7 +3,8 @@
 <img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
 <gtext fg=maroon nfont=helvetica black>#name#</gtext><p>
 <font face=helvetica,arial size=+1>
-<p><ivmg src="#id#">
+<p><ivmg field="image"><p>
+<ivmg field="image2"><p>
 <i>#description#</i>
 <p>
 <listitems fields="ID,Name,Mfgr">

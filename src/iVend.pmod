@@ -31,7 +31,6 @@ return 1;
 string|int genform(void|mapping config){
 
 string retval="";
-perror(sprintf("%O",config));
 if(sizeof(config_setup)<1) return 0;
 array vars=sort(indices(config_setup));
 for(int i=0; i<sizeof(vars); i++){
@@ -95,14 +94,15 @@ array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
-  if(r[i]->name=="image"){
+  if(lower_case(r[i]->name[0..4])=="image"){
 
   if(sizeof(id->variables[r[i]->name])>3)
     {
-    string filename=id->misc->ivend->config->root+"/images/"+id->variables->id+".gif";
+    string filename=id->misc->ivend->config->root+"/images/"+id->variables->table+"/"
+	+id->variables->id+r[i]->name[5..]+".gif";
     rm(filename);
     Stdio.write_file(filename,id->variables[r[i]->name]);
-    query+="'"+id->variables->id+"',";
+    query+="'"+id->variables->id+r[i]->name[5..]+"',";
     }
   else query+="NULL,";
   }
@@ -145,13 +145,13 @@ if(SESSIONID)
         "<TABLE>\n";
 
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
-if(r[i]->name=="image"){
+if(lower_case(r[i]->name[0..4])=="image"){
     retval+="<TR>\n"
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
     +replace(r[i]->name,"_"," ")+
     "</FONT></TD>\n"
     "<TD>\n"
-    "<input type=file name=image></td></tr>\n";
+    "<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
 }
 
 else if(r[i]->type=="blob"){

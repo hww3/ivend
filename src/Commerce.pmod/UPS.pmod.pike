@@ -4,7 +4,7 @@ private mapping(string:mixed) zonedata=([]);
 private mapping(string:mixed) ratedata=([]);
 
 int load_zonefile(string zonefile){
-perror("Commerce.UPS.zone->load_zonefile()\n");
+// perror("Commerce.UPS.zone->load_zonefile()\n");
 if (zonefile=="") return 0;
 int loc=search(zonefile,"Dest. ZIP,");
 string zn=zonefile[loc..];
@@ -13,7 +13,7 @@ array z=((replace(zn,({"\r\n"}),({"\n"})))/"\n");
 // perror(sizeof(z) + "\n");
 //  werror(z[0]+"\n");
 array t=z[0]/","; // shipping types
- perror(sizeof(t) + "\n");
+// perror(sizeof(t) + "\n");
 for(int i=2; i<sizeof(z);i++){
   array a=z[i]/",";
   mapping line=([]);
@@ -37,7 +37,7 @@ return 1;
 }
 
 int load_ratefile(string ratefile){
-perror("Commerce.UPS.zone->load_ratefile()\n");
+// perror("Commerce.UPS.zone->load_ratefile()\n");
 ratefile=replace(ratefile, "\r", "\n");
 if (ratefile=="") return 0;
 string type=ratefile[4..(search(ratefile,",")-1)];
@@ -113,14 +113,14 @@ string zone="";
 if (zipcode=="") return -1.00;
 else if (weight=="letter") weight="Letter";
 string zip=findzip(zipcode);
-perror("ZIP: " + zipcode + " " + zip + "\n");
+// perror("ZIP: " + zipcode + " " + zip + "\n");
 if(type){
  if(catch( zone=zonedata[zip][type]))
 	return -1.00;
 //  werror(zone+"\n");
   }
 else if(sizeof(indices(ratedata))==1){
-perror("Only one ratetype loaded...\n");
+// perror("Only one ratetype loaded...\n");
 type=indices(ratedata)[0];
 if(catch(zone=zonedata[zip][type]))
 	return -1.00;
@@ -131,16 +131,16 @@ else {
    foreach(t, string typename){
       if(catch(zone=zonedata[zip][typename]))
 	continue;
-      werror(zone+"\n");
+//      werror(zone+"\n");
       retval+=([typename:(float)(ratedata[typename][zone][weight])]);
       }
-   perror(sprintf("%O", retval));
+//   perror(sprintf("%O", retval));
    return retval;
    }
 string cost;
 weight=sprintf("%d", (int)weight);
 perror("type: " + type + " zone: " + zone + " weight: " + weight + "\n");
-perror(sprintf("%O\n", ratedata[type][zone]));
+// perror(sprintf("%O\n", ratedata[type][zone]));
 cost=ratedata[type][zone][weight];
 perror(cost+"\n");
 return ((float)(cost));
@@ -149,7 +149,7 @@ return ((float)(cost));
 
 void create(string|void zonefile){
 
-perror("Commerce.UPS.zone()\n");
+// perror("Commerce.UPS.zone()\n");
 
 if(zonefile) load_zonefile(zonefile);
 else return;

@@ -583,7 +583,7 @@ array r;
 if(args->field!=""){
   r=id->misc->ivend->db->query("SELECT "+args->field+ " FROM "+ 
     id->misc->ivend->type+"s WHERE "
-	" " +  keys[id->misc->ivend->st]->products  +"='" 
+	" " +  keys[id->misc->ivend->st][id->misc->ivend->type+"s"]  +"='" 
 	+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else if ((r[0][args->field]==0))
@@ -654,9 +654,10 @@ return retval;
 
 string container_itemoutput(string name, mapping args,
                       string contents, object id) {
-
+string page=(args->item || id->misc->ivend->page);
 string type=(args->type || id->misc->ivend->type);
 string item=(args->item || id->misc->ivend->page);
+
 
   string q="SELECT *" + (args->extrafields?"," +
         args->extrafields:"") +" FROM " +
@@ -682,7 +683,24 @@ else  if(desc[i]->type=="decimal")
   r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
 
   }
- return do_output_tag( ([]), ({ r[0] }), page, id ); 
+perror(sprintf("%O",r));
+ return do_output_tag( ([]), ({ r[0] }), contents, id ); 
+
+}
+
+string get_type(string page, object id){
+
+array r;
+r=id->misc->ivend->db->query("SELECT * FROM groups WHERE " +
+        keys[id->misc->ivend->st]->groups +
+        "='"+page+"'");
+if (sizeof(r)==1) return "group";
+
+r=id->misc->ivend->db->query("SELECT * FROM products WHERE " +
+keys[id->misc->ivend->st]->products + "='" + page + "'");
+
+if(sizeof(r)==1) return "product";
+else return "";
 
 }
 
@@ -698,33 +716,23 @@ id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
 array f;
-r=id->misc->ivend->db->query("SELECT * FROM groups WHERE " +
-	keys[id->misc->ivend->st]->groups + 
-	"='"+page+"'");
-if (sizeof(r)==1){
-  id->misc->ivend->type="group";
-  if(id->variables->template) template=id->variables->template;
-  else template="group_template.html";
-  }
-else {
-  string q="SELECT *" + (id->misc->ivend->extrafields?"," +
-	id->misc->ivend->extrafields:"") +" FROM products WHERE " +
-	keys[id->misc->ivend->st]->products +"='"+page+"'";
+string type=get_type(page, id);
+id->misc->ivend->type=type;
+id->misc->ivend->page=page;
+perror(page + " is a " + type + "\n");
+if(!type)
+  return 0;
 
-  r=id->misc->ivend->db->query(q);
-  if (sizeof(r)!=1) 
-    return 0;
-  id->misc->ivend->type="product";
-  if(id->variables->template) template=id->variables->template;
-  else template="product_template.html";
-
-  }
+if(id->variables->template) template=id->variables->template;
+  else template=type+"_template.html";
 
 retval=Stdio.read_bytes(id->misc->ivend->config->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
 id->realfile=id->misc->ivend->config->root+"/"+template;
-return (retval, id);
+perror(id->realfile+"\n");
+perror(retval + "\n");
+return (retval);
 }
 
 mixed additem(string item, object id){
@@ -784,22 +792,22 @@ switch(page){
   fs=stat_file(page,id);
 
     if(!fs) {
-      id->misc->ivend["page"]=page-".html";
+      id->misc->ivend->page=page-".html";
       return find_page(page,id);
       }
     else if(fs[1]<=0) {
-//      perror("we've got a directory!\n"
-//	"trying " + page + "/index.html\n");
-page="/"+((page/"/") - ({""})) * "/";
+      page="/"+((page/"/") - ({""})) * "/";
       fs=stat_file(page+"/index.html",id);
-//  perror(sprintf("%O",fs));
 	
       if(fs && fs[1]>0) {
-  //      perror("found it!\n");
         return http_redirect(page + "/index.html", id);
        }
       else return 0;
       }    
+    id->misc->ivend->page=page-".html";
+    id->misc->ivend->type=get_type(id->misc->ivend->page, id);
+perror (id->misc->ivend->page + " is a " + id->misc->ivend->type + "\n");
+
     retval=Stdio.read_file(id->misc->ivend->config->root + "/" + page);
 	id->realfile=id->misc->ivend->config->root+"/"+page;
   }
@@ -828,10 +836,10 @@ retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 werror("handled_checkout from module...\n");
 
 
-if(retval==-1) return 
-handle_page("index.html",id);
+if(retval==-1) 
+  return handle_page("index.html",id);
 else 
-return retval;    
+  return retval;    
 }
 
 
@@ -1427,7 +1435,7 @@ if(args->extrafields)
 	"form":container_form,
 	"icart":container_icart, 
 	"ivindex":container_ivindex,
-	"category_output":container_category_output
+	"category_output":container_category_output,
 	"itemoutput":container_itemoutput
     ]);
 catch {
@@ -1456,10 +1464,10 @@ if(id->misc->ivend->st){
 if(objectp(!id->misc->ivend->db))
     err=catch(id->misc->ivend->db=db[id->misc->ivend->st]->handle());
 
-  id->misc->ivend->modules=modules;
-contents=parse_rxml(contents,id);
  contents= "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
+  id->misc->ivend->modules=modules;
+contents=parse_rxml(contents,id);
 if(objectp(id->misc->ivend->db))
   db[id->misc->ivend->st]->handle(id->misc->ivend->db);
 return contents;
@@ -1613,11 +1621,12 @@ if(objectp(id->misc->ivend->db));
 
   if(mappingp(retval))
 	return retval;
+perror(typeof(retval));
 
   if(stringp(retval)){ 
     if(id->conf->type_from_filename(id->realfile || "index.html")
-=="text/html")
-    retval=parse_rxml(retval, id);
+        =="text/html")
+   retval=parse_rxml(retval, id);
 
 
     return http_string_answer(retval,

@@ -859,18 +859,14 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
   string query;
   mixed cnt, cnt2;
   
-  // default table colors : headline-bg, headline-font, list-bg, list-font
-  array(string) tcolors = ({ "navy", "white", "white", "navy" });
+  // default table colors : headline-bg, headline-font, list-bg, list-bg2, list-font
 
-  if (args["tcolors"]) { 
-    array(string) custom_tcolors = args["tcolors"] / ",";
-    if( sizeof(custom_tcolors) == 4) {  // if all custom colors specified, use them
-      foreach(indices(custom_tcolors),cnt ) {
-	tcolors[cnt] = custom_tcolors[cnt];
-      }
-    }
-  }
-    
+  string headlinebgcolor= args->headlinebgcolor || "navy";
+  string headlinefontcolor= args->headlinefontcolor || "white";
+  string listbgcolor= args->listbgcolor || "white";
+  string listbgcolor2= args->listbgcolor2 || "lightblue";
+  string listfontcolor= args->listfontcolor || "navy";
+
   if(!id->misc->ivend->page) 
     return "no page!";
   
@@ -946,20 +942,24 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
   if(args->title) retval+="<h2>" + args->title + "</h2>\n";
    
   retval += "<table bgcolor=#000000 cellpadding=1 cellspacing=0 border=0>";
-  retval += "<tr><td><table border=0 cellspacing=0 cellpadding=4><tr bgcolor=" + tcolors[0] + ">\n";
+  retval += "<tr><td><table border=0 cellspacing=0 cellpadding=4><tr bgcolor=" + headlinebgcolor + ">\n";
 
   foreach (indices(en), cnt) {
     retval += sprintf("<th nowrap align=left><font color=%s>%s&nbsp; </font></th>\n",
-		      tcolors[1], (string)en[cnt]);
+		      headlinefontcolor, (string)en[cnt]);
   }
   retval+="</tr>\n";
-
+int i=0;
+ int m = (int)(args->modulo?args->modulo:1);
   foreach(indices(rows), cnt) {
-  retval +="<tr bgcolor=" + tcolors[2] +">\n";
+
+
+  retval +="<tr bgcolor=" +  ((args->fancy && (i/m)%2)?listbgcolor:listbgcolor2) +">\n";
     foreach(indices(rows[cnt]), cnt2) {
       retval += sprintf("<td nowrap><font color=%s>%s&nbsp;&nbsp;</td>\n",
-			tcolors[3], (string)rows[cnt][cnt2]);
+			listfontcolor, (string)rows[cnt][cnt2]);
  
+  i++;
     }
    retval+="</tr>\n";
   }

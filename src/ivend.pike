@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.206 1999-05-29 03:38:45 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.207 1999-05-29 03:43:57 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -602,7 +602,8 @@ mapping get_options(object id, string item)
              optr[0]->option_code });			
 	}
     }
-	return (["options": opt*"\000", "surcharge": surcharge]);
+perror("options: " + (opt*"\n") + "\n");
+	return (["options": opt*"\n", "surcharge": surcharge]);
 }
 
 

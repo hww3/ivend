@@ -349,6 +349,7 @@ return ({
 }
 
 array query_preferences(void|object id) {
+  string swfile="";
 
   if(!catch(DB) && sizeof(groupsearchfields)<=0) {
 
@@ -356,6 +357,9 @@ array query_preferences(void|object id) {
      foreach(f2, mapping m)
 	groupsearchfields +=({m->name});
     }
+
+  if(!catch(T_O->query("root")))
+	swfile=T_O->query("root") + "data/english.stop";
 
   if(!catch(DB) && sizeof(productsearchfields)<=0) {
 
@@ -382,8 +386,7 @@ array query_preferences(void|object id) {
 
 	({"stopwordfile", "Stop Word File", 
 	"Path to a file that contains words to exclude from search database. (optional but recommended)",
-	VARIABLE_STRING,
-	""
+	VARIABLE_STRING, swfile
 	}),
 
 	({"idmappingfile", "Catalog ID mapping File", 

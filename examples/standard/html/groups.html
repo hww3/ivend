@@ -2,6 +2,7 @@
 <title>iVend: All Groups</title>
 <body bgcolor=white text=navy>
 <img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
+<img src=images/shop.gif> &nbsp;
 <gtext fg=maroon nfont=helvetica black>Product Groups</gtext><p>
 <font face=helvetica,arial size=+1>
 Below is a list of the product groups available at this iVend store. To browse the
@@ -10,18 +11,19 @@ items in any group, just click on the link in that group's listing.
 <table>
 <category_output type=groups random>
 <formrotate><tr><td><font color=tan face=helvetica>
-<gtext 3 bg=white
-fg=navy nfont=caslon_540>#name#</gtext> &nbsp; &nbsp; 
+<a href=#id#.html><gtext 3 bg=white
+fg=navy nfont=caslon_540>#name#</gtext></a> &nbsp; &nbsp; 
 #description#</td></tr>
 </formrotate>
 <formrotate>
-<tr><td><font face=helvetica color=tan>#description# &nbsp; &nbsp; <gtext
+<tr><td><font face=helvetica color=tan>#description# &nbsp; &nbsp;
+<a href=#id#.html><gtext
 3 bg=white fg=maroon 
-nfont=triplex>#name#</gtext></td></tr>
+nfont=triplex>#name#</gtext></a></td></tr>
 </formrotate>
 </category_output>
 </table>
-<listitems type="groups" fields="Name,Description">
+
 <p>
 
 

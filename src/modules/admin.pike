@@ -28,10 +28,10 @@ return;
 
 int do_clean_sessions(object db){
 
-   string query="SELECT sessionid FROM sessions WHERE timeout < "+time(0);
+   string query="SELECT sessionid FROM session_time WHERE timeout < "+time(0);
    array r=db->query(query);
    foreach(r,mapping record){
-      foreach(({"customer_info","payment_info","orderdata","lineitems"}),
+      foreach(({"customer_info","payment_info","lineitems"}),
               string table)
       db->query("DELETE FROM " + table + " WHERE orderid='"
                 + record->sessionid + "'");
@@ -461,7 +461,7 @@ case VARIABLE_FLOAT:
 	id->variables["_" + id->variables->_varname]) {
     if(pton[id->variables->_varname][3]==VARIABLE_MULTIPLE) {
 m_delete(CONFIG_ROOT[id->variables->_module], id->variables->_varname);
-CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->variables->_varname]/"\000";
+catch(CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->variables->_varname]/"\000");
 	}
     else
     CONFIG_ROOT[id->variables->_module][id->variables->_varname]=

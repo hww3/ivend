@@ -617,7 +617,7 @@ if(stop_error(id))
 
 float gt=T_O->get_grandtotal(id, args->orderid || id->misc->ivend->orderid
 || id->misc->ivend->SESSIONID);
-// perror(gt + "\n");
+
 return sprintf("%.2f", (float)(gt));
 
 

@@ -168,9 +168,12 @@ retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
+perror(sprintf("%O", id->misc->ivend->keys));
+perror(sprintf("%O", row));
+
     retval+="<tr><td>" + (row->status=="Shipped"?"(S)" : 
 	"<input type=checkbox value=ship name=\"" + 
-	row[id->misc->ivend->keys->products ]+
+	row->id+
       "." + row->series + "\">")+ "</td>"
       "<td>" + row->quantity + "</td><td>" + row->id 
       + "</td>";

@@ -997,7 +997,7 @@ class db_handler
             if(search(dbs, d) == -1) {
                if(sizeof(dbs)>(2*num_dbs)) {
                   werror("Dropping db because of inventory...\n");
-                  //          destruct(d);
+                  destruct(d);
                }
                else {
                   dbs += ({d});

@@ -207,7 +207,7 @@ void register_path_handler(string c, string path, function f){
 
 void trigger_event(string event, object|void id, mapping|void args){
 
-   perror("triggering event " + event + "\n");
+//   perror("triggering event " + event + "\n");
 
    if(id && STORE){
       if(library[STORE]->event[event])
@@ -417,7 +417,17 @@ void start_store(string c){
    perror("done.\n");
 }
 
+
 void stop_store(string c){
+perror("dropping db object...\n");
+  destruct(db[c]);
+
+}
+
+void stop(){
+
+foreach(indices(config), string c)
+  stop_store(c);
 
 }
 
@@ -1072,7 +1082,7 @@ string tag_ivmg(string tag_name, mapping args,
       args->width=(string)size[0];
     }
 
-perror(sprintf("%O", args));
+// perror(sprintf("%O", args));
    return make_tag("img", args);
 
 

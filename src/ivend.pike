@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.272 2000-11-28 21:52:18 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.273 2000-11-28 21:57:13 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -456,7 +456,7 @@ string|void container_procedure(string name, mapping args,
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "#define KEYS id->misc->ivend->keys\n"
+                   "#define DB->keys id->misc->ivend->keys\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string tag_name, mapping "
                    "args, object id, mapping defines){\n";
@@ -469,7 +469,7 @@ string|void container_procedure(string name, mapping args,
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "#define KEYS id->misc->ivend->keys\n"
+                   "#define DB->keys id->misc->ivend->keys\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string event_name, "
                    "object|void id, mapping|void args){\n";
@@ -482,7 +482,7 @@ string|void container_procedure(string name, mapping args,
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "#define KEYS id->misc->ivend->keys\n"
+                   "#define DB->keys id->misc->ivend->keys\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string container_name, mapping args,"
                    " string contents, object id){\n";
@@ -1137,7 +1137,7 @@ string container_category_output(string name, mapping args,
             query+=" WHERE product_groups.group_id='" +
                    id->misc->ivend->page + "' AND "
                    + lower_case(args->type) + "." +
-                   KEYS[lower_case(args->type)] + "=product_groups.product_id ";
+                   DB->keys[lower_case(args->type)] + "=product_groups.product_id ";
             if(!args->show)
                 query+=" AND status='A' ";
 
@@ -1199,7 +1199,7 @@ string tag_generateviews(string tag_name, mapping args,
     if(catch(
     r = DB->query("SELECT " + args->field + " FROM "
                         + args->type + ", product_groups WHERE product_groups.product_id="
-                        + args->type + "." +  KEYS[args->type] + " AND "
+                        + args->type + "." +  DB->keys[args->type] + " AND "
                         + args->type + ".status='A'"
                         " AND product_groups.group_id= '" + id->misc->ivend->page + "' "
                         " GROUP BY " + args->field)))
@@ -1381,7 +1381,7 @@ string tag_ivmg(string tag_name, mapping args,
     if(args->field!=""){
         catch(r=DB->query("SELECT "+args->field+ " FROM "+
                               id->misc->ivend->type+"s WHERE "
-                              " " +  KEYS[id->misc->ivend->type+"s"]  +"='"
+                              " " +  DB->keys[id->misc->ivend->type+"s"]  +"='"
                               +id->misc->ivend->item+"'"));
         if(!r) return "<!-- query failed -->";
         else if (sizeof(r)!=1) return "<!-- no records returned -->";
@@ -1468,7 +1468,7 @@ string container_itemoutput(string name, mapping args,
     string q="SELECT *" + (args->extrafields?"," +
                            args->extrafields:"") +" FROM " +
              lower_case(type) + "s WHERE " +
-             KEYS[type + "s"]
+             DB->keys[type + "s"]
              +"='"+ item +"'";
 
     array r;
@@ -1880,10 +1880,10 @@ mixed getmodify(string type, string pid, object id){
     multiset gid=(<>);
     array record;
 	catch(record=DB->query("SELECT * FROM " + type + "s WHERE "
-                           +  KEYS[type +"s"]  + "='" + pid +"'"));
+                           +  DB->keys[type +"s"]  + "='" + pid +"'"));
     if (!record || sizeof(record)!=1)
         return "Error Finding " + capitalize(type) + " " +
-               KEYS[type +"s"] + " " + pid + ".<p>";
+               DB->keys[type +"s"] + " " + pid + ".<p>";
 
     if(type=="product") {
         array groups;
@@ -1977,12 +1977,12 @@ mixed open_popup(string name, string location, string mode, mapping
             "\n";
 if(options->type){
 retval+=	"var idn=document.gentable."
- + lower_case(KEYS[options->type+ "s"]) +
+ + lower_case(DB->keys[options->type+ "s"]) +
 		".value\n"
 	    " document.popupform" + id->misc->ivend->popup
 +".id.value=idn\n"
 	    " if(idn=='') { alert('You have not specified a " +
-		KEYS[options->type + "s"] + ".')\n return\n}\n";
+		DB->keys[options->type + "s"] + ".')\n return\n}\n";
 }
 retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h\n"
             "        palette=window.open(location,name,param)\n"
@@ -2121,7 +2121,7 @@ if(!intp(r)){
                          type=(id->variables->table-"s");
                          destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
-		"id": id->variables[KEYS[type + "s"]] ]) );
+		"id": id->variables[DB->keys[type + "s"]] ]) );
                        return (retval+"<br>"+capitalize(type)+" Added Sucessfully.")
 				+"</body></html>";
 
@@ -2138,7 +2138,7 @@ if(!intp(r)){
                      }
                      destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
-		"id": id->variables[KEYS[type + "s"]] ]) );
+		"id": id->variables[DB->keys[type + "s"]] ]) );
 
                      return retval +"<br>"+ capitalize(type) + " Modified Sucessfully."
 				+"</body></html>";
@@ -2182,14 +2182,14 @@ if(!intp(r)){
 
                  case "dodelete":
                      if(id->variables->confirm){
-                         if(id->variables[KEYS[type +
-"s"]]==0 || id->variables[KEYS[type + "s"]]=="")
+                         if(id->variables[DB->keys[type +
+"s"]]==0 || id->variables[DB->keys[type + "s"]]=="")
                              retval+="<p>You must select an existing ID to act upon!<br>";
                          else {
-				foreach(id->variables[KEYS[type
+				foreach(id->variables[DB->keys[type
 +"s"]]/"\000", string d) {
 				 retval+="<p>\n"+DB->dodelete(type,
-                      			d, KEYS[type+"s"] ); 
+                      			d, DB->keys[type+"s"] ); 
              trigger_event("admindelete", id, (["type": type, 
 		"id": d]) );
 }
@@ -2198,8 +2198,8 @@ if(!intp(r)){
                          if(id->variables->match) {
                              mixed n=DB->showmatches(type,
 
-id->variables[KEYS[type+ "s"]],
-                                                     KEYS[type+"s"], id);
+id->variables[DB->keys[type+ "s"]],
+                                                     DB->keys[type+"s"], id);
                              if(n)
                                  retval+="<form _parsed=1 name=form action=\"" +
 					add_pre_state(id->not_query,(<"dodelete=" + type>)) +"\">\n"
@@ -2213,20 +2213,20 @@ id->variables[KEYS[type+ "s"]],
                                          add_pre_state(id->not_query,(<"dodelete=" + type>))
                                          + "\">\n"
                                          "Are you sure you want to delete the following?<p>";
-//perror("Input: " + id->variables[KEYS[type +"s"]] + "\n");
-	foreach(id->variables[KEYS[type +"s"]]/"\000", string d){
+//perror("Input: " + id->variables[DB->keys[type +"s"]] + "\n");
+	foreach(id->variables[DB->keys[type +"s"]]/"\000", string d){
                              mixed n= DB->showdepends(type,
 							d
-                                                      , KEYS[type+"s"],
+                                                      , DB->keys[type+"s"],
 (type=="group"?DB->keys->products:0), id);
                              if(n){  retval+=
                                          "<input type=checkbox name=\"" +
-					KEYS[type+"s"] + "\" value=\"" +d 
+					DB->keys[type+"s"] + "\" value=\"" +d 
                                              +"\" checked>\n";
          retval+=n;
 			}
                              else retval+="<p>Couldn't find "+capitalize(type) +" "
-                                              +id->variables[ KEYS[
+                                              +id->variables[ DB->keys[
                                                                   type+"s"]]+".<p>";
                              }
 retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
@@ -2239,12 +2239,12 @@ retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                              add_pre_state(id->not_query,(<"dodelete=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=dodelete>\n"
                              +capitalize(type) + " "+
-                             KEYS[type +"s"] + " to Delete:\n"
+                             DB->keys[type +"s"] + " to Delete:\n"
                              "<input type=text size=10 name=\"" +
-                             KEYS[type+"s"] + "\">\n"
+                             DB->keys[type+"s"] + "\">\n"
                              "<input type=hidden name=type value=" + type + ">\n"
                              "<br><font size=2>If using FindMatches, you may type any part of an "
-                             + KEYS[type+"s"] +
+                             + DB->keys[type+"s"] +
                              " or Name to search for.<br></font>"
                              "<input type=submit name=match value=FindMatches> &nbsp; \n"
                              "<input type=submit value=Delete>\n</form>";
@@ -2281,7 +2281,7 @@ retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                      if(sizeof(valid_handlers))
                          retval+="</tr></table></obox>";
                      retval+=getmodify(type,
-                                       id->variables[KEYS[type+"s"]], id)
+                                       id->variables[DB->keys[type+"s"]], id)
 				+"</body></html>";
 
                      break;
@@ -2428,9 +2428,9 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      retval+="<form name=form action=\""+add_pre_state(id->not_query,(<"getmodify=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=getmodify>\n"
                              + capitalize(type) + " "+
-                             KEYS[type+"s"] + " to Modify: \n"
+                             DB->keys[type+"s"] + " to Modify: \n"
                              "<input type=text size=10 name=\"" +
-                             KEYS[type+"s"] + "\">\n"
+                             DB->keys[type+"s"] + "\">\n"
                              "<input type=submit value=Modify>\n</form>";
                      break;
 
@@ -2626,7 +2626,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 				return return_data("This store is currently unavailable.", id);
 			}
                  MODULES=modules[STORE];
-                 KEYS=keys[STORE];
+                 DB->keys=keys[STORE];
                  numrequests[STORE]+=1;
                  id->misc->ivend->storeurl=query("mountpoint")+
                                            (id->misc->ivend->moveup?"": STORE+ "/");

@@ -62,7 +62,8 @@ string retval="<title>Upsell</title>\n"
 	"<body bgcolor=white text=navy>"
 	"<font face=helvetica, arial>";
 
-array r=DB->query("SELECT * FROM products WHERE " + KEYS->products + "='"
+array r=DB->query("SELECT * FROM products WHERE " + DB->keys->products +
+"='"
 	+ id->variables->id + "'");
 if(!r) return "Cannot Find Product " + id->variables->id + ".";
   retval+= "Upsell: <b>" + r[0]->name + "</b><p>";
@@ -70,15 +71,17 @@ if(!r) return "Cannot Find Product " + id->variables->id + ".";
   retval+="<form action=./>\n"
 	"<input type=hidden name=id value=" + id->variables->id + ">\n"
 	"<select size=5 name=upsell>\n";	
-  array r=DB->query("SELECT * FROM products ORDER BY " + KEYS->products);
+  array r=DB->query("SELECT * FROM products ORDER BY " +
+DB->keys->products);
 	foreach(r, mapping row)
-	  retval+="<option value=\"" + row[KEYS->products] + "\">"
-	    + row[KEYS->products] +": "+ row->name + "\n";
+	  retval+="<option value=\"" + row[DB->keys->products] + "\">"
+	    + row[DB->keys->products] +": "+ row->name + "\n";
   retval+="</select> <input type=submit value=AddUpsell name=action>"
   "<p>Currently associated Upsells:<br>";
 
   array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id='" +
-	id->variables->id + "' and upsell.upsell=products." + KEYS->products);
+	id->variables->id + "' and upsell.upsell=products." +
+DB->keys->products);
   if(r)
   foreach(r, mapping row)
     retval+="<input type=submit name=\"" + row->upsell

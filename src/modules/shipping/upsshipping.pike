@@ -5,7 +5,6 @@ constant module_type = "shipping";
 
 #define CONFIG id->misc->ivend->config
 #define DB id->misc->ivend->db
-#define KEYS id->misc->ivend->keys
 
 mapping(string:object) u;	// The ups zone machine.
 
@@ -227,7 +226,7 @@ if(r[0]->calctype=="T") {  // We calculate everything as if it were in a big box
 
   array n=DB->query("SELECT SUM(sessions.quantity * "
 	+ shipping_weight + ") AS weight FROM products,sessions WHERE "
-	"products." + KEYS["products"] + 
+	"products." + DB->keys["products"] + 
 	"=sessions.id and sessions.sessionid='" + 
 	orderid + "'");
 
@@ -247,7 +246,7 @@ else { // We calculate as though everything were in a seperate box.
 
  array n=DB->query("SELECT " + shipping_weight + 
 	" AS weight,sessions.quantity FROM "
-	"products,sessions WHERE products." + KEYS["products"] +
+	"products,sessions WHERE products." + DB->keys["products"] +
 	"=sessions.id AND"
 	" sessionid='" + orderid
 	+ "'");

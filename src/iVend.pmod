@@ -3,7 +3,6 @@
 // #define perror(X) werror(X)
 // for translations
 
-#define KEYS id->misc->ivend->keys
 #define CONFIG id->misc->ivend->config
 
 
@@ -442,7 +441,7 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
             catch(jointable=id->variables[id->variables->jointable]/"\000");
             if(jointable)
                 for(int i=0; i<sizeof(jointable); i++){
-		    string key=KEYS[id->variables->table];
+		    string key=DB->keys[id->variables->table];
 		    string field=id->variables[key];
                     q="DELETE FROM " 
 		        + id->variables->joindest + 
@@ -455,7 +454,7 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
                       + id->variables->joindest +" VALUES('"+
                       jointable[i]+ "','"
 
-+id->variables[lower_case(KEYS[id->variables->table])]+"')";
++id->variables[lower_case(DB->keys[id->variables->table])]+"')";
                     if(catch(query(q)))
 			return ({sqlconn::error() || "You have provided invalid data."});
                 }
@@ -542,7 +541,7 @@ id->variables[lower_case(id->misc->ivend->keys[id->variables->table])] +
             // perror(id->variables[id->variables->jointable]+"\n\n");
             query("DELETE FROM " + id->variables->joindest + " WHERE " +
                   (id->variables->table-"s") +"_id='" +
-id->variables[lower_case(KEYS[id->variables->table])]
+id->variables[lower_case(DB->keys[id->variables->table])]
                   + "'");
             if(jointable && sizeof(jointable)>0)
                 for(int i=0; i<sizeof(jointable); i++){
@@ -550,7 +549,7 @@ id->variables[lower_case(KEYS[id->variables->table])]
                       + id->variables->joindest +" VALUES('"+
                       jointable[i]+ "','"
 
-+id->variables[lower_case(KEYS[id->variables->table])]+"')";
++id->variables[lower_case(DB->keys[id->variables->table])]+"')";
                     query(q);
                 }
         }

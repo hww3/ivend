@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.249 1999-11-10 18:35:36 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.250 1999-11-12 20:21:03 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -584,9 +584,10 @@ string|void container_ia(string name, mapping args,
                           +"cart?SESSIONID=" +id->misc->ivend->SESSIONID + "&referer=" +
                           (((id->referer*"") - "ADDITEM=1") ||"");
     else if(args->checkout)
-        arguments["href"]=query("mountpoint")+
+
+arguments["href"]=((id->misc->ivend->config["Default Checkout Module"]->checkouturl) || (query("mountpoint")+
                           (id->misc->ivend->moveup?"": STORE + "/")
-                          +"checkout/?SESSIONID=" +id->misc->ivend->SESSIONID;
+                          +"checkout/")) +"?SESSIONID="+id->misc->ivend->SESSIONID;
     else if(args->href){
         int loc;
         if(loc=search(args->href,"?")==-1)
@@ -1117,6 +1118,9 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     array ef=({});
     array en=({});
 
+    if(args->type)
+	args->type=lower_case(args->type);
+
     if(args->fields) {
         ef=args->fields/",";
         if(args->names)
@@ -1158,6 +1162,9 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
 
         if(!args->show)
             query+=" AND status='A' ";
+        else if(args->show!="")
+	    query+=" AND status='" + args->show + "' ";
+
         if(args->limit)
             query+=" AND " + args->limit;
 
@@ -1200,7 +1207,8 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     }
     //  array flds=DB->list_fields(table);
 
-    if(args->title) retval+="<h2>" + args->title + "</h2>\n";
+    if(args->title) retval+="<listitemstitle>" + args->title +
+		"</listitemstitle>\n";
 
     retval += "<table bgcolor=#000000 cellpadding=1 cellspacing=0 border=0>";
     retval += "<tr><td><table border=0 cellspacing=0 cellpadding=4><tr bgcolor=" + headlinebgcolor + ">\n";
@@ -1213,7 +1221,6 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     int i=0;
     int m = (int)(args->modulo?args->modulo:1);
     foreach(indices(rows), cnt) {
-
 
         retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
         foreach(indices(rows[cnt]), cnt2) {
@@ -1239,7 +1246,9 @@ string tag_ivstatus(string tag_name, mapping args,
                     object id, mapping defines)
 {
 
-    return replace(id->misc->ivendstatus || "","\n","<br>");
+    return replace("<status>" + (((id->misc->ivendstatus || "")
+	/"\n")*"</status><status>") +
+		"</status>");
 
 }
 string tag_ivmg(string tag_name, mapping args,
@@ -2637,13 +2646,7 @@ if(STORE)
                  fop = Stdio.File();
                  if(!fop->open(filename, "r")) return -1;
                  fop->seek(0);
-                 if(fop->read(3) !="GIF") return 0;
-                 fop->seek(6);
-                 sizes = fop->read(4);
-                 if(!sizes || (strlen(sizes) < 4)) return 0; //  short file
-                 res[0] = (sizes[1]<<8) + sizes[0];
-                 res[1] = (sizes[3]<<8) + sizes[2];
-                 return res;
+                 return Dims.dims()->get(fop);
 
              }
 

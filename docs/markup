@@ -1,5 +1,6 @@
 THIS DOCUMENT DESCRIBES IVEND SPECIFIC MARKUP TAGS AND CONTAINERS.
 
+
 <ICART>..</
 
 Display the Cart. Items in the cart to be updated and deleted.
@@ -14,6 +15,7 @@ FIELDS	A comma seperated list of fieldnames to include in the cart display.	(Opt
 NAMES	A comma seperated list of names to use as column headers in the cart display. If not specified, the cart will use the values from the FIELDS attribute.	(Optional)
 CONT	If specified, the cart will display a button labeled "Continue" with the value of this attribute as the destination.	(Optional)
 CHECKOUT_URL	If specified, the cart will display a button labelled "Check Out" with the value of this attribute as the destination.	(Optional)
+
 
 <ADDITEM>
 
@@ -48,6 +50,7 @@ To add item ABC123 and DEF456 to the cart, use the following:
 <additem item="ABC123" quantity="1" noform silent>
 <additem item="DEF456" quantity="1" noform>
 </form>
+
 
 <IVENDLOGO>
 
@@ -111,6 +114,28 @@ will generate a series of item listings that contain all products in group PRODG
 
 Generates lists of items (product or group) formatted for display and browsing.
 
+ATTRIBUTES
+HEADLINEBGCOLOR	Specifies the background color of the title bar. (Optional)
+HEADLINEFONTCOLOR Specifies the color of the title bar font. (Optional)
+LISTBGCOLOR Specifies the background color of odd item bars. (Optional)
+LISTBGCOLOR2 Specifies the background color of even item bars. (Optional)
+LISTFONTCOLOR Specifies the color of the item list font. (Optional)
+FIELDS Specifies the fields to display in the item list. (Required)
+NAMES Specifies alternate names for fields in the item list. (Optional)
+TYPE Specifies the type of item to generate. Valid options are PRODUCTS, GROUPS, or CUSTOM. (Required)
+QUERY If a TYPE of CUSTOM is specified, use this SQL query to select items. (Optional)
+PARENT If a TYPE of GROUPS is specified, select groups with this parent id. (Optional)
+SHOW If not present, this tag will return all items. If present, this tag will filter on items with a status of "A". If a value is presented, this tag will filter on items with a status of "VALUE". (Optional)
+LIMIT If present, the tag will limit like an addition to an SQL WHERE clause. (Optional) 
+ORDER If present, the tag will order the results of the item selection by "VALUE". (Optional)
+QUIET If this attribute is specified and no items are returned, the tag will return nothing. Otherwise, a message indicating the situation will be returned. (Optional)
+TEMPLATE If present, the tag will add a TEMPLATE specification of VALUE to the Item's link. (Optional)
+TITLE If present, this tag will return VALUE in a <listitemstitle>...</ container. (Optional) 
+MODULO Specifies the number of lines in each color band. Default value is 1. (Optional)
+
+EXAMPLES
+
+
 <A>...</
 
 This modified version of the <A>...</ tag handles session tracking and also provides some shortcuts to common iVend paths. The contents of the container will be contained within the <A>..</ container.
@@ -127,29 +152,21 @@ TEMPLATE When link is to a product or group, specifies the template to use. (Opt
 
 All other attributes are passed on to the browser.
 
-<LISTITEMS>
+
+<IVSTATUS>
+
+Displays session status information such as items added to the session cart. Returns a <STATUS>...</ container for each status message.
+
+<IVMG>
+
+Displays an image associated with an item. May be an image attached to a product/group, or an image stored in the appropriate images directory. <IVMG> sets the image size attributes of the image if the image is in GIF, JPEG or PNG format.
 
 ATTRIBUTES
-HEADLINEBGCOLOR
-HEADLINEFONTCOLOR
-LISTBGCOLOR
-LISTBGCOLOR2
-LISTFONTCOLOR
-FIELDS
-NAMES
-TYPE
-QUERY
-PARENT
-SHOW
-LIMIT
-ORDER
-QUIET
-TEMPLATE
-TITLE
-MODULO
 
-ivstatus
-ivmg
+FIELD If specified, will return the image attached to field VALUE for the current item. (Optional) 
+SRC If specified, will return the image VALUE located in the directory $STOREROOT/html/images/. (Optional)
+
+
 form
 ivindex
 category_output

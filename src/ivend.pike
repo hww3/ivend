@@ -22,7 +22,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.63 1998-04-29 04:57:08 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.64 1998-05-04 02:26:33 hww3 Exp $";
 
 array register_module(){
 
@@ -1191,7 +1191,7 @@ switch(id->variables->mode){
   mixed j=s->addentry(id,id->referrer);
   retval+="<br>";
   if(stringp(j))
-    return retval+= "The following errors occurred:<p>" + j;
+    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
 
 
   string type=(id->variables->table-"s");
@@ -1369,7 +1369,7 @@ mixed return_data(mixed retval, object id){
 
     if(sizeof(id->misc->ivend->error)>0)
       retval=handle_error(id);
-    else retval=parse_rxml(retval, id);
+    retval=parse_rxml(retval, id);
 
     return http_string_answer(retval,
        id->conf->type_from_filename(id->realfile|| "index.html"));

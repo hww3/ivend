@@ -341,8 +341,7 @@ object encryptedid = id;
 else
   j=id->misc->ivend->db->addentry(id);
     
-if(!intp(j)) id->misc->ivend->error+=
-	({j});
+if(arrayp(j)) id->misc->ivend->error+=j;
 
 return "";
 

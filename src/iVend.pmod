@@ -189,9 +189,8 @@ retval+="</table>";
 return retval;
 
 }
-
-int|string addentry(object id, string referrer){
-string errors="";
+mixed addentry(object id, string referrer){
+array errors=({});
 array(mapping(string:mixed)) r=::list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
@@ -221,7 +220,7 @@ else perror("ARGH! Can't get image's original filename from browser!\n");
   }
 
  else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
-    errors+="<li>"+replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
+    errors+=({replace(r[i]->name,"_"," ")+" needs a value."});
 
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
@@ -233,7 +232,7 @@ else perror("ARGH! Can't get image's original filename from browser!\n");
 
   }
 query=query[0..sizeof(query)-2]+")";
-if (errors!="") return errors;
+if (sizeof(errors)>0) return errors;
 ::query(query);
  if(id->variables->jointable) {
  array jointable;

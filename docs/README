@@ -1,7 +1,8 @@
-iVend version 1.0a1 of 18 february 1998 
+iVend version 1.0a1 of 24 march 1998 
 coding by Bill Welliver <hww3@riverweb.com>
 
-
+these directions are very preliminary and need much work in order to be 
+considered anywhere near complete. when all else fails, read the source! :) 
 
 What is iVend?
 
@@ -118,6 +119,11 @@ group. Also, that graphic must be in gif format currently.
 11. After adding groups, you can add products, placing them in as many 
 groups as desired. After addition, products and groups will become 
 instantly available in the store.
+
+12. Use the make_key.pike script in the scripts directory to create an RSA
+keypair. Use the base filename that you specified to the script as your 
+keybase in the configuration interface (the keybase is the path to the 
+keypair without the extension on the file).
 
 IVML
 

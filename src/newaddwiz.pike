@@ -52,11 +52,11 @@ else {
 
   string v=s->server_info();
 
-  if(v[0..4]!="mysql"){
-   ERROR("You must be running mySQL to use this Wizard.");
+  if(v[0..4]!="mysql" || "postg"){
+   ERROR("You must be running mySQL or Postgres to use this Wizard.");
    return 1;
    }
-  else {
+  else if(v[0..4]=="mysql"){
     int major,minor=0;
     sscanf(v, "%*s/%d.%d.%*s", major, minor);
     if(major<3 || (major=3 && minor<22)) {
@@ -139,7 +139,8 @@ string|int page_3(object id){
 " <var type=\"select\" name=\"secureperms\" options=\"Yes,No\"></td></tr>"
 "<help><tr><td colspan=2>"
 "Should DB access be secured to the iVend host only? Answer 'No' only if "
-"you get db access errors while creating the store."
+"you get db access errors while creating the store. This option only "
+"affects mySQL users."
 "</td></tr></help>"
 "</table>"
 ;
@@ -256,12 +257,12 @@ object s;
 	"as db administrator.";
     }
 
-if(catch(s->create_db(v->config)))
+catch(s->create_db(v->config));
+if(!s->select_db(v->config))
   return "An error occurred while creating the store database. "
 	"This usually means that either 1) the database already exists, "
 	"or 2) the db administrator account does not have permission to "
 	"create new databases.";
-s->select_db(v->config);
 string adminuser=(sizeof(v->config + "admin")<=16?(v->config +
   "admin"):(v->config + "admin")[0..15]);
 
@@ -275,18 +276,24 @@ string host=(lower_case(v->dbhost)=="localhost"?"localhost":gethostname());
  v->dbpassword=MIME.encode_base64((string)hash(ctime(time())))[0..7];
 //perror(v->dbpassword + "\n");
 
+string vsr=s->server_info();
+
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
-	v->config + ".* TO " + v->config + (v->secureperms=="Yes"?("@" +
+	v->config + ".* TO " + v->config +
+	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" +
 host):"")); 
 
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP on " +
-	v->config + ".* TO " + adminuser + (v->secureperms=="Yes"?("@" +
+	v->config + ".* TO " + adminuser +
+(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" +
 host):"") ); 
 
-s->query("SET PASSWORD FOR " + v->config + (v->secureperms=="Yes"?("@\"" +
+s->query("SET PASSWORD FOR " + v->config +
+(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@\"" +
 host + "\""):"") +  
 	" = PASSWORD(\"" + v->dbpassword + "\")");
-s->query("SET PASSWORD FOR " + adminuser + (v->secureperms=="Yes"?("@\"" +
+s->query("SET PASSWORD FOR " + adminuser +
+(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@\"" +
 host + "\""):"") + " = PASSWORD(\"" +
 	adminpassword + "\")");
 

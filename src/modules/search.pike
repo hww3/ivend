@@ -93,7 +93,18 @@ perror("Building searchwords database.\n");
 string tag_searchresults(string tag_name, mapping args,
                   object id, mapping defines) {
 string results="";
+if(!id->variables->q || !id->variables->stype)
+	return "<!-- Incorrectly configured search query or no query -->";
+if(id->variables->stype==DB->keys->products){
+	if(sizeof(DB->query("SELECT " + DB->keys->products + " FROM products "
+	" WHERE " + DB->keys->products + "='" + (id->variables->q-" ") + "'"))==1)
+	return "<redirect to=\"http://jabba.mtp.intersil.com:81/" +  T_O->query("mountpoint")+
+                          (id->misc->ivend->moveup?"": STORE+ "/") + id->variables->q + ".html\">";
+else results="No " + replace(DB->keys->products, "_", " ") + " " + upper_case(id->variables->q) + " found.";
+}
+else {
 
+}
 return results;
 
 }

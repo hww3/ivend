@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.276 2000-12-20 01:58:47 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.277 2000-12-21 00:36:56 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2974,7 +2974,7 @@ if(id->cookies->SESSIONID)
 //			       perror("sending db back. 221\n");
 			 //      perror(sprintf("%O\n", STORE));
 			       if(objectp(DB)) {
-			perror("sending db back.\n");	
+//			perror("sending db back.\n");	
 			 db[STORE]->handle(DB);
 				}
 //			       DB=0;

@@ -209,7 +209,8 @@ string e= extension(f);
 
 
     rm(filename);
-
+if(Stdio.file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table);
+else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
 Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
     query+="'"+filename+"',";

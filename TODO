@@ -7,8 +7,6 @@ Add support for multiple datasources per store. (2/15/98)
 
 add hooks for image processing (2/23/98)
 
-support for threaded operation (3/15/98) [started]
-
 add configurable order handling functions ie fax, etc. (3/25/98)
 
 add support for databases other than mysql (maybe) (3/26/98)

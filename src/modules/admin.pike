@@ -27,21 +27,6 @@ if(args->type=="product")
 return;
 }
 
-int do_clean_sessions(object db){
-
-   string query="SELECT sessionid FROM session_time WHERE timeout < "+time(0);
-   array r=db->query(query);
-   foreach(r,mapping record){
-      foreach(({"customer_info","payment_info","lineitems"}),
-              string table)
-      db->query("DELETE FROM " + table + " WHERE orderid='"
-                + record->sessionid + "'");
-      db->query("DELECT FROM session_time WHERE sessionid='" + record->sessionid + "'");
-      db->query("DELECT FROM sessions WHERE sessionid='" + record->sessionid + "'");
-   }
-   return sizeof(r);
-}     
-
 void|mixed tag_itemoptions(string tag_name, mapping args, object id,
 mapping defines) {
  
@@ -326,18 +311,6 @@ mixed action_template(string mode, object id){
   }
   return http_string_answer(retval);
 }
-
-string action_cleansessions(string mode, object id){
-
-          string retval="";
-
-         int r =T_O->do_clean_sessions(DB);
-         retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
-          return_to_admin_menu(id);
-
-         return retval;
-}                    
-
 
 int saved=1;
 
@@ -751,9 +724,6 @@ return ({
 	([ "mode": "menu.main.Store_Maintenance.User_Admin",
 		"handler": action_useradmin,
 		"security_level": 8 ]),
-	([ "mode": "menu.main.Store_Maintenance.Clean_Stale_Sessions",
-		"handler": action_cleansessions,
-		"security_level": 1 ]),
 	([ "mode": "menu.main.Store_Maintenance.Reload_Store",
 		"handler": action_reloadstore,
 		"security_level": 9 ]),

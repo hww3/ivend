@@ -275,6 +275,7 @@ int db_info_loaded=0;
 
 
     inherit "roxenlib";
+
     void create(mixed host){
 
         sqlconn::create(host);
@@ -293,22 +294,11 @@ int db_info_loaded=0;
 
     }
 
-
-
     string make_safe(string s){
 	if(stringp(s))
           return sqlconn::quote((string)s);
 	else return s;
     }
-
-
-
-    mixed insert_id(){
-
-//            return sqlconn::master_sql->insert_id();
-return "";
-    }
-
 
     mixed showmatches(string type, string id, string field, object request_id) {
 
@@ -385,12 +375,12 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
 		{
 			// we need to delete the file...
                     string f=id->variables[ r[i]->name+".filename"];
-                        string e= extension(f);
+                        string e= Caudium.extension(f);
                         string filename=id->variables->id+
                                         r[i]->name[5..]+"."+e;
 
 
-                        if(file_stat(CONFIG->general->root+
+                        if(file_stat(T_O->query("storeroot") +
 				"/html/images/"+id->variables->table + "/" + filename ))
                         rm(filename);
                         q+=r[i]->name + "=NULL,";
@@ -400,17 +390,17 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
 
                     string f=id->variables[ r[i]->name+".filename"];
                     if(f){
-                        string e= extension(f);
+                        string e= Caudium.extension(f);
                         string filename=id->variables->id+
                                         r[i]->name[5..]+"."+e;
 
 
                         rm(filename);
-                        if(file_stat(CONFIG->general->root+
+                        if(file_stat(T_O->query("storeroot")+
                                          "/html/images/"+id->variables->table));
-                        else mkdir(CONFIG->general->root+
+                        else mkdir(T_O->query("storeroot")+
                                        "/html/images/" + id->variables->table);
-                        Stdio.write_file(CONFIG->general->root+
+                        Stdio.write_file(T_O->query("storeroot") +
                                          "/html/images/"+
                                          id->variables->table+"/"+filename,id->variables[r[i]->name]);
                         q+="'"+filename+"',";
@@ -475,12 +465,12 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
 		{
 			// we need to delete the file...
                     string f=id->variables[ r[i]->name+".filename"];
-                        string e= extension(f);
+                        string e= Caudium.extension(f);
                         string filename=id->variables->id+
                                         r[i]->name[5..]+"."+e;
 
 
-                        if(file_stat(CONFIG->general->root+
+                        if(file_stat(T_O->query("storeroot")+
 				"/html/images/"+id->variables->table + "/" + filename ))
                         rm(filename);
                         q+=r[i]->name + "=NULL,";
@@ -491,21 +481,21 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
 
                     string f=id->variables[ r[i]->name+".filename"];
                     if(f){
-                        string e= extension(f);
+                        string e= Caudium.extension(f);
                         string filename=id->variables->id+
                                         r[i]->name[5..]+"."+e;
                         rm(filename);
-                        if(file_stat(CONFIG->general->root+
+                        if(file_stat(T_O->query("storeroot")+
                                          "/html/images/"+id->variables->table));
-                        else mkdir(CONFIG->general->root+
+                        else mkdir(T_O->query("storeroot")+
                                        "/html/images/" + id->variables->table);
 
-                        rm(CONFIG->general->root +
+                        rm(T_O->query("storeroot") +
                            "/html/images/" + id->variables->table + "/" +
                            filename );
 
 
-                        Stdio.write_file(CONFIG->general->root+
+                        Stdio.write_file(T_O->query("storeroot")+
                                          "/html/images/"+
                                          id->variables->table+"/"+filename,id->variables[r[i]->name]);
 
@@ -680,7 +670,7 @@ o=query("SELECT id,parent,name FROM groups where parent <> '' order by name asc"
                                                       "SIZE=-1><I> "+ REQUIRED +"\n";
             }
 
-            else if(!catch(CONFIG) && file_stat(CONFIG->general->root +
+            else if(!catch(CONFIG) && file_stat(T_O->query("storeroot") +
                                                     "/db/" +
                                                     lower_case(table) +
                                                     "." + lower_case(r[i]->name)))
@@ -695,7 +685,7 @@ o=query("SELECT id,parent,name FROM groups where parent <> '' order by name asc"
                 retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
                 array vals;
-                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
+                if(!catch( vals=Stdio.read_file(T_O->query("storeroot") +"/"+
 
                                                     "db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                     vals-=({""});
@@ -944,7 +934,7 @@ array(mapping(string:mixed)) r=list_fields(table);
                 retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
                 array vals;
-                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
+                if(!catch( vals=Stdio.read_file(T_O->query("storeroot") +"/"+
 
                                                     "db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                     vals-=({""});
@@ -1052,7 +1042,7 @@ record[r[i]->name]
                 retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
                 array vals;
-                if(!catch( vals=Stdio.read_file(CONFIG->general->root+"/"+
+                if(!catch( vals=Stdio.read_file(T_O->query("storeroot") +"/"+
 
                                                     "db/"+lower_case(table)+"."+lower_case(r[i]->name))/"\n")){
                     vals-=({""});
@@ -1115,20 +1105,16 @@ mapping local_settings=([]);
     string host;
     int num_dbs;
     void create(string|void _host, int num) {
-//	perror("Creating " + num  + " database connections.\n");
         host = _host;
         num_dbs=num;
         mixed err;
         for(int i = 0; i < num; i++) {
-//	perror("creating db: " + host  +  "\n");
             err=catch( dbs += ({ db(host) }));
             if(err)
                 perror("Error creating db object:\n" +
                        describe_backtrace(err)+"\n");
         }
-//	perror("created all handlers.\n");
 	    if(!err) 	get_dbinfo();
-//	perror("got db info.\n");
 	return;
     }
 
@@ -1138,11 +1124,8 @@ mapping local_settings=([]);
         int count;
         dbs -= ({0});
 	dbs-=({});
-//	if(objectp(d)) perror("Returning a DB to the stack.\n");
-//	else perror("Taking a DB from the stack.\n");
 
         if(d) {
-//	  perror("Getting ready to return DB\n");
             if(search(dbs, d) == -1) {
                 if(sizeof(dbs)>(2*num_dbs)) {
                     werror("Dropping db because of inventory...\n");
@@ -1150,7 +1133,6 @@ mapping local_settings=([]);
                 }
                 else {
                     dbs += ({d});
-//                    werror("Handler ++ ("+sizeof(dbs)+")\n");
                 }
             }
             else {
@@ -1162,16 +1144,13 @@ mapping local_settings=([]);
         else {
             if(!sizeof(dbs)) {
                 werror("Handler: New DB created (none left).\n");
-//                dbs[0] = db(host);
-//		get_dbinfo();
-create(host, num_dbs);
+                create(host, num_dbs);
 		d=dbs[0];
 		dbs-=({d});
                 //d->set_timeout(60);
             } else {
                 d = dbs[0];
                 dbs -= ({d});
-//                werror("Handler -- ("+sizeof(dbs)+")\n");
             }
         }
         UNLOCK();
@@ -1179,9 +1158,8 @@ create(host, num_dbs);
     }
 
 void get_dbinfo(){
-// perror("Getting DB Info in iVend.pmod.\n");
     mixed err;
-object s=handle();
+    object s=handle();
     keys=([]); // make the entry.
     if(err) {
         perror("An error occurred while trying to grab a db object.\n");
@@ -1203,7 +1181,6 @@ object s=handle();
             keys[t]=primary_key;
         }
     }
-// perror("got key info.\n");
     local_settings->pricing_model=SIMPLE_PRICING;
     array n=s->list_fields("products", "price");
     if(sizeof(n)<1)
@@ -1221,16 +1198,13 @@ object s=handle();
     if(sizeof(n)>0)
         // we're doing individual handling charges
         local_settings->tax_exemption_support=TRUE;
-// perror("got local_settings info.\n");
 	handle(s);
-// perror("returned the connection.\n");
     foreach(dbs, object d)
      {
 	d->keys=keys;
 	d->db_info_loaded=1;
 	d->local_settings=local_settings;
      }
-perror("updated the handlers.\n");
 
     return;
 

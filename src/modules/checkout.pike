@@ -46,7 +46,7 @@ id->misc->ivend->lineitems=([]);
 
   array r=DB->query("SELECT lineitem,value from lineitems "
     "WHERE orderid='" + (id->misc->ivend->orderid ||
-	id->misc->ivend->SESSIONID) + "'");
+	id->misc->session_id) + "'");
 
   foreach(r, mapping row)
    id->misc->ivend->lineitems+=([ row->lineitem : (float) row->value ]);
@@ -76,14 +76,8 @@ return 0;
 
 }
 
-void start(mapping config){
+void start(mapping config, object db){
 
-object db;
-
-if(catch(db=iVend.db(config->general->dbhost))) {
-    perror("iVend: Checkout: Error Connecting to Database.\n");
-    return;
-  }
 if((sizeof(db->list_tables("taxrates")))==1)
  initialized=1;
 else
@@ -158,7 +152,7 @@ else if(args->email && args->email=="")
  err=catch(good_email=Commerce.Sendmail.check_address(
 (args->email || id->variables[lower_case(args->field)])));
 if(err) {
- T_O->report_error("Error Running Check Address" + (err*"\n"),
+ T_O->ivend_report_error("Error Running Check Address" + (err*"\n"),
 id->misc->ivend->orderid ||"NA",
         "checkout", id); {
   return "<!-- An error occurred while checking the email address.-->";
@@ -185,7 +179,7 @@ if(sizeof(DB->list_tables("orderid_list"))!=1) {
     "orderid CHAR(64) NOT NULL PRIMARY KEY, "
     "timestmp timestamp )"))) {
       throw_error(ERROR_RESERVING_ORDERID, id);
-      T_O->report_critical_error(ERROR_RESERVING_ORDERID,id);
+      T_O->ivend_report_critical_error(ERROR_RESERVING_ORDERID,id);
       return -1;
     }
   }
@@ -219,10 +213,7 @@ string type;
 array s;
 
 
-s=DB->query("SELECT * FROM sessions WHERE sessionid='"
-	+ id->misc->ivend->SESSIONID + "'");
-
-if(sizeof(s)==0) {
+if(sizeof(id->misc->session_variables->cart)==0) {
  throw_error(ERROR_ORDERID_ALREADY_EXISTS, id);
  return "";
   }
@@ -230,26 +221,24 @@ if(sizeof(s)==0) {
 id->misc->ivend->orderid=getorderid(id);
 if(stop_error(id))
  {
- T_O->report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
 	"checkout", id);
-// id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
 
 id->misc->ivend->this_object->trigger_event("preconfirmorder", id,
-(["orderid": id->misc->ivend->orderid]));
+  (["orderid": id->misc->ivend->orderid]));
 
 if(stop_error(id))
  {
- T_O->report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
 	"checkout", id);
-// id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
 
 catch(typer=DB->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
-"lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
+"lineitems.orderid='" + id->misc->session_id + "' AND "
 "lineitems.lineitem='shipping' "
 "and shipping_types.name=lineitems.extension"));
 
@@ -261,7 +250,7 @@ mixed error=catch(DB->query("INSERT INTO orders VALUES(" +
 DB->make_safe(id->variables->ordernotes) + "'":"NULL") + ",NOW())"));
 if(error)
 {
- T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error(error*"\n", id->misc->ivend->orderid ||"NA",
 	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
@@ -270,42 +259,38 @@ if(error)
 }
 // get the order from sessions
 
-  array r=DB->query(
-	"SELECT sessions.* from "
-	" sessions WHERE sessionid='"
-	+id->misc->ivend->SESSIONID+ "'");
+  array r=copy_value(id->misc->session_variables->cart);
 
-// replace sessionid with orderid
-string query;
-// mixed error; 
-error= catch{  
-for(int i=0; i<sizeof(r); i++){
-
+  // replace sessionid with orderid
+  string query;
+  error= catch {  
+  for(int i=0; i<sizeof(r); i++){
     r[i]->orderid=id->misc->ivend->orderid;
     r[i]->status=0;
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
     query=DB->generate_query(r[i], "orderdata", DB);
     DB->query(query);
-  }
- } ;
+ }
+};
+
 if(!error)
-  DB->query(
-  "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
+  id->misc->session_variables->cart=({});
 
 else {
- T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error(error*"\n", id->misc->ivend->orderid ||"NA",
 	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
   return "An error occurred while moving your order to confirmed status.\n";
 }
+
 // update customer info and payment info with new orderid
 
 foreach(({"customer_info","payment_info","lineitems", "comments"}), string t)
   DB->query("UPDATE " + t + " SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
-	+id->misc->ivend->SESSIONID+"'");
+	+id->misc->session_id +"'");
 
 id->misc->ivend->this_object->trigger_event("confirmorder", id,
 (["orderid": id->misc->ivend->orderid]));
@@ -338,10 +323,10 @@ if(note) {
   perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
- T_O->report_error("Unable to send confirmation note to " + recipient +
+ T_O->ivend_report_error("Unable to send confirmation note to " + recipient +
 "." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
 else
- T_O->report_status("Order confirmation sent to " + recipient + "." ,
+ T_O->ivend_report_status("Order confirmation sent to " + recipient + "." ,
    id->misc->ivend->orderid ||"NA", "checkout", id);
 
 }
@@ -368,20 +353,20 @@ if(note) {
 
 
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message)) {
- T_O->report_error("Unable to send order notification to " + recipient +
+ T_O->ivend_report_error("Unable to send order notification to " + recipient +
       "." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
   }
 
 }
 
- T_O->report_status("Order confirmed successfully." ,
+ T_O->ivend_report_status("Order confirmed successfully." ,
    id->misc->ivend->orderid ||"NA", "checkout", id);
-id->misc->ivend->this_object->trigger_event("postconfirmorder", id,
-(["orderid": id->misc->ivend->orderid]));
 
-return "<TRUE>" + retval;
+ id->misc->ivend->this_object->trigger_event("postconfirmorder", id,
+ (["orderid": id->misc->ivend->orderid]));
+
+ return "<TRUE>" + retval;
 }
-
 
 string tag_discount(string tag_name, mapping args,
 		     object id, mapping defines) {
@@ -422,7 +407,7 @@ if(stop_error(id))
 
 
 return (string)(sprintf("%.2f",T_O->get_tax(id, (args->orderid ||
-id->misc->ivend->orderid || id->misc->ivend->SESSIONID))));
+id->misc->ivend->orderid || id->misc->session_id))));
 
 }
 
@@ -438,7 +423,7 @@ if(args->autofill) {
  array r;
  r=DB->query("SELECT * FROM " + lower_case(args->table) + " WHERE "
 	"orderid='" + (args->orderid || id->misc->ivend->orderid || 
-	id->misc->ivend->SESSIONID) + "'" + (args->type?" AND type='"+
+	id->misc->session_id) + "'" + (args->type?" AND type='"+
 	args->type + "'":"") ) ;
 
  if(r && sizeof(r)==1){
@@ -474,7 +459,7 @@ if(id->variables["_backup"] || id->misc->ivend->skip_page)
 if(stop_error(id)) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) {
  array q=DB->query("SELECT * FROM customer_info WHERE orderid='" +
-   id->misc->ivend->SESSIONID + "' AND type=0");
+   id->misc->ivend->session_id + "' AND type=0");
  if(q && sizeof(q)) 
    foreach(indices(q[0]), string f)
      id->variables[lower_case(f)]=q[0][f];
@@ -615,7 +600,7 @@ if(stop_error(id))
 
 return sprintf("%.2f", T_O->get_subtotal(id, args->orderid ||
 id->misc->ivend->orderid ||
-id->misc->ivend->SESSIONID));
+id->misc->session_id));
 
 
 
@@ -628,7 +613,7 @@ if(stop_error(id))
   return "<!-- skipping grandtotal because of errors.-->";
 
 float gt=T_O->get_grandtotal(id, args->orderid || id->misc->ivend->orderid
-|| id->misc->ivend->SESSIONID);
+|| id->misc->session_id);
 
 return sprintf("%.2f", (float)(gt));
 
@@ -670,37 +655,31 @@ array en=({});
    }
  }     
 
-string query="SELECT sessions.quantity, "
-  "sessions.price, " 
-  "sessions.quantity*sessions.price AS linetotal, "
-  "sessions.taxable " + extrafields +
-  " FROM sessions,products WHERE products." +
-DB->keys->products + "=sessions.id AND "
-  "sessions.sessionid='" + (args->orderid ||
-id->misc->ivend->orderid || id->misc->ivend->SESSIONID) + "'";
+ foreach(id->misc->session_variables->cart, mapping row)
+ {
 
-array r=DB->query(query);
- for(int i=0; i < sizeof(r); i++) {
-   retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n";
+   array rx=DB->query("SELECT " + extrafields + " FROM products WHERE " + DB->keys->product + "='" + row->item);
+
+   retval+="<tr><td align=right>" + row->quantity + "</td>\n";
    foreach(en, string name)
-     retval+="<td>" + r[i][name] + "</td>\n";
+     retval+="<td>" + rx[0][name] + "</td>\n";
    retval+="<td align=right>";
 
-retval+=r[i]->price;
+   retval+=row->price;
    retval+= "</td>\n"
      "<td align=right>";
-retval+=r[i]->linetotal;
-if(r[i]->taxable=="N") nontaxable+=(float)r[i]->linetotal;
-  else taxable+=(float)r[i]->linetotal;
-retval+= "</td></tr>\n"; 
+   float linetotal = ((float)(row->quantity) * (float)(row->price));
+   retval+=sprintf("%.2f", linetotal);
+   if(row->taxable=="N") nontaxable+=linetotal;
+   else taxable+=linetotal;
+   retval+= "</td></tr>\n"; 
  }
 
 
 
  if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
-id->misc->ivend->lineitems+=(["taxable":(float)taxable]);
-id->misc->ivend->lineitems+=(["nontaxable":(float)nontaxable]);
-
+ id->misc->ivend->lineitems+=(["taxable":(float)taxable]);
+ id->misc->ivend->lineitems+=(["nontaxable":(float)nontaxable]);
 
 return retval;
 
@@ -725,15 +704,7 @@ if(functionp(query_container_callers2))
 string h;
 
  id->misc->ivend->error=({});
-if(sizeof(DB->query("SELECT * FROM sessions WHERE sessionid='" +
-id->misc->ivend->SESSIONID + "'"))<1) {
-perror("CHECKOUT: SESSION EXPIRED.\n");
-return ("<checkout_error>Your session has expired. You must return to the "
-	"storefront to continue.</checkout_error>");
-}
-else DB->query("UPDATE session_time set timeout="  +(time(0)+
-                         (int)CONFIG->session_timeout)+ " WHERE sessionid='" 
-			+ id->misc->ivend->SESSIONID + "'"); 
+
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
 if(!args->quiet)

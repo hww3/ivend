@@ -5,61 +5,30 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.289 2003-11-18 03:14:55 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.290 2004-01-22 21:13:40 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
-//#include <simulate.h>
 
-// #define ENABLE_ADMIN_BACKDOOR 0
-
-#if __VERSION__ >= 0.6
-import ".";
-#endif
-
-inherit "roxenlib";
+inherit "caudiumlib";
 inherit "module";
-inherit "wizard";
-
-#if __VERSION__ < 0.6
-int read_conf();          // Read the config data.
-void load_modules);
-void start_db(mapping c);
-void add_cookie( object id, mapping m, mapping defines);
-void background_session_cleaner();
-float convert(float value, object id);
-array|int size_of_image(string filename);
-void error(mixed error, object id);
-mapping configuration_interface(array(string) request, object id);
-void handle_sessionid(object id);
-mixed getglobalvar(string var);
-mixed return_data(mixed retval, object id);
-mixed  get_image(string filename, object id);
-mixed admin_handler(string filename, object id);
-mixed handle_cart(string filename, object id);
-mixed additem(object id);
-#endif
 
 int loaded;
-object c;                       // configuration object
-object g;                       // global object
 mapping paths=([]);// path registry
 mapping admin_handlers=([]);
 mapping library=([]);
 mapping actions=([]);// action storage
-mapping db=([]);// db cache
+object db=0;// db cache
 mapping modules=([]); // module cache
 mapping config=([]);
-mapping global=([]);
-mapping numsessions=([]);
-mapping numrequests=([]);
+int numrequests=0;
 mapping admin_user_cache=([]);
 
 int num;
-int save_status=1;              // 1=we've saved 0=need to save.
 int db_info_loaded=0;
+int started=0;
 
 #define PAGELINES 66
 #define PAGECOLUMNS 100
@@ -95,8 +64,8 @@ string At(string line, int column, string text, int|void maxlen, string|void ali
   return line;
 }
 
-void report_error(string error, string|void orderid, string subsys, object id){
-    perror(id->remoteaddr + ": " + id->misc->ivend->sessionid +
+void ivend_report_error(string error, string|void orderid, string subsys, object id){
+    perror(id->remoteaddr + ": " + id->misc->session_id +
            "\n" + " " + error);
 
 
@@ -109,16 +78,16 @@ void report_error(string error, string|void orderid, string subsys, object id){
 
 }
 
-void report_critical_error(string error, string|void orderid, string
+void ivend_report_critical_error(string error, string|void orderid, string
 subsys, object id){
     perror("critical_error: " + id->remoteaddr + ": " +
-		id->misc->ivend->sessionid +           "\n" + " " + error);
+		id->misc->session_id +           "\n" + " " + error);
 
     return;
 
 }
 
-void report_status(string error, string|void orderid, string subsys, object id){
+void ivend_report_status(string error, string|void orderid, string subsys, object id){
 
     DB->query("INSERT INTO activity_log VALUES('" + 
 	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
@@ -129,7 +98,7 @@ void report_status(string error, string|void orderid, string subsys, object id){
 
 }
 
-void report_warning(string error, string|void orderid, string subsys, object id){
+void ivend_report_warning(string error, string|void orderid, string subsys, object id){
 
     DB->query("INSERT INTO activity_log VALUES('" + 
 	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
@@ -195,7 +164,7 @@ string fname;
  }
 
 if(sizeof(lookup)==0) {
-  report_error("iVend: Unable to find order info for tax calculation!\n",
+  ivend_report_error("iVend: Unable to find order info for tax calculation!\n",
 	NULL, "TAXCALC", id);
   return -1.00;
   }
@@ -323,8 +292,8 @@ array register_module(){
 
     return( {
               MODULE_LOCATION | MODULE_PARSER,
-              "iVend 1.0",
-              s+"iVend enables online shopping within Roxen.",
+              "iVend 1.2",
+              s+"iVend enables online shopping within Caudium.",
               0,
               1
           } );
@@ -358,33 +327,30 @@ void create(){
            "This is the root directory of the iVend distribution. "
           );
 
-    defvar("datadir", getmwd() + "data" ,
-           "iVend Data Location",
+    defvar("storeroot", getmwd() ,
+           "Store Root Location",
            TYPE_DIR,
-           "This is location where iVend will store "
-           "data files nessecary for operation.");
-
-    defvar("configdir", getmwd() + "configurations" ,
-           "iVend Configuration Directory",
-           TYPE_DIR,
-           "This is location where iVend will keep Store "
-           "configuration files nessecary for operation.");
-
-    defvar("config_user", "administrator" ,
-           "Configuration User",
-           TYPE_STRING,  "This is the username to use when accessing the iVend Configuration "
-           "interface.");
-
-    defvar("config_password", "" ,
-           "Configuration Password",
-           TYPE_PASSWORD,
-           "The password to use when accessing the iVend Configuration "
-           "interface.");
-
-    defvar("lang", "en", "Default Language",
-           TYPE_MULTIPLE_STRING, "Default Language for Stores",
-           ({"en","si"})
+           "This is the root directory of the store."
           );
+
+    defvar("db", "",
+           "Database URL",
+           TYPE_STRING,
+           "The SQL URL of the database the store will use to keep data."
+          );
+
+    defvar("storename", "iVend Test Store",
+           "Store Name",
+           TYPE_STRING,
+           "A short descriptive name for this store."
+          );
+
+    defvar("admin_enabled", 1,
+           "Enable Administration Interface",
+           TYPE_FLAG,
+           "Toggles availability of the Store Administration Interface"
+          );
+
     defvar("wordfile", "/usr/dict/words",
            "Word File",
            TYPE_FILE,
@@ -471,14 +437,14 @@ void trigger_event(string event, object|void id, mapping|void args){
 }
 
 void register_event(mapping config, mapping events){
-    if(!library[config->config]->event)
-        library[config->config]->event=([]);
+    if(!library->event)
+        library->event=([]);
 
     foreach(indices(events), string ename){
         perror("Registering event " + ename + "\n");
-        if(!library[config->config]->event[ename])
-            library[config->config]->event[ename]=({});
-        library[config->config]->event[ename]+=({events[ename]});
+        if(!library->event[ename])
+            library->event[ename]=({});
+        library->event[ename]+=({events[ename]});
     }
     return;
 }
@@ -502,7 +468,7 @@ string|void container_procedure(string name, mapping args,
                    "#define DB id->misc->ivend->db\n"
 		   "#define T_O id->misc->ivend->this_object\n"
                    "inherit \"roxenlib\";\n"
-                   "mixed proc(string tag_name, mapping "
+                   "void|mixed proc(string tag_name, mapping "
                    "args, object id, mapping defines){\n";
             footer="\n}";
         }
@@ -515,7 +481,7 @@ string|void container_procedure(string name, mapping args,
                    "#define DB id->misc->ivend->db\n"
                    "#define T_O id->misc->ivend->this_object\n"
 		   "inherit \"roxenlib\";\n"
-                   "mixed proc(string event_name, "
+                   "mixed|void proc(string event_name, "
                    "object|void id, mapping|void args){\n";
             footer="\n}";
         }
@@ -529,7 +495,7 @@ string|void container_procedure(string name, mapping args,
                    "#define DB->keys id->misc->ivend->keys\n"
                    "#define T_O id->misc->ivend->this_object\n"
 		   "inherit \"roxenlib\";\n"
-                   "mixed proc(string container_name, mapping args,"
+                   "mixed|void proc(string container_name, mapping args,"
                    " string contents, object id){\n";
             footer="\n}";
         }
@@ -538,7 +504,7 @@ string|void container_procedure(string name, mapping args,
     contents=header+contents+footer;
     mixed err;
 master()->set_inhibit_compile_errors(0);
-    err=catch(object p=(object)clone(compile_string(contents)));
+    err=catch(object p=((program)compile_string(contents))());
     if(err)perror(describe_backtrace(err));
     if(type=="event") {
         if(err)
@@ -548,25 +514,24 @@ register_event(id->config, ([tname : p->proc ]));
     }
     else {
         if(err)
-            library[id->config->config][type][tname]=err;
-        else library[id->config->config][type][tname]=p->proc;
+            library[type][tname]=err;
+        else library[type][tname]=p->proc;
     }
 
     return;
 
 }
 
-void load_library(mapping c){
+void load_library(){
     mapping id=([]);
-    id->config=c;
     array dir;
-    dir=get_dir(c->root + "/library/");
+    dir=get_dir(QUERY(storeroot) + "/library/");
     if(!dir) return;
     foreach(dir, string filename) {
         string contents;
-        catch(contents=Stdio.read_file(c->root + "/library/" + filename));
+        catch(contents=Stdio.read_file(QUERY(storeroot) + "/library/" + filename));
         if(contents)
-            contents=parse_html(contents, ([]),
+            contents=Caudium.parse_html(contents, ([]),
                     (["procedure" : container_procedure ]) ,id);
     }
     return;
@@ -590,23 +555,23 @@ mixed register_admin_handler(mapping f){
 }
 
 void start_store(){
-
+    report_error("starting iVend 1.2\n");
     if(!paths) paths=([]);
     if(!admin_handlers) admin_handlers=([]);
     register_path_handler("images", get_image);
     register_path_handler("admin", admin_handler);
     register_path_handler("cart", handle_cart);
 
-    if(!config->general)
-	return;
-    start_db();
+    if(QUERY(db))
+      start_db();
+    else return;
     get_entities();
     catch(load_modules());
 
-    numsessions=0;
     numrequests=0;
 
     load_library();
+    started=1;
 }
 
 
@@ -619,7 +584,8 @@ void stop_store(){
             destruct(modules[m]);
     }
     if(db)
-        destruct(db);
+      db=0;
+    started=0;
 }
 
 void stop(){
@@ -633,8 +599,6 @@ void stop(){
     db=0;
     modules=([]); // module cache
     config=([]);
-    global=([]);
-    numsessions=0;
     numrequests=0;
 
 }
@@ -642,32 +606,26 @@ void stop(){
 int write_config_section(string section, mapping attributes){
     mixed rv;
     object privs=Privs("iVend: Writing Config File");
-    rv=Config.write_section(query("configdir") + "config.ini" , section,
+    rv=.Config.write_section(query("storeroot") + "/config/config.ini" , section,
                             attributes);
 #if efun(chmod)
-    chmod(query("configdir") + "config.ini", 0640);
+    chmod(query("storeroot") + "/config/config.ini", 0640);
 #endif
     privs=0;
     return rv;
 }
 
-void start(){
-
+void start(object conf){
+    report_error("Starting iVend 1.2\n");
     num=0;
+    module_dependencies(conf, ({"obox", "123sessions"}) );
     add_include_path(getmwd() + "src/include");
     add_module_path(getmwd()+"src");
     loaded=1;
-    if(catch(query("datadir"))) return;
 
-    if(file_stat(query("datadir")+"ivend.cfd")==0)
-        return;
-    else {
-        read_conf();   // Read the config data.
-    }
+    read_conf();   // Read the config data.
 
     start_store();
-
-    call_out(background_session_cleaner, 900);
 
     return 0;
 
@@ -681,22 +639,24 @@ string|void check_variable(string variable, mixed set_to){
 }
 
 string status(){
-
-    return ("Everything's A-OK!\n");
+   if(!started)
+     return ("Store not started yet. Make sure all settings are configured.");
+   else
+     return ("Everything's A-OK!\n");
 
 }
 
 string query_name()
 
 {
-    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
+    return sprintf("iVend 1.2  mounted on <i>%s</i>", query("mountpoint"));
 }
 
 
 
 void|string container_ia(string name, mapping args,
                          string contents, object id) {
-    if (catch(id->misc->ivend->SESSIONID)) return;
+    if (catch(id->misc->session_id)) return;
 
     if (args["_parsed"]) return;
 
@@ -710,27 +670,18 @@ void|string container_ia(string name, mapping args,
         arguments["href"]= (id->variables->referer || ((id->referer*"")-
                             "ADDITEM=1") || "");
     else if (args->add)
-	arguments["href"]=( args->href ||("./"+id->misc->ivend->page+".html")) +
-			"?SESSIONID="
-           		+id->misc->ivend->SESSIONID+"&ADDITEM=1&"
+	arguments["href"]=( args->href ||("./"+id->misc->ivend->page+".html")) 
+           		+"?ADDITEM=1&"
                           +id->misc->ivend->item+"=ADDITEM";
     else if(args->cart)
         arguments["href"]=query("mountpoint")
-                          +"cart?SESSIONID=" +id->misc->ivend->SESSIONID + "&referer=" +
+                          +"cart?referer=" +
                           (((id->referer*"") - "ADDITEM=1") ||"");
     else if(args->checkout)
-
-arguments["href"]=((id->misc->ivend->config["Checkout"]->checkouturl) || (query("mountpoint")+
-                          +"checkout/" +"?SESSIONID="+id->misc->ivend->SESSIONID;
+      arguments["href"]=((id->misc->ivend->config["Checkout"]->checkouturl) || 
+         (query("mountpoint") +"checkout/" )) ;
     else if(args->href){
-        int loc;
-        if(loc=search(args->href,"?")==-1)
-            arguments["href"]=args->href
-                              +"?SESSIONID=" +(id->misc->ivend->SESSIONID);
-
-        else  arguments["href"]=args->href
-                                    +"&SESSIONID=" +(id->misc->ivend->SESSIONID);
-
+            arguments["href"]=args->href;
     }
 
     if(arguments->href && args->template) arguments->href+="&template=" +
@@ -744,37 +695,26 @@ arguments["href"]=((id->misc->ivend->config["Checkout"]->checkouturl) || (query(
 
     arguments+=args;
 
-    return make_container("A", arguments, contents);
-
-}
-
-void|string container_form(string name, mapping args,
-                           string contents, object id)
-{
-    if(args["_parsed"]) return;
-    contents="<!-- form container --><input type=hidden name=SESSIONID value="+
-             id->misc->ivend->SESSIONID+">"+contents;
-    args["_parsed"]="1";
-    return make_container("FORM", args, contents);
-
+    return Caudium.make_container("A", arguments, contents);
 
 }
 
 mixed do_complex_items_add(object id, array items){
-    perror("doing complex item add...\n");
-    foreach(items, mapping i){
-        array r;
-	catch(r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
-                          + i->item + "'"));
-        if(!r || sizeof(r)<1)
-            perror("No Pricing Configuration for " + i->item + ".\n");
-        foreach(r, mapping row) {
-trigger_event("cp." + row->type,id,(["item": i->item, "quantity":
-                                                 i->quantity,
-"options": i->options]));
-        }
-        if(!COMPLEX_ADD_ERROR)
-trigger_event("additem",id,(["item": i->item, "quantity":
+  perror("doing complex item add...\n");
+  foreach(items, mapping i){
+    array r;
+    catch(r=DB->query("SELECT * FROM complex_pricing WHERE product_id='"
+      + i->item + "'"));
+    if(!r || sizeof(r)<1)
+       perror("No Pricing Configuration for " + i->item + ".\n");
+    foreach(r, mapping row) {
+      trigger_event("cp." + row->type,id, (["item": i->item, 
+                                            "quantity": i->quantity,
+                                            "options": i->options]));
+    }
+        
+    if(!COMPLEX_ADD_ERROR)
+    trigger_event("additem",id,(["item": i->item, "quantity":
                                          i->quantity]));
     }
     return 0;
@@ -839,36 +779,34 @@ else
 
 int do_low_additem(object id, mixed item, mixed quantity, mixed
                    price, mapping|void args){
-    if(HAVE_ERRORS) { 
-	id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
-	return 0;
-	}
 
-    if(!args) args=([]);
-    int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
-                             id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
-    string query="INSERT INTO sessions VALUES('"+
-                 id->misc->ivend->SESSIONID+
-                 "','"+item+"',"+ quantity +","+(max+1)+",'" +
-		(args->options||"") + "'," + price +
-                 "," + (args->autoadd||0) +"," + (args->lock||0) + 
-		 ",'" + is_item_taxable(id, item) + "')";
+  if(HAVE_ERRORS) { 
+    id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
+    return 0;
+  }
 
-    if(catch(
-DB->query(query)
- )) {
-        id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n" +
-DB->error());
-        return 0;
-    }
-    else { 
-//perror("added successfully.\n");
-        id->misc["ivendstatus"]+= (string) quantity +" " +
-                                  ITEM + " " + item + " " + ADDED_SUCCESSFULLY +"\n";
-        return 1;
-    }
+  if(!args) args=([]);
+
+  if(!id->misc->session_variables->cart) 
+    id->misc->session_variables->cart=({});
+
+  id->misc->session_variables->cart+=({ 
+    ([
+       "item" : item,
+       "quantity" : quantity,
+       "options" : (args->options||""),
+       "price" : price,
+       "autoadd" : (args->autoadd||0),
+       "lock" : (args->lock||0),
+       "taxable" : is_item_taxable(id, item)
+    ]) 
+  });
+
+  id->misc["ivendstatus"]+= (string) quantity +" " +
+    ITEM + " " + item + " " + ADDED_SUCCESSFULLY +"\n"; 
+
+  return 1;
 }
-
 
 mixed do_additems(object id, array items){
 
@@ -881,7 +819,7 @@ mixed do_additems(object id, array items){
             float price;
 	catch(price=(float)(DB->query("SELECT price FROM products WHERE "
                                   + DB->keys->products +  "='" +
-item->item +
+                                  item->item +
                                   "'")[0]->price));
 		array opt=({});
 		mapping o=([]);
@@ -899,8 +837,13 @@ item->item +
 mixed container_icart(string name, mapping args, string contents, object id) {
     string retval="";
     string extrafields="";
+
+    if(!id->misc->session_variables->cart) 
+      id->misc->session_variables->cart=({});
+
     array ef=({});
     array en=({});
+    array efs=({});
     int madechange=0;
     if(args->fields){
         ef=args->fields/",";
@@ -909,114 +852,141 @@ mixed container_icart(string name, mapping args, string contents, object id) {
         else en=({});
         for(int i=0; i<sizeof(ef); i++) {
             if(catch(en[i]) || !en[i])  en+=({ef[i]});
-            extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'";
+            efs+=({ ef[i] + " AS " + "'" + en[i] + "'"});
         }
+        extrafields = (efs *", ");
     }
+
+    //
+    //  are we deleting an item from the cart?
+    //
+
+    string p, s;
 
     foreach(indices(id->variables), string v) {
         if(id->variables[v]==DELETE) {
-            string p=(v/"/")[0];
-            string s=(v/"/")[1];
-            catch(DB->query("DELETE FROM sessions WHERE SESSIONID='"
-                      +id->misc->ivend->SESSIONID+
-                      "' AND id='"+ p +"' AND series=" +s ));
-            madechange=1;
-trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
+            p=(v/"/")[0];
+            s=(v/"/")[1];
+            if(id->misc->session_variables->cart[(int)s])
+            {
+              if(id->misc->session_variables->cart[(int)s]->item == p)
+                id->misc->session_variables->cart-=id->misc->session_variables->cart[(int)s];
+              madechange=1;
+              trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
+            }
         }
     }
 
 
-
+    // 
+    //  are we updating an item in the cart?
+    //
     if(id->variables->update) {
         for(int i=0; i< (int)id->variables->s; i++){
             if((int)id->variables["q"+(string)i]==0) {
-                  madechange=1;
-                catch(DB->query("DELETE FROM sessions WHERE SESSIONID='"
-                          +id->misc->ivend->SESSIONID+
-                          "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
-                          id->variables["s"+(string)i] ));
-trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
-            } else {
+               p=id->variables["p"+(string)i];
+               s=id->variables["s"+(string)i];
+               madechange=1;
+              if(id->misc->session_variables->cart[(int)s])
+              {
+                if(id->misc->session_variables->cart[(int)s]->item == p)
+                  id->misc->session_variables->cart-=id->misc->session_variables->cart[(int)s];
                 madechange=1;
+                trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
+              }
 
-                catch(DB->query("UPDATE sessions SET "
-                          "quantity="+(int)(id->variables["q"+(string)i])+
-                          " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
-                          id->variables["p"+(string)i]+ "' AND series="+
-			id->variables["s"+(string)i] ));
-trigger_event("updateitem", id, (["item" : id->variables["p" +
+              trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , 
+                "series" : id->variables["s" + (string)i]]) );
+            } 
+            else 
+            {
+              madechange=1;
+
+              int q= (int)(id->variables["q"+(string)i]);
+              string i= id->variables["p"+(string)i];
+	      s= id->variables["s"+(string)i];
+
+              if(id->misc->session_variables->cart[(int)s])
+              {
+                if(id->misc->session_variables->cart[(int)s]->item == p)
+                  id->misc->session_variables->cart[(int)s]->quantity = q;
+              }
+
+              trigger_event("updateitem", id, (["item" : id->variables["p" +
                                   (string)i] , "series" : id->variables["s" + (string)i],
                                   "quantity": id->variables["p" + (string)i]]) );
             }
         }
     }
-    if(madechange==1){
-        array r;
-	catch(r=DB->query("SELECT id, price, quantity, series, options, autoadd, locked "
-                          " FROM sessions WHERE sessionid='" +
-			id->misc->ivend->SESSIONID + "'"));
 
+
+    if(madechange==1){
+        array r = copy_value(id->misc->session_variables->cart);
         if(r && sizeof(r)>0) {
-            array items=({});
-            catch(DB->query("DELETE FROM sessions WHERE sessionid='" +
-                      id->misc->ivend->SESSIONID + "'"));
-            foreach(r, mapping row) {
-                if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
-		 continue;
-items+=({ (["item": row->id, "quantity": row->quantity, "options":
-            row->options, "series": row->series, "locked": row->locked,
-"autoadd": row->autoadd ]) });
-            }
-            do_additems(id, items);
-        }
+          array items=({});
+          id->misc->session_variables->cart=({});
+          foreach(r, mapping row) {
+             if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
+	       continue;
+             items+=({ (["item": row->id, "quantity": row->quantity, "options":
+               row->options, "locked": row->locked, "autoadd": row->autoadd ]) });
+          }
+          do_additems(id, items);
+       }
     }
     string field;
+
+    //
+    //  now that the changes have been made, we can display the cart.
+    //
 
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n"
             "<input type=hidden name=referer value=\"" +
             id->variables->referer + "\">\n";
-    // if(!args->fields) return "Incomplete cart configuration!";
-array r;
-    if(catch(r= DB->query(
-                                "SELECT sessions.id" +
-                                ",series,quantity,sessions.price, "
-				"sessions.locked, sessions.autoadd, " 
-				"sessions.options " +
-                                extrafields+" FROM sessions,products "
-                                "WHERE sessions.SESSIONID='"
-                                +id->misc->ivend->SESSIONID+"' AND sessions."
-                                "id=products." +
-                                DB->keys->products
-                            )))
-        return "An error occurred while accessing your cart."
-               "<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
-    if (sizeof(r)==0) {
-        if(id->misc->ivend->error)
-            return YOUR_CART_IS_EMPTY +"\n<false>\n";
+
+    array r;
+
+    if(sizeof(id->misc->session_variables->cart)==0) {
+      if(id->misc->ivend->error)
+         return YOUR_CART_IS_EMPTY +"\n<false>\n";
     }
 
-retval+="<cartdata>";
-array elements=({});
-    foreach(en, field){
-        elements+=({"<cartheader>"+field+"</cartheader>"});
-    }
-    elements+=({"<cartheader>" + WORD_OPTIONS
-+ "</cartheader>"});
-elements+=({
-	"<cartheader>"
-            + PRICE +"</cartheader>"});
-elements+=({"<cartheader>"
-            + QUANTITY +"</cartheader>"});
-elements+=({"<cartheader>"
-            + TOTAL + "</cartheader>"});
-elements+=({"<cartheader></cartheader>"});
-retval+="<cartrow>" + elements*"\t";
-retval+="</cartrow>\n";
-    for (int i=0; i< sizeof(r); i++){
+    r = ({});
+    foreach(id->misc->session_variables->cart, mapping row)
+    {
+      array rx;
+      write("SELECT " + extrafields + " FROM products WHERE "
+                                + DB->keys->products + " = '" + row->item + "'");
+      if(catch(rx= DB->query("SELECT " + extrafields + " FROM products WHERE "
+                                + DB->keys->products + " = '" + row->item + "'")))
+         return "An error occurred while accessing your cart."
+               "<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
+      if(sizeof(rx))
+      {
+         r+=({ rx[0] + row });
+      }        
+
+   }
+
+   werror(sprintf("CART: %O\n\n", r));
+   retval+="<cartdata>";
+   array elements=({});
+   foreach(en, field){
+      elements+=({"<cartheader>"+field+"</cartheader>"});
+   }
+   elements+=({"<cartheader>" + WORD_OPTIONS + "</cartheader>"});
+   elements+=({"<cartheader>" + PRICE +"</cartheader>"});
+   elements+=({"<cartheader>" + QUANTITY +"</cartheader>"});
+   elements+=({"<cartheader>" + TOTAL + "</cartheader>"});
+   elements+=({"<cartheader></cartheader>"});
+   retval+="<cartrow>" + elements*"\t";
+   retval+="</cartrow>\n";
+
+   for (int i=0; i< sizeof(r); i++){
 	elements=({});
      for (int j=0; j<sizeof(en); j++)
        if(j==0) elements+=({"<cartcell align=left><INPUT TYPE=HIDDEN NAME=s"
-		+ i + " VALUE="+r[i]->series+">"
+		+ i + " VALUE="+ i +">"
                 "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
                 "><A HREF=\""+ id->misc->ivend->storeurl  +
                 r[i]->id + ".html\">"
@@ -1025,59 +995,58 @@ retval+="</cartrow>\n";
        else elements+=({"<cartcell align=left>"+(r[i][en[j]] || " N/A ")
 	+"</cartcell>"});
 
-string e="<cartcell align=left>";
-array o=r[i]->options/"\n";
+  string e="<cartcell align=left>";
+  array o=r[i]->options/"\n";
 
   array eq=({});
-foreach(o, string opt){
-  array o_=opt/":";
-catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
-   "product_id='" + r[i]->id + "' AND option_type='" +
-   o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
-}
-	e+=(eq*"<br>") + "</cartcell>";
-elements+=({e});
-elements+=({"<cartcell align=right>" + MONETARY_UNIT +
+  foreach(o, string opt){
+    array o_=opt/":";
+    catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
+      "product_id='" + r[i]->id + "' AND option_type='" +
+       o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
+  }
+	
+  e+=(eq*"<br>") + "</cartcell>";
+  elements+=({e});
+  elements+=({"<cartcell align=right>" + MONETARY_UNIT +
                 sprintf("%.2f",(float)r[i]->price)+"</cartcell>"});
 
-elements+=({"<cartcell><INPUT TYPE="+
+  elements+=({"<cartcell><INPUT TYPE="+
 		(r[i]->locked=="1"?"HIDDEN":"TEXT") +
 		" SIZE=3 NAME=q"+i+" VALUE="+
                 r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
 		+ "</cartcell>"});
-elements+=({"<cartcell align=right>" + MONETARY_UNIT
+  elements+=({"<cartcell align=right>" + MONETARY_UNIT
 		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"});
 
-e="<cartcell align=left>";
-if(r[i]->autoadd!="1")
-  e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
-   r[i]->id + "/" + r[i]->series + "\">";
-e+="</cartcell>";
-elements+=({e});
-retval+="<cartrow>" + elements*"\t";
-retval+="</cartrow>\n";
-    }
-    retval+="</cartdata>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-            "<table><tr><Td><input name=update type=submit value=\""
+  e="<cartcell align=left>";
+  if(r[i]->autoadd!="1")
+    e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i]->id + "/" + i + "\">";
+  e+="</cartcell>";
+  elements+=({e});
+  retval+="<cartrow>" + elements*"\t";
+  retval+="</cartrow>\n";
+  }
+  retval+="</cartdata>\n<input type=hidden name=s value="+sizeof(r)+">\n"
+            "<table><tr><td><input name=update type=submit value=\""
             + UPDATE_CART + "\"></form></td>\n";
-    if(!id->misc->ivend->checkout){
-        if(args->checkout_url)
-            retval+="<td><form action=\"" + args->checkout_url + "\">";
-        else
-            retval+="<td> <form action=\""+ query("mountpoint") +
-                       "checkout/?SESSIONID=" +
-                    id->misc->ivend->SESSIONID
+  if(!id->misc->ivend->checkout)
+  {
+    if(args->checkout_url)
+       retval+="<td><form action=\"" + args->checkout_url + "\">";
+    else
+       retval+="<td> <form action=\""+ query("mountpoint") + "checkout/"
                     + "\">";
-        retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
-    }
-    if(!id->misc->ivend->checkout &&
-(args->cont||id->variables->referer)){
+       retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
+  }
+    
+  if(!id->misc->ivend->checkout && (args->cont||id->variables->referer)){
 	retval+="<td> <form action=\"" +
- (args->cont||id->variables->referer) + "\">"
+          (args->cont||id->variables->referer) + "\">"
 		"<input type=submit value=\"Continue\"></form></td>";
 	}
-    retval+="</tr></table>\n<true>\n"+contents;
-    return retval;
+  retval+="</tr></table>\n<true>\n"+contents;
+  return retval;
 }
 
 
@@ -1119,13 +1088,6 @@ else  return "<a external href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
 
 }
 
-string tag_sessionid(string tag_name, mapping args,
-                     object id, mapping defines) {
-
-    return id->misc->ivend->SESSIONID;
-
-}
-
 string container_rotate(string name, mapping args,
                         string contents, object id) {
 
@@ -1140,7 +1102,7 @@ string container_rotate(string name, mapping args,
 string container_category_output(string name, mapping args,
                                  string contents, object id) {
 
-    contents=parse_html(contents,([]),
+    contents=Caudium.parse_html(contents,([]),
                     (["formrotate":container_rotate]),id);
 
     string retval="";
@@ -1404,11 +1366,11 @@ string tag_ivmg(string tag_name, mapping args,
         else if (sizeof(r)!=1) return "<!-- no records returned -->";
         else if ((r[0][args->field]==0))
             return "<!-- No image for this record. -->\n";
-        else filename=CONFIG->root+"/html/images/"+
+        else filename=QUERY(storeroot) + "/html/images/"+
                           id->misc->ivend->type+"s/"+r[0][args->field];
     }
     else if(args->src!="")
-        filename=CONFIG->root+"/html/images/"+args->src;
+        filename=QUERY(storeroot)+"/html/images/"+args->src;
 
     array|int size=size_of_image(filename);
 
@@ -1435,7 +1397,7 @@ mixed handle_cart(string filename, object id){
 #endif
 
     string retval;
-    if(!(retval=Stdio.read_bytes(CONFIG->root+"/html/cart.html")))
+    if(!(retval=Stdio.read_bytes(QUERY(storeroot)+"/html/cart.html")))
         error("Unable to find the file "+
               "/cart.html",id);
 
@@ -1485,7 +1447,7 @@ string container_itemoutput(string name, mapping args,
             r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
 
     }
-    retval=parse_html(do_output_tag( args, ({ r[0] }), contents, id ),
+    retval=Caudium.parse_html(do_output_tag( args, ({ r[0] }), contents, id ),
                   (["ivmg":tag_ivmg]),([]),id);
     id->misc->ivend->page=o_page;
     id->misc->ivend->item=o_item;
@@ -1531,9 +1493,9 @@ mixed find_page(string page, object id){
       id->misc->ivend->template=id->variables->template;
    else if(id->misc->ivend->template=="DEFAULT" ||
 		id->misc->ivend->template==0)
-	id->misc->ivend->template=CONFIG->root+ "/html/" +
+	id->misc->ivend->template=QUERY(storeroot)+ "/html/" +
 type+"_template.html";
-    else id->misc->ivend->template=CONFIG->root + "/templates/" +
+    else id->misc->ivend->template=QUERY(storeroot) + "/templates/" +
 id->misc->ivend->template +".html";
 
     retval=Stdio.read_bytes(id->misc->ivend->template);
@@ -1582,14 +1544,13 @@ items+=({ (["item": id->variables->item,
 }
 
 mixed handle_page(string page, object id){
-
     mixed retval;
 
     switch(page){
 
     case "index.html":
-        id->realfile=CONFIG->root+"/html/index.html";
-        retval= Stdio.read_bytes(CONFIG->root+"/html/index.html");
+        id->realfile=QUERY(storeroot)+"/html/index.html";
+        retval= Stdio.read_bytes(QUERY(storeroot)+"/html/index.html");
         break;
 
     default:
@@ -1606,7 +1567,7 @@ mixed handle_page(string page, object id){
             fs=stat_file(page+"/index.html",id);
 
             if(fs && fs[1]>0) {
-                return http_redirect(page + "/index.html", id);
+                return Caudium.HTTP.redirect(page + "/index.html", id);
             }
             else return 0;
         }
@@ -1614,8 +1575,8 @@ mixed handle_page(string page, object id){
 	string template;
         id->misc->ivend->type=get_type(id->misc->ivend->page, id);
 
-        retval=Stdio.read_file(CONFIG->root + "/html/" + page);
-        id->realfile=CONFIG->root+"/html/"+page;
+        retval=Stdio.read_file(QUERY(storeroot) + "/html/" + page);
+        id->realfile=QUERY(storeroot) +"/html/"+page;
     }
     if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
     return retval;
@@ -1625,16 +1586,10 @@ mixed handle_page(string page, object id){
 mapping ivend_image(array(string) request, object id){
 
     string image;
-    image=read_file(query("datadir")+"images/"+request[0]);
+    image=read_file(query("root")+"/data/images/"+request[0]);
 
     return http_string_answer(image,
                               id->conf->type_from_filename(request[0]));
-
-}
-
-mixed getsessionid(object id) {
-
-    return id->misc->ivend->SESSIONID;
 
 }
 
@@ -1786,54 +1741,6 @@ admin_user_cache[upper_case(id->variables->user)]="";
 // Start of admin functions
 
 
-int do_clean_sessions(object db){
-
-    string query="SELECT sessionid FROM session_time WHERE timeout < "+time(0);
-    array r;
-	catch(r=db->query(query));
-    foreach(r,mapping record){
-        foreach(({"customer_info","payment_info","lineitems",
-		"comments", "orderdata"}),
-                string table)
-        catch(db->query("DELETE FROM " + table + " WHERE orderid='"
-                  + record->sessionid + "'"));
-
-	catch(db->query("DELETE FROM sessions WHERE sessionid='" +
-		record->sessionid + "'"));
-	catch(db->query("DELETE FROM session_time WHERE sessionid='" +
-		record->sessionid + "'"));
-    }
-
-    catch(db->query(query));
-
-    return sizeof(r);
-}
-
-int clean_sessions(object id){
-
-    int num=do_clean_sessions(DB);
-    return num;
-}
-
-void background_session_cleaner(){
-
-    object d;
-    mixed err;
-
-        err=catch(d=db->handle());
-        if(err)
-            perror("iVend: BackgroundSessionCleaner failed."
-                   + describe_backtrace(err) + "\n");
-
-        else {
-            int num=do_clean_sessions(d);
-        }
-        db->handle(d);
-    }
-    call_out(background_session_cleaner, 900);
-}
-
-
 mixed getmodify(string type, string pid, object id){
 
     string retval="";
@@ -1862,12 +1769,12 @@ mixed getmodify(string type, string pid, object id){
 
     if(type=="product")
         retval+="<table>\n"+DB->gentable("products",
-                                         add_pre_state(id->not_query, (<"domodify=product">)),"groups",
+                                         Caudium.add_pre_state(id->not_query, (<"domodify=product">)),"groups",
                                          "product_groups", id, record[0])+"</table>\n";
     else if(type=="group")
 
         retval+="<table>\n"+DB->gentable("groups",
-                                         add_pre_state(id->not_query,
+                                         Caudium.add_pre_state(id->not_query,
 (<"domodify=group">)),0,0,id,
                                          record[0])+"</table>\n";
 
@@ -1954,7 +1861,7 @@ retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,m
             "}\n"
             "</SCRIPT>"
             "<form name=popupform" + id->misc->ivend->popup + " target=" +
-		name + " ACTION=\"" + add_pre_state(id->not_query, (<mode>))
+		name + " ACTION=\"" + Caudium.add_pre_state(id->not_query, (<mode>))
             +"\">";
     foreach(indices(options), string o){
 
@@ -1966,7 +1873,7 @@ retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,m
        id->variables[DB->keys[options->type + "s"]] + "\">";
     retval+="<input type=hidden name=mode value=\""  +mode + "\">"
             "<input onclick=\"popup_" + id->misc->ivend->popup + "('"
-		+name +"','" + add_pre_state(id->not_query,
+		+name +"','" + Caudium.add_pre_state(id->not_query,
                           (<mode>))  + "'," +(options->width||450)+ ","
 		+(options->height||300)+
 		")\" type=reset value=\""
@@ -1981,26 +1888,15 @@ retval+= "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,m
 
 string return_to_admin_menu(object id){
 
-                 return "<a href=\""  + 	   add_pre_state(id->not_query,
+                 return "<a href=\""  + 	   Caudium.add_pre_state(id->not_query,
                          (<"menu=main">))+   "\">"
                         "Return to Store Administration</a>.\n";
 
              }
 
-             string action_clearsessions(string mode, object id){
-
-                 string retval="";
-
-                 int r =clean_sessions(id);
-                 retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
-                         return_to_admin_menu(id);
-
-                 return retval;
-             }
-
              mixed admin_handler(string filename, object id){
 	       // perror("admin interface\n");
-if(CONFIG->admin_enabled=="No")
+if(!QUERY(admin_enabled))
   return 0;
 
                  string mode, type;
@@ -2014,7 +1910,7 @@ return "You have logged out.<p><a href=\"./\">Click here to continue.</a>";
 }
                  if(sizeof(id->prestate)==0) {
                      id->prestate=(<"menu=main">);
-                     return http_redirect(id->not_query + (
+                     return Caudium.HTTP.redirect(id->not_query + (
                                               (id->not_query[sizeof(id->not_query)-1..]!="/")?"/":"") +
                                           (id->query?("?" + id->query):""), id);
                  }
@@ -2041,7 +1937,7 @@ if(!intp(r)){
                          "<font face=helvetica,arial size=+1>"
                          "<a href=\"" +
                          id->misc->ivend->storeurl + "\">Storefront</a> &gt; <a href=\"" +
-                         add_pre_state(id->not_query,(<"menu=main">))+"\">Admin Main Menu</a>\n";
+                         Caudium.add_pre_state(id->not_query,(<"menu=main">))+"\">Admin Main Menu</a>\n";
 
 
                  if(id->prestate && sizeof(id->prestate)>0){
@@ -2073,7 +1969,6 @@ if(!intp(r)){
                      mixed xj=DB->addentry(id,id->referrer);
                      retval+="<br>";
                      if(!intp(xj)){
-		       //                         destruct(DB);
                          return retval+= "<p>The following errors occurred:<p><ul><li>" + (xj*"<li>")
 				+"</ul><p>"
 	"Please return to the previous page to remedy this  "
@@ -2081,7 +1976,6 @@ if(!intp(r)){
                      }
                      else{
                          type=(id->variables->table-"s");
-			 //                         destruct(DB);
                trigger_event("adminadd", id, (["type": type, 
 		"id": id->variables[DB->keys[type + "s"]] ])
 );
@@ -2095,11 +1989,9 @@ if(!intp(r)){
                      xj=DB->modifyentry(id,id->referrer);
                      retval+="<br>";
                      if(stringp(xj)){
-		       //                         destruct(DB);
                          return retval+= "The following errors occurred:<p><li>" + (xj*"<li>")
 				+"</body></html>";
                      }
-//                     destruct(DB);
              trigger_event("adminmodify", id, (["type": type, 
 		"id": id->variables[DB->keys[type + "s"]] ])
 );
@@ -2136,11 +2028,11 @@ if(!intp(r)){
 
                      if(type=="product")
                          retval+="<table>\n"+ DB->gentable("products",
-                                                           add_pre_state(id->not_query,(<"doadd=product">)),"groups",
+                                                           Caudium.add_pre_state(id->not_query,(<"doadd=product">)),"groups",
                                                            "product_groups", id)+"</table>\n";
                      else if(type=="group")
                          retval+="<table>\n"+
-                                 DB->gentable("groups",add_pre_state(id->not_query,(<"doadd=group">)),0,0,id)+"</table>\n";
+                                 DB->gentable("groups",Caudium.add_pre_state(id->not_query,(<"doadd=group">)),0,0,id)+"</table>\n";
 			retval+="</body></html>";
                      break;
 
@@ -2167,7 +2059,7 @@ id->variables[DB->keys[type+ "s"]],
                                                      DB->keys[type+"s"], id);
                              if(n)
                                  retval+="<form _parsed=1 name=form action=\"" +
-					add_pre_state(id->not_query,(<"dodelete=" + type>)) +"\">\n"
+					Caudium.add_pre_state(id->not_query,(<"dodelete=" + type>)) +"\">\n"
                                          + n +
                                          "<input type=hidden name=mode value=dodelete>\n"
                                          "<input type=submit value=Delete>\n</form>";
@@ -2175,7 +2067,7 @@ id->variables[DB->keys[type+ "s"]],
                          }
                          else {
                                  retval+="<form name=form action=\"" +
-                                         add_pre_state(id->not_query,(<"dodelete=" + type>))
+                                         Caudium.add_pre_state(id->not_query,(<"dodelete=" + type>))
                                          + "\">\n"
                                          "Are you sure you want to delete the following?<p>";
 //perror("Input: " + id->variables[DB->keys[type +"s"]] + "\n");
@@ -2201,7 +2093,7 @@ retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
 
                  case "delete":
                      retval+="<form name=form action=\""+
-                             add_pre_state(id->not_query,(<"dodelete=" + type>))+"\">\n"
+                             Caudium.add_pre_state(id->not_query,(<"dodelete=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=dodelete>\n"
                              +capitalize(type) + " "+
                              DB->keys[type +"s"] + " to Delete:\n"
@@ -2219,11 +2111,6 @@ retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                      stop_store();
                      start_store();
                      retval+="Store Restarted Successfully.<p>" +
-                             return_to_admin_menu(id);
-                     break;
-                 case "clearsessions":
-                     int r =clean_sessions(id);
-                     retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p>" +
                              return_to_admin_menu(id);
                      break;
 
@@ -2352,7 +2239,7 @@ id->variables->__criteria + "%";
                          array r=DB->query(query);
                          if(sizeof(r)>0) {
                              retval+="<form action=\"" +
-add_pre_state(id->not_query,(<"dodelete=" + type >))  
+Caudium.add_pre_state(id->not_query,(<"dodelete=" + type >))  
 				+ "\" method=post>"
 				"<table>\n<tr><td>"
 				"<input type=submit name=\"__delete_marked\" value=\"Delete Marked Items\">"
@@ -2366,12 +2253,12 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 					+ id->variables->primary_key + "\" "
 					"value=\"" +
 					row[id->variables->primary_key] + "\"> "
-                                         "<a href=\"" + add_pre_state(id->not_query,
+                                         "<a href=\"" + Caudium.add_pre_state(id->not_query,
                                                                       (<"getmodify=" + type>))+
                                          "?" +id->variables->primary_key + "=" +
                                          row[id->variables->primary_key] + "\">Modify</a> "
                                          "&nbsp; <a href=\"" +
-                                         add_pre_state(id->not_query, (<"dodelete="+ type>)) +
+                                         Caudium.add_pre_state(id->not_query, (<"dodelete="+ type>)) +
                                          "?" + id->variables->primary_key + "=" +
                                          row[id->variables->primary_key] + "\">Delete</a></td>";
                                  foreach(fields, string fld)
@@ -2391,7 +2278,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  case "modify":
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
-                     retval+="<form name=form action=\""+add_pre_state(id->not_query,(<"getmodify=" + type>))+"\">\n"
+                     retval+="<form name=form action=\""+Caudium.add_pre_state(id->not_query,(<"getmodify=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=getmodify>\n"
                              + capitalize(type) + " "+
                              DB->keys[type+"s"] + " to Modify: \n"
@@ -2432,7 +2319,6 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
                          }
 			if(mappingp(rv)) {
-			  //			  destruct(DB);
 			  return rv;
 			}
 
@@ -2446,16 +2332,16 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"show=group">))
+                             Caudium.add_pre_state(id->not_query,(<"show=group">))
                              +"\">Show Groups</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"add=group">))
+                             Caudium.add_pre_state(id->not_query,(<"add=group">))
                              +"\">Add New Group</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"modify=group">))
+                             Caudium.add_pre_state(id->not_query,(<"modify=group">))
                              +"\">Modify a Group</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"delete=group">))
+                             Caudium.add_pre_state(id->not_query,(<"delete=group">))
                              +"\">Delete a Group</a>\n"
                              "</font>"
                              "</obox>"
@@ -2463,16 +2349,16 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                              "<font face=helvetica,arial>"
                              "<ul>"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"show=product">))
+                             Caudium.add_pre_state(id->not_query,(<"show=product">))
                              +"\">Show Products</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"add=product">))
+                             Caudium.add_pre_state(id->not_query,(<"add=product">))
                              +"\">Add New Product</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"modify=product">))
+                             Caudium.add_pre_state(id->not_query,(<"modify=product">))
                              +"\">Modify a Product</a>\n"
                              "<li><a href=\""+
-                             add_pre_state(id->not_query,(<"delete=product">))
+                             Caudium.add_pre_state(id->not_query,(<"delete=product">))
                              +"\">Delete a Product</a>\n"
                              "</font>"
                              "</obox>"
@@ -2496,7 +2382,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                              sort(valid_handlers);
                              foreach(valid_handlers, string hn)
                              if(search(hn, category)!=-1)
-                                 retval+="<li><a href=\"" + add_pre_state(id->not_query,
+                                 retval+="<li><a href=\"" + Caudium.add_pre_state(id->not_query,
 					(<replace(hn, mode+"."+(type||"")+".","")>)) + "\">"
                                          + replace(hn,({"_",mode + "." + (type||"") +"." +category
                                                         +"."}),({" ",""})) +
@@ -2505,7 +2391,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                          }
 
                          retval+="</td></tr></table>"
-                                 "</ul><p><b>" + numsessions + "</b> sessions created since last startup."
+                                 "</ul>"
                                  "<br><b>" + numrequests + "</b> requests handled since last startup."
 				"<p>Logged in as " +
 				id->misc->ivend->admin_user + ". [ <a "
@@ -2522,6 +2408,10 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
              }
 
              mixed find_file(string file_name, object id){
+                 if(!started) {
+		   return return_data("This store has not been started.", id);
+			}
+
                  id->misc["ivend"]=([]);
                  id->misc["ivendstatus"]="";
                  mixed retval;
@@ -2535,30 +2425,23 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      return ivend_image(request, id);
 		}
 
-		// we don't use STORE anymore, but for compatibility, we set it anyhow.
-                     STORE=indices(config)[0];
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config;
-                 id->misc->ivend->config->global=global;
+
                  mixed err;
                  if(!DB) {
                      DB=db->handle();
 		}
-                 if(err || config->error) {
-                     error(err[0] || config->error, id);
-                     return return_data(retval, id);
-                 }
 
-                 if(!DB || !DB->db_info_loaded) {
+                if(!DB || !DB->db_info_loaded) {
 		   return return_data("This store is currently unavailable.", id);
-			}
-                 MODULES=modules;
-                 numrequests+=1;
-                 id->misc->ivend->storeurl=QUERY(mountpoint);
+		}
+                MODULES=modules;
+                numrequests+=1;
 
+                id->misc->ivend->storeurl=QUERY(mountpoint);
 
-                 handle_sessionid(id);
-                 if(request*"/" && have_path_handler(request*"/"))
+                 if(sizeof(request) && have_path_handler(request*"/"))
                      retval= handle_path( request*"/" , id);
 
                  if(!retval)
@@ -2566,11 +2449,12 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      case "":
 		       string rx=replace((id->not_query + "/index.html" +
 					  (id->query?("?"+id->query):"")),"//","/");
-		       db->handle(DB);
-		       return http_redirect(rx, id);
+                       db->handle(DB);
+		       return Caudium.HTTP.redirect(rx, id);
+                       break;
                      default:
                          retval=(handle_page(request*"/", id));
-
+                         break;
                      }
                  return return_data(retval, id);
 
@@ -2635,9 +2519,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
                  mapping containers= ([
                                       "a":container_ia,
-                                      "form":container_form,
                                       "icart":container_icart,
-                                      "ivindex":container_ivindex,
                                       "category_output":container_category_output,
                                       "itemoutput":container_itemoutput
                                       ]);
@@ -2652,8 +2534,8 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                              library->container), string n)
                  c[n]=generic_container_handler;
 
-                 contents= make_container("html", (["_parsed":"1"]),
-				parse_html(contents,
+                 contents= Caudium.make_container("html", (["_parsed":"1"]),
+				Caudium.parse_html(contents,
                            t + tags,
                            c + containers, id));
                  MODULES=modules;
@@ -2669,7 +2551,6 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
              mapping query_tag_callers()
              {
              return ([ "ivendlogo" : tag_ivendlogo, 
-                       "sessionid" : tag_sessionid
 			]); }
 
 
@@ -2698,7 +2579,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  fop = Stdio.File();
                  if(!fop->open(filename, "r")) return -1;
                  fop->seek(0);
-                 return Dims.dims()->get(fop);
+                 return Image.Dims.get(fop);
 
              }
 
@@ -2714,7 +2595,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
                  array fs;
                  if(!id->pragma["no-cache"] &&
-                             (fs=cache_lookup("stat_cache", CONFIG->root+"/html/"
+                             (fs=cache_lookup("stat_cache", QUERY(storeroot) +"/html/"
                                               +f)))
                      return fs[0];
 
@@ -2723,13 +2604,13 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
 
                  fs = file_stat(
-                          CONFIG->root + "/html/" + f);
+                          QUERY(storeroot) + "/html/" + f);
 
 #ifndef THREADS
                  privs = 0;
 #endif
 
-                 cache_set("stat_cache", CONFIG->root+"/html/" +f, ({fs}));
+                 cache_set("stat_cache", QUERY(storeroot) + "/html/" +f, ({fs}));
                  return fs;
 
              }
@@ -2748,7 +2629,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 		id->misc->ivend->handled_error=1;
                  if(CONFIG)
                      retval=Stdio.read_file(
-                                CONFIG->root+"/html/error.html");
+                                QUERY(storeroot) +"/html/error.html");
 
 
                  if(!retval) retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
@@ -2767,8 +2648,8 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
              mixed get_image(string filename, object id){
 
                  string data=Stdio.read_bytes(
-                                 CONFIG->root+"/html/"+filename);
-                 id->realfile=CONFIG->root+"/html/"+filename;
+                                 QUERY(storeroot) +"/html/"+filename);
+                 id->realfile=QUERY(storeroot) +"/html/"+filename;
 
                  return http_string_answer(data,
                                            id->conf->type_from_filename(id->realfile));
@@ -2836,143 +2717,105 @@ string generate_sessionid(object id){
 return SessionID;
 }
 
-             void handle_sessionid(object id) {
-
-                 if(!id->cookies->SESSIONID && !id->variables->SESSIONID) {
-                     id->misc->ivend->SESSIONID=
-                         generate_sessionid(id);
-                     num+=1;
-                     numsessions+=1;
-             trigger_event("newsessionid", id, (["sessionid" :
-                                                         id->misc->ivend->SESSIONID]) );
-
-			DB->query("INSERT INTO session_time VALUES('" +
-		id->misc->ivend->SESSIONID + "',"  +(time(0)+
-                         (int)CONFIG->session_timeout)+ ")");
-		
-                 }
-
-                 else if(id->variables->SESSIONID)
-id->misc->ivend->SESSIONID=id->variables->SESSIONID;
-
-                 else 
-if(id->cookies->SESSIONID)
-                     id->misc->ivend->SESSIONID=id->cookies->SESSIONID;
-
-                 //   if(id->supports->cookies)
-                 if(!id->cookies->SESSIONID)
-             add_cookie(id, (["name":"SESSIONID",
-                              "value":id->misc->ivend->SESSIONID, "seconds": 3600]),([]));
-
-                 m_delete(id->variables,"SESSIONID");
-
-             }
-
 mixed return_data(mixed retval, object id){
-// perror("DEFINES return_data start: " + sprintf("%O\n", id->misc->defines));
-	if(sizeof(id->misc->ivend->error)>0 && !id->misc->ivend->handled_error)
-		retval=handle_error(id);
-	if(objectp(DB)) {
-		db->handle(DB);
-		}
-	if(mappingp(retval)) {
-		return retval;
-	}
+  if(sizeof(id->misc->ivend->error)>0 && !id->misc->ivend->handled_error)
+	retval=handle_error(id);
+  if(mappingp(retval)) 
+  {
+    db->handle(DB);
+    return retval;
+  }
 
-	if(stringp(retval)){
-		if(id->conf->type_from_filename(id->realfile || "index.html")
-			=="text/html") {
-			retval=parse_rxml(retval, id);
-}
+  if(stringp(retval))
+  {
+    if(id->conf->type_from_filename(id->realfile || "index.html")
+	=="text/html") {
+	retval=parse_rxml(retval, id);
+    }
 
-int errno=200;
-if(id->misc->defines && id->misc->defines[" _error"]) errno=id->misc->defines[" _error"];
-if(id->misc->ivend->redirect) errno=302;
- return
-    ([
-      "error" : errno,
-      "data"  : retval,
-      "len"   : strlen( retval ),
-      "type"  : id->conf->type_from_filename(id->realfile || "index.html")
+ int errno=200;
+ if(id->misc->defines && id->misc->defines[" _error"]) errno=id->misc->defines[" _error"];
+ if(id->misc->ivend->redirect) errno=302;
 
+ db->handle(DB);
+
+   return
+     ([
+       "error" : errno,
+       "data"  : retval,
+       "len"   : strlen( retval ),
+       "type"  : id->conf->type_from_filename(id->realfile || "index.html")
       ]);
 
-	}
+  }
 
-	else { perror("RETURN return_data: fell through\n"); return retval;}
+  else { perror("RETURN return_data: fell through\n"); return retval;}
 
 }
 
-                         // Start of config functions.
+/*
 
-                         mixed getglobalvar(string var){
+   Start of config functions.
 
-                             if(catch(global["general"][var]))
-                                 return 0;
-                             else return global["general"][var];
+ */
 
-                         }
+// Read the config data.
+int read_conf()
+{
+  object privs;
+  string current_config="";
 
-                         int read_conf(){          // Read the config data.
-                             object privs;
-                             string current_config="";
+  string config_file;
+                           
+  privs=Privs("iVend: Reading Config Files");
 
-                             c=iVend.config();
-                             g=iVend.config();
-                             if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")));
-                             if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")));
-                             string config_file;
-                             privs=Privs("iVend: Reading Config File " +
-                                         config_file);
-                             config_file=Stdio.read_file(query("configdir") + "global.ini");
-                             global=Config.read(config_file);
-                             privs=0;
-                             if(!global->configurations)
-                                 return 0;
+  config_file= Stdio.read_file(query("storeroot") + "/config/config.ini");
+  if(config_file)
+  {
+    mapping c=.Config.read(config_file);
+    config=c;
+  }
+  else
+    config=([]);
+  privs=0;
+  return 0;
+}
 
-                             if(!global->general)
-                                 global["general"]=([]);
-                             global->general->root=query("root");
+mixed load_ivmodule(string name){
+  mixed err;
+  mixed m;
 
-                             privs=Privs("iVend: Reading Config Files");
+  if(!modules) modules=([]);
+  string filen;
+  filen=query("root")+"/src/modules/"+name;
 
-                                 config_file= Stdio.read_file(query("configdir") + "config.ini");
-                                 mapping c;
-                                 c=Config.read(config_file);
-                                 config=c;
-                                 config["global"]=global;
-                             privs=0;
-                             return 0;
-                         }
+  if(file_stat(filen));                           
+  else 
+  {     
+     filen=QUERY(root) + "/modules/" + name;
+                                 
+     if(file_stat(filen));
+     else return ({"Unable to find module " + name + "."});
+                             
+  }
 
-
-                         mixed load_ivmodule(string name){
-                             mixed err;
-                             mixed m;
-
-                             if(!modules) modules=([]);
-                             string filen;
-                             filen=query("root")+"/src/modules/"+name;
-                             if(file_stat(filen));
-                             else {
-                                 filen=config->general->root + "/modules/" + name;
-                                 if(file_stat(filen));
-                                 else return ({"Unable to find module " + name + "."});
-                             }
-				master()->set_inhibit_compile_errors(0);
-				err=catch(compile_file(filen));
-                             if(err) {
-				perror(err*"\n");
-                                 return (err);
-                             }
-				master()->set_inhibit_compile_errors(1);
-                              m=(object)clone(compile_file(filen));
-                         modules+=([  m->module_name : m  ]);
-                             mixed o=modules[m->module_name];
-                             if(functionp(o->start)) {
-                                 o->start(config);
-                             }
-                             mixed p;
+  master()->set_inhibit_compile_errors(0);
+  err=catch(compile_file(filen));
+  if(err) 
+  {
+    perror(err*"\n");
+    return (err);                           
+  }
+  master()->set_inhibit_compile_errors(1);
+  m=((program)compile_file(filen))();
+  modules+=([  m->module_name : m  ]);
+  mixed o=modules[m->module_name];
+  object s=db->handle();
+  if(functionp(o->start)) {
+    o->start(config, s);
+  }
+  db->handle(s);
+  mixed p;
 
                              if(functionp(o->register_paths))
                                  p = o->register_paths();
@@ -2995,8 +2838,7 @@ if(id->misc->ivend->redirect) errno=302;
                                      object privs=Privs("iVend: Writing Config File " +
                                                         config->general->config);
 
-Config.write_section(query("configdir")+
-                                                          "config.ini", m->module_name,
+.Config.write_section(query("storeroot")+"/config/config.ini", m->module_name,
                                                           config[m->module_name]);
                                      privs=0;
                                  }
@@ -3020,13 +2862,13 @@ Config.write_section(query("configdir")+
                          }
 
 
-void start_db(mapping c){
+void start_db(){
   mixed err;
-  perror("Creating DB connections for: " + c->config + "\n");
-  db=iVend.db_handler(c->dbhost, 4 );
+  if(!QUERY(db))
+    return;
+  db=.iVend.db_handler(QUERY(db), 4);
   object s=db->handle();
   if(s) {
-
 
 if(sizeof(s->list_tables("comments"))!=1) {
   s->query("CREATE TABLE comments ("
@@ -3038,21 +2880,13 @@ if(sizeof(s->list_fields("payment_info","Authorization"))!=1) {
   s->query("alter table payment_info add Authorization char(24)");
   }
 
-  s->query("alter table sessions change sessionid sessionid char(64)");
   s->query("alter table activity_log change orderid orderid char(64) not null");
   s->query("alter table customer_info change orderid orderid char(64) not null");
   s->query("alter table payment_info change orderid orderid char(64) not null");
   s->query("alter table lineitems change orderid orderid char(64) not null");
-  s->query("alter table session_time change sessionid sessionid char(64)");
   s->query("alter table shipments change orderid orderid char(64) not null");
 
 
-if(sizeof(s->list_fields("sessions","autoadd"))!=1)
-  s->query("alter table sessions add autoadd integer");
-
-
-if(sizeof(s->list_fields("sessions","taxable"))!=1)
-  s->query("alter table sessions add taxable char(1) default 'Y'");
 
 if(sizeof(s->list_fields("lineitems","taxable"))!=1) {
   //perror("ADDING TAXABLE FIELD TO LINEITEMS\n");
@@ -3082,9 +2916,10 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
 		);
  }
                              }
-if(s) db->handle(s);
-                             return;
-                         }
+ db->handle(s);                 
+ return;
+                      
+}
 
                          void load_modules(){
                              mixed err;
@@ -3105,7 +2940,6 @@ object s=db->handle();
 			       mtl+=({"complex_pricing.pike"});
 			     }
  perror("2 Found " + sizeof(mtl) + " modules to load.\n");
-db->handle(s);
                              foreach(mtl, string name) { 
 perror("3 loading " + name + "\n");
                                  err=catch(load_ivmodule(name));
@@ -3124,34 +2958,7 @@ perror("3 loading " + name + "\n");
                                      config["general"]->error=err;
                                  }
                              }
-                             return;
-                         }
-
-                         mapping write_configuration(object id){
-                             string config_file="";
-                                 perror("making backup of " + confname +"...\n");
-                                 mv(query("configdir")+"global.ini" ,query("configdir")+ "global.ini~");
-                                 mv(query("configdir")+"config.ini" ,query("configdir")+ "config.ini~");
-
-                                     Stdio.write_file(query("configdir")+"global.ini",
-					Config.write(global));
-
-                                         m_delete(config, "global");
-                                     Stdio.write_file(query("configdir")+"config.ini",
-					Config.write(config));
-
-#if efun(chmod)
-                                 chmod(query("configdir") + "global.ini", 0640);
-                                 chmod(query("configdir") + "config.ini", 0640);
-#endif
-
-                             }
-                             privs=0;
-                             save_status=1;// We've saved.
-
-                             stop();
-                             start();// Reload all of the modules and crap.
-                             return http_redirect(query("mountpoint") + "config/", id);
-
+  db->handle(s);
+  return;
                          }
 

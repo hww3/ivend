@@ -16,7 +16,7 @@ mapping query_container_callers2();
 
 int initialized;
 
-object|void load_module(string module, mapping config)
+object|void load_module(string module, mapping config, object db)
 {
 perror("STARTING SHIPPING HANDLER...");
 object m;
@@ -31,7 +31,7 @@ master()->set_inhibit_compile_errors(1);
 if(x)
  m=(object)clone(x);
 if(m && objectp(m)) {
-  m->start(config);
+  m->start(config, db);
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -40,15 +40,10 @@ return;
 
 }
 
-void start(mapping config)
+void start(mapping config, object db)
 {
 initialized=0;
-object db;
 handlers=([]);
-
-
-db=iVend.db(config->general->dbhost);
-
 
 if((sizeof(db->list_tables("shipping_types")))==1)
 {  initialized=1;
@@ -67,15 +62,15 @@ foreach(r, mapping row){
   if(objectp(handlers[row->module])) // already loaded that one.
     {
     if(!handlers[row->module]->started)
-       handlers[row->module]->start(config);
+       handlers[row->module]->start(config, db);
     }
-  else handlers[row->module]=load_module(row->module, config);
+  else handlers[row->module]=load_module(row->module, config, db);
   }
 return;
 
 }
 
-void stop(mapping config)
+void stop(mapping config, object db)
 {
 
 return;
@@ -120,7 +115,7 @@ if(sizeof(DB->list_tables("shipping_types"))!=1)
   "  PRIMARY KEY (type)"
   ") ");
 
-start(id->misc->ivend->config);
+start(id->misc->ivend->config, id->misc->ivend->db);
 return 0;
 
 }
@@ -239,7 +234,7 @@ mixed doaddtype(object id)
 	id->variables->module + "','" +
 	DB->quote(id->variables->availability) + "')");
   
-  start(id->misc->ivend->config);
+  start(id->misc->ivend->config, id->misc->ivend->db);
 
   return showmainmenu(id);
 }
@@ -318,7 +313,7 @@ float|string tag_shippingcost (string tag_name, mapping args,
 
 array r=DB->query("SELECT value FROM lineitems WHERE "
   "lineitem='shipping' AND orderid='"+
-(args->orderid || id->misc->ivend->orderid || id->misc->ivend->SESSIONID)
+(args->orderid || id->misc->ivend->orderid || id->misc->session_id)
 +
   "'");
 if(sizeof(r)>0) return sprintf("%.2f", (float)(r[0]->value));
@@ -334,7 +329,7 @@ float charge=0.00;
 
 string type= (args->type || id->variables->type || "1");
 string orderid=(args->orderid || id->misc->ivend->orderid ||
-  id->misc->ivend->SESSIONID);
+  id->misc->session_id);
 
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); 
@@ -356,7 +351,7 @@ string tag_shippingtype (string tag_name, mapping args,
 string retval;
 array r;
 string query=("SELECT extension FROM lineitems where orderid='" +
-  (id->misc->ivend->orderid || id->misc->ivend->SESSIONID)
+  (id->misc->ivend->orderid || id->misc->session_id)
   + "' AND lineitem='shipping'");
 r=DB->query(query);
 
@@ -384,7 +379,7 @@ string retval;
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
 string orderid=(args->orderid || id->misc->ivend->orderid ||
-id->misc->ivend->SESSIONID);
+id->misc->session_id);
 if(!args->charge){
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); return ""; }
@@ -403,9 +398,9 @@ if((float)(charge)==-2.00) {
   typename+=" (" + ACTUAL_CHARGES + ")";
   }
 id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
-	+ id->misc->ivend->SESSIONID + "' AND lineitem='shipping'");
+	+ id->misc->session_id + "' AND lineitem='shipping'");
 id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
-  id->misc->ivend->SESSIONID + "', 'shipping', " + charge + ",'" +
+  id->misc->session_id + "', 'shipping', " + charge + ",'" +
   typename + "','" + T_O->is_lineitem_taxable(id, "shipping", "") + "')");
 
 return "";
@@ -418,12 +413,14 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
   float charge=0.00;
 
   if(DB->local_settings->handling_charge==PER_ITEM) {
-	array r=DB->query("SELECT sum(products.handling_charge*sessions.quantity) as hc "
-	  "from products,sessions where sessions.sessionid='" 
-	  + args->orderid + "' and products." +
-	id->misc->ivend->db->keys->products + "=sessions.id");
+       foreach(id->misc->session_variables->cart, mapping row)
+       {
+          array rx = DB->query("SELECT handling_charge from products WHERE " + id->misc->ivend->db->keys->products + " = '" + 
+            row->item + "'");
 
-        if(r && sizeof(r)==1) charge=(float)(r[0]->hc);
+          if(sizeof(rx))
+            charge += ((float)(rx[0]->handling_charge) * (float)(row->quantity));
+       }
    }
 
   id->misc->ivend->handling_charge=charge;
@@ -443,7 +440,7 @@ array rw=({});
 foreach(r, mapping row){
   if(search(lower_case(row->availability), "select")!=-1){
     row->availability=replace(row->availability, "#sessionid#",
-	id->misc->ivend->SESSIONID);
+	id->misc->session_id);
     array m=id->misc->ivend->db->query(row->availability);
     if(sizeof(m)>0) rw+=({row});
   }

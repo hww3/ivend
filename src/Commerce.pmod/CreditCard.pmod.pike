@@ -99,9 +99,9 @@ return(0);
 
 int expdate_verify(string expdate){
 
-string *digits=({});
+array digits=({});
 
-string *temp=expdate/"";
+array temp=expdate/"";
 
 digits=Array.filter((temp),Regexp("[0-9]")->match);
  if ( (sizeof(digits)<5 ) || (sizeof(digits)>6)) { werror("incorrect number of digits in expdate. got " + sizeof(digits) + "\n");

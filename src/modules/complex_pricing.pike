@@ -17,13 +17,7 @@ mapping complex_types=([ "Single Price": "single",
 	"Buy X Get Y": "buyxgetx",
 	"Graduated Price": "grad"]);
 
-void start(mapping config){
-object db;
-if(catch(db=iVend.db(config->general->dbhost)))
-  {
-    perror("Complex Pricing: Error Connecting to Database.\n");
-    return;
-  }
+void start(mapping config, object db){
 
 if(sizeof(db->list_tables("complex_pricing"))<1)
   if(catch(db->query("CREATE TABLE complex_pricing ( "

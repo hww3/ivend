@@ -225,7 +225,7 @@ if(id->variables["commitli.x"]){ // commit the lineitem change
 id->variables[id->variables->commit] + " WHERE orderid='" +
 id->variables->orderid + "' AND lineitem='" + id->variables->commit +
 "'");
-T_O->report_status("Changed Lineitem " + id->variables->commit + ": " +
+T_O->ivend_report_status("Changed Lineitem " + id->variables->commit + ": " +
 id->variables[id->variables->commit],
                 id->variables->orderid || "NA", "handleorders", id);
 
@@ -325,7 +325,7 @@ if(note) {
 
 }      
 
-T_O->report_status("Sent Notification message: " + type,
+T_O->ivend_report_status("Sent Notification message: " + type,
                 id->variables->orderid || "NA", "handleorders", id);
   return;
 }
@@ -606,13 +606,13 @@ else {
        array r1=DB->query( 
 	"SELECT status FROM status WHERE name='In Progress' "
 	"AND tablename='orders'");
-	T_O->report_status("Changed order status to 'In Progress.'", 
+	T_O->ivend_report_status("Changed order status to 'In Progress.'", 
 		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 r1[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
 	}
-	T_O->report_status("Validated Payment with authorization "
+	T_O->ivend_report_status("Validated Payment with authorization "
 		+ (string)(id->variables->authorization_id) + ".", 
 		id->variables->orderid || "NA", "handleorders", id);
 
@@ -627,7 +627,7 @@ else {
 
    r=DB->query(
        "SELECT status FROM status WHERE name='Error'");
-        T_O->report_status("Changed order status to 'Error.'",
+        T_O->ivend_report_status("Changed order status to 'Error.'",
                 id->variables->orderid || "NA", "handleorders", id); 
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
@@ -647,7 +647,7 @@ else {
 	+ " WHERE orderid='" + id->variables->orderid+"'");
    r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
-        T_O->report_status("Changed order status to 'Cancelled.'",
+        T_O->ivend_report_status("Changed order status to 'Cancelled.'",
                 id->variables->orderid || "NA", "handleorders", id); 
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
@@ -709,7 +709,7 @@ else {
        foreach(o, mapping l){
          shipped_some=1;
          shipped_any=1;
-        T_O->report_status("Shipped Item: "+ l->id + " Instance: " +
+        T_O->ivend_report_status("Shipped Item: "+ l->id + " Instance: " +
 		l->series + " Qty: " +
 		l->quantity,
                 id->variables->orderid || "NA", "handleorders", id); 
@@ -735,7 +735,7 @@ else {
 
        foreach(r, mapping row){
          if(row->status=="Shipped") continue;
-        T_O->report_status("Shipped Item: "+ row->id + " Instance: " +
+        T_O->ivend_report_status("Shipped Item: "+ row->id + " Instance: " +
 		row->series + " Qty: " +
 		row->quantity,
                 id->variables->orderid || "NA", "handleorders", id); 
@@ -767,7 +767,7 @@ else {
        array r=DB->query( 
 	"SELECT status FROM status WHERE name='Shipped' "
 	"AND tablename='orders'");
-	T_O->report_status("Order has been completely shipped. Order CLOSED.", 
+	T_O->ivend_report_status("Order has been completely shipped. Order CLOSED.", 
 		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 status + ",updated=NOW() WHERE id='" +
@@ -981,7 +981,7 @@ string retval="";
        array r1=DB->query( 
 	"SELECT status FROM status WHERE name='In Progress' "
 	"AND tablename='orders'");
-	T_O->report_status("Changed order status to 'In Progress.'", 
+	T_O->ivend_report_status("Changed order status to 'In Progress.'", 
 		id->variables->orderid || "NA", "handleorders", id);
        DB->query("UPDATE orders SET status=" + 
 	 r1[0]->status + ",updated=NOW() WHERE id='" +
@@ -1009,7 +1009,7 @@ if(id->variables["commitci.x"]){ // commit the lineitem change
 id->variables[id->variables->commit] + " WHERE orderid='" +
 id->variables->orderid + "' AND lineitem='" + id->variables->commit +
 "'");
-T_O->report_status("Changed Lineitem " + id->variables->commit + ": " +
+T_O->ivend_report_status("Changed Lineitem " + id->variables->commit + ": " +
 id->variables[id->variables->commit],
                 id->variables->orderid || "NA", "handleorders", id);
 

@@ -1,6 +1,6 @@
 iVend INSTALL
 
-iVend version 1.0 of 5 January 2001
+iVend version 1.2 of 5 January 2004
 coding by Bill Welliver <hww3@riverweb.com>
 
 For complete installation instructions, please see the file InstallationAdministration.* located in the docs/ directory of your iVend distribution.
@@ -8,7 +8,7 @@ For complete installation instructions, please see the file InstallationAdminist
 What is iVend?
 --------------
 
-iVend is a module for the Roxen Challenger web server which allows electronic
+iVend is a module for the Caudium web server which allows electronic
 commerce functions to be provided quickly and easily. iVend supports 
 multiple stores from a single installation, and provides direct support 
 for SQL databases to handle product and order tracking.
@@ -21,15 +21,39 @@ useful tool.
 What do I need for iVend to work?
 ---------------------------------
 
-* A system running Caudium 1.0 or Roxen Challenger version 1.3 or higher **with Crypto
+* A system running Caudium 1.3 or higher **with Crypto
   enabled**. See the section "A Note About Compatibility" below.
   iVend will not run without Crypto (you shouldn't even think about doing
   electronic commerce without crypto anyhow.)
 * A copy of Pike in your PATH for running the setup scripts.
-* An SQL database server supported by Pike and Roxen Challenger.
-  (iVend was developed using mysql3.22, however other dbms systems should 
+* An SQL database server supported by Pike.
+  (iVend was developed using mysql3.23, however other dbms systems should 
   work as well with minimal changes to the code.) 
-* Admistrative rights to the database system, as well as Roxen.
+* Admistrative rights to the database system, as well as Caudium.
 * A working knowledge of HTML, SQL databases, and Unix.
 
+To set up a store:
 
+1. Copy either of the store templates from the examples directory to a 
+location in your filesystem. This will be your Store Root.
+
+2. Create a database and grant SELECT, CREATE, INSERT, UPDATE permission 
+to a user. This will be the store's database.
+
+3. Create the store database using schema.mysql, as located in your store 
+root.
+
+4. Add ivend's src/ directory to your Caudium's module search path.
+
+5. Add obox, tablify, and 123sessions to your virtual server.
+
+6. Add an administrative user to the admin_users table. The username is 
+case sensitive, and the password should be crypt()ed. Set the security 
+level to 9, for full access.
+
+7. Add iVend to a virtual server. Set all of the paths.
+
+
+8. Access the admin interface for the store at /mountpoint/admin/.
+
+Report any problems or bugs to hww3@riverweb.com

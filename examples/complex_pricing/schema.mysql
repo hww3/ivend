@@ -94,23 +94,6 @@ CREATE TABLE products (
   PRIMARY KEY (id)
 )\g
 
-CREATE TABLE session_time (
-sessionid varchar(64) DEFAULT '' NOT NULL,
-timeout bigint(21)
-)\g
-
-CREATE TABLE sessions (
-  sessionid varchar(64) DEFAULT '' NOT NULL,
-  id varchar(24) DEFAULT '0' NOT NULL,
-  quantity int(11) DEFAULT '0' NOT NULL,
-  series int(11) DEFAULT '0' NOT NULL,
-  options varchar(24),
-  price float(10,2) DEFAULT '0.00' NOT NULL,
-  autoadd integer,
-  locked integer,
-  taxable char(1) default 'Y'
-)\g
-
 CREATE TABLE shipments (
   orderid char(64) DEFAULT '' NOT NULL,
   item char(24) DEFAULT '' NOT NULL,

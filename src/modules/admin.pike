@@ -563,8 +563,152 @@ choice
 }
 
 string action_useradmin(string mode, object id){
- string retval="Coming Soon!";
+ string retval="";
 
+ if(!id->variables->mode){
+
+   array r=DB->query("SELECT * FROM admin_users order by level desc");
+
+   if(!r || sizeof(r)<1) retval+="No Users Defined.";
+   else {
+     retval+="<table>"
+	"<tr><th>Username</th><th>Real Name</th><th>Security " 
+	"Level</th></tr>\n";
+     foreach(r, mapping user)
+      retval+="<tr><td><a href=\"./?username=" + user->username +
+	"&mode=view\">" 
+	+ user->username + "</a></td><td>" + user->real_name +
+      "</td><td align=right>" + user->level + "</td>"
+	"<td><font size=1><a href=\"./?username=" + user->username + 
+	"&mode=delete\">Delete</a></td></tr>\n";
+
+    retval+="</table>\n";
+   }
+
+   retval+="<p><a href=\"./?mode=newuser\">Add New User</a>";
+ }
+
+ else {
+
+  switch(id->variables->mode){
+
+   case "delete":
+    if(id->variables->username)
+      {
+        DB->query("DELETE FROM admin_users WHERE username='" +
+	  id->variables->username + "'");
+	retval+="User <b>" + id->variables->username + "</b>"
+		" deleted successfully.<p>"
+		"<a href=\"./\">Click Here to continue.</a>";
+      }
+   break;
+   case "newuser":
+    if(id->variables->add)
+     {
+	if(id->variables->username=="" || id->variables->email=="" ||
+		id->variables->password=="")
+		retval+="A required value is missing.";
+        else {
+       DB->query("INSERT INTO admin_users VALUES('" +
+upper_case(id->variables->username) + "','" + id->variables->real_name +
+"','" + id->variables->email + "','" + crypt(id->variables->password) +
+"'," + (id->variables->level||"0") + ")");     
+         retval+="User <b>" + upper_case(id->variables->username) + 
+		"</b> added successfully.";
+        }
+	retval+="<p><a href=\"./?mode=newuser\">Click Here to continue.</a>";
+
+     }
+    else 
+     {
+		 retval+="<form action=\"./\" method=post>"
+			"<input type=hidden name=add value=\"add\">"
+			"<input type=hidden name=mode value=\"newuser\">"
+			"<table>\n"
+			"<tr><th>Username</th>\n"
+			"<td>"
+			"<input type=text size=16 name=username value=\""
+			"\">"
+			"</td></tr>\n"
+			"<tr><th>Real Name</th>\n"
+			"<td><input type=text size=40 name=real_name " 
+			"value=\"\"></td></tr>\n"
+			"<tr><th>Email</th>\n"
+			"<td><input type=text size=40 name=email "
+			"value=\"\"></td></tr>\n"
+			"<tr><th>Password</th>\n"
+			"<td><input type=text size=16 name=password "
+			"value=\"\"></td></tr>\n"
+			"<tr><th>Security Level</th>\n"
+			"<td><select name=level>"
+			"<option>0\n"
+			"<option>1\n"
+			"<option>2\n"
+			"<option>3\n"
+			"<option>4\n"
+			"<option>5\n"
+			"<option>6\n"
+			"<option>7\n"
+			"<option>8\n"
+			"<option>9\n"
+			"</select></td></tr>\n"
+			"</table><p>"
+			"<input type=submit value=\"Add User\">"
+			"</form>";
+     }
+   break;
+   case "view":
+    if(id->variables->username)
+	{
+	 array r=DB->query("SELECT * FROM admin_users WHERE username='" +
+	   id->variables->username + "'");
+	 if(r && sizeof(r)==1) 
+		{
+		 if(id->variables->update){
+			if(r[0]->password!=id->variables->password)
+			  id->variables->password=crypt(id->variables->password);
+			DB->query("UPDATE admin_users SET " 
+				"real_name='" +
+DB->quote(id->variables->real_name) + "', email='" + id->variables->email
++ "', password='" + id->variables->password + "', level=" +
+	(id->variables->level||"0") + " WHERE username='" +
+id->variables->username + "'");
+retval+="User updated successfully.<p>";
+	 r=DB->query("SELECT * FROM admin_users WHERE username='" +
+	   id->variables->username + "'");
+			}
+		 retval+="<form action=\"./\" method=post>"
+			"<input type=hidden name=username value=\"" +
+			r[0]->username + "\">"
+			"<input type=hidden name=mode value=\"view\">"
+			"<input type=hidden name=update value=\"update\">"
+			"<table>\n"
+			"<tr><th>Username</th>\n"
+			"<td>" + r[0]->username + "</td></tr>\n"
+			"<tr><th>Real Name</th>\n"
+			"<td><input type=text size=40 name=real_name " 
+			"value=\"" + r[0]->real_name + "\"></td></tr>\n"
+			"<tr><th>Email</th>\n"
+			"<td><input type=text size=40 name=email "
+			"value=\"" + r[0]->email + "\"></td></tr>\n"
+			"<tr><th>Password</th>\n"
+			"<td><input type=password name=password "
+			"value=\"" + r[0]->password + "\"></td></tr>\n"
+			"<tr><th>Security Level</th>\n"
+			"<td><input type=text size=2 name=level "
+			"value=\"" + r[0]->level + "\"></td></tr>\n"
+			"</table><p>"
+			"<input type=submit value=\"Update User\">"
+			"</form>";
+		}
+	 else retval+="Unable to find user <b>" + id->variables->username
+		+ "</b>.<p>"
+		"<a href=\"./\">Click Here to continue.</a>";
+	}
+   break;
+
+  }
+ }
  return retval;
 }
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.225 1999-06-17 22:51:46 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.226 1999-07-02 16:39:23 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1203,13 +1203,13 @@ string container_ivindex(string name, mapping args,
     array(string)a=indices(config);
     string c;
     foreach(a,c){
-        string s=contents;
+        string s="";
         string d="";
-        foreach(indices(config[c]),d){
-            s=replace(s,("#"+d+"#"),config[c][d]);
-        }
-        s=replace(s,"#id#",c);
-        retval+=s;
+//        retval+=do_output_tag( args, r||({}), contents, id );
+        s+=do_output_tag(args, ({(config[c]->general + (["id":c]))}),
+		contents, id);
+//        s=replace(s,"#id#",c);
+        retval=s;
     }
     return retval;
 
@@ -2302,8 +2302,11 @@ id->variables->__criteria + "%";
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
-                 if(!db_info_loaded)
+                 if(!db_info_loaded) {
                      start_store(STORE);
+			if(!db_info_loaded)
+				return return_data("This store is currently unavailable.", id);
+			}
                  MODULES=modules[STORE];
                  KEYS=keys[STORE];
                  mixed err;
@@ -2377,6 +2380,7 @@ id->variables->__criteria + "%";
              string|void container_ivml(string name, mapping args,
                                         string contents, object id)
              {
+		mixed err;
                  if(args->_parsed) return;
                  if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 
@@ -2399,28 +2403,29 @@ id->variables->__criteria + "%";
                                       "category_output":container_category_output,
                                       "itemoutput":container_itemoutput
                                       ]);
+                 mapping c=([]);
+                 mapping t=([]);
+if(STORE){
 
                  if(!objectp(DB))
                      err=catch(DB=db[STORE]->handle());
 
-                 mapping t=([]);
                  foreach(indices(
                              library[STORE]->tag), string n)
                  t[n]=generic_tag_handler;
 
-                 mapping c=([]);
                  foreach(indices(
                              library[STORE]->container), string n)
                  c[n]=generic_container_handler;
-
+}
                  contents= (!args->quiet?"<html _parsed=\"1\">":"")+parse_html(contents,
                            t + tags,
                            c + containers, id)
                            +(!args->quiet?"</html>":"");
-
+if(STORE)
                  MODULES=modules[STORE];
                  contents=parse_rxml(contents,id);
-                 if(objectp(DB))
+                 if(STORE && objectp(DB))
                      db[STORE]->handle(DB);
                  return contents;
 

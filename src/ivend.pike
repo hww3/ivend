@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.31 1998-03-05 03:18:08 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.32 1998-03-05 22:02:49 hww3 Exp $";
 
 /*
  *
@@ -420,9 +420,6 @@ if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
    perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
 else 
    perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
-#ifdef MODULE_DEBUG
-// perror("iVend: reading configuration file "+query("datadir")+"ivend.cnf\n");
-#endif
 catch(array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n");
 if(!config_file) {
    perror("iVend: ERROR- NONEXISTANT ivend.cfg!\n");
@@ -432,25 +429,17 @@ if(!config_file) {
 
 for (int i=0; i<sizeof(config_file);i++){
 
-#ifdef MODULE_DEBUG
-// perror("iVend: config file line "+i+"\n");
-#endif
-
 	if(config_file[i][0..4]=="start"){
 
 #ifdef MODULE_DEBUG
-// perror("iVend: parsing section "+config_file[i][6..]+"\n");
+ perror("iVend: parsing section "+config_file[i][6..]+"\n");
 #endif
 
 		current_config=config_file[i][6..];		
 		}
 	else if(config_file[i]=="end") break;
 	else if(config_file[i][0..0]=="$"){
-// perror("iVend: we've got a parameter...\n");
 		array(mixed) current_line=config_file[i][1..]/"=";
-#ifdef MODULE_DEBUG
-// perror("iVend: config: "+current_config+" parameter: "+current_line[0]+" value: "+current_line[1]+"\n");
-#endif
 	attribute=current_line[0];
 	value=current_line[1];
 	if(!config[current_config])
@@ -463,11 +452,7 @@ for (int i=0; i<sizeof(config_file);i++){
 }
 
 /*
- *
  *  start(): set up shop...
- *
- *  do anything required before we are able to service requests
- *
  */
 
 void start(){
@@ -481,9 +466,10 @@ void start(){
 
 mixed stat_file( mixed f, mixed id )  {
 array fs;
+#ifdef MODULE_DEBUG
 perror("statting "+id->misc->ivend->root+"/"+f+"\n");
+#endif
 fs=file_stat(id->misc->ivend->root+"/"+f);
-if(!fs) fs=file_stat(id->misc->ivend->root+"/");
 return fs;
 }
 
@@ -494,8 +480,6 @@ if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
 	"The following error has occurred:<p><error><p>\n"
 	"Please contact the administrator for assistance.";
 return replace(retval,"<error>",error);
-
-// return "error!  "+page+" in "+st;
 
 }
 
@@ -1009,8 +993,8 @@ switch(id->variables->mode){
     id->misc->ivend->config->dblogin,
     id->misc->ivend->config->dbpassword
     );
-  retval+=s->gentable("products","./admin","groups", 
-	"product_groups", id);
+  retval+="<table>\n"+s->gentable("products","./admin","groups", 
+	"product_groups", id)+"</table>\n";
   break;
 
   case "addgroup":
@@ -1020,7 +1004,7 @@ switch(id->variables->mode){
     id->misc->ivend->config->dblogin,
     id->misc->ivend->config->dbpassword
     );
-  retval+=s->gentable("groups","./admin",0,0,id);
+  retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
   break;
 
   case "dodelete":
@@ -1096,10 +1080,13 @@ return http_string_answer(
 
 mixed get_image(string filename, object id){
 
-string 
-data=Stdio.read_bytes(config[id->misc->ivend->st]->root+"/images/"+filename);
+string data=Stdio.read_bytes(
+	config[id->misc->ivend->st]->root+"/images/"+filename);
 
-return http_string_answer(data, "image/gif");
+perror("** "+filename+"\n\n");
+
+return http_string_answer(data,
+	id->conf->type_from_filename(id->realfile));
 
 }
 
@@ -1208,10 +1195,13 @@ else {
 #ifdef MODULE_DEBUG	
 //	retval+=dump_id(id);
 #endif
-// perror("RETVAL:\n\n"+retval+"\n\n");
+if(stringp(retval)){
+
 	retval=parse_rxml(retval, id);
    	return http_string_answer(retval,
 		id->conf->type_from_filename(id->realfile|| "index.html"));
+	}
+else return retval;
 
 }
 

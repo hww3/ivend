@@ -1,8 +1,10 @@
 
+
 #define REQUIRED "Required" 
 // for translations
 
 class config {
+
 
 mapping (string:mixed) config_setup=([]);
 
@@ -144,6 +146,9 @@ string db;
 string user;
 string password;
 
+inherit "roxenlib";
+
+
 int|string addentry(object id, string referrer){
 string errors="";
 array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
@@ -154,9 +159,19 @@ for (int i=0; i<sizeof(r); i++){
 
   if(sizeof(id->variables[r[i]->name])>3)
     {
+
+string f=	id->variables[ r[i]->name+".filename"];
+perror("**" + f+"\n\n");
+string e= ::extension(f);
+perror("**"+e+"\n\n");
     string filename=id->misc->ivend->config->root+"/images/"+id->variables->table+"/"
-	+id->variables->id+r[i]->name[5..]+".gif";
+	+id->variables->id+
+	r[i]->name[5..]+
+	e;
+
+
     rm(filename);
+	perror("** "+filename+"\n\n");
     Stdio.write_file(filename,id->variables[r[i]->name]);
     query+="'"+id->variables->id+r[i]->name[5..]+"',";
     }
@@ -210,6 +225,17 @@ if(lower_case(r[i]->name[0..4])=="image"){
     "</FONT></TD>\n"
     "<TD>\n"
     "<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
+}
+
+else if(lower_case(r[i]->name)=="taxable"){
+
+    retval+="<TR>\n"
+    "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
+    +"taxable?"+
+    "</FONT></TD>\n"
+    "<TD>\n"
+    "<input type=checkbox name=taxable value=Y checked>\n";
+
 }
 
 else if(r[i]->type=="blob"){

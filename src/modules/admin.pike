@@ -1,6 +1,5 @@
 #!NOMODULE
 
-
 #include <ivend.h>
 #include <messages.h>
 inherit "roxenlib";
@@ -10,7 +9,7 @@ constant module_type = "handler";
 
 void start(mapping config){
 
-//  perror("starting admin handler...\n");
+return;
   
 }
 
@@ -22,7 +21,7 @@ return "<a href=\""  +     add_pre_state(id->not_query,
 
 }
 
-void event_admindelete(string event, object id, mapping args){
+void|mixed event_admindelete(string event, object id, mapping args){
 if(args->type=="product")
   DB->query("DELETE FROM item_options WHERE product_id='" + args->id + "'");
 return;

@@ -19,8 +19,7 @@ mapping complex_types=([ "Single Price": "single",
 
 void start(mapping config){
 object db;
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
+if(catch(db=iVend.db(config->general->dbhost)))
   {
     perror("Complex Pricing: Error Connecting to Database.\n");
     return;

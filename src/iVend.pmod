@@ -1059,8 +1059,8 @@ record[r[i]->name]
                     if(sizeof(vals)>0) {
                         for(int j=0; j<sizeof(vals); j++)
                             retval+="<option value=\""+vals[j]+"\""
-                                    +((record &&
-                                       record[r[i]->name]==vals[j])?"SELECTED":"")+">"+vals[j]+"\n";
+                                    +((record && 
+				       record[r[i]->name]==vals[j])?"SELECTED":"")+">"+vals[j]+"\n";
                     }
                     else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
 
@@ -1115,7 +1115,7 @@ mapping local_settings=([]);
     string host;
     int num_dbs;
     void create(string|void _host, int num) {
-//	perror("Creating " + num  + " database connections.\n");
+	perror("Creating " + num  + " database connections.\n");
         host = _host;
         num_dbs=num;
         mixed err;
@@ -1134,13 +1134,17 @@ mapping local_settings=([]);
 
     void|object handle(void|object d)
     {
-	if(d) perror("Returning a DB to the stack.\n");
-	else perror("Taking a DB from the stack.\n");
         LOCK();
+if(d)
+perror("DB.handle called.\n" + sprintf("%O\n", d->host) + "\n");
         int count;
         dbs -= ({0});
 	dbs-=({});
-        if(objectp(d)) {
+	if(d && d->host) perror("Returning a DB to the stack.\n");
+	else perror("Taking a DB from the stack.\n");
+
+        if(d&& (d->host)) {
+	  perror("Getting ready to return DB\n");
             if(search(dbs, d) == -1) {
                 if(sizeof(dbs)>(2*num_dbs)) {
                     werror("Dropping db because of inventory...\n");
@@ -1148,7 +1152,7 @@ mapping local_settings=([]);
                 }
                 else {
                     dbs += ({d});
-//                    werror("Handler ++ ("+sizeof(dbs)+")\n");
+                    werror("Handler ++ ("+sizeof(dbs)+")\n");
                 }
             }
             else {
@@ -1160,7 +1164,9 @@ mapping local_settings=([]);
         else {
             if(!sizeof(dbs)) {
                 werror("Handler: New DB created (none left).\n");
-                d = db(host);
+                dbs[0] = db(host);
+		get_dbinfo();
+		d=dbs[0];
                 //d->set_timeout(60);
             } else {
                 d = dbs[0];

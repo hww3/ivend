@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.273 2000-11-28 21:57:13 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.274 2000-12-16 17:59:58 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -50,7 +50,6 @@ mapping admin_handlers=([]);
 mapping library=([]);
 mapping actions=([]);// action storage
 mapping db=([]);// db cache
-mapping keys=([]);// db keys cache
 mapping modules=([]); // module cache
 mapping config=([]);
 mapping global=([]);
@@ -557,7 +556,7 @@ void start_store(string c){
     // perror(config[c]->general->config +"\n\n");
     if(!config[c]->general)
 	return;
-    catch(start_db(config[c]->general));
+    start_db(config[c]->general);
 
     get_entities(config[c]->general);
     catch(load_modules(config[c]->general->config));
@@ -593,7 +592,6 @@ void stop(){
     library=([]);
     actions=([]);// action storage
     db=([]);// db cache
-    keys=([]);// db keys cache
     modules=([]); // module cache
     config=([]);
     global=([]);
@@ -2614,19 +2612,20 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
                  mixed err;
-                 if(!objectp(DB)) {
+                 if(!DB) {
 			perror("taking a db object in find_file() 1\n");
+perror("store: " + STORE + "\n");
                      DB=db[STORE]->handle();
+perror(sprintf("%O", mkmapping(indices(db), values(db))) + "\n");
 			}
                  if(err || config[STORE]->error) {
                      error(err[0] || config[STORE]->error, id);
                      return return_data(retval, id);
                  }
-                 if(!DB->db_info_loaded) {
+                 if(!DB || !DB->db_info_loaded) {
 				return return_data("This store is currently unavailable.", id);
 			}
                  MODULES=modules[STORE];
-                 DB->keys=keys[STORE];
                  numrequests[STORE]+=1;
                  id->misc->ivend->storeurl=query("mountpoint")+
                                            (id->misc->ivend->moveup?"": STORE+ "/");
@@ -2641,7 +2640,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                      case "":
 string rx=replace((id->not_query + "/index.html" +
 	(id->query?("?"+id->query):"")),"//","/");
-// perror("redirecting to: " + rx + "\n");
+ perror("redirecting to: " + rx + "\n");
 return http_redirect(rx, id);
                      default:
                          retval=(handle_page(request*"/", id));
@@ -2721,10 +2720,10 @@ return http_redirect(rx, id);
                  mapping t=([]);
 if(STORE){
 
-                 if(!objectp(DB)) {
-			perror("taking a db object in container_ivml()\n");
-                     err=catch(DB=db[STORE]->handle());
-			}
+/*                  if(!DB) { */
+/* 			perror("taking a db object in container_ivml()\n"); */
+/*                      err=catch(DB=db[STORE]->handle()); */
+/* 			} */
                  foreach(indices(
                              library[STORE]->tag), string n)
                  t[n]=generic_tag_handler;
@@ -2742,9 +2741,13 @@ if(STORE){
 if(STORE)
                  MODULES=modules[STORE];
                  contents=parse_rxml(contents,id);
-                 if(STORE && objectp(DB))
-                     db[STORE]->handle(DB);
 
+/* perror("finished parsing. 123\n" + sprintf("%O", indices(DB)) + "\n"); */
+/*  if(1) { */
+/*    perror("We have a DB. Returning.\n"); */
+/*    DB=db[STORE]->handle(DB); */
+/*    DB=0; */
+/*  } */ 
                  return contents;
 
              }
@@ -2956,14 +2959,18 @@ if(id->cookies->SESSIONID)
              }
 
              mixed return_data(mixed retval, object id){
-                             // werror("return_Data\n");
+                              werror("return_Data\n");
                              if(sizeof(id->misc->ivend->error)>0 &&
 					!id->misc->ivend->handled_error)
                                  retval=handle_error(id);
                              // werror("return_Data\n");
-                             if(objectp(DB) && STORE)
-                                 db[STORE]->handle(DB);
-
+                             if(1) {
+			       perror("sending db back. 221\n");
+			       perror(sprintf("%O\n", DB));
+			       db[STORE]->handle(DB);
+			       DB=0;
+			       perror(sprintf("%O\n", DB));
+			     }
                              if(mappingp(retval))
                                  return retval;
 
@@ -3107,16 +3114,14 @@ Config.write_section(query("configdir")+
                          }
 
 
-                         void start_db(mapping c){
-                             mixed err;
-
-                             db[c->config]=iVend.db_handler(
-                                                         c->dbhost,
-                                                         4 );
-                             if(err) perror("iVend: rror creating DB for " + c->config + ".\n");
-perror("taking db object in start_db()\n");
-                             object s=db[c->config]->handle();
-                             if(s) {
+void start_db(mapping c){
+  mixed err;
+  perror("Creating DB connections for: " + c->config + "\n");
+  db[c->config]=iVend.db_handler(c->dbhost, 4 );
+  perror(sprintf("db: %O", mkmapping(indices(db), values(db))) + "\n");
+  perror("taking db object in start_db()\n");
+  object s=db[c->config]->handle();
+  if(s) {
 
 
 if(sizeof(s->list_tables("comments"))!=1) {
@@ -3197,9 +3202,9 @@ if(s) db[c->config]->handle(s);
                                  if(config[c]->addins[miq]=="load")
                                      mtl+=({miq});
 perror("taking a db object in load_modules()\n");
- perror("1 Found " + sizeof(mtl) + " modules to load.\n");
+// perror("1 Found " + sizeof(mtl) + " modules to load.\n");
 object s=db[c]->handle();
-perror("got db.\n");
+//perror("got db.\n");
 			if(s->local_settings->pricing_model==COMPLEX_PRICING) {
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});

@@ -15,3 +15,7 @@ heavy testing session.
 loadtable.pike: takes a tab delimited file with fields as first row, and
 generates sql insert statements. good for loading product data from a
 spreadsheet.
+
+dumptable.pike: dumps a product or group table to a tab delimited format
+on standard output with field names on first row. good for importing data
+into a spreadsheet.

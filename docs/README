@@ -176,6 +176,23 @@ group. The following attributes affect this tag:
 
   fields: a comma separated list of additional fields to include in the table.
 
+<category_output></category_output> will repeat the contents the container
+once for each record found, replacing values of each field where instances
+of the fieldname are surrounded by #s. Similar to formoutput in rxml. This
+container takes the following attributes:
+
+  type=products|groups: required. selects what type of records to select.
+  restriction=restriction: optional restriction on selection. example:
+    restriction="manufacturer='kodak'" must follow sql format rules.
+  random: optional, when used with formrotate, the template to be used 
+    will be chosen at random from those provided.
+
+<formrotate></formrotate> is used within the category_output container. it
+provides multiple templates to rotate through while processing records. if
+you provide 2 formrotate containers, every odd record will be processed
+using the contents of the first container and every even record will be
+processed using the second container as the template.
+
 
 Notes about data security
 -------------------------

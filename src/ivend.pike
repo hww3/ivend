@@ -20,7 +20,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.44 1998-04-10 20:57:54 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.45 1998-04-11 01:04:57 hww3 Exp $";
 
 array register_module(){
 
@@ -111,6 +111,24 @@ modules+=([ id->misc->ivend->config[type] :
 return 1;
 
 }
+
+
+float convert(float value, object id){
+if(! objectp(modules[id->misc->ivend->config->currency_module])) 
+	load_ivmodule(id, "currency_module");
+
+if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
+	  value=
+	  modules[id->misc->ivend->config->currency_module
+	  ]->currency_convert(value,id);
+
+else ;
+
+return value;
+
+
+}
+
 
 
 mixed handle_search(object id){
@@ -263,13 +281,7 @@ if(id->variables->update) {
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 
-if(! objectp(modules[id->misc->ivend->config->currency_module])) 
-	load_ivmodule(id, "currency_module");
-
-if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
-	  r[i]->price=
-	  modules[id->misc->ivend->config->currency_module
-	  ]->currency_convert(r[i]->price,id);
+	  r[i]->price=convert((float)r[i]->price,id);
 
 	retval+="<td align=right>"
 	+sprintf("$%.2f",(float)r[i]->price)+"</td>\n"
@@ -300,6 +312,53 @@ return id->misc->ivend->SESSIONID;
 
 }
 
+string container_rotate(string name, mapping args,
+                      string contents, object id) {
+
+  if(!id->misc->fr) id->misc->fr=({});
+
+  id->misc->fr+=({contents});
+
+  return "";
+
+}
+
+string container_category_output(string name, mapping args,
+                      string contents, object id) {
+
+contents=parse_html(contents,([]),
+        (["formrotate":container_rotate]),id);
+
+  string retval="";
+  string query;
+
+  if(!args->type) return "You must supply a category type.";
+
+  query="SELECT * FROM " + lower_case(args->type);
+  
+  if(args->restriction)
+    query+=" WHERE " + args->restriction;
+
+  array r=id->misc->ivend->s->query(query);
+
+  if(!id->misc->fr)
+    retval+=do_output_tag( args, r, contents, id );  
+
+  else {
+    int n=0;
+    foreach(r, mapping row) {
+      if(args->random)
+        n=random(sizeof(id->misc->fr));
+      retval+=do_output_tag( args, ({ row }), id->misc->fr[n], id); 
+      n++;
+      if(n>=sizeof(id->misc->fr)) n=0;  // larger than number of forms.
+
+      }
+
+    }
+
+  return retval;
+}
 
 string tag_listitems(string tag_name, mapping args,
                     object id, mapping defines)
@@ -516,41 +575,25 @@ return retval;
 
 }
 
-mixed parse_page(string page, array(mapping(string:string)) r, array
-desc, object|void id){
-    string  page2;
+mixed parse_page(string page, array(mapping(string:string)) r, array desc,
+object|void id){
 
 string field;
 array fields=indices(r[0]);
 
 for(int i=0; i<sizeof(desc); i++){
-  // page+=field +": "+r[0][field];
+
   if(desc[i]->type=="decimal" && desc[i]->name=="price") {
-if(!objectp(modules[id->misc->ivend->config->currency_module])) 
-	load_ivmodule(id, "currency_module");
-
-
-if(functionp(
-    modules[id->misc->ivend->config->currency_module]->currency_convert))
-	r[0][desc[i]->name]=
-
-  modules[
-    id->misc->ivend->config->currency_module
-    ]->currency_convert(r[0][desc[i]->name],id);
-
-  page2=replace(page,("#"+desc[i]->name+"#"),
-    sprintf("%.2f",(float)(r[0][desc[i]->name])));
+    r[0][desc[i]->name]=(string)convert((float)r[0][desc[i]->name], id);
+    r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
   }
 
-else  if(desc[i]->type=="decimal") {
-page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
-  }
-  else 
-  page2=replace(page,("#"+desc[i]->name+"#"),(string)r[0][desc[i]->name]);
-  page=page2;
-  }
+else  if(desc[i]->type=="decimal")
+  r[0][desc[i]->name]=sprintf("%.2f",(float)(r[0][desc[i]->name]));
 
-return page;
+  }
+ return do_output_tag( ([]), ({ r[0] }), page, id ); 
+
 }
 
 mixed find_page(string page, object id){
@@ -591,13 +634,10 @@ return parse_page(retval, r, f, id);
 
 mixed additem(string item, object id){
 
-float price=id->misc->ivend->s->query("SELECT price FROM products WHERE id='" 
+  float price=id->misc->ivend->s->query("SELECT price FROM products WHERE id='" 
   + item + "'")[0]->price;
 
-if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
-	  price=
-	  modules[id->misc->ivend->config->currency_module
-	  ]->currency_convert(price,id);
+  price=convert((float)price,id);
 
 
 int max=sizeof(id->misc->ivend->s->query("select id FROM sessions WHERE SESSIONID='"+
@@ -1316,7 +1356,8 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 	"a":container_ia, 
 	"form":container_form,
 	"icart":container_icart, 
-	"ivindex":container_ivindex	
+	"ivindex":container_ivindex,
+	"category_output":container_category_output
     ]);
 
 if(id->misc->ivend->st){
@@ -1365,16 +1406,3 @@ mapping query_tag_callers()
   return ([ "ivendlogo" : tag_ivendlogo,
 	"sessionid" : tag_sessionid ]); }
 
-/*
-mapping query_container_callers()
-{
-  return ([ "icart":container_icart, "ivindex":container_ivindex ]); }
-
-mapping query_tag_callers()
-{
-  return ([ 	"ivstatus":tag_ivstatus, 
-		"ivmg":tag_ivmg, 
-		"listitems":tag_listitems
-	 	]); 
-}
-*/

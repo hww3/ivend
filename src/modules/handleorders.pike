@@ -50,9 +50,9 @@ retval="<table width=100%>";
      if(field->name=="updated" || field->name=="type" || field->name=="orderid") continue;
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
      +"</font>\n</td>\n<td>"+
-  (r[0][field->name][0..3]=="iVEn"?
+  ((r[0][field->name] && r[0][field->name][0..3]=="iVEn")?
 
-(Commerce.Security.decrypt(r[0][field->name],key)+"*"):r[0][field->name])
+(Commerce.Security.decrypt(r[0][field->name],key)+"*"):(string)(r[0][field->name]))
   	+"</td></tr>\n";
  
    }
@@ -403,17 +403,25 @@ orders_to_archive[0]->id):"") + ".xml");
 
 string view_activity_log(string mode, object id){
   string retval="";
-  array r=DB->query("SELECT * FROM activity_log WHERE orderid='" + 
-	id->variables->orderid + "'");
+
+if(id->variables->orderid){
+  if(id->variables->orderlog=="")
+    array r=DB->query("SELECT * FROM activity_log ORDER BY time_stamp");
+  else
+    array r=DB->query("SELECT * FROM activity_log WHERE orderid='" + 
+	id->variables->orderid + "' ORDER BY time_stamp");
   if(sizeof(r)<1) retval+="Unable to find your order.";
   else {
 
-  retval+="<table><tr><th>Date/Time</th><th>Subsystem</th><th>Message</th></tr>\n";
+  retval+="<table><tr><td></td><th>Date/Time</th><th>Subsystem</th><th>Message</th></tr>\n";
 
 
   foreach(r, mapping m){
 
-  retval+="<tr><td>" + m->time_stamp + "</td><td>" + m->subsystem +
+  retval+="<tr><td><img src=\"" + T_O->query("mountpoint") +
+	"ivend-image/severity" 
+	+ m->severity + ".gif\" height=14 width=14></td><td>" 
+	+ m->time_stamp + "</td><td>" + m->subsystem +
 	"</td><td><autoformat>" + m->message +
 	"</autoformat></td></tr>\n";
 
@@ -422,7 +430,15 @@ string view_activity_log(string mode, object id){
   retval+="</table>\n";
 
   }
+}
 
+else {
+
+  retval+="<form action=\"./\" method=post>"
+	"Enter Order ID: <input name=orderid size=5 type=text> "
+	"<input type=submit value=\"View Log\"></form>"; 
+
+}
   retval+="<center>"
 	"<form action=''><input type=reset value='Close' "
 	"onClick='javascript:window.close()'></form>"
@@ -465,6 +481,10 @@ if(cn && stringp(cn)) {
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + ", card_number='" + cn + "'"
 	" WHERE orderid='" + id->variables->orderid+"'");
+   if(id->variables->authorization_id!="")
+	DB->query("UPDATE payment_info SET authorization='" + 
+		id->variables->authorization_id + "' WHERE orderid='"
+		+ id->variables->orderid + "'");
 }
 else {
    array r=DB->query(
@@ -472,7 +492,10 @@ else {
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status +
 	" WHERE orderid='" + id->variables->orderid+"'");
-
+   if(id->variables->authorization_id!="")
+	DB->query("UPDATE payment_info SET authorization='" + 
+		id->variables->authorization_id + "' WHERE orderid='"
+		+ id->variables->orderid + "'");
 }
    array r=DB->query(
        "SELECT status.name, orders.status from status, orders "
@@ -701,7 +724,7 @@ retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
 retval+=T_O->open_popup( "View Activity Log",
                                  id->not_query, "View_Activity_Log" ,
                                 (["orderid" : id->variables->orderid,
-				"height": 400, "width":550]) ,id);
+				"height": 500, "width":550]) ,id);
 
 retval+="</obox>";
     }
@@ -843,7 +866,7 @@ mixed register_admin(){
 
 return ({
 
-	([ "mode": "Orders.View_Activity_Log",
+	([ "mode": "menu.main.Orders.View_Activity_Log",
 		"handler": view_activity_log,
 		"security_level": 1 ]),
 	([ "mode": "menu.main.Orders.View_Orders",

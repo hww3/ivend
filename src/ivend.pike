@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.246 1999-09-10 21:50:30 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.247 1999-09-11 21:08:37 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2970,6 +2970,8 @@ Config.write_section(query("configdir")+
                              if(s) {
                                  if(sizeof(s->list_fields("sessions","autoadd"))!=1)
                                      s->query("alter table sessions add autoadd integer");
+if(sizeof(s->list_fields("payment_info","Authorization"))!=1)
+         s->query("alter table payment_info add Authorization char(24)");
 
 if(sizeof(s->list_tables("admin_users"))!=1) {
   perror("adding admin_users table...\n");

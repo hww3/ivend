@@ -254,8 +254,8 @@ string archive_orders(string mode, object id){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
 	or->id + "'");
-      array fl,dl=({});
       foreach(r, mapping row){	
+      array fl,dl=({});
         foreach(fields, mapping f){
 	  fl+=({f->name});
 	  dl+=({DB->quote(row[f->name])});

@@ -30,8 +30,10 @@ string create_panel(string name, string color, string contents){
 string|int genpayment(object id, object s){
 string retval="";
 string key="";
+object privs=Privs("Reading Key File");
 if(id->misc->ivend->config->general->privatekey)
   key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
+privs=0;
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -402,13 +404,14 @@ if(id->variables->orderid) status=DB->query(
 if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
   string cn;
 string key="";
+object privs=Privs("Reading Key File");
 if(id->misc->ivend->config->general->privatekey)
   key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
-
+privs=0;
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
-if(r[0]->Card_Number[0..3]=="iVen"){
+if(r[0]->Card_Number[0..3]=="iVEn"){
  cn=Commerce.Security.decrypt(r[0]->Card_Number,key);
 } else cn=r[0]->Card_Number;
 cn-=" ";

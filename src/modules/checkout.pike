@@ -103,6 +103,9 @@ mixed currency_convert(mixed v, object id){
 
 string tag_shipping(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping shipping because of errors.-->";
+
 string retval;
  if(!id->misc->ivend->lineitems) 
    id->misc->ivend+= (["lineitems":([])]);
@@ -113,6 +116,8 @@ return retval;
 
 string tag_confirmemail(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping confirmemail because of errors.-->";
 int good_email;
 if(!args->field) 
   return "";
@@ -166,7 +171,7 @@ else type=typer[0]->type;
   id->misc->ivend->orderid=
     id->misc->ivend->db->insert_id(); // mysql only
 
-  if(id->misc->ivend->orderid<1)
+  if((int)(id->misc->ivend->orderid)<1)
     id->misc->ivend->orderid=id->misc->ivend->db->query("SELECT MAX(id) "
 	"as max FROM orders")[0]->max;
 
@@ -271,6 +276,8 @@ return retval;
 
 string tag_discount(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping discount because of errors.-->";
 
 float tdiscount, ntdiscount;
 
@@ -307,6 +314,8 @@ return sprintf("%.2f", tdiscount + ntdiscount);
 
 string tag_salestax(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping salestax because of errors.-->";
 
 array r;		// result from query
 string query;		// the query
@@ -360,7 +369,7 @@ else { 		// calculate the tax rate as sum of all matches.
     query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
       "value='" + lookup[fname] + "'";
 
-    perror(query + "\n");
+//    perror(query + "\n");
     r=DB->query(query);
 
     if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
@@ -390,6 +399,8 @@ return ("ERROR");
 
 string tag_generateform(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping generateform because of errors.-->";
 
 string retval="";
 if(!args->table) return "";
@@ -420,10 +431,13 @@ if(!args->noflush)
   id->misc->ivend->clear_oldrecord=1;
 
 // handle encrypting of records...
-  array toencrypt=CONFIG_ROOT[module_name]->encryptfields;
+  mixed toencrypt=CONFIG_ROOT[module_name]->encryptfields;
+  if(!arrayp(toencrypt)) toencrypt=({toencrypt});
   string key;
+object privs=Privs("Reading public Key");
   catch(key=Stdio.read_file(id->misc->ivend->config->general->publickey));
-  if(key)
+privs=0;
+  if(key && toencrypt)
   foreach(toencrypt, string encrypt){
     encrypt=lower_case(encrypt);
     if(id->variables[encrypt])
@@ -455,24 +469,40 @@ return "";
 
 string tag_cardcheck(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping cardcheck because of errors.-->";
 
-if(Commerce.CreditCard.cc_verify(
-    id->variables[args->cardnumber] ||
-    id->variables->card_number,
-    id->variables[args->cartype] ||
-    id->variables->payment_method)
-    || !Commerce.CreditCard.expdate_verify(id->variables[args->expdate]
-	      || id->variables->expiration_date))
+string card_number;
+string exp_date;
+string card_type;
 
-id->misc->ivend->error+=
-  ({INVALID_CREDIT_CARD});
+card_number=id->variables[args->card_number] || id->variables->card_number;
+exp_date=id->variables[args->expdate] || id->variables->expiration_date;
+card_type=id->variables[args->cardtype] || id->variables->payment_method;
 
+perror("card_type: " + card_type + "\ncard_number: "+ card_number +
+"\nexp_date: " + exp_date + "\n");
 
-return "";
+if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
+  {
+  id->misc->ivend->error+=
+    ({INVALID_CREDIT_CARD});
+  return "<!-- bad card number -->";
+  }
+else if(Commerce.CreditCard.expdate_verify(exp_date)!=0)
+ {
+  id->misc->ivend->error+=
+   ({INVALID_CREDIT_CARD});
+  return "<!-- bad date -->";
+ }
+return "<!-- successful card check -->";
+
 }
 
 mixed checkout(string p, object id){
-perror(p + "\n");
+//if(p!="") return;
+perror("checkout: "+ p + "\n");
+
 id->misc->ivend->checkout=1;
 
 string retval=
@@ -494,6 +524,8 @@ return retval;
 
 string tag_subtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping subtotal because of errors.-->";
 
 float subtotal;
 
@@ -510,6 +542,8 @@ return sprintf("%.2f", subtotal);
 string tag_grandtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping grandtotal because of errors.-->";
 
 float grandtotal=0.00;
 string item;
@@ -533,6 +567,9 @@ string item;
 
 string tag_showorder(string tag_name, mapping args,
 		     object id, mapping defines) {
+if(sizeof(id->misc->ivend->error)>0) 
+  return "<!-- skipping showorder because of errors.-->";
+
 float taxable=0.00;
 float nontaxable=0.00;
 string retval="";
@@ -597,7 +634,11 @@ return retval;
 string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
-if(sizeof(id->misc->ivend->error)>0) return "";
+perror("doing container_checkout.\n");
+if(sizeof(id->misc->ivend->error)>0) {
+  perror("<!-- skipping checkout because of errors -->\n");
+  return "<!-- skipping checkout because of errors -->";
+  }
 if(args->orderid)
   id->misc->ivend->orderid=args->orderid;
 mapping tags,containers;
@@ -622,7 +663,7 @@ contents=parse_html(contents,
 		  tags,
 		  containers,
 		  id);
-
+perror("done with container_checkout.\n");
 return contents;
 
 }

@@ -25,7 +25,7 @@ constant card_digits =([ "VISA":16, "AMEX":15, "MasterCard":16 ]);
 // subroutine creditcheck() starts here
 int cc_verify(string ccn, string card_type)
 {
-
+perror(card_type + "\n\n" + ccn + "\n");
 // clear spaces & non numeric characters here
 string number = replace(ccn, ({ " ", "-" }), ({ "", "" }));
 
@@ -35,11 +35,15 @@ string validnumbers = replace(number,
                 ({ "","","","","","","","","","" }));
 
 if (validnumbers != "") {
+   perror("we have extraneous digits\n");
    return(1);
 }
 
 //verify card number length and exit with 1 if bad
-if (card_digits[card_type] != sizeof(number)) {
+perror("size of number: " + sizeof(number) + "\n");
+perror("size to match: " + card_digits[card_type] + "\n");
+if (sizeof(number)!= card_digits[card_type]) {
+ perror("wrong number of digits in card number\n");
  return(1);
 }
 

@@ -250,8 +250,9 @@ class db {
 
 
     string make_safe(string s){
-        return sqlconn::quote(s);
-
+	if(stringp(s))
+          return sqlconn::quote((string)s);
+	else return s;
     }
 
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.226 1999-07-02 16:39:23 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.227 1999-07-07 02:13:32 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -27,6 +27,7 @@ inherit "wizard";
 int read_conf();          // Read the config data.
 void load_modules(string c);
 void start_db(mapping c);
+void add_cookie( object id, mapping m, mapping defines);
 void background_session_cleaner();
 float convert(float value, object id);
 array|int size_of_image(string filename);
@@ -1439,11 +1440,11 @@ mixed getsessionid(object id) {
 
 mapping http_string_answer(string text, string|void type, object|void id)
 {
-perror("http_string_answer()\n");
+// perror("http_string_answer()\n");
 if(id){
-perror("we have id.\n");
+// perror("we have id.\n");
 if(!id->misc->defines) id->misc->defines=([]);
-perror(sprintf("%O", id->misc->defines) + "\n");
+// perror(sprintf("%O", id->misc->defines) + "\n");
   return (["data":text,
            "type":(type||"text/html"),
            "stat":id->misc->defines[" _stat"],
@@ -2596,7 +2597,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 
                  if(t) cookies += "; expires="+http_date(t+time());
 
-perror("adding cookie: " + m->name + " value: " + m->value + "\n");
+// perror("adding cookie: " + m->name + " value: " + m->value + "\n");
                  //obs! no check of the parameter's usability
                  cookies += "; path=" +(m->path||"/");
 
@@ -2632,9 +2633,10 @@ perror("adding cookie: " + m->name + " value: " + m->value + "\n");
              }
 
              mixed return_data(mixed retval, object id){
-                             // werror("return_Data\n");
+                              werror("return_Data\n");
                              if(sizeof(id->misc->ivend->error)>0)
-                                 retval=handle_error(id);
+                             { perror("go errors...\n"); 
+retval=(handle_error(id)); }
                              if(objectp(DB) && STORE)
                                  db[STORE]->handle(DB);
 

@@ -716,7 +716,8 @@ string tag_generateviews(string tag_name, mapping args,
    string retval="";
    array r = DB->query("SELECT " + args->field + " FROM "
                        + args->type + ", product_groups WHERE product_groups.product_id="
-                       + args->type + "." +  KEYS[args->type] +
+                       + args->type + "." +  KEYS[args->type] + " AND "
+			+ args->type + ".status='A'" 
                        " AND product_groups.group_id= '" + id->misc->ivend->page + "' " 
                        " GROUP BY " + args->field);
 
@@ -1283,24 +1284,30 @@ add_pre_state(id->not_query, (<"domodify=product">)),0,0,id,
 }
 
 
-int have_admin_handler(string type, object id){
+mixed have_admin_handler(string type, object id){
    if(!type || type=="")
       return 0;
-// type=lower_case(type);
-//   p=((p/"/")-({""}))[0];
+   array i=indices(admin_handlers[STORE]);
+
+   foreach(i, string h){
+   int loc= sizeof(h);
+   loc-=sizeof(type);
+   loc--;
+   if(search(h, type, loc)!=-1)
+     type=h;
+   }
+perror(type + "\n");
    if(admin_handlers[STORE][type] &&
 functionp(admin_handlers[STORE][type]))
       //  perror("have handler for " + type + " in " + STORE + "\n");
-      return 1;  
+      return type;  
 
 }
 
-mixed handle_admin_handler(string mode, object id){
+mixed handle_admin_handler(string type, object id){
 
-//   string np=((p/"/")-({""}))[0];
    mixed rv;
-   rv=admin_handlers[STORE][mode](mode, id);
-   // perror(sprintf("%O\n",rv));
+   rv=admin_handlers[STORE][type](type, id);
    return rv;                  
 
 } 
@@ -1338,8 +1345,7 @@ retval+="<input type=hidden name=mode value=\""  +mode + "\">"
 	"<input onclick=popup('" +name +"','" +
 	add_pre_state(id->not_query,
 (<mode>))  + "',300,300) type=submit value=\"" + name + "\">"
-	"</form>"
-	"</TD></TR></TABLE>";
+	"</form>";
 
 return retval;
 
@@ -1405,6 +1411,10 @@ if(id->prestate && sizeof(id->prestate)>0){
   mode=m[0];
   if(sizeof(m)>1)
    type=m[1];
+  if(search(mode, ".") !=-1){
+   m=mode/".";
+   mode=m[sizeof(m)-1];
+   }
 }
 
 array valid_handlers=({});
@@ -1526,6 +1536,9 @@ KEYS[type+"s"]);
       case "getmodify":
    retval+="&gt <b>Modify " + capitalize(type)
    +"</b><br>\n";
+	if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+		"face=helvetica,arial>Actions\">";
+
          foreach(valid_handlers, string handler_name) {
 		string name;
 		array a=handler_name/".";
@@ -1534,6 +1547,8 @@ KEYS[type+"s"]);
 	 retval+=open_popup( name,
 	id->not_query, handler_name , (["id" : id->variables->id]) ,id);
 	}
+	if(sizeof(valid_handlers))
+		retval+="</obox>";
          retval+=getmodify(type,
                            id->variables[KEYS[type+"s"]], id);
 
@@ -1625,8 +1640,9 @@ KEYS[type+"s"]);
          break;
 
          default:
-	 if(have_admin_handler(mode, id)){
-	   string rv=handle_admin_handler(mode,id);
+	string m;
+	 if(m=have_admin_handler(mode, id)){
+	   string rv=handle_admin_handler(m,id);
 perror(id->query+"\n");
 	  if(ADMIN_FLAGS==NO_BORDER)
             retval=rv;
@@ -1637,7 +1653,7 @@ perror(id->query+"\n");
 		 + (id->query?"</a>":"") + "</b><p>" + rv;
 		}
 	 }
-         else   {
+         else if(mode=="menu" && type=="main")   {
  retval+= 
                 "<table width=90%>"
 		"<tr><td width=33%>" 
@@ -1656,9 +1672,6 @@ add_pre_state(id->not_query,(<"modify=group">))
                   "<li><a href="+
 add_pre_state(id->not_query,(<"delete=group">))
 	+">Delete a Group</a>\n"
-                  "<li><a href="+
-add_pre_state(id->not_query,(<"dump=group">))
-	+">Dump Groups</a>\n"
 		"</font>"
                   "</obox>"
 "<obox title=\"<font face=helvetica,arial>Products</font>\">\n"
@@ -1676,9 +1689,6 @@ add_pre_state(id->not_query,(<"modify=product">))
                   "<li><a href="+
 add_pre_state(id->not_query,(<"delete=product">))
 	+">Delete a Product</a>\n"
-                  "<li><a href="+
-add_pre_state(id->not_query,(<"dump=product">))
-	+">Dump Products</a>\n"
 		"</font>"
                   "</obox>"
                   "</ul>\n"
@@ -1711,6 +1721,7 @@ retval+="</td></tr></table>"
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
 
 }
+else retval+="Sorry, couldn't find handler.";
          break;
 
    }

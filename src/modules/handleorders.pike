@@ -7,6 +7,8 @@
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
+int saved=1;
+
 string|int show_orderdetails(string orderid, object s, object id);
 
 string create_panel(string name, string color, string contents){
@@ -472,12 +474,45 @@ return retval;
 
 }
 
+mixed prefs_handler (string mode, object id)
+
+{
+
+string retval="";
+
+if(id->variables->write_config){
+
+Config.write_section(id->misc->ivend->this_object->query("configdir")+
+  CONFIG->config, "addins", id->misc->ivend->config->addins);
+  saved=1;
+id->misc->ivend->this_object->start_store(STORE);
+  }
+
+retval+="<body bgcolor=white text=navy>\n"
+  "<font face=helvetica,arial>\n"
+  "<h2>Add-In Manager</h2>";
+
+retval+="<form action=./>\n"
+  "<input type=hidden name=change_settings value=1>\n";
+
+retval+="<p><input type=submit value=\"Update Settings\">\n</form>";
+
+if(!saved)
+  retval+="<br><a href=./?write_config=1>Save Configuration</a>";
+return retval;
+
+}
+
+
+
 mapping register_admin(){
 
 return ([
 
-	"menu.main.Orders.View_Orders" : show_orders 
+	"menu.main.Orders.View_Orders" : show_orders ,
+	"Orders.View_Orders.Preferences" : prefs_handler 
 
 	]);
 
 }
+

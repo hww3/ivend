@@ -1,3 +1,4 @@
+#!NOMODULE
 inherit "wizard";
 
 constant name= "Add New Store...";

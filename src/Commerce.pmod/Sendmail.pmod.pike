@@ -1,3 +1,5 @@
+#!NOMODULE
+
 int readcode(object f){
 
 // perror("readcode() \n");

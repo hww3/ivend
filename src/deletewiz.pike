@@ -1,3 +1,5 @@
+#!NOMODULE
+
 inherit "wizard";
 
 constant name= "Delete Store...";

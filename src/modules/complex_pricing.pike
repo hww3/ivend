@@ -1,3 +1,5 @@
+#!NOMODULE
+
 //
 //  complex_pricing.pike
 //  This file is part of the iVend eCommerce system.

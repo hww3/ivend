@@ -1,3 +1,5 @@
+#!NOMODULE
+
 #include <ivend.h>
 
 inherit "roxenlib";

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.260 2000-03-14 20:43:16 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.261 2000-05-26 19:14:52 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -43,7 +43,6 @@ mixed additem(object id);
 #endif
 
 int loaded;
-int need_rsa;
 object c;                       // configuration object
 object g;                       // global object
 mapping paths=([]);// path registry
@@ -260,11 +259,6 @@ if(((float)salestax)) {
 array register_module(){
 
     string s="";
-    if(need_rsa)
-        s +=
-            ("<b>\nWe don't have Standards.PKCS.RSA.parse_public_key...\n"
-             "<br>Please Install new RSA.pmod from "
-             "ftp.riverweb.com:/pub/hww3/ivend/patches.</b>\n");
     if(loaded) {
         s += "<br>Go to the <a href='"+
              my_configuration()->query("MyWorldLocation")+ query("mountpoint") +
@@ -326,12 +320,12 @@ void create(){
            "This is location where iVend will keep Store "
            "configuration files nessecary for operation.");
 
-    defvar("config_user", roxen->query("ConfigurationUser") ,
+    defvar("config_user", "administrator" ,
            "Configuration User",
            TYPE_STRING,  "This is the username to use when accessing the iVend Configuration "
            "interface.");
 
-    defvar("config_password", roxen->query("ConfigurationPassword") ,
+    defvar("config_password", "" ,
            "Configuration Password",
            TYPE_PASSWORD,
            "The password to use when accessing the iVend Configuration "
@@ -586,7 +580,7 @@ mixed register_admin_handler(string c, mapping f){
     if(functionp(f->handler))
         admin_handlers[c][f->mode]=f;
     else perror("no function provided!\n");
-    return;
+    return 0;
 }
 
 
@@ -676,27 +670,20 @@ void start(){
         read_conf();   // Read the config data.
     }
 
-    if(search(indices(Standards.PKCS.RSA), "parse_public_key")==-1) {
-        perror("\nWe don't have Standards.PKCS.RSA.parse_public_key...\n"
-               "Please Install new RSA.pmod from "
-               "ftp.riverweb.com/pub/hww3/ivend/patches.\n");
-        need_rsa=1;
-    }
-    else need_rsa=0;
     foreach(indices(config), string c) {
         start_store(c);
     }
 
     call_out(background_session_cleaner, 900);
 
-    return;
+    return 0;
 
 }
 
 
 string|void check_variable(string variable, mixed set_to){
 
-    return;
+    return 0;
 
 }
 
@@ -714,12 +701,12 @@ string query_name()
 
 
 
-string|void container_ia(string name, mapping args,
+void|string container_ia(string name, mapping args,
                          string contents, object id) {
 
-    if (catch(id->misc->ivend->SESSIONID)) return;
+    if (catch(id->misc->ivend->SESSIONID)) return contents;
 
-    if (args["_parsed"]) return;
+    if (args["_parsed"]) return contents;
 
     mapping arguments=([]);
 
@@ -773,7 +760,7 @@ arguments["href"]=((id->misc->ivend->config["Default Checkout Module"]->checkout
 void|string container_form(string name, mapping args,
                            string contents, object id)
 {
-    if(args["_parsed"]) return;
+    if(args["_parsed"]) return contents;
     contents="<!-- form container --><input type=hidden name=SESSIONID value="+
              id->misc->ivend->SESSIONID+">"+contents;
     args["_parsed"]="1";
@@ -921,7 +908,7 @@ mixed do_additems(object id, array items){
 // if(item->options) o+=item->options;
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
-        return;
+        return 0;
     }
 }
 
@@ -1782,7 +1769,7 @@ id->misc->defines[" _extra_heads"]+=([
 
 // we're login' in to the main config interface.
 int get_auth(object id){
-
+perror("doing get_auth\n");
     array(string) auth=id->realauth/":";
     if(auth[0]!=query("config_user")) return 0;
     else if(crypt(auth[1], query("config_password")))
@@ -2773,7 +2760,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                         string contents, object id)
              {
 		mixed err;
-                 if(args->_parsed) return;
+                 if(args->_parsed) return contents;
                  if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 
                  if(args->extrafields)
@@ -2902,7 +2889,7 @@ if(STORE)
                  if(arrayp(error)) id->misc->ivend->error +=({
                                  replace(describe_backtrace(error),"\n","<br>\n") });
                  else if(stringp(error)) id->misc->ivend->error += ({ error });
-                 return;
+                 return ;
 
              }
 
@@ -3142,7 +3129,7 @@ if(id->cookies->SESSIONID)
                                  perror("calling start() for " + m->module_name + ".\n");
                                  o->start(config[c]);
                              }
-                             mapping p;
+                             mixed p;
 
                              if(functionp(o->register_paths))
                                  p = o->register_paths();
@@ -3357,21 +3344,23 @@ Config.write(config[confname]));
                          }
 
                          mapping configuration_interface(array(string) request, object id){
-
+perror("Started into config_interface!\n");
                              if(id->auth==0)
                                  return http_auth_required("iVend Configuration",
                                                            "Silly user, you need to login!", id);
+
                              else if(!get_auth(id))
                                  return http_auth_required("iVend Configuration",
                                                            "Silly user, you need to login!" ,id);
+perror("Passed Auth!\n");
 
                              if(!c) read_conf();
                              // perror(sprintf("%O\n" , global));
                              string retval="";
-
-                             if(catch(request[0])) return
-                                     http_redirect(query("mountpoint")+"config/configs",id);
-                             retval+="<HTML>\n"
+if(catch(request[0]))
+return http_redirect(my_configuration()->query("MyWorldLocation")+
+query("mountpoint") + "config/configs/", id);
+                     retval+="<HTML>\n"
                                      "<HEAD>\n"
                                      "<TITLE>iVend Configuration</TITLE>\n"
                                      "</HEAD>\n"

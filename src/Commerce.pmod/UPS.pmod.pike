@@ -1,3 +1,4 @@
+#!NOMODULE
 class zone{
 
 private mapping(string:mixed) zonedata=([]);

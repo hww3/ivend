@@ -3,7 +3,8 @@ string make_password(string wordfile, int len) {
 string password="";
 array words=Stdio.read_file(wordfile||"")/"\n";
 if(sizeof(words)<2)
-  password=hash((string)time())[0..8];
+
+  password=(string)hash((string)(time()))[0..7];
 else {
 int good=0;
 while(good==0){

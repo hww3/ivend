@@ -1,10 +1,5 @@
 string|int encrypt(string s, string key){
 
-#if !constant(_Crypto) || !constant(Crypto.rsa)
-
-werror("Crypto not present! Doing dummy encrypt!\n");
-
-#else /* constant(_Crypto) && constant(Crypto.rsa) */
 
  if (!key) {
     werror("Could not read public key.\n");
@@ -25,9 +20,6 @@ werror("Crypto not present! Doing dummy encrypt!\n");
 
   s=rsa->encrypt(s, r);
 
-
-#endif /* constant(_Crypto) && constant(Crypto.rsa) */
-
   s=MIME.encode_base64(s);     
   return "iVEn" + s;
 
@@ -42,11 +34,6 @@ if(s[0..3]!="iVEn")
 else s=s[4..];
   s=MIME.decode_base64(s);
 
-#if !constant(_Crypto) || !constant(Crypto.rsa)
-
-werror("Crypto not present! Doing dummy decrypt!\n");
-
-#else /* constant(_Crypto) && constant(Crypto.rsa) */
 
  if (!key) {
     werror("Could not read private key.");
@@ -66,7 +53,6 @@ werror("Crypto not present! Doing dummy decrypt!\n");
 // perror("decrypting...\n");
 //  perror(s);
   s=rsa->decrypt(s);  
-#endif /* constant(_Crypto) && constant(Crypto.rsa) */
 
   return s;
 }

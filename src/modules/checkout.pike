@@ -194,7 +194,8 @@ s=id->misc->ivend->db->query("SELECT * FROM sessions WHERE sessionid='"
 	+ id->misc->ivend->SESSIONID + "'");
 
 if(sizeof(s)==0) {
- throw_error("Your order appears to have been confirmed already.", id);
+ throw_error("Your order appears to have been confirmed already, "
+		"or your shopping session has expired." , id);
  return "";
   }
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.280 2000-12-26 20:11:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.281 2000-12-27 18:17:05 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1432,7 +1432,7 @@ string container_ivindex(string name, mapping args,
 
 mixed handle_cart(string filename, object id){
 #ifdef MODULE_DEBUG
-    perror("iVend: handling cart for "+st+"\n");
+    perror("iVend: handling cart for "+ id->misc->ivend->st+"\n");
 #endif
 
     string retval;
@@ -1518,7 +1518,7 @@ string get_type(string page, object id){
 mixed find_page(string page, object id){
 
 #ifdef MODULE_DEBUG
-    perror("iVend: finding page "+ page+" in "+ ST +"\n");
+    perror("iVend: finding page "+ page+" in "+ id->misc->ivend->st +"\n");
 #endif
 
     string retval;
@@ -2634,7 +2634,7 @@ if(STORE)
                                            (id->misc->ivend->moveup?"": STORE+ "/");
 
 
-       //          handle_sessionid(id);
+                 handle_sessionid(id);
                  if(request*"/" && have_path_handler(STORE, request*"/"))
                      retval= handle_path(STORE, request*"/" , id);
 
@@ -2738,9 +2738,10 @@ if(STORE){
 // perror("CONTAINERS: " + sprintf("%O\n", (c+containers)));
 // perror("TAGS: " + sprintf("%O\n", (t+tags)));
 
-                 contents= parse_html(contents,
+                 contents= make_container("html", (["_parsed":"1"]),
+				parse_html(contents,
                            t + tags,
-                           c + containers, id);
+                           c + containers, id));
 // mapping defines=id->misc->defines;
 // perror("DEFINES container_ivml 1: " + sprintf("%O\n", defines));
 if(STORE)
@@ -2965,7 +2966,7 @@ mixed return_data(mixed retval, object id){
 		db[STORE]->handle(DB);
 		}
 	if(mappingp(retval)) {
-		perror("RETURN return_data: got mapping.\n");
+//		perror("RETURN return_data: got mapping.\n");
 		return retval;
 	}
 

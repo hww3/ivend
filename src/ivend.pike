@@ -1702,7 +1702,7 @@ KEYS[type+"s"]);
 		mode=mn[sizeof(mn)-1];
 		retval+= " &gt; <b>" + (id->query?"<a href=./>":"") +  
 			replace(mode,({"_"}),({" "}))
-		 + (id->query?"</a>":"") + "</b><p>";
+		 + (id->query?"</a>":"") + "</b></font><p>";
 	  if(ADMIN_FLAGS==NO_ACTIONS);
 		else{
 	if(sizeof(valid_handlers)) retval+="<obox title=\"<font "

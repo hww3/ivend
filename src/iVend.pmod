@@ -566,7 +566,8 @@ class db {
                                                  "SIZE=-1><I> "+ REQUIRED +"\n";
             }
 
-            else if(file_stat(CONFIG->general->root + "/db/" +
+            else if(!catch(CONFIG) && file_stat(CONFIG->general->root +
+"/db/" +
                               lower_case(table) + 
                               "_" + lower_case(r[i]->name) + ".val"))
 
@@ -640,7 +641,7 @@ class db {
                retval+="<TR>\n"
                        "<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD><!-- long / not null -->\n";
                retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+
-                       "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=\"NULL\">\n";
+                       "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=\"" + (record[r[i]->name]||"NULL")+ "\">\n";
 
             }
             else if(r[i]->type=="long"){

@@ -424,7 +424,7 @@ retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
     }
 
 else {
-  retval+="<br><b>Click on an order id to display an order.\n\n<br></b>";
+  retval+="<br>Click on an order id to display an order.\n\n<br>";
 
   array s=DB->query("SELECT status, name from status where tablename='orders'");
 
@@ -446,18 +446,36 @@ int numpages=0;
 numpages=((int)i)/numlines;
 if((int)i%numlines) numpages ++;
 
+
   if(sizeof(r)>0) {
-  retval+="<h3>" + row->name + "</h3>";
-  retval+="<i><font size=1>Showing page " + (((int)id->variables["page" +
-    row->status])||1 )+ " of " + 
-numpages +
-"<br></font></i>";
-  retval+="<table cellspacing=2 cellpadding=0>\n<tr>"
-	"<td></td>\n"
+  retval+="<table cellspacing=0 cellpadding=0>\n<tr>"
+	"<td colspan=4 align=center>";
+  retval+="<font size=+1>" + row->name + "</font><br>";
+
+  retval+="<i><font size=2>" +
+(((int)id->variables["page" +
+    row->status]||1 )>1?("<a href=\"./?page" + row->status +"="+
+(((int)id->variables["page" + row->status]) -1) +"\">"):"")+
+
+"&lt;&lt;" +
+((((int)id->variables["page" +
+    row->status]||1 )>1)?"</a>":"") 
+ +" &nbsp; Showing page " +
+(((int)id->variables["page" + row->status])||1 )+ " of " + 
+numpages + " &nbsp; " +
+(((int)id->variables["page" +
+    row->status]||1 )<numpages?("<a href=\"./?page" + row->status +"="+
+(((int)id->variables["page" + row->status]||1) +1) +"\">"):"")+
+  "&gt;&gt;" + 
+((((int)id->variables["page" +
+    row->status]||1 )<numpages)?"</a>":"") 
+
++ "<br></font></i>";
+
+  retval+="</td></tr>\n";
+  retval+="<tr><td></td>\n"
 	"<td bgcolor=navy><font color=white "
     " face=helvetica> <b>Order ID</b> </font></td>\n"
-//    "<td bgcolor=navy><font color=white "
-//    "face=helvetica><b>Status</font></td>\n"
     "<td bgcolor=navy><font color=white face=helvetica><b>Record "
     "Updated</font></td>\n"
     "<td bgcolor=navy><font color=white "
@@ -465,8 +483,9 @@ numpages +
 
   foreach(r, mapping row){
     retval+="<tr>\n";
-    retval+="<td> <imgsrc=\"" + 
-	query("mountpoint")+ "ivend-image/rbutton.gif\"> "
+    retval+="<td> <img src=\"" + 
+	id->misc->ivend->this_object->query("mountpoint")+
+	  "ivend-image/rbutton.gif\"> "
 	"</td><td bgcolor=gray align=center> <a href=\"./?orderid="
 	+row->id+"\">"+
 	row->id+"</a> </td>";

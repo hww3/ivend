@@ -26,7 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.72 1998-06-07 15:02:51 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.73 1998-06-12 19:38:07 hww3 Exp $";
 
 array register_module(){
 
@@ -62,7 +62,7 @@ void create(){
           "This is where the module will be inserted in the "
           "namespace of your server.");
 
-   defvar("root", "/home/roxen/share/ivend/" , "iVend Root Location",
+   defvar("root", getcwd(), "iVend Root Location",
           TYPE_DIR,
           "This is the root directory of the iVend distribution. "
           );

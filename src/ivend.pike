@@ -201,7 +201,7 @@ mapping arguments=([]);
 
 arguments["_parsed"]="1";
 
-if (arguments->external)
+if (args->external)
   arguments["href"]=args->href;
 
 else if (args->add) 

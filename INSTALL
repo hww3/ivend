@@ -310,6 +310,7 @@ Additionally, the following attributes have been added:
   groups: generates a link to the store's group listing page.
   checkout: generates a link to the store's checkout page.
   template: optional attribute to specify a nonstandard template to use.
+  external: optional attribute to cause iVend to drop sessionid on link.
 
   all other attributes such as target will be passed through to the
   browser.

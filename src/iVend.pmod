@@ -339,8 +339,22 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
             if(lower_case(r[i]->name[0..4])=="image"){
+		if(id->variables[lower_case(r[i]->name +
+".delete")]=="yes")
+		{
+			// we need to delete the file...
+                    string f=id->variables[ r[i]->name+".filename"];
+                        string e= extension(f);
+                        string filename=id->variables->id+
+                                        r[i]->name[5..]+"."+e;
 
-                if(sizeof(id->variables[r[i]->name])>3)
+
+                        if(file_stat(CONFIG->general->root+
+				"/html/images/"+id->variables->table + "/" + filename ))
+                        rm(filename);
+                        q+=r[i]->name + "=NULL,";
+		}
+                else if(sizeof(id->variables[r[i]->name])>3)
                 {
 
                     string f=id->variables[ r[i]->name+".filename"];
@@ -362,7 +376,7 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
                     }
                     else perror("ARGH! Can't get image's original filename from browser!\n");
                 }
-                else q+="NULL,";
+                else q+=r[i]->name + "=NULL,";
             }
 
             else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
@@ -407,8 +421,22 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
             if(lower_case(r[i]->name[0..4])=="image"){
+		if(id->variables[lower_case(r[i]->name + ".delete")]=="yes")
+		{
+			// we need to delete the file...
+                    string f=id->variables[ r[i]->name+".filename"];
+                        string e= extension(f);
+                        string filename=id->variables->id+
+                                        r[i]->name[5..]+"."+e;
 
-                if(sizeof(id->variables[r[i]->name])>3)
+
+                        if(file_stat(CONFIG->general->root+
+				"/html/images/"+id->variables->table + "/" + filename ))
+                        rm(filename);
+                        q+=r[i]->name + "=NULL,";
+		}
+
+                else if(sizeof(id->variables[r[i]->name])>3)
                 {
 
                     string f=id->variables[ r[i]->name+".filename"];
@@ -531,9 +559,12 @@ string def=r[i]["default"] || "";
                         +replace(r[i]->name,"_"," ")+
                         "</FONT></TD>\n"
                         "<TD>\n";
-                if (record[r[i]->name])
+                if (record[r[i]->name]) {
                     retval+="<img src=\"../images/" + table + "/" +
-                            record[r[i]->name] + "\"><br>";
+                            record[r[i]->name] + "\"><br>"
+			"<input type=checkbox name=\"" + r[i]->name
+			+ ".delete\" VALUE=\"yes\"> Delete?<br>\n";
+			}
                 retval+="<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
 
             }

@@ -72,7 +72,7 @@ return retval;
 }
 
 
-string action_itemoptions(string mode, object id){
+mixed action_itemoptions(string mode, object id){
 string retval="<html><head><title>Item Options</title></head>\n"
 	"<body bgcolor=white text=navy>\n"
 	"<font face=helvetica>";
@@ -202,7 +202,7 @@ string action_dropdown(string mode, object id){
   return retval;
 }
 
-string action_template(string mode, object id){
+mixed action_template(string mode, object id){
   string retval="";
   if(id->variables->delete){
    object privs=Privs("iVend: Copying store files ");
@@ -325,7 +325,7 @@ string action_template(string mode, object id){
 	+ (fy||"<html>\n</html>") + "</textarea></noparse><br>\n"
         "<input type=submit name=commit value=\"Commit\"></form>\n";
   }
-  return retval;
+  return http_string_answer(retval);
 }
 
 string action_cleansessions(string mode, object id){

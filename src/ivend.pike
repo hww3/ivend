@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.254 1999-12-20 18:55:36 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.255 1999-12-23 19:52:42 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2487,9 +2487,10 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  default:
                      string m;
                      if(m=have_admin_handler(mode, id)){
-                         string rv=handle_admin_handler(m,id);
+                         mixed rv=handle_admin_handler(m,id);
                          // perror(id->query+"\n");
-                         if(ADMIN_FLAGS==NO_BORDER) retval="";
+                         if(!stringp(rv)) return rv;
+			else if(ADMIN_FLAGS==NO_BORDER) retval="";
                          else{ array mn=mode/".";
                              mode=mn[sizeof(mn)-1];
                              retval+= " &gt; <b>" + (id->query?"<a href=\"./\">":"") +

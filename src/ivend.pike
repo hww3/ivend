@@ -539,6 +539,9 @@ mixed container_icart(string name, mapping args, string contents, object id) {
 		  "quantity="+(int)(id->variables["q"+(string)i])+
 		  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 		  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
+	trigger_event("updateitem", id, (["item" : id->variables["p" +
+	(string)i] , "series" : id->variables["s" + (string)i],
+	"quantity": id->variables["p" + (string)i]]) );
       }
     }
   }
@@ -1503,8 +1506,8 @@ KEYS[type+"s"]);
                   retval+="<form action=" +
 			add_pre_state(id->not_query,(<"dodelete=" + type>))
 			+ ">\n"
-                  "<input type=hidden name=id value="+id->variables[
-                    KEYS[type+"s"] ]+">\n"
+                  "<input type=hidden name=id value=\""+id->variables[
+                    KEYS[type+"s"] ]+"\">\n"
                   "Are you sure you want to delete the following?<p>";
                   retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                }

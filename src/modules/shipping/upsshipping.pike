@@ -13,14 +13,16 @@ int initialize_db(object db, mapping config) {
 
   perror("initializing order total shipping module!\n");
 catch(db->query("drop table shipping_ups"));
-catch(db->query(
+if(catch(db->query(
   "CREATE TABLE shipping_ups ("
   " type int(11) DEFAULT '0' NOT NULL,"
   " charge float(5,2) DEFAULT '0.00' NOT NULL,"
   " chargetype char(1) DEFAULT 'C' NOT NULL,"
-  " zonefile char(12) NOT NULL, "
+  " zonefile blob NOT NULL, "
+  " ratefile blob NOT NULL, "
   " id int NOT NULL AUTO_INCREMENT PRIMARY KEY"
-  " ) "));
+  " ) ")))
+    return 0;
 rm(config->general->root + "/db/shipping_ups_chargetype.val");
 catch(Stdio.write_file(config->general->root +
   "/db/shipping_ups_chargetype.val","Cash\nPercentage\n")); 
@@ -28,19 +30,38 @@ return 0;
 
 }
 
+void load_zone(mapping row, mapping config){
+
+if(!u->load_zonefile(row->zonefile))
+  perror("Error Loading Zonefile for " + row->type + ".\n");
+if(!u->load_ratefile(row->ratefile))
+  perror("Error Loading ratefile for " + row->type + ".\n");
+
+}
+
+void load_zones(object db, mapping config){
+
+  foreach(db->query("SELECT * FROM shipping_ups"), mapping row)
+    load_zone(row, config);
+
+  return;
+}
 
 void start(mapping config){
 
 object db;
 
 if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
+  config->general->dblogin, config->general->dbpassword))) {
     perror("iVend: UPSShipping: Error Connecting to Database.\n");
+    return;
+  }
 if((sizeof(db->list_tables("shipping_ups")))==1);
 else
   initialize_db(db, config);
 
 u=Commerce.UPS.zone();
+load_zones(db, config);
 started=1;
 return;
 
@@ -52,39 +73,11 @@ return;
 
 }
 
-string addtype(object id){
+mixed addtype(object id){
 
-  string retval="<table>\n"+
-  id->misc->ivend->db->gentable("shipping_types","shipping",0,id);
-  return retval;
+ return 0;
 
 }
-
-
-string addrange(string type, object id){
-
-  string retval="<form action=./><tr></tr>\n"+
-    "<tr><td><font face=helvetica><b>From $</b></font></td>\n"
-    "<td><font face=helvetica><b>To $</b></font></td>\n"
-    "<td><font face=helvetica><b>Charge</b></font></td></tr>\n"
-    "<tr><td><input type=text size=10 name=min></td>\n"
-    "<td><input type=text size=10 name=max></td>\n"
-    "<td><input type=text size=10 name=charge></td>\n"
-    "</tr></table><input type=hidden value="+ type+ " name=type>"
-    "<input type=hidden name=doaddrange value=1>"
-    "<input type=submit value=Add>";
-
-  foreach(({"viewtype","showall"}), string var)
-    retval+="<input type=hidden name=" + var + " value=" + 
-	  id->variables[var] + ">\n";
-
-  retval+="</form>";
-
-  return retval;
-
-}
-
-
 
 string showtype (object id,mapping row){
 
@@ -93,24 +86,23 @@ string showtype (object id,mapping row){
   array r=id->misc->ivend->db->query("SELECT * FROM shipping_ups WHERE type="
                                      + row->type + " ORDER BY type");
   if(sizeof(r)<1)
-    retval+="<ul><font size=2><b>No Rules exist for this "
-      "shipping type.</b></font><table>\n";    
-  else {
-    retval+="<ul><table><tr><td><font face=helvetica><b>From $</td><td>"
-      "<font face=helvetica><b>To $</td><td><font face=helvetica><b>"
-      "Charge</td></tr>\n";
-    foreach(r, mapping row) {
-      retval+="<tr><td>" + row->min + "</td><td>"+ row->max + "</td><td>"
-	+ row->charge + " <font size=2 face=helvetica>(<a href="
-	"./?";
-      foreach(({"showall", "viewtype"}), string var)
-	retval+=var+"="+id->variables[var]+"&";
-      retval+="&id=" +row->id + "&dodelete=1>Delete</a>)</font></td></tr>";
-    }
+    retval+="<ul><font size=2><b>This "
+      "shipping type has not been set up yet.</b></font><table>\n"
+  "<p><b>Set up Shipping Handler</b>"
+	"<form action=\"./\" method=post>"
+	"<input type=hidden name=mode value=showtype>\n"
+	"<input type=hidden name=type value=" + id->variables->type +">\n"
+	"<input type=hidden name=dosetup value=dosetup>\n"
+	"<input type=submit value=\"Set Up Shipper\">\n"
+	"</form>";
+  else foreach(r, mapping row) {
 
+    retval+="<b>Zone File:</b> " + 
+	((row->zonefile/"\n")[0]) + "<br>" +
+	"<b>Rate File:</b> " + ((row->ratefile/"\n")[0]);
 
   }
-  retval+=addrange(row->type, id) + "</ul>";
+
 
   return retval;
 

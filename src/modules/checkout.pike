@@ -1,5 +1,5 @@
 /*
- * default.pike: checkout module for iVend.
+ * checkout.pike: default checkout module for iVend.
  *
  * Bill Welliver <hww3@riverweb.com>
  *
@@ -64,8 +64,8 @@ string tag_confirmorder(string tag_name, mapping args,
 
 // get the order from sessions
 
-  array r=s->query("SELECT * FROM sessions WHERE sessionid='"
-	+id->misc->ivend->SESSIONID+ "'");
+  array r=s->query("SELECT sessions.*,products.cost, products.taxable from sessions,products  WHERE sessionid='"
+	+id->misc->ivend->SESSIONID+ "' and products.id=sessions.id");
 
 // replace sessionid with orderid
 string query;

@@ -1,6 +1,39 @@
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
+string|int gentable(object id, object s, string table, string ignore, void|int worrytype){
+string retval="";
+array r=s->query("SELECT "+table+".*, type.name as type FROM "+table+",type "
+		 "WHERE orderid="+ id->variables->orderid +
+		 " AND type.type=" + table + ".type");
+
+array f=s->list_fields(table);
+
+if(sizeof(r)==0) return "Unable to find "+table+" for Order ID " + 
+		   id->variables->orderid;
+
+retval+="<table><tr>\n";
+
+ foreach(r, mapping row){
+
+   retval+="<td valign=top><table><tr><td bgcolor=gold>\n";
+   retval+=" &nbsp; <font size=+1><b>"+ row->type+"</font></b> &nbsp; </td></tr>\n<tr><td>";
+   m_delete(row, "type");
+   foreach(f, mapping field){
+     if(row[field->name]==ignore) retval+="";
+     else if(field->name=="updated" || field->name=="type" || field->name=="orderid") retval+="";
+     else retval+=row[field->name]+"<br>\n";
+   }
+   retval+="</td></tr></table></td>\n";
+ }
+
+retval+="</tr></table>\n";
+
+return retval;
+
+}
+
+
 string show_orders(object id, object s){
 string retval="";
 
@@ -49,6 +82,9 @@ else if(id->variables->orderid) {
 	"</table>"
 	"\n\n";
 
+	 // get address information...
+
+retval+=gentable(id, s, "customer_info", "N/A", 1);
 	
 
 /*
@@ -104,3 +140,17 @@ else {
 return retval;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

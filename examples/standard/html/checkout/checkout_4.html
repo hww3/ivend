@@ -8,9 +8,10 @@
 <checkout>
 <addentry>
 <table>
-<generateform table=payment_info hide="orderid,type">
+<generateform table=payment_info hide="orderid,type,status">
 </table>
 <input type=submit value=" >> ">
 <input type=hidden name=orderid value="<sessionid>">
+<input type=hidden name=status value="3">
 </checkout>
 </ivml>

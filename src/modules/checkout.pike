@@ -22,6 +22,12 @@ array fields=({});
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
+mixed stop_error(object id){
+  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
+    return (id->misc->ivend->error *"\n");
+}
+
+
 mixed throw_error(string error, object id){
   id->misc->ivend->error+=({error});
   return;
@@ -138,11 +144,6 @@ else if(good_email)
 
 return "";
 
-}
-
-mixed stop_error(object id){
-  if(id->misc->ivend->error && sizeof(id->misc->ivend->error)>0)
-    return (id->misc->ivend->error *"\n");
 }
 
 mixed getorderid(object id){

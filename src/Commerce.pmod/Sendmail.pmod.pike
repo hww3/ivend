@@ -9,9 +9,9 @@ space=' ';
 r=f->gets();
 if(!r) return 0;
 sscanf(r, "%d%c%*s", code, space);
-perror("r is eq to " + r + ".\n");
-perror("space is eq to " + space + ".\n");
-perror("code is eq to " + code + ".\n");
+//perror("r is eq to " + r + ".\n");
+//perror("space is eq to " + space + ".\n");
+//perror("code is eq to " + code + ".\n");
 }
 while (space=='-');
 return code;

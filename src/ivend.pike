@@ -14,13 +14,14 @@ inherit "module";
 inherit "roxenlib";
 inherit "wizard";
 
-mapping(string:mapping(string:mixed)) config=([]) ;
+mapping(string:mapping(string:mixed)) config=([]);
+mapping(string:mixed) global=([]) ;
 object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.46 1998-04-11 22:15:35 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.47 1998-04-12 03:44:32 hww3 Exp $";
 
 array register_module(){
 
@@ -100,22 +101,26 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-int load_ivmodule(object id, string type){
+int load_ivmodule(string name){
 
- if (id->variables->reload || 
-	! objectp(modules[id->misc->ivend->config[type]]))
-modules+=([ id->misc->ivend->config[type] :
+modules+=([ name :
     (object)clone(compile_file(query("root")+"/modules/"+
-    id->misc->ivend->config[type])) ]);
+    name)) ]);
 
 return 1;
 
 }
 
 
+mixed getglobalvar(string var){
+
+  if(catch(global[var]))
+    return 0;
+  else return global[var];
+
+}
+
 float convert(float value, object id){
-if(! objectp(modules[id->misc->ivend->config->currency_module])) 
-	load_ivmodule(id, "currency_module");
 
 if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
 	  value=
@@ -137,15 +142,9 @@ return "";
 }
 
 int clean_sessions(object id){
-string st=id->misc->ivend->st;
-object s=Sql.sql(
-	config[st]->dbhost, 
-	config[st]->db, 
-	config[st]->dblogin, 
-	config[st]->dbpassword
-	);
+
 string query="DELETE FROM sessions WHERE timeout < "+time(0);
-s->query(query);
+id->misc->ivend->db->query(query);
 return 0;
 }
 
@@ -234,12 +233,12 @@ if(id->variables->update) {
     for(int i=0; i< (int)id->variables->s; i++){
 
     if((int)id->variables["q"+(string)i]==0)
-	id->misc->ivend->s->query("DELETE FROM sessions WHERE SESSIONID='"
+	id->misc->ivend->db->query("DELETE FROM sessions WHERE SESSIONID='"
 	+id->misc->ivend->SESSIONID+
 	  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
 	  id->variables["s"+(string)i] );
     else
-   id->misc->ivend->s->query("UPDATE sessions SET "
+   id->misc->ivend->db->query("UPDATE sessions SET "
       "quantity="+id->variables["q"+(string)i]+
 	  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
@@ -256,7 +255,7 @@ if(id->variables->update) {
     retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n";
 
     if(!args->fields) return "Incomplete cart configuration!";
-    array r= id->misc->ivend->s->query(
+    array r= id->misc->ivend->db->query(
       "SELECT sessions.id,series,quantity,name,sessions.price,"+ 
 	args->fields+" FROM sessions,products "
       "WHERE sessions.SESSIONID='"
@@ -339,7 +338,7 @@ contents=parse_html(contents,([]),
   if(args->restriction)
     query+=" WHERE " + args->restriction;
 
-  array r=id->misc->ivend->s->query(query);
+  array r=id->misc->ivend->db->query(query);
 
   if(!id->misc->fr)
     retval+=do_output_tag( args, r, contents, id );  
@@ -372,11 +371,11 @@ string st=id->misc->ivend->st;
 
 array r;
 if(args->type=="groups") {
-  r=id->misc->ivend->s->query("SELECT id AS pid,"+args->fields+ " FROM groups");
+  r=id->misc->ivend->db->query("SELECT id AS pid,"+args->fields+ " FROM groups");
   }
 else {
 
-  r=id->misc->ivend->s->query("SELECT product_id AS pid,"+args->fields+
+  r=id->misc->ivend->db->query("SELECT product_id AS pid,"+args->fields+
 	" FROM product_groups,products where group_id='"+
 	     id->misc->ivend->page+"'"
 	" AND products.id=product_id");
@@ -429,7 +428,7 @@ string st=id->misc->ivend->st;
 string filename="";
 array r;
 if(args->field!=""){
-  r=id->misc->ivend->s->query("SELECT "+args->field+ " FROM "+ 
+  r=id->misc->ivend->db->query("SELECT "+args->field+ " FROM "+ 
     id->misc->ivend->type+"s WHERE "
 	" id='"+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
@@ -464,7 +463,6 @@ array(string)a=indices(config);
 string c;
 foreach(a,c){
   string s=contents;
-  if(c=="global") continue;
 string d="";
 foreach(indices(config[c]),d){
   s=replace(s,("#"+d+"#"),config[c][d]);
@@ -518,9 +516,15 @@ for (int i=0; i<sizeof(config_file);i++){
 
 }
 
-/*
- *  start(): set up shop...
- */
+
+void load_modules(string c){
+  foreach(indices(config[c]), string n)
+    if(Regexp("._module")->match(n)) {
+      perror("loading module " + config[c][n] + "\n");
+      load_ivmodule(config[c][n]);
+      }
+  return;
+}
 
 void start(){
 
@@ -531,9 +535,9 @@ void start(){
   add_include_path(query("root") + "include");
   add_module_path(query("root"));
   add_program_path(query("root")[0..sizeof(query("root"))-2]);
-  perror("added module and program paths: "+ 
-    query("root")[0..sizeof(query("root"))-2] + "\n");
-perror(sprintf("%O", mkmapping(indices(roxen), values(roxen))));
+  
+  foreach(indices(config), string c)
+    load_modules(config[c]->config);
 
   return;	
 
@@ -608,17 +612,17 @@ id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
 array f;
-r=id->misc->ivend->s->query("SELECT * FROM groups WHERE id='"+page+"'");
+r=id->misc->ivend->db->query("SELECT * FROM groups WHERE id='"+page+"'");
 if (sizeof(r)==1){
   id->misc->ivend->type="group";
   template="group_template.html";
-  f=id->misc->ivend->s->list_fields("groups");
+  f=id->misc->ivend->db->list_fields("groups");
   }
 else {
-  r=id->misc->ivend->s->query("SELECT * FROM products WHERE id='"+page+"'");
+  r=id->misc->ivend->db->query("SELECT * FROM products WHERE id='"+page+"'");
   id->misc->ivend->type="product";
   template="product_template.html";
-  f=id->misc->ivend->s->list_fields("products");
+  f=id->misc->ivend->db->list_fields("products");
 
   }
 if (sizeof(r)!=1) 
@@ -628,25 +632,24 @@ retval=Stdio.read_bytes(id->misc->ivend->config->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
 id->realfile=id->misc->ivend->config->root+"/"+template;
-// retval="find_page("+page+", s, id)";
 return parse_page(retval, r, f, id);
 }
 
 mixed additem(string item, object id){
 
-  float price=id->misc->ivend->s->query("SELECT price FROM products WHERE id='" 
+  float price=id->misc->ivend->db->query("SELECT price FROM products WHERE id='" 
   + item + "'")[0]->price;
 
   price=convert((float)price,id);
 
 
-int max=sizeof(id->misc->ivend->s->query("select id FROM sessions WHERE SESSIONID='"+
+int max=sizeof(id->misc->ivend->db->query("select id FROM sessions WHERE SESSIONID='"+
   id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
 string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
   "','"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
 perror(query+"\n");
-if(catch(id->misc->ivend->s->query(query) ))
+if(catch(id->misc->ivend->db->query(query) ))
 	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
 else 
   id->misc["ivendstatus"]+=("Item "+item+ " added successfully.\n"); 
@@ -690,18 +693,16 @@ switch(page){
 mapping ivend_image(array(string) request, object id){
 
 	string image;
-	image=read_file(query("datadir")+"images/"+request[1]);
+	image=read_file(query("datadir")+"images/"+request[0]);
 
 	return http_string_answer(image,
-		id->conf->type_from_filename(request[1]));
+		id->conf->type_from_filename(request[0]));
 
 }
 
 mixed handle_checkout(object id){
 mixed retval;
 
-if(!objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id, "checkout_module");
 
 retval=modules[id->misc->ivend->config->checkout_module]->checkout(id);
 
@@ -767,8 +768,10 @@ else if(!get_auth(id,1))
 if(!c) read_conf(); 
 
 	string retval="";
-	if(catch(request[1])) return http_redirect(query("mountpoint")+"config/configs",id);
-	retval+="<HTML>\n"
+
+	if(catch(request[0])) return
+http_redirect(query("mountpoint")+"config/configs",id);
+retval+="<HTML>\n"
 "<HEAD>\n"
 "<TITLE>iVend Configuration</TITLE>\n"
 "</HEAD>\n"
@@ -786,7 +789,7 @@ if(!c) read_conf();
 
 // Do filefolder tabs
 
-	switch(request[1]){
+	switch(request[0]){
 	
 		case "status": {
 		retval+=
@@ -817,35 +820,34 @@ if(!c) read_conf();
 		}
 		
 		case "global": {
-if(!catch(request[2]) && request[2]=="save")
+if(!catch(request[1]) && request[1]=="save")
 {
 // perror("SAVING CHANGES...\n");
 array(string) vars=indices(id->variables);
 string v;
 foreach((vars),v){
 
-  if(!config->global) config["global"]=([v:id->variables[v]]);
+  if(!global) global=([v:id->variables[v]]);
 
-  else config["global"][v]=id->variables[v];
+  else global[v]=id->variables[v];
 }
 
 save_status=0;	// we need to save.
 }
 		
-		retval+=
+retval+=
 "<TR HEIGHT=\"28\">\n"
-"	<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A "
+"<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A "
 " HREF=\""+query("mountpoint")+"config/configs\"><IMG SRC=\""+query("mountpoint")+"ivend-image/configurationsunselect.gif\" "
 " WIDTH=\"186\" HEIGHT=\"" "	28\" BORDER=\"0\" ALT=\"/  Configurations  \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\"><A HREF=\""+query("mountpoint")+"config/global\"><IMG SRC=\""+query("mountpoint")+"ivend-image/globalselect.gif\" WIDTH=\"186\" HEIGHT=\"28\""
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\"><A HREF=\""+query("mountpoint")+"config/global\"><IMG SRC=\""+query("mountpoint")+"ivend-image/globalselect.gif\" WIDTH=\"186\" HEIGHT=\"28\""
 " BORDER=\"0\" ALT=\"/ Global Variables \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+"ivend-image/statusunselect.gif\" WIDTH=\"186\" HEIGHT=\"28\""
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+"ivend-image/statusunselect.gif\" WIDTH=\"186\" HEIGHT=\"28\""
 " BORDER=\"0\" ALT=\"/        Status        \\\"></A></TD>\n"
-"<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
-"</TR>\n"
+"<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n</TR>\n"
 "<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 "Global Variables</FONT><P>\n"
 "<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/global/save\">\n"
@@ -853,14 +855,20 @@ save_status=0;	// we need to save.
 "<TD>Generate Store Index?<BR><FONT SIZE=0>Should iVend create an index of all stores?</FONT></TD>\n"
 "<TD><select NAME=\"create_index\"><OPTION";
 
-if(catch(config->global->create_index) ||
-config->global->create_index=="yes")
+if(getglobalvar("create_index")=="yes")
+retval+=" SELECTED>yes<OPTION>no</SELECT>\n";
+else retval+=">yes<OPTION SELECTED>no</SELECT>\n";
+retval+="</TD></TR>\n"
+"<tr>"
+"<TD>Move only store up 1 level?<BR><FONT SIZE=0>Should iVend move the only store to the iVend root?</FONT></TD>\n"
+"<TD><select NAME=\"move_onestore\"><OPTION";
+
+if(getglobalvar("move_onestore")=="yes")
 retval+=" SELECTED>yes<OPTION>no</SELECT>\n";
 else retval+=">yes<OPTION SELECTED>no</SELECT>\n";
 retval+="</TD></TR>\n"
 "<TR><TD><INPUT TYPE=SUBMIT VALUE=\" Update Variables \"></TD><TD>&nbsp;</TD></TR>\n" 
-"</TABLE></FORM>\n"
-"</TD></TR>";
+"</TABLE></FORM>\n</TD></TR>";
 		break;
 		
 		}
@@ -872,23 +880,23 @@ retval+="</TD></TR>\n"
 		
 		retval+=
 "<TR HEIGHT=\"28\">\n"
-"	<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A HREF=\""+query("mountpoint")+"config/configs\"><IMG SRC=\""+query("mountpoint")+"ivend-image/configurationsselect.gif\" "
+"<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A HREF=\""+query("mountpoint")+"config/configs\"><IMG SRC=\""+query("mountpoint")+"ivend-image/configurationsselect.gif\" "
  "WIDTH=\"186\" HEIGHT=\"28\"" 
 " BORDER=\"0\" ALT=\"/  Configurations  \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\"><A HREF=\""+query("mountpoint")+"config/global\"><IMG SRC=\""+query("mountpoint")+"ivend-image/globalunselect.gif\" WIDTH=\"186\" "
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\"><A HREF=\""+query("mountpoint")+"config/global\"><IMG SRC=\""+query("mountpoint")+"ivend-image/globalunselect.gif\" WIDTH=\"186\" "
 " HEIGHT=\"28\" BORDER=\"0\" ALT=\"/ Global Variables \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+"ivend-image/statusunselect.gif\" WIDTH=\"186\" "
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+"ivend-image/statusunselect.gif\" WIDTH=\"186\" "
 " HEIGHT=\"28\" BORDER=\"0\" ALT=\"/        Status        \\\"></A></TD>\n"
-"	<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
 "</TR>\n"
 "<TR>\n"
-"	<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n";
+"<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n";
 
 		
-		if(request[1]=="new"){
+		if(request[0]=="new"){
 			
 			if(id->variables->config && !config[id->variables->config]){
 			
@@ -923,7 +931,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 		
 		
 		
-		else if(catch(request[2])){		// Haven't specified a configuration yet, so list 'em all.
+		else if(catch(request[1])){		// Haven't specified a configuration yet, so list 'em all.
 		
 			retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 				"All Configurations</FONT><P>\n";
@@ -932,8 +940,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			
 			for(int i=0; i<sizeof(all_configs); i++){
 			
-				if(all_configs[i]=="global") continue;		// Don't list global configs
-				else retval+="<LI><FONT SIZE=+1 FACE=\"helvetica,arial\"><A HREF=\""+query("mountpoint")+"config/configs/"+all_configs[i]+"\">"
+				retval+="<LI><FONT SIZE=+1 FACE=\"helvetica,arial\"><A HREF=\""+query("mountpoint")+"config/configs/"+all_configs[i]+"\">"
 					+config[all_configs[i]]->name+"</A></FONT>\n";
 			
 				}
@@ -952,14 +959,14 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	else {		// OK, we know what we have in mind...
 
 			if(id->variables->config_delete=="1") {
-perror("DELETING " + request[2] + "\n");
-				config=m_delete(config,request[2]);
+perror("DELETING " + request[1] + "\n");
+				config=m_delete(config,request[1]);
 				save_status=0;
 				return http_redirect(query("mountpoint")+"config/configs?"+time(),id);				
 
 				}			
 
-			else if(!catch(request[3]) && request[3]=="config_modify") {
+			else if(!catch(request[2]) && request[2]=="config_modify") {
 				array(string) variables= (indices(id->variables)- ({"config_modify"}));
                                 for(int i=0; i<sizeof(variables); i++){
  
@@ -968,7 +975,7 @@ perror("DELETING " + request[2] + "\n");
                                         }
  
                                 save_status=0;   
-                                return http_redirect(query("mountpoint")+"config/configs/"+request[2]+"?"+time(),id);
+                                return http_redirect(query("mountpoint")+"config/configs/"+request[1]+"?"+time(),id);
 
 
 				}
@@ -976,16 +983,17 @@ perror("DELETING " + request[2] + "\n");
 			else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 			"<a href=\""+
 			query("mountpoint")+
-			"/"+request[2]+"\">"
-			+config[request[2]]->name+"</a></FONT><P>\n"
-			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[2]+"/config_modify\">\n"
+			"/"+request[1]+"\">"
+			+config[request[1]]->name+"</a></FONT><P>\n"
+			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[1]+"/config_modify\">\n"
 			"<TABLE>"
-			+(c->genform(config[request[2]],query("lang"),
+			+(c->genform(config[request[1]],query("lang"),
 			  query("root")+"/modules")
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
 			"<p>"
-			"<A HREF=\""+ query("mountpoint") +"config/configs/"+ request[2]+"?config_delete=1\">Delete Configuration</A>"
+			"<A HREF=\""+ query("mountpoint")
++"config/configs/"+ request[1]+"?config_delete=1\">Delete Configuration</A>"
 			"</FORM>"
 			"</TD></TR>";
 			
@@ -1035,17 +1043,9 @@ retval+="<title>iVend Store Orders</title>"
   "<font face=helvetica,arial size=+1>"
   "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
 
-if(! objectp(modules[id->misc->ivend->config->order_module])) 
-	load_ivmodule(id, "order_module");
 
-  object s=Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-
- mixed d=modules[id->misc->ivend->config->order_module]->show_orders(id, s);
+ mixed d=modules[id->misc->ivend->config->order_module]->show_orders(id, 
+   id->misc->ivend->db);
  if(stringp(d))
  retval+=d;
 
@@ -1072,10 +1072,8 @@ retval+="<title>iVend Shipping Administration</title>"
   +id->misc->ivend->config->name+
   " Shipping</gtext><p>"
   "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./shipping>Shipping</a><p>\n";
-
-if(! objectp(modules[id->misc->ivend->config->shipping])) 
-	load_ivmodule(id, "shipping_module");
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
+  "href=shipping>Shipping</a><p>\n";
 
 
  mixed d=modules[id->misc->ivend->config->shipping_module]->shipping_admin(id);
@@ -1111,7 +1109,7 @@ retval+="<title>iVend Store Administration</title>"
   +id->misc->ivend->config->name+
   " Administration</gtext><p>"
   "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a>\n";
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
 
 switch(id->variables->mode){
 
@@ -1262,10 +1260,11 @@ return http_string_answer(
 
 mixed get_image(string filename, object id){
 
+// perror("** "+config[id->misc->ivend->st]->root+filename+"\n\n");
+
 string data=Stdio.read_bytes(
-	config[id->misc->ivend->st]->root+"/images/"+filename);
-id->realfile=config[id->misc->ivend->st]->root+"/images/"+filename;
-perror("** "+filename+"\n\n");
+	config[id->misc->ivend->st]->root+"/"+filename);
+id->realfile=config[id->misc->ivend->st]->root+"/"+filename;
 
 return http_string_answer(data,
 	id->conf->type_from_filename(id->realfile));
@@ -1278,130 +1277,137 @@ retval=Stdio.read_bytes(query("datadir")+"index.html");
 return retval;
 }
 
-mixed find_file(string file_name, object id){
-	id->misc["ivend"]=([]);
-	id->misc["ivendstatus"]="";
-	string retval;
-   	array(string) request=explode(file_name,"/");
-	string restofrequest=request[2..]*"/";
+mixed getsessionid(object id) {
 
+  return id->misc->ivend->SESSIONID;
 
-if(file_name==""){
-	if(!id->variables->SESSIONID) 
-	  id->misc->ivend->SESSIONID=
-        	(hash((string)time(1)+(string)random(32201)));	
-	else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
-
-
-	  if(!catch(config->global->create_index) 
-		&& config->global->create_index=="yes")
-	    retval=create_index(id);
-	  else 
-		retval="You must enter through a store!\n";
-
-	}
-
-else {
-
-	switch(request[0]){
-	
-		case "config":
-		return configuration_interface(request, id);
-		break;
-		
-		case "ivend-image":
-		return ivend_image(request, id);
-		break;
-		
-		default:
-		break;
-	
-	}
-	
-	if(!id->variables->SESSIONID) 
-	  id->misc->ivend->SESSIONID=
-		"S"+(string)hash((string)time(1)+(string)random(32201));	
-	else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
-
-	m_delete(id->variables,"SESSIONID");
-
-	if(request[0] && catch(request[1])) 
-		return http_redirect(query("mountpoint")+
-	       	     file_name+"/?SESSIONID="+
-	         id->misc->ivend->SESSIONID);
-
-	if(config[request[0]])
-	  {
-           if(!config[request[0]]) 
-	     return http_string_answer("NO SUCH STORE!");
-
-	    if(catch(request[1]))
-	      request+=({""});
-
-// load id->misc->ivend with the good stuff...   
-  id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
-
-  id->misc->ivend->s=Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-
-
-	      switch(request[1]) {
-		    case "":
-	        case "index.html":
-		  retval=(handle_page("index.html", id));
-	          break;
-		case "cart":
-		  retval=(handle_cart(request[0],id));
-		  break;
-		case "checkout":
-		  retval=(handle_checkout(id));
-		  break;
-		case "images":
-		  return get_image(restofrequest, id);
-		  break;
-		case "admin":
-		  perror("ADMIN!\n");
-		  retval=admin_handler(restofrequest, id);
-		  break;
-		case "orders":
-		  perror("ORDERS!\n");
-		  retval=order_handler(restofrequest, id);
-		  break;
-		case "shipping":
-		  perror("SHIPPING!\n");
-		  retval=shipping_handler(restofrequest, id);
-		  break;
-		default:
-		  perror("DEFAULT!\n");
-		  retval=(handle_page(request[1], id));
-
-	    }
-	}
 }
-	//
-	// send it all out the door: 
-	//
 
-#ifdef MODULE_DEBUG	
-/*
-if(stringp(retval))
-	retval+=sprintf("<pre>ID:%O\n</pre>\n",
-                 mkmapping(indices(id), values(id)));
-*/
-#endif
+void handle_sessionid(object id) {
 
-if(stringp(retval)){
+
+  if(!id->variables->SESSIONID) 
+    id->misc->ivend->SESSIONID=
+      "S"+(string)hash((string)time(1)+(string)random(32201));	
+    else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
+
+  m_delete(id->variables,"SESSIONID");
+
+}
+
+mixed return_data(mixed retval, object id){
+
+  if(stringp(retval)){
 
 	retval=parse_rxml(retval, id);
    	return http_string_answer(retval,
 		id->conf->type_from_filename(id->realfile|| "index.html"));
 	}
 
-else return retval;
+  else return retval;
+
+}
+
+
+mixed find_file(string file_name, object id){
+
+  id->misc["ivend"]=([]);
+  id->misc["ivendstatus"]="";
+  string retval;
+
+  array(string) request=(file_name / "/") - ({""});
+
+
+  if(sizeof(config)==1 && getglobalvar("move_onestore")=="yes") 
+    id->misc->ivend->st=indices(config)[0];
+  else  if(sizeof(request)==0 && getglobalvar("create_index")=="yes")
+    retval=create_index(id);
+  else if(sizeof(request)==0)
+    retval="you must enter through a store!\n";
+  else {
+    id->misc->ivend->st=request[0];
+    request=request[1..];
+    }
+
+  switch(id->misc->ivend->st){
+	
+    case "config":
+    return configuration_interface(request, id);
+    break;
+		
+    case "ivend-image":
+    return ivend_image(request, id);
+    break;
+		
+    default:
+
+    handle_sessionid(id);
+    break;
+	
+    }
+	
+  if(retval) return return_data(retval, id);
+
+  if(!config[id->misc->ivend->st]) 
+    return return_data("NO SUCH STORE!", id);
+
+  if(catch(request[0]))
+    request+=({""});
+
+// load id->misc->ivend with the good stuff...
+  id->misc->ivend->config=config[id->misc->ivend->st];	
+
+
+  switch(request[0]) {
+    case "images":
+    break;
+    default:
+    id->misc->ivend->db=iVend.db(
+      id->misc->ivend->config->dbhost,
+      id->misc->ivend->config->db,
+      id->misc->ivend->config->dblogin,
+      id->misc->ivend->config->dbpassword
+    );
+
+  }
+
+// perror("REQUEST[0]: " + request[0] + "\n");
+
+  switch(request[0]) {
+    case "":
+      return http_redirect(id->not_query +
+        "/index.html?SESSIONID="+getsessionid(id), id);
+    case "index.html":
+    retval=(handle_page("index.html", id));
+    break;
+    case "cart":
+    retval=(handle_cart(id->misc->ivend->st,id));
+    break;
+    case "checkout":
+    retval=(handle_checkout(id));
+    break;
+    case "images":
+    return get_image(request*"/", id);
+    break;
+    case "admin":
+    perror("ADMIN!\n");
+    retval=admin_handler(request*"/", id);
+    break;
+    case "orders":
+    perror("ORDERS!\n");
+    retval=order_handler(request*"/", id);
+    break;
+    case "shipping":
+    perror("SHIPPING!\n");
+    retval=shipping_handler(request*"/", id);
+    break;
+    default:
+    perror("DEFAULT!\n");
+    retval=(handle_page(request*"/", id));
+
+    }
+
+  return return_data(retval, id);
 
 }
 
@@ -1427,12 +1433,6 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
     ]);
 
 if(id->misc->ivend->st){
-
-if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
-	load_ivmodule(id, "checkout_module");
-
-if(! objectp(modules[id->misc->ivend->config->shipping_module])) 
-	load_ivmodule(id, "shipping_module");
 
 if(functionp( modules[id->misc->ivend->config->checkout_module
     ]->query_container_callers))

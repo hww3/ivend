@@ -18,7 +18,7 @@ void load_lineitems(object id){
 
 id->misc->ivend->lineitems=([]);
 
-  array r=id->misc->ivend->s->query("SELECT lineitem,value from lineitems "
+  array r=id->misc->ivend->db->query("SELECT lineitem,value from lineitems "
     "WHERE orderid='" + (id->misc->ivend->orderid ||
 	id->misc->ivend->SESSIONID) + "'");
 
@@ -81,22 +81,22 @@ string tag_confirmorder(string tag_name, mapping args,
 
 // reserve the next order for me please...
 
-array r=  id->misc->ivend->s->query("SELECT shipping_types.type, "
+array r=  id->misc->ivend->db->query("SELECT shipping_types.type, "
 "lineitems.extension FROM shipping_types,lineitems WHERE "
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
 "lineitems.lineitem='shipping' "
 "and shipping_types.name=lineitems.extension");
 
-  id->misc->ivend->s->query("INSERT INTO orders VALUES(NULL,0,NULL," +
+  id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0,NULL," +
     r[0]->type + ",NOW(),NULL,NOW())");
   id->misc->ivend->orderid=
-    id->misc->ivend->s->master_sql->insert_id(); // mysql only
+    id->misc->ivend->db->master_sql->insert_id(); // mysql only
 
 
 
 // get the order from sessions
 
-  array r=id->misc->ivend->s->query(
+  array r=id->misc->ivend->db->query(
 	"SELECT sessions.*,sessions.price, products.taxable from sessions,products  WHERE sessionid='"
 	+id->misc->ivend->SESSIONID+ "' and products.id=sessions.id");
 
@@ -110,11 +110,11 @@ mixed error= catch{  for(int i=0; i<sizeof(r); i++){
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
     query=iVend.db()->generate_query(r[i], "orderdata", id->misc->ivend->s);
-    id->misc->ivend->s->query(query);
+    id->misc->ivend->db->query(query);
   }
 } ;
 if(!error)
-id->misc->ivend->s->query(
+id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
@@ -123,15 +123,15 @@ else {
 }
 // update customer info and payment info with new orderid
     
-  id->misc->ivend->s->query("UPDATE customer_info SET orderid='"+
+  id->misc->ivend->db->query("UPDATE customer_info SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-  id->misc->ivend->s->query("UPDATE payment_info SET orderid='"+
+  id->misc->ivend->db->query("UPDATE payment_info SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-  id->misc->ivend->s->query("UPDATE lineitems SET orderid='" +
+  id->misc->ivend->db->query("UPDATE lineitems SET orderid='" +
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
@@ -143,7 +143,7 @@ if(note) {
 
   string subject,sender, recipient;
   sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
-  array r=id->misc->ivend->s->query("SELECT " + recipient + " from customer_info WHERE "
+  array r=id->misc->ivend->db->query("SELECT " + recipient + " from customer_info WHERE "
 		   "orderid='"+id->misc->ivend->orderid+"' AND "
 		   "type=0");
   recipient=r[0][recipient];
@@ -237,7 +237,7 @@ locality=(args->locality||"state");
 query=
 "select " + locality + " from customer_info where orderid='"+
 	id->misc->ivend->SESSIONID +"'";
-r=id->misc->ivend->s->query(query);
+r=id->misc->ivend->db->query(query);
 
 if(!r) perror("iVend: ERROR locating customerinfo!\n");
 
@@ -247,7 +247,7 @@ else {
   "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
 
 
-  r=id->misc->ivend->s->query(query);
+  r=id->misc->ivend->db->query(query);
   if(sizeof(r)==1) {
     if(id->misc->ivend->config->shipping_taxable=="Yes")
       totaltax=(float)r[0]->taxrate *
@@ -267,17 +267,11 @@ return ("ERROR");
 
 string tag_generateform(string tag_name, mapping args,
 		     object id, mapping defines) {
- object s=(object)iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
 
 string retval="";
 if(!args->table) return "";
 
- retval+=s->generate_form_from_db(args->table,
+ retval+=id->misc->ivend->db->generate_form_from_db(args->table,
     ((
  
       (( (args->exclude||" ")-" ")/",")
@@ -298,13 +292,6 @@ string tag_addentry(string tag_name, mapping args,
 
 if(id->misc->ivend->error) return "";
 if((int)id->variables->shipsame==1) return "";
-
- object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
 
 mixed j;
 
@@ -329,12 +316,12 @@ array e=(args->encrypt-" ")/",";
     Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
  }
 
- j=s->addentry(encryptedid);
+ j=id->misc->ivend->db->addentry(encryptedid);
 
  }
 
 else
-  j=s->addentry(id);
+  j=id->misc->ivend->db->addentry(id);
     
 if(j!=1) id->misc->ivend->error+= "<font size=+2>Error!</font>\n"
 	   "<br><b>Please correct the following before continuing:<p></b><ul>"
@@ -399,13 +386,6 @@ return sprintf("%.2f", subtotal);
 string tag_grandtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 
- object s=(object)Sql.sql(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-
 
 float grandtotal=0.00;
 string item;
@@ -413,7 +393,8 @@ string item;
    float i= id->misc->ivend->lineitems[item];
    grandtotal+=i;
    if(item=="shipping");
-   else s->query("INSERT INTO lineitems VALUES('"+ id->variables->orderid + 
+   else id->misc->ivend->db->query("INSERT INTO lineitems VALUES('"+
+id->variables->orderid + 
 	"','" + item + "',"+ i + ",NULL)");
   }
 
@@ -440,7 +421,7 @@ string query="SELECT sessions.quantity, "
   "sessions,products WHERE products.id=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
 
-array r=s->query(query);
+array r=id->misc->ivend->db->query(query);
  for(int i=0; i < sizeof(r); i++) {
    retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n"
      "<td>"+ r[i]->name + "</td>\n"

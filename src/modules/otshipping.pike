@@ -4,6 +4,18 @@ constant module_type = "shipping";
 mapping query_tag_callers2();
 mapping query_container_callers2();    
 
+void start(mapping config){
+
+return;
+
+}
+
+void stop(mapping config){
+
+return;
+
+}
+
 mixed shipping_admin(object id){
 
 return "Method: Shipping Cost Based on Order Total";

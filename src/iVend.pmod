@@ -42,9 +42,8 @@ string desc;
 string type;
 program p;
 foreach(d,name){
- perror("MODULE: "+name+"\n");
-if(catch(p=compile_file(moddir+"/"+name)))
-  { perror("error: "+name+"\n");
+  if(catch(p=compile_file(moddir+"/"+name)))
+  { perror("iVend error: can't compile "+name+"\n");
   continue;
   }
   desc=p()->module_name;
@@ -59,7 +58,6 @@ return m;
 string|int genform(void|mapping config, void|string lang, void|string moddir){
 if(!lang) lang="en";
 if(!config) config=([]);
-perror("language: "+lang+"\n");
 string retval="";
 if(sizeof(config_setup)<1){perror("config setup < 1\n"); return 0;}
 array vars=sort(indices(config_setup));
@@ -140,7 +138,11 @@ return;
 
 
 class db {
-object s;	//  sql db connection...
+
+inherit Sql.sql;
+
+// object s;	//  sql db connection...
+
 string host;
 string db;
 string user;
@@ -163,7 +165,7 @@ string retval;
 string query="SELECT id,name FROM " + type + "s WHERE name like '%" 
   + id + "%' or id like '%" + id + "%' group by id";
 
-array r=s->query(query);
+array r=::query(query);
 
 if(sizeof(r)==0) return 0; 
 
@@ -182,7 +184,7 @@ return retval;
 
 int|string addentry(object id, string referrer){
 string errors="";
-array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
+array(mapping(string:mixed)) r=::list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 	r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -221,7 +223,7 @@ Stdio.write_file(id->misc->ivend->config->root+"/images/"+
   }
 query=query[0..sizeof(query)-2]+")";
 if (errors!="") return errors;
-s->query(query);
+::query(query);
  if(id->variables->jointable) {
  array jointable=id->variables[id->variables->jointable]/"\000";
  for(int i=0; i<sizeof(jointable); i++){
@@ -229,7 +231,7 @@ s->query(query);
       + id->variables->joindest +" VALUES('"+
 	jointable[i]+ "','"
         +id->variables->id+"')";
-    s->query(query);
+    ::query(query);
     }
  }
 return 1;
@@ -238,7 +240,7 @@ return 1;
 
 string generate_query(mapping data, string table, object s){
 
-array(mapping(string:mixed)) r=s->list_fields(table);
+array(mapping(string:mixed)) r=::list_fields(table);
 string query="INSERT INTO "+table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
@@ -260,7 +262,7 @@ return query;
 string|int gentable(string table, string return_page, 
     string|void jointable,string|void joindest , object|void id){
 string retval="";
-array(mapping(string:mixed)) r=s->list_fields(table);
+array(mapping(string:mixed)) r=::list_fields(table);
 
 
 retval+="<FORM ACTION=\""+return_page+"\" ENCTYPE=multipart/"
@@ -387,7 +389,7 @@ retval+="</TD>\n"
 
 if(jointable){
 
-  array j=s->query("SELECT name,id FROM "+jointable);
+  array j=::query("SELECT name,id FROM "+jointable);
   retval+="<tr><td valign=top align=right><font "
     "face=helvetica,arial size=-1>"+jointable+"</td><td>"
     "<select multiple size=5 name="+jointable+">\n";
@@ -418,7 +420,7 @@ string retval="";
 
 if(type=="group"){
   query="SELECT * FROM groups WHERE id='"+id+"'";
-  array j=s->query(query);
+  array j=::query(query);
   if(sizeof(j)!=1) return 0;
   else {
     retval+= GROUP + j[0]->id+" ( "+j[0]->name+" ) " + IS_LINKED +
@@ -426,7 +428,7 @@ if(type=="group"){
     query="SELECT product_groups.product_id,products.name FROM "
 	"products,product_groups WHERE product_groups.group_id='"
         +id+"' AND products.id=product_groups.product_id";
-    j=s->query(query);
+    j=::query(query);
     if(sizeof(j)==0) retval+="<blockquote>"+ NO_PRODUCTS +"</blockquote>";
     else {
       retval+="<blockquote>\n";
@@ -438,7 +440,7 @@ if(type=="group"){
 
 else if(type=="product") {
   query="SELECT id,name FROM products WHERE id='"+id+"'";
-  array j=s->query(query);
+  array j=::query(query);
   if(sizeof(j)!=1) return 0;
   else retval+="<blockquote>"+j[0]->id+" ( "+j[0]->name+" )<br>\n";
   }
@@ -454,29 +456,22 @@ return DELETE_UNSUCCESSFUL+".\n";
 
 if(type=="group") {
   query="DELETE FROM groups WHERE id='"+id+"'";
-  s->query(query);
+  ::query(query);
   query="DELETE FROM product_groups WHERE group_id='"+id+"'";
-  s->query(query);
+  ::query(query);
   }
 
 else if(type="product") {
   query="DELETE FROM products WHERE id='"+id+"'";
-  s->query(query);
+  ::query(query);
   query="DELETE FROM product_groups WHERE product_id='"+id+"'";
-  s->query(query);
+  ::query(query);
   }
 return capitalize(type)+" "+id+" deleted successfully.\n";
 
 }
 
 
-
-void create(string|void host, string|void db, string|void user, 
-string|void password){
-if(host && db && user)
-s=Sql.sql(host,db,user,password);
-return;
-}
 
 
 string generate_form_from_db(string table, array|void exclude,
@@ -487,7 +482,7 @@ string retval="";
 
 if(!table) return "";
 
-array(mapping(string:mixed)) r=s->list_fields(table);
+array(mapping(string:mixed)) r=::list_fields(table);
 
 for(int i=0; i<sizeof(exclude); i++)
   exclude[i]=lower_case(exclude[i]);

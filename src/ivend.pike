@@ -954,7 +954,7 @@ int i=0;
   foreach(indices(rows), cnt) {
 
 
-  retval +="<tr bgcolor=" +  ((args->fancy && (i/m)%2)?listbgcolor:listbgcolor2) +">\n";
+  retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
     foreach(indices(rows[cnt]), cnt2) {
       retval += sprintf("<td nowrap><font color=%s>%s&nbsp;&nbsp;</td>\n",
 			listfontcolor, (string)rows[cnt][cnt2]);

@@ -1,3 +1,7 @@
+<define container="cartheader"><th bgcolor=maroon><font
+face=helvetica,arial><contents></font></th></define>
+<define container="cartcell"><td bgcolor=white align=&align;><font
+face=helvetica,arial><contents></font></td></define>
 <define tag="storeurl">__STOREURL__</define>
 <define tag="checkouturl">_CHECKOUTURL__</define>
 <define tag="orderemail">__ORDEREMAIL__</define>

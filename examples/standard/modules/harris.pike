@@ -15,9 +15,13 @@ string retval="";
     id->misc->ivend->config->user,
     id->misc->ivend->config->password
     );
-
+/*
 retval+="<form action=.><table>\n";
 retval+=s->generate_form_from_db("customer_info", ({"id","updated"}));
 retval+="</table></form>\n";
+return retval;
+*/
+
+retval+="<icart fields=\"qualifier\"></icart>";
 return retval;
 }

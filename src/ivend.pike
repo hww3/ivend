@@ -43,7 +43,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.86 1998-07-31 19:42:08 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.87 1998-08-03 03:47:18 hww3 Exp $";
 
 array register_module(){
 
@@ -145,6 +145,8 @@ if(catch(perror(query("datadir")))) return;
   
   foreach(indices(config), string c)
     load_modules(config[c]->config);
+
+  call_out(background_session_cleaner, 900);
 
   return;	
 
@@ -735,20 +737,55 @@ else return 1;
 // Start of admin functions
 
 
-int clean_sessions(object id){
+int do_clean_sessions(object db){
 
 string query="SELECT sessionid FROM sessions WHERE timeout < "+time(0);
-array r=id->misc->ivend->db->query(query);
+array r=db->query(query);
 foreach(r,mapping record){
   foreach(({"customer_info","payment_info","orderdata","lineitems"}),
     string table)
-   id->misc->ivend->db->query("DELETE FROM " + table + " WHERE orderid='"
+   db->query("DELETE FROM " + table + " WHERE orderid='"
 	+ record->sessionid + "'");
 
 }
 string query="DELETE FROM sessions WHERE timeout < "+time(0);
-id->misc->ivend->db->query(query);
+
+db->query(query);
+
 return sizeof(r);
+}
+
+int clean_sessions(object id){
+
+int numsessions=do_clean_sessions(id->misc->ivend->db);
+return numsessions;
+
+}
+
+void background_session_cleaner(){
+
+object db;
+mixed err;
+
+foreach(indices(config), string st){
+  mapping store=config[st];
+  err=catch(db=iVend.db(
+    store->dbhost,
+    store->db,
+    store->dblogin,
+    store->dbpassword
+    ));
+ if(err)
+   perror("iVend: BackgroundSessionCleaner failed."
+	+ describe_backtrace(err) + "\n");    
+    
+ else { 
+    int numsessions=do_clean_sessions(db);
+    perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
+       " sessions from database " + store->db + ".\n");
+    }
+  }
+call_out(background_session_cleaner, 900);
 }
 
 

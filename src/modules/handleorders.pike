@@ -1,3 +1,6 @@
+constant module_name = "Stock Order Handler";
+constant module_type = "order";
+
 mixed show_orders(object id){
 
 // string username=id->auth[1];
@@ -16,7 +19,11 @@ else if(id->variables->id) {
   array r=s->query("SELECT * FROM display_orders WHERE id="+id->variables->id);
   if(sizeof(r)!=1) retval="Error finding the requested record.\n"
 	"<a href=checkads.pike>Click here to return.</a>";	
-  else { retval="ORDER DETAILS:\n\n"
+  else {
+
+	string key=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	  id->misc->ivend->config->keybase+".priv");	
+	 retval="ORDER DETAILS:\n\n"
 	"Date: "+r[0]->added+"\n"
 	"From:\n\n"
 	"      "+r[0]->name+"\n"
@@ -27,7 +34,7 @@ else if(id->variables->id) {
 	"\n\n"
 	"Payment:\n\n"
 	"      "+r[0]->method+"\n"
-	"      "+cc_decrypt(r[0]->account)+"\n"
+	"      "+Commerce.Security.decrypt(r[0]->account, key)+"\n"
 	"      "+(r[0]->expiration ||"")+"\n\n"
 	"Display Ad Text:\n\n"
 	+r[0]->display_text+

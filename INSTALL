@@ -1,0 +1,7 @@
+INSTALL
+
+make symbolic links for the following files:
+
+iVend.pmod.pike
+Commerce.pmod.pike
+messages.h

@@ -35,6 +35,14 @@ $module_type=checkout
 $endescription=Name of Checkout Module to Use.
 $sidescription=Name of Checkout Module to Use (slovenian).
 
+$varname=order_module
+$enname=Order Module
+$siname=Order Module
+$type=module
+$module_type=order
+$endescription=Name of Order Module to Use.
+$sidescription=Name of Order Module to Use (slovenian).
+
 $varname=dbpassword
 $enname=DB Password
 $siname=DB Password

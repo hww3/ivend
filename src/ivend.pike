@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.30 1998-03-05 02:48:47 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.31 1998-03-05 03:18:08 hww3 Exp $";
 
 /*
  *
@@ -212,13 +212,13 @@ if(id->variables->update) {
     for(int i=0; i< (int)id->variables->s; i++){
 
     if((int)id->variables["q"+(string)i]==0)
-	s->query("DELETE FROM sessions WHERE SESSIONID="
+	s->query("DELETE FROM sessions WHERE SESSIONID='"
 	+id->misc->ivend->SESSIONID+
-	  " AND id='"+id->variables["p"+(string)i]+"' AND series="+
+	  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
 	  id->variables["s"+(string)i] );
     else
         s->query("UPDATE sessions SET quantity="+id->variables["q"+(string)i]+
-	  " WHERE SESSIONID="+id->misc->ivend->SESSIONID+" AND id='"+
+	  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
 	  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
 
     }
@@ -236,8 +236,8 @@ if(id->variables->update) {
     if(!args->fields) return "Incomplete cart configuration!";
     array r= s->query("SELECT sessions.id,series,quantity,name,price,"+ 
 	args->fields+" FROM sessions,products "
-      "WHERE sessions.SESSIONID="
-	+id->misc->ivend->SESSIONID+" AND sessions.id=products.id");
+      "WHERE sessions.SESSIONID='"
+	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
     if (sizeof(r)==0) return "Your Cart is Empty.\n";
     retval+="<tr><th bgcolor=maroon><font color=white>Code</th>\n"
 	"<th bgcolor=maroon><font color=white>Product</th>\n";
@@ -628,7 +628,10 @@ switch(page){
   default:
 
     if(retval=Stdio.read_bytes(id->misc->ivend->config->root+
-	    "/"+lower_case(page))) break;
+	    "/"+page )) { 
+	id->realfile=id->misc->ivend->config->root+"/"+page;
+	break;
+	}
     else retval=find_page(page, id);
   }
   if (!retval) return handle_error("Unable to find product "+page, id);
@@ -641,7 +644,8 @@ mapping ivend_image(array(string) request, object id){
 	string image;
 	image=read_file(query("datadir")+"images/"+request[1]);
 
-	return http_string_answer(image,"image/gif");
+	return http_string_answer(image,
+		id->conf->type_from_filename(request[1]));
 
 }
 
@@ -861,7 +865,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	(c->genform(
 	0,
 	query("lang"), 
-	query("datadir")+"/modules")
+	query("root")+"/modules")
 	  ||"Error Loading Configuration Definitions!")+
 	"</table><p><input type=submit value=\"Add New Store\"></form>"
 	"</TD></TR>";
@@ -930,7 +934,7 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[2]+"/config_modify\">\n"
 			"<TABLE>"
 			+(c->genform(config[request[2]],query("lang"),
-			  query("datadir")+"/modules")
+			  query("root")+"/modules")
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
 			"<p>"
@@ -1204,9 +1208,10 @@ else {
 #ifdef MODULE_DEBUG	
 //	retval+=dump_id(id);
 #endif
-perror("RETVAL:\n\n"+retval+"\n\n");
+// perror("RETVAL:\n\n"+retval+"\n\n");
 	retval=parse_rxml(retval, id);
-   	return http_string_answer(retval);
+   	return http_string_answer(retval,
+		id->conf->type_from_filename(id->realfile|| "index.html"));
 
 }
 

@@ -233,6 +233,10 @@ inherit "html";
     string user;
     string password;
 
+mapping keys=([]);// db keys cache
+int db_info_loaded=0;
+
+
     inherit "roxenlib";
     void create(mixed host, mixed db, mixed user, mixed password){
 
@@ -1060,6 +1064,10 @@ static inherit Thread.Mutex;
 
 class db_handler
 {
+
+mapping keys=([]);
+mapping local_settings=([]);
+
 #ifdef THREAD_SAFE
     static inherit Thread.Mutex;
 #endif
@@ -1081,6 +1089,7 @@ class db_handler
             if(err)
                 perror("Error creating db object:\n" +
                        describe_backtrace(err)+"\n");
+	    else(get_dbinfo());
         }
     }
 
@@ -1123,6 +1132,62 @@ class db_handler
         UNLOCK();
         return d;
     }
+
+void get_dbinfo(){
+perror("Getting DB Info in iVend.pmod.\n");
+    mixed err;
+    err=catch(object s=handle());
+    keys=([]); // make the entry.
+    if(err) {
+        perror("An error occurred while trying to grab a db object.\n");
+        return;
+    }
+    foreach(({"products", "groups"}), string t) {
+        array r;
+        err=catch(r=s->query("SHOW INDEX FROM " + t ));  // MySQL dependent?
+        if(err)
+            perror("iVend: Unable to show indices from " + t + ".\n");
+        if(sizeof(r)==0)
+            keys[t]="id";
+        else {
+            string primary_key;
+            foreach(r, mapping key){
+                if(key->Key_name=="PRIMARY")
+                    primary_key=key->Column_name;
+            }
+            keys[t]=primary_key;
+        }
+    }
+    if(!local_settings)
+        local_settings=([]);
+    local_settings->pricing_model=SIMPLE_PRICING;
+    array n=s->list_fields("products", "price");
+    if(sizeof(n)<1)
+        // we're doing complex pricing
+        local_settings->pricing_model=COMPLEX_PRICING;
+    array n=s->list_fields("products", "handling_charge");
+    if(sizeof(n)>0)
+        // we're doing individual handling charges
+        local_settings->handling_charge=PER_ITEM;
+    array n=s->list_fields("products", "handling_charge_aggregation");
+    if(sizeof(n)>0)
+        // we're doing aggregated handling charges
+        local_settings->handling_charge_aggregate=TRUE;
+    array n=s->list_fields("customer_info", "tax_exempt");
+    if(sizeof(n)>0)
+        // we're doing individual handling charges
+        local_settings->tax_exemption_support=TRUE;
+    foreach(dbs, object d)
+     {
+	d->keys=keys;
+	d->db_info_loaded=1;
+	d->local_settings=local_settings;
+     }
+    return;
+
+}
+
+
 }
 
 

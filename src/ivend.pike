@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.238 1999-08-16 16:51:44 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.239 1999-08-24 20:04:51 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -243,31 +243,32 @@ void register_path_handler(string c, string path, function f){
 mixed throw_fatal_error(mixed error, object id) {  
 // we don't do anything with error yet.
 
-  if(!id->misc->ivend[STORE]->had_fatal_event)
-    id->misc->ivend[STORE]->had_fatal_event=1;
-  else id->misc->ivend[STORE]->had_fatal_event ++;
+  if(!id->misc->ivend->had_fatal_event)
+    id->misc->ivend->had_fatal_event=1;
+  else id->misc->ivend->had_fatal_event ++;
 
 }
 
 mixed throw_warning(mixed error, object id) {  
 // we don't do anything with error yet.
 
-  if(!id->misc->ivend[STORE]->had_warning_event)
-    id->misc->ivend[STORE]->had_warning_event=1;
-  else id->misc->ivend[STORE]->had_warning_event ++;
+  if(!id->misc->ivend->had_warning_event)
+    id->misc->ivend->had_warning_event=1;
+  else id->misc->ivend->had_warning_event ++;
 
 }
 
 int had_fatal_error(object id){
 
-  if(id->misc->ivend[STORE]->had_fatal_event) return 1;
+  if(id->misc->ivend && id->misc->ivend->had_fatal_event)
+	return 1;
   else return 0;
 
 }
 
 int had_warning(object id){
 
-  if(id->misc->ivend[STORE]->had_warning_event) return 1;
+  if(id->misc->ivend->had_warning_event) return 1;
   else return 0;
 
 }
@@ -1891,7 +1892,7 @@ if(!intp(r)){
                          "<font face=helvetica,arial size=+1>"
                          "<a href=\"" +
                          id->misc->ivend->storeurl + "\">Storefront</a> &gt; <a href=\"" +
-                         add_pre_state(id->not_query, (<"menu=main">))+"\">Admin</a>\n";
+                         add_pre_state(id->not_query,(<"menu=main">))+"\">Admin Main Menu</a>\n";
 
 
                  if(id->prestate && sizeof(id->prestate)>0){
@@ -1924,8 +1925,10 @@ if(!intp(r)){
                      retval+="<br>";
                      if(!intp(j)){
                          destruct(DB);
-                         return retval+= "The following errors occurred:<p><li>" + (j*"<li>")
-				+"</body></html>";
+                         return retval+= "<p>The following errors occurred:<p><ul><li>" + (j*"<li>")
+				+"</ul><p>"
+	"Please return to the previous page to remedy this  "
+"situation before continuing.</body></html>";
                      }
                      else{
                          type=(id->variables->table-"s");

@@ -370,7 +370,8 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
         }
         q=q[0..sizeof(q)-2]+")";
         if (sizeof(errors)>0) return errors;
-        query(q);
+        if(catch(query(q)))
+		return ({sqlconn::error() || "You have provided invalid information"});
         if(id->variables->jointable) {
             array jointable;
             catch(jointable=id->variables[id->variables->jointable]/"\000");
@@ -381,7 +382,8 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
                       jointable[i]+ "','"
 
 +id->variables[lower_case(KEYS[id->variables->table])]+"')";
-                    query(q);
+                    if(catch(query(q)))
+			return ({sqlconn::error() || "You have provided invalid data."});
                 }
         }
         return 1;

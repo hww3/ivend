@@ -4,8 +4,18 @@ constant module_type = "shipping";
 mapping query_tag_callers2();
 mapping query_container_callers2();    
 
+int initialized;
+
 void start(mapping config){
 
+initialized=0;
+
+object db=iVend.db(config->dbhost, config->db,
+  config->dbuser, config->bpassword);
+
+if((sizeof(db->list_tables("shipping_types")))==1 && 
+  (sizeof(db->list_tables("shipping_ot")))==1)
+  initialized=1;
 return;
 
 }
@@ -16,9 +26,75 @@ return;
 
 }
 
-mixed shipping_admin(object id){
+int initialize_db(object id) {
 
-return "Method: Shipping Cost Based on Order Total";
+  perror("initializing order total shipping module!\n");
+catch(id->misc->ivend->db->query("drop table shipping_ot"));
+catch(id->misc->ivend->db->query(
+  "CREATE TABLE shipping_ot ("
+  " type int(11) DEFAULT '0' NOT NULL,"
+  " charge float(5,2) DEFAULT '0.00' NOT NULL,"
+  " min float(5,2) DEFAULT '0.00' NOT NULL, "
+  " max float(5,2) DEFAULT '0.00'"
+  " NOT NULL ) "));
+
+if(sizeof(id->misc->ivend->db->list_tables("shipping_types"))!=1)
+  catch(id->misc->ivend->db->query("CREATE TABLE shipping_types ("
+  "  type int(11) DEFAULT '0' NOT NULL auto_increment,"
+  "  name varchar(32) DEFAULT '' NOT NULL,"
+  "  description blob,"
+  "  PRIMARY KEY (type)"
+  ") "));
+return 0;
+
+}
+
+string addtype(object id){
+
+  string retval="<table>\n"+
+  id->misc->ivend->db->gentable("shipping_types","shipping",0,id);
+  return retval;
+
+}
+
+mixed shipping_admin(object id){
+string retval="";
+if(!initialized && id->variables->initialize) {
+  initialize_db(id);
+  start(id->misc->ivend->config);
+  }
+if(!initialized)
+  retval+="This module has not been initialized yet.<br>"
+    "Click <a href=shipping?initialize=goodtogo>Here</a> to do this.<p>\n";
+else {
+
+  if(id->variables->mode=="doadd") {
+
+    mixed j=id->misc->ivend->db->addentry(id,id->referrer);
+    retval+="<br>";
+    if(stringp(j))
+      return retval+= "The following errors occurred:<p>" + j;
+
+    string type=(id->variables->table/"_"*" ");
+    retval+=type+" Added Successfully.<br>\n";
+    }
+
+  if(id->variables->addtype)
+    retval+=addtype(id);
+  else {
+    retval+="<ul>\n<li>Shipping Types\n<ul>";
+
+    array r=id->misc->ivend->db->query("SELECT * FROM shipping_types");
+    foreach(r, mapping row)
+      retval+="<li><a href=shipping?viewtype="+row->type+ ">" + row->name
+        +"</a>\n<font size=2>"
+        "<dd>"+ row->description+"</font>\n\n";
+    retval+="</ul><font size=2><a href=shipping?addtype=1>"
+      "Add New Type</font></a>\n</ul>\n";
+    }
+  }
+
+return "Method: Shipping Cost Based on Order Total\n<br>" + retval;
 
 }
 

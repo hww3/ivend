@@ -80,15 +80,16 @@ string tag_confirmorder(string tag_name, mapping args,
 
 
 // reserve the next order for me please...
-
-array r=  id->misc->ivend->db->query("SELECT shipping_types.type, "
+string type;
+catch(type=id->misc->ivend->db->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
 "lineitems.lineitem='shipping' "
-"and shipping_types.name=lineitems.extension");
+"and shipping_types.name=lineitems.extension"));
+if(!type) type=0;
 
   id->misc->ivend->db->query("INSERT INTO orders VALUES(NULL,0,NULL," +
-    r[0]->type + ",NOW(),NULL,NOW())");
+    type + ",NOW(),NULL,NOW())");
   id->misc->ivend->orderid=
     id->misc->ivend->db->master_sql->insert_id(); // mysql only
 
@@ -102,14 +103,15 @@ array r=  id->misc->ivend->db->query("SELECT shipping_types.type, "
 
 // replace sessionid with orderid
 string query;
-
-mixed error= catch{  for(int i=0; i<sizeof(r); i++){
+mixed error= catch{  
+for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
     r[i]->status=0;
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
-    query=iVend.db()->generate_query(r[i], "orderdata", id->misc->ivend->s);
+    query=iVend.db()->generate_query(r[i], "orderdata",
+id->misc->ivend->db);
     id->misc->ivend->db->query(query);
   }
 } ;
@@ -239,7 +241,7 @@ query=
 	id->misc->ivend->SESSIONID +"'";
 r=id->misc->ivend->db->query(query);
 
-if(!r) perror("iVend: ERROR locating customerinfo!\n");
+if(sizeof(r)<1) perror("iVend: ERROR locating customerinfo!\n");
 
 else { 
 
@@ -280,7 +282,7 @@ if(!args->table) return "";
      ( (
       ((args->hide||" ")-" ") /",")
       ||({})) 
-     ),id)+
+     ),id,(( ((args->pulldown||" ")-" ")/",")||({})))+
         "<input type=hidden name=table value=\""+args->table+"\">";
 retval+="<input type=hidden name=aeexclude value=\""+((args->exclude||" ")-" ")
   + "\">\n";
@@ -337,11 +339,11 @@ string tag_cardcheck(string tag_name, mapping args,
 
 if(Commerce.CreditCard.cc_verify(
     id->variables[args->cardnumber] ||
-    id->variables->Card_Number,
+    id->variables->card_number,
     id->variables[args->cartype] ||
-    id->variables->Payment_Method)
+    id->variables->payment_method)
     || !Commerce.CreditCard.expdate_verify(id->variables[args->expdate]
-	      || id->variables->Expiration_Date))
+	      || id->variables->expiration_date))
 
 id->misc->ivend->error+=
   "You have supplied improper credit card information!<p>"

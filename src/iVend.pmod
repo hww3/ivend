@@ -152,7 +152,8 @@ inherit "roxenlib";
 
 
 string make_safe(string s){
-
+if(!s || !stringp(s)) return s;
+s=(string)s;
 return replace( (s || ""),({"'","\""}),({"\\'","\\\""}));
 
 }     
@@ -242,7 +243,7 @@ return 1;
 
 string generate_query(mapping data, string table, object s){
 
-array(mapping(string:mixed)) r=::list_fields(table);
+array(mapping(string:mixed)) r=s->list_fields(table);
 string query="INSERT INTO "+table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
@@ -265,7 +266,7 @@ string|int gentable(string table, string return_page,
     string|void jointable,string|void joindest , object|void id){
 string retval="";
 array(mapping(string:mixed)) r=::list_fields(table);
-
+array vals;
 
 retval+="<FORM ACTION=\""+return_page+"\" ENCTYPE=multipart/"
 	"form-data>\n"
@@ -316,25 +317,6 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
       "SIZE=-1><I> "+ REQUIRED +"\n";
         }
 
-else if(r[i]->type=="enum"){
-    retval+="<tr>\n"
-	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
-	+replace(r[i]->name,"_"," ")+
-	"</font></td>\n"
-	"<td>\n";
-
-    retval+="<select name=\""+r[i]->name+"\">\n";
-
-    array vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	"db/"+r[i]->name+".val")/"\n";
-    if(sizeof(vals)>0) {
-	for(int j=0; j<sizeof(vals); j++)
-	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
-	}
-    else retval+="<option>No Options Available\n";
-    retval+="</select></td></tr>";
-    
-    }
 
 else if(r[i]->type=="var string"){
     retval+="<TR>\n"
@@ -477,7 +459,7 @@ return capitalize(type)+" "+id+" deleted successfully.\n";
 
 
 string generate_form_from_db(string table, array|void exclude,
-object|void id){
+object|void id, array|void pulldown){
 
 
 string retval="";
@@ -485,20 +467,48 @@ string retval="";
 if(!table) return "";
 
 array(mapping(string:mixed)) r=::list_fields(table);
-
+if(exclude)
 for(int i=0; i<sizeof(exclude); i++)
   exclude[i]=lower_case(exclude[i]);
-
+else exclude=({""});
+for(int i=0; i<sizeof(pulldown); i++)
+if(pulldown)
+  pulldown[i]=lower_case(pulldown[i]);
+else pulldown=({""});
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 
+if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
+  r[i]->length=25;
 
 
 if(search(exclude,lower_case(r[i]->name))!=-1) continue;
 
-if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
-  r[i]->length=25;
+if(search(pulldown,lower_case(r[i]->name))!=-1) {
+    retval+="<tr>\n"
+	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
+	+replace(r[i]->name,"_"," ")+
+	"</font></td>\n"
+	"<td>\n";
+
+    retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
+
+  array vals;
+   if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
+	vals-=({""});
+    if(sizeof(vals)>0) {
+	for(int j=0; j<sizeof(vals); j++)
+	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	}
+    else retval+="<option>No Options Available\n";
+   
+	}
+    else retval+="<option>No Options Available\n";
+    retval+="</select></td></tr>";
+    
+    }
 	
-if(r[i]->type=="blob"){
+else if(r[i]->type=="blob"){
 	retval+="<TR>\n"
 	"<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
 	+replace(r[i]->name,"_"," ")+
@@ -553,7 +563,7 @@ else if(r[i]->type=="long" && r[i]->flags["not_null"]){
 
 	}
 
-else if(r[i]->type=="enum"){
+else if(r[i]->type=="enum" ){
     retval+="<tr>\n"
 	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
 	+replace(r[i]->name,"_"," ")+
@@ -564,7 +574,7 @@ else if(r[i]->type=="enum"){
 
   array vals;
    if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	"db/"+table+"_"+lower_case(r[i]->name)+".val")/"\n")){
+	"db/"+lower_case(table)+"_"+lower_case(r[i]->name)+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {
 	for(int j=0; j<sizeof(vals); j++)

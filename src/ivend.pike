@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.52 1998-04-20 16:02:14 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.53 1998-04-22 00:18:39 hww3 Exp $";
 
 array register_module(){
 
@@ -667,7 +667,7 @@ return parse_page(retval, r, f, id);
 mixed additem(string item, object id){
 
   if((int)id->variables->quantity==0) {
-    id->misc->ivstatus="You must select a quantity greater than zero.";
+    id->misc->ivendstatus="Error: You must select a quantity greater than zero.";
     return 0;
     }
   

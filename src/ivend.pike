@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.20 1998-02-12 03:31:46 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.21 1998-02-12 21:47:50 hww3 Exp $";
 
 /*
  *
@@ -96,7 +96,7 @@ int load_ivmodule(object id){
  if (id->variables->reload || 
 	! objectp(modules[id->misc->ivend->config->checkout_module]))
 modules+=([ id->misc->ivend->config->checkout_module :
-    (object)clone(compile_file(id->misc->ivend->config->root+"/modules/"+
+    (object)clone(compile_file(query("datadir")+"/modules/"+
     id->misc->ivend->config->checkout_module)) ]);
 
 return 1;
@@ -817,7 +817,8 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 	else retval+="<TD COLSPAN=6><BR><BLOCKQUOTE><P ALIGN=\"LEFT\"><FONT SIZE=+2 FACE=\"times\">"
 	"New Configuration</FONT><P>\n"
 	"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/new\">\n<table>"+
-	(c->genform(0,query("lang"))||"Error Loading Configuration Definitions!")+
+	(c->genform(0,query("lang"), query("datadir")+"/modules")
+	  ||"Error Loading Configuration Definitions!")+
 	"</table><p><input type=submit value=\"Add New Store\"></form>"
 	"</TD></TR>";
 			
@@ -884,7 +885,8 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			+config[request[2]]->name+"</a></FONT><P>\n"
 			"<FORM METHOD=POST ACTION=\""+query("mountpoint")+"config/configs/"+request[2]+"/config_modify\">\n"
 			"<TABLE>"
-			+(c->genform(config[request[2]],query("lang"))
+			+(c->genform(config[request[2]],query("lang"),
+			  query("datadir")+"/modules")
 			||"Error loading configuration definitions")+
 			"</TABLE><p><input type=submit value=\"Modify Configuration\">"
 			"<p>"

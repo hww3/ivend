@@ -1,3 +1,4 @@
+
 #define REQUIRED "Required" 
 // for translations
 
@@ -31,18 +32,19 @@ for(int i=0; i<sizeof(entries); i++){
 return 1;
 }
 
-mapping scan_modules(string mtype, mixed config){
-
+mapping scan_modules(string mtype, string moddir){
 mapping(string:string) m=([]);
-array d=get_dir(config->root+"/modules");
+array d=get_dir(moddir);
 d-=({"CVS"});
 string name;
 string desc;
 string type;
 foreach(d,name){
-// perror("MODULE: "+name+"\n");
-if(catch(program p=compile_file(config->root+"/modules/"+name)))
+ perror("MODULE: "+name+"\n");
+if(catch(program p=compile_file(moddir+"/"+name)))
+  { perror("error: "+name+"\n");
   continue;
+  }
   desc=p()->module_name;
   type=p()->module_type;
   
@@ -52,7 +54,7 @@ if(desc && type==mtype)
 return m;
 }
 
-string|int genform(void|mapping config, string|void lang){
+string|int genform(void|mapping config, string|void lang, void|string moddir){
 if(!lang) lang="en";
 perror("language: "+lang+"\n");
 string retval="";
@@ -79,7 +81,7 @@ for(int i=0; i<sizeof(vars); i++){
     break;
 
     case "password":
-    if(config)
+    if(!stringp(config))
       retval+="<input type=\"password\" name=\""+(vars[i]||"")+"\" value=\""+
       (config[vars[i]]||config_setup[vars[i]]->default_value ||"")+"\">";      
     else
@@ -90,10 +92,12 @@ for(int i=0; i<sizeof(vars); i++){
     case "module":
       retval+="<select name=\""+ (vars[i]||"")+"\">\n";
       string module;
-      mapping modules=
-	scan_modules(config_setup[vars[i]]->module_type,config);
+        mapping modules=
+	  scan_modules(config_setup[vars[i]]->module_type,moddir);
+
       foreach(indices(modules), module){
-	if(config[vars[i]]==module)
+        
+	if(mappingp(config) && config[vars[i]]==module)
 	retval+="<option selected value=\""+module+"\">"
 	  +modules[module]+"\n";
 	else retval+="<option value=\""+module+"\">"
@@ -104,7 +108,7 @@ for(int i=0; i<sizeof(vars); i++){
 
     case "string":
     default:
-    if(config)
+    if(!stringp(config))
       retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
       (config[vars[i]]||config_setup[vars[i]]->default_value ||"")+"\">";      
     else

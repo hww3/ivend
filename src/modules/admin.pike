@@ -52,7 +52,16 @@ string action_dropdown(string mode, object id){
     if(sizeof(f)>0) retval+="</ul>";
     else retval+="You have not configured any dropdowns yet.<p>";
   }
-  else retval+="Editing " + id->variables->edit;
+  else { 
+    retval+="Editing " + id->variables->edit + ":<p>";
+    retval+="<form action=\"./\">\n"
+	"<input type=hidden name=edit value=\"" + id->variables->edit 
+	+ "\">\n";
+    string f=Stdio.read_file(CONFIG->root + "/db/" + id->variables->edit);
+    retval+="<textarea name=contents rows=50 cols=10>" + f +
+	"</textarea>\n";
+    retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
+  }
   return retval;
 }
 
@@ -328,7 +337,6 @@ mapping register_admin(){
 return ([
 	"menu.main.Store_Maintenance.Clean_Stale_Sessions" : action_cleansessions,
 	"menu.main.Store_Maintenance.Reload_store" : action_reloadstore,
-	"menu.main.Store_Maintenance.Preferences" : action_preferences
 	"menu.main.Store_Maintenance.Preferences" : action_preferences,
 	"menu.main.Store_Administration.DropDownMenus" : action_dropdown
 	]);

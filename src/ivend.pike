@@ -43,7 +43,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.85 1998-07-31 19:20:07 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.86 1998-07-31 19:42:08 hww3 Exp $";
 
 array register_module(){
 
@@ -737,9 +737,18 @@ else return 1;
 
 int clean_sessions(object id){
 
+string query="SELECT sessionid FROM sessions WHERE timeout < "+time(0);
+array r=id->misc->ivend->db->query(query);
+foreach(r,mapping record){
+  foreach(({"customer_info","payment_info","orderdata","lineitems"}),
+    string table)
+   id->misc->ivend->db->query("DELETE FROM " + table + " WHERE orderid='"
+	+ record->sessionid + "'");
+
+}
 string query="DELETE FROM sessions WHERE timeout < "+time(0);
 id->misc->ivend->db->query(query);
-return 0;
+return sizeof(r);
 }
 
 
@@ -943,8 +952,8 @@ id->variables->id); }
   break;
 
   case "clearsessions":
-  clean_sessions(id);	
-  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
+  int r =clean_sessions(id);	
+  retval+=r+ " Sessions Cleaned Successfully.<p><a href=\"./admin\">"
 	"Return to Administration Menu.</a>\n";
   break;
 

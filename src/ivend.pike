@@ -958,9 +958,10 @@ int i=0;
 
   retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
     foreach(indices(rows[cnt]), cnt2) {
+	string align;
 	if((float)rows[cnt][cnt2])
-          string align="right";
-        else string align="left";
+         align="right";
+        else align="left";
       retval += sprintf("<td nowrap align=" + align + "><font color=%s>%s&nbsp;&nbsp;</td>\n",
 			listfontcolor, (string)rows[cnt][cnt2]);
  

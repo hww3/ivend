@@ -19,7 +19,7 @@ CREATE TABLE customer_info (
 
 CREATE TABLE groups (
   id varchar(12) DEFAULT '' NOT NULL,
-  parent varchar(12) DEFAULT '' NOT NULL,
+  parent varchar(12) DEFAULT '',
   name varchar(64) DEFAULT '' NOT NULL,
   description text,
   image varchar(24),

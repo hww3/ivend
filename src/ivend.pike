@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.199 1999-05-19 00:51:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.200 1999-05-19 19:05:20 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -952,10 +952,16 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
         tablename="products";
     }
     else if(args->type=="groups") {
+        array r=DB->query("SELECT id FROM groups WHERE id='" +
+          id->misc->ivend->page + "'");
+	if(r && sizeof(r)>0) args->parent=r[0]->id;
+	else args->parent="";
         query="SELECT " + KEYS->groups + " AS pid " +
               extrafields+ " FROM groups";
-        query+=" WHERE parent='" + (id->variables->parent || args->parent 
-|| "") + "' ";
+        query+=" WHERE parent='" + args->parent
+// (id->variables->parent || args->parent 
+// || "")
+ + "' ";
         if(!args->show)
             query+="AND status='A' ";
         tablename="groups";
@@ -982,8 +988,9 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     r=DB->query(query);
     // perror("Query: " +query + "\n");
 
-    if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
-
+    if(sizeof(r)==0 && !args->quiet) return NO_PRODUCTS_AVAILABLE;
+    else if(sizeof(r)==0 && args->quiet) return "<!-- " +
+	NO_PRODUCTS_AVAILABLE + " -->";
     mapping row;
 
     array(array(string)) rows=allocate(sizeof(r));
@@ -1184,12 +1191,17 @@ string get_type(string page, object id){
     r=DB->query("SELECT * FROM groups WHERE " +
                 KEYS->groups +
                 "='"+page+"'");
-    if (sizeof(r)==1) return "group";
-
+    if (sizeof(r)==1) { 
+	id->misc->ivend->template=r[0]->template;
+	return "group";
+	}
     r=DB->query("SELECT * FROM products WHERE " +
                 KEYS->products + "='" + page + "'");
 
-    if(sizeof(r)==1) return "product";
+    if(sizeof(r)==1) {
+	id->misc->ivend->template=r[0]->template;
+	return "product";
+	}
     else return "";
 
 }
@@ -1204,7 +1216,7 @@ mixed find_page(string page, object id){
 
     page=(page/".")[0];// get to the core of the matter.
     id->misc->ivend->item=page;
-    string template;
+//    string template;
 array(mapping(string:string)) r;
     array f;
     string type=get_type(page, id);
@@ -1213,14 +1225,18 @@ array(mapping(string:string)) r;
     // perror(page + " is a " + type + "\n");
     if(!type)
         return 0;
-
-    if(id->variables->template) template=id->variables->template;
-    else template=type+"_template.html";
-
-    retval=Stdio.read_bytes(CONFIG->root+"/html/"+template);
+    if(id->variables->template)
+id->misc->ivend->template=id->variables->template;
+    if(id->misc->ivend->template=="DEFAULT")
+	id->misc->ivend->template=CONFIG->root+ "/html/" +
+type+"_template.html";
+    else id->misc->ivend->template=CONFIG->root + "/templates/" +
+id->misc->ivend->template +".html";
+perror(id->misc->ivend->template + "\n");
+    retval=Stdio.read_bytes(id->misc->ivend->template);
     if (catch(sizeof(retval)))
         return 0;
-    id->realfile=CONFIG->root+"/html/"+template;
+    id->realfile=id->misc->ivend->template;
     // perror(id->realfile+"\n");
     // perror(retval + "\n");
     return (retval);
@@ -1292,8 +1308,8 @@ mixed handle_page(string page, object id){
             else return 0;
         }
         id->misc->ivend->page=page-".html";
+	string template;
         id->misc->ivend->type=get_type(id->misc->ivend->page, id);
-        // perror (id->misc->ivend->page + " is a " + id->misc->ivend->type + "\n");
 
         retval=Stdio.read_file(CONFIG->root + "/html/" + page);
         id->realfile=CONFIG->root+"/html/"+page;
@@ -1652,7 +1668,7 @@ string return_to_admin_menu(object id){
                                          + n +
                                          "<input type=hidden name=mode value=dodelete>\n"
                                          "<input type=submit value=Delete>\n</form>";
-                             else retval+="No " + capitalize(type +"s") + " found.";
+                             else retval+="<br>No " + capitalize(type +"s") + " found.";
                          }
                          else {
                              mixed n= DB->showdepends(type,
@@ -1666,7 +1682,8 @@ string return_to_admin_menu(object id){
                                          "<input type=hidden name=id value=\""+id->variables[
                                              KEYS[type+"s"] ]+"\">\n"
                                          "Are you sure you want to delete the following?<p>";
-                                 retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
+                                 retval+=n
+					+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                              }
                              else retval+="Couldn't find "+capitalize(type) +" "
                                               +id->variables[ KEYS[

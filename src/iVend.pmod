@@ -548,8 +548,16 @@ array(mapping(string:mixed)) r=list_fields(table);
                         +"parent group"+
                         "</FONT></TD>\n"
                         "<TD>\n"
-			"<select name=\"parent\">"
-			"<option value=\"\">Top Level\n";
+			"<select name=\"parent\">\n";
+                array o=({(["id":"", "name":"Top Level Group",
+			"parent": ""])});
+o+=query("SELECT id,parent,name FROM groups");
+		foreach(o, mapping r) 
+                 retval+="<option value=\"" + r->id + "\" "
+			+ ((record&&record->parent==r->parent)
+			?"SELECTED":"") +">" + r->name +
+			(r->parent==""?" (TLG)":"") + "\n";
+
              	retval+="</select>";
             }
 
@@ -682,14 +690,15 @@ array(mapping(string:mixed)) r=list_fields(table);
 
         if(jointable){
 
-            array j=query("SELECT name,id FROM "+jointable);
+            array j=query("SELECT name,parent,id FROM "+jointable);
             retval+="<tr><td valign=top align=right><font "
                     "face=helvetica,arial size=-1>"+jointable+"</td><td>"
                     "<select multiple size=5 name="+jointable+">\n";
             for(int i=0; i<sizeof(j); i++)
                 retval+="<option " + ( (record->group_id &&
                                         record->group_id[j[i]->id])?"SELECTED":"" ) +
-                        " value=\""+j[i]->id+"\">"+j[i]->name+"\n";
+                        " value=\""+j[i]->id+"\">"+j[i]->name+ 
+(j[i]->parent==""?" (TLG)":"")+ "\n";
             retval+="</select>\n<input type=hidden name=jointable value=\""
                     +jointable+"\">\n<input type=hidden name=joindest value=\""
                     +joindest+"\">"
@@ -757,6 +766,10 @@ array(mapping(string:mixed)) r=list_fields(table);
             return DELETE_UNSUCCESSFUL+"\n";
 
         if(type=="group") {
+            q="SELECT parent FROM groups WHERE " + field + "='" + id + "'";
+            array r=query(q);
+            q="UPDATE groups SET parent='" + r[0]->parent + "' WHERE parent='" + id + "'";
+	    query(q);
             q="DELETE FROM groups WHERE " + field +
               "='"+id+"'";
             query(q);

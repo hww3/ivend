@@ -8,3 +8,26 @@ foreach(r, mapping row)
   retval+="<a href=\"" + row->group_id + ".html\">" +row->name + "</a> | ";
 return retval;
 </procedure>
+
+<procedure tag="groupmap">
+// perror(id->misc->ivend->page + "\n");
+string retval="";
+string parent;
+array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + id->misc->ivend->page +"'");
+if(r && sizeof(r)>0) {
+retval+="<a href=\"" + r[0]->id + ".html\">" + r[0]->name + "</a>";
+parent=r[0]->parent;
+}
+
+perror("parent: " + parent + "\n");
+while (sizeof(r)>0 && parent!="") {
+array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + parent + "'");
+if(sizeof(r)==0) continue;
+else {
+ retval="<a href=\"" + r[0]->id + ".html\">" + r[0]->name + "</a>" + " &gt; " + retval;
+ parent=r[0]->parent;
+ }
+}
+return retval;
+</procedure>
+

@@ -371,7 +371,7 @@ container. It takes the following attributes:
 <additem> is used to add one or more items.
   noform: do not generate form tags surrounding the item.
   silent: do not show quantity and submit buttons.
-  showquantity: do not show quantity box.
+  showquantity: show quantity box.
   item: item number.
   quantity: quantity to add.
  

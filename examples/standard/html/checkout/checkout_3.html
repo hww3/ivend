@@ -1,9 +1,5 @@
-<ivml>
-<head>
-<title>Checkout</title>
-</head>
-<body bgcolor=white text=navy>
-<font face=helvetica>
+<use file="../store_package">
+<page title="iVend: Checkout">
 <checkout>
 <confirmemail field=EMail_Address>
 <addentry>
@@ -23,6 +19,6 @@ exclude="Fax,Daytime_Phone,Evening_Phone,EMail_Address">
 </table>
 <input type=hidden name=orderid value="<sessionid>">
 <input type=hidden name=type value=1>
-<input type=submit value="  >> ">
+<input type=submit value=" Continue ">
 </checkout>
-</ivml>
+</page>

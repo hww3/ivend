@@ -1,0 +1,12 @@
+<define container="page">
+<html>
+<head>
+<title>&title;</title>
+</head>
+<body bgcolor="white" text="navy" link="maroon">
+<font size=+1 face="helvetica,arial">
+<contents>
+</font>
+</body>
+</html>
+</define>

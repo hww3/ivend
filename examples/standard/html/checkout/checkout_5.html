@@ -1,9 +1,5 @@
-<ivml>
-<head>
-<title>Checkout</title>
-</head>
-<body bgcolor=white text=navy>
-<font face=helvetica>
+<use file="../store_package">
+<page title="iVend: Checkout">
 <font size=+2>5. Payment Information</font>
 <p>
 Normally, you would be required to provide correct Credit Card information, but for this
@@ -15,8 +11,8 @@ demonstration, any information you provide will be considered correct.
 <generateform table=payment_info hide="orderid,status" 
 pulldown="payment_method">
 </table>
-<input type=submit value=" >> ">
+<input type=submit value=" Continue ">
 <input type=hidden name=orderid value="<sessionid>">
 <input type=hidden name=status value="3">
 </checkout>
-</ivml>
+</page>

@@ -1,9 +1,5 @@
-<ivml>
-<head>
-<title>Checkout</title>
-</head>
-<body bgcolor=white text=navy>
-<font face=helvetica>
+<use file="../store_package">
+<page title="iVend: Checkout">
 <font size=+2>4. Shipping Selection</font>
 <p>
 Please choose one of the following methods of shipping:
@@ -11,11 +7,13 @@ Please choose one of the following methods of shipping:
 
 <p>
 <checkout>
+<!-- Let's add the data collected on the previous page. -->
 <addentry>
+<!-- Now show a menu of available shipping types. -->
 <shippingtypes>
 <p>
-<input type=submit value=" >> ">
+<input type=submit value=" Continue ">
 <input type=hidden name=orderid value="<sessionid>">
 <input type=hidden name=status value="3">
 </checkout>
-</ivml>
+</page>

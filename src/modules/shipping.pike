@@ -41,8 +41,10 @@ initialized=0;
 object db;
 handlers=([]);
 
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
+perror(sprintf("%O\n", config));
+
+if(catch(db=iVend.db(config->dbhost, config->db,
+  config->dblogin, config->dbpassword)))
   {
     perror("iVend: Shipping: Error Connecting to Database.\n");
     return;

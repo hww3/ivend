@@ -7,7 +7,7 @@ constant module_type = "shipping";
 #define DB id->misc->ivend->db
 #define KEYS id->misc->ivend->keys
 
-object u;	// The ups zone machine.
+mapping(string:object) u;	// The ups zone machine.
 
 int started;
 int initialized=0;
@@ -35,9 +35,11 @@ return 0;
 
 void load_zone(mapping row, mapping config){
 perror("Loading UPS Zone...\n");
-if(!u->load_zonefile(row->zonefile))
+if(!u) u=([]);
+u+=([row->type: Commerce.UPS.zone()]);
+if(!u[row->type]->load_zonefile(row->zonefile))
   perror("Error Loading Zonefile for " + row->type + ".\n");
-if(!u->load_ratefile(row->ratefile))
+if(!u[row->type]->load_ratefile(row->ratefile))
   perror("Error Loading ratefile for " + row->type + ".\n");
 
 }
@@ -55,10 +57,10 @@ if(started && initialized){
 mixed findrate(string zip, string weight, object id){
 
   float rate;
-  rate=u->findrate((string)zip, weight);
-
 array r=DB->query("SELECT * FROM shipping_ups WHERE type="
  + id->variables->showtype);
+  rate=u[r[0]->type]->findrate((string)zip, weight);
+perror(rate + "\n");
 
 string chargetype=r[0]->chargetype;
 
@@ -87,7 +89,7 @@ else
   initialize_db(db, config);
 
 started=1;
-u=Commerce.UPS.zone();
+// u=Commerce.UPS.zone();
 load_zones(db, config);
 return;
 
@@ -121,6 +123,7 @@ DB->make_safe(id->variables->zonefile) + "','" +
 DB->make_safe(id->variables->ratefile) +
 "',NULL)");
 
+  start(id->misc->ivend->config);
 }
   string retval="";
 
@@ -147,7 +150,7 @@ DB->make_safe(id->variables->ratefile) +
   array f=DB->list_fields("products");
   foreach(f, mapping field){
     if(field->type=="integer" || field->type=="float" ||
-	field->type=="decimal")
+	field->type=="long" || field->type=="decimal")
 	retval+="<option value=\"products." + field->name + "\">"
 	  + "products." + field->name + "\n";
     }
@@ -209,6 +212,7 @@ string shipping_weight;
 string chargetype;
 float charge;
 
+r=DB->query("SELECT * from shipping_ups WHERE type='" + type + "'");
 
 if(sizeof(r)!=1) {
   perror("ERROR GETTING SHIPPINGCOST!\n");
@@ -234,7 +238,7 @@ if(r[0]->calctype=="T") {  // We calculate everything as if it were in a big box
 	return -1.00;
   string zip=n[0]->zip_code;
 
-  rate=u->findrate((string)zip, (string)w);
+  rate=u[type]->findrate((string)zip, (string)w);
 
   }
 
@@ -257,7 +261,7 @@ else { // We calculate as though everything were in a seperate box.
 	return -1.00;
   string zip=n[0]->zip_code;
 
-  rate=u->findrate((string)zip, (string)w);
+  rate=u[type]->findrate((string)zip, (string)w);
   ratecalc+=((float)rate*(float)(row->quantity));
   }
  rate=ratecalc;

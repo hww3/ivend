@@ -115,19 +115,22 @@ else if (weight=="letter") weight="Letter";
 string zip=findzip(zipcode);
 perror("ZIP: " + zipcode + " " + zip + "\n");
 if(type){
-  zone=zonedata[zip][type];
-  werror(zone+"\n");
+ if(catch( zone=zonedata[zip][type]))
+	return -1.00;
+//  werror(zone+"\n");
   }
 else if(sizeof(indices(ratedata))==1){
 perror("Only one ratetype loaded...\n");
 type=indices(ratedata)[0];
-zone=zonedata[zip][type];
+if(catch(zone=zonedata[zip][type]))
+	return -1.00;
 }
 else {
    mapping(string:float) retval=([]);
    array t=indices(ratedata);
    foreach(t, string typename){
-      zone=zonedata[zip][typename];
+      if(catch(zone=zonedata[zip][typename]))
+	continue;
       werror(zone+"\n");
       retval+=([typename:(float)(ratedata[typename][zone][weight])]);
       }
@@ -137,6 +140,7 @@ else {
 string cost;
 weight=sprintf("%d", (int)weight);
 perror("type: " + type + " zone: " + zone + " weight: " + weight + "\n");
+perror(sprintf("%O\n", ratedata[type][zone]));
 cost=ratedata[type][zone][weight];
 perror(cost+"\n");
 return ((float)(cost));

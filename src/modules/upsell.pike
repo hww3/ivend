@@ -71,7 +71,7 @@ if(!r) return "Cannot Find Product " + id->variables->id + ".";
   retval+="<form action=./>\n"
 	"<input type=hidden name=id value=" + id->variables->id + ">\n"
 	"<select size=5 name=upsell>\n";	
-  array r=DB->query("SELECT * FROM products ORDER BY " +
+  r=DB->query("SELECT * FROM products ORDER BY " +
 DB->keys->products);
 	foreach(r, mapping row)
 	  retval+="<option value=\"" + row[DB->keys->products] + "\">"
@@ -79,7 +79,7 @@ DB->keys->products);
   retval+="</select> <input type=submit value=AddUpsell name=action>"
   "<p>Currently associated Upsells:<br>";
 
-  array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id='" +
+  r=DB->query("SELECT * FROM products,upsell WHERE upsell.id='" +
 	id->variables->id + "' and upsell.upsell=products." +
 DB->keys->products);
   if(r)

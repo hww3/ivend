@@ -12,13 +12,14 @@ array productsearchfields=({});
 array stopwords=({});
 mapping idmappings=([]);
 
-void start(mapping config)
+void start(object mo, object db)
 {
 perror("start in search.\n");
 
-if(config[module_name]->idmappingfile!="" && file_stat(config[module_name]->idmappingfile)) {
+if(mo->config[module_name]->idmappingfile!="" && 
+file_stat(mo->config[module_name]->idmappingfile)) {
 perror("we have specified an idmapping file.\n");
-array r=Stdio.read_file(config[module_name]->idmappingfile)/"\n";
+array r=Stdio.read_file(mo->config[module_name]->idmappingfile)/"\n";
 foreach(r, string line){
  array l=(replace(line,({" ", "\m", "\r"}),({"","",""}) ) )/"\t";
  if(sizeof(l)==2)

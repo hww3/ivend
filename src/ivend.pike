@@ -5,12 +5,14 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.291 2004-01-22 23:55:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.292 2004-10-18 10:43:58 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
+
+#undef file_stat
 
 inherit "caudiumlib";
 inherit "module";
@@ -62,6 +64,23 @@ string At(string line, int column, string text, int|void maxlen, string|void ali
   lineb+=linea[endcolumn..];
   line=lineb;
   return line;
+}
+
+void ivend_send_mail(array recipients, string message)
+{
+  mixed e;
+
+  string host, sender;
+  int port;
+  
+  sender = config["Admin Interface"]->email || "ivend@localhost";
+  host = config["Admin Interface"]->smtp_server || "localhost";
+  port = (int)config["Admin Interface"]->smtp_port || 25;
+
+  werror("Protocols.SMTP.Client(%s, %d)->send_message(%O, %O, (string)message)\n", host, 
+port, sender, recipients);
+  Protocols.SMTP.Client(host, port)->send_message(sender, recipients, (string)message);
+
 }
 
 void ivend_report_error(string error, string|void orderid, string subsys, object id){
@@ -571,14 +590,13 @@ mixed register_admin_handler(mapping f){
 }
 
 void start_store(){
-    report_error("starting iVend 1.2\n");
     if(!paths) paths=([]);
     if(!admin_handlers) admin_handlers=([]);
     register_path_handler("images", get_image);
     register_path_handler("admin", admin_handler);
     register_path_handler("cart", handle_cart);
 
-    if(QUERY(db))
+    if(QUERY(db) && strlen(QUERY(db)))
       start_db();
     else return;
     get_entities();
@@ -626,7 +644,7 @@ void stop(){
 int write_config_section(string section, mapping attributes){
     mixed rv;
     object privs=Privs("iVend: Writing Config File");
-    rv=.Config.write_section(query("storeroot") + "/config/config.ini" , section,
+    rv=.IniFile.write_section(query("storeroot") + "/config/config.ini" , section,
                             attributes);
 #if efun(chmod)
     chmod(query("storeroot") + "/config/config.ini", 0640);
@@ -848,7 +866,7 @@ void event_postadditem(string event_name, object id, mapping args)
 }
 
 mixed do_additems(object id, array items){
-
+werror("do_additems: %O\n\n", items);
     // we should add complex pricing models to this algorithm.
     if(DB->local_settings->pricing_model==COMPLEX_PRICING) {
         return do_complex_items_add(id, items);
@@ -902,10 +920,9 @@ void delete_cart_item(object id, string item, string series)
 mixed container_icart(string name, mapping args, string contents, object id) {
     string retval="";
     string extrafields="";
-
+werror(sprintf("%O", id->misc->session_variables->cart));
     if(!id->misc->session_variables->cart) 
       id->misc->session_variables->cart=({});
-
     array ef=({});
     array en=({});
     array efs=({});
@@ -932,15 +949,17 @@ mixed container_icart(string name, mapping args, string contents, object id) {
         if(id->variables[v]==DELETE) {
             p=(v/"/")[0];
             s=(v/"/")[1];
+            madechange=1; // a delete is considered an update.
 	    delete_cart_item(id, p, s);
 	}
+    }
 	// 
 	//  are we updating an item in the cart?
 	//
 	if(id->variables->update) {
-
+werror("we doin' update.\n");
 	    for(int i=0; i< (int)id->variables->s; i++) {
-		
+		werror("looking at item %d\n\n", i); 
 		p=id->variables["p"+(string)i];
 		s=id->variables["s"+(string)i];
 		q=id->variables["q"+(string)i];
@@ -952,25 +971,25 @@ mixed container_icart(string name, mapping args, string contents, object id) {
 		} 
 		   else // we're updating the quantity, maybe.
 		   {
-		       madechange=1;
 
-		       int q= (int)(id->variables["q"+(string)i]);
-		       string i= id->variables["p"+(string)i];
-		       s= id->variables["s"+(string)i];
-		       
-		       if(id->misc->session_variables->cart[(int)s])
+if(id->misc->session_variables->cart && sizeof(id->misc->session_variables->cart)>=(int)s && 
+id->misc->session_variables->cart[(int)s])
 		       {
-			   if(id->misc->session_variables->cart[(int)s]->item == p)
-			       id->misc->session_variables->cart[(int)s]->quantity = q;
+			   if(id->misc->session_variables->cart[(int)s]->item == p
+)	//		&& (int)id->misc->session_variables->cart[(int)s]->quantity != (int)q)
+			   {
+                               madechange=1;
+				werror("item " + p +" " + s +" changed to " + q + "\n");
+			       id->misc->session_variables->cart[(int)s]->quantity = (int)q;
 			   
 			   trigger_event("updateitem", id, (["item" : id->variables["p" +
 										    (string)i] , "series" : id->variables["s" + (string)i],
 							     "quantity": id->variables["q" + (string)i]]) );
+			   }
 		       }
 		   }
 	       }
-	}
-    }
+	  }
 
     if(madechange==1){
         array r = copy_value(id->misc->session_variables->cart);
@@ -978,10 +997,10 @@ mixed container_icart(string name, mapping args, string contents, object id) {
 	    array items=({});
           id->misc->session_variables->cart=({});
           foreach(r, mapping row) {
-	      if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
+	      if(((int)(row->lock))==1 || ((int)(row->autoadd)==1))
 		 continue;
              items+=({ (["item": row->item, "quantity": row->quantity, "options":
-			 row->options, "locked": row->locked, "autoadd": row->autoadd ]) });
+			 row->options, "lock": row->lock, "autoadd": row->autoadd ]) });
           }
           do_additems(id, items);
 	}
@@ -1054,25 +1073,26 @@ mixed container_icart(string name, mapping args, string contents, object id) {
   foreach(o, string opt){
       array o_=opt/":";
       catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
-			      "product_id='" + r[i]->id + "' AND option_type='" +
+			      "product_id='" + r[i]->item + "' AND option_type='" +
 			      o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
   }
 	
+werror("options: %O\n\n", eq);
   e+=(eq*"<br>") + "</cartcell>";
   elements+=({e});
   elements+=({"<cartcell align=right>" + MONETARY_UNIT +
 	      sprintf("%.2f",(float)r[i]->price)+"</cartcell>"});
 
   elements+=({"<cartcell><INPUT TYPE="+
-	      (r[i]->locked=="1"?"HIDDEN":"TEXT") +
+	      ((int)(r[i]->lock)==1?"HIDDEN":"TEXT") +
 	      " SIZE=3 NAME=q"+i+" VALUE="+
-	      r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
+	      r[i]->quantity+">" + ((int)(r[i]->lock)==1?r[i]->quantity:"")
 	      + "</cartcell>"});
   elements+=({"<cartcell align=right>" + MONETARY_UNIT
 	      +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"});
   
   e="<cartcell align=left>";
-  if(r[i]->autoadd!="1")
+  if((int)(r[i]->autoadd)!=1)
       e+="<input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i]->item + "/" + i + "\">";
   e+="</cartcell>";
   elements+=({e});
@@ -1248,7 +1268,7 @@ string tag_generateviews(string tag_name, mapping args,
         }
         else
             args->limit=args->field + " IS NULL";
-        retval+=make_tag("listitems", args);
+        retval+=Caudium.make_tag("listitems", args);
         "<!-- Listitems: " + row[args->field] + " -->\n";
     }
     return retval;
@@ -1439,7 +1459,7 @@ string tag_ivmg(string tag_name, mapping args,
         args->width=(string)size[0];
     }
 
-    return make_tag("img", args);
+    return Caudium.make_tag("img", args);
 
 
 }
@@ -1599,19 +1619,20 @@ mixed handle_page(string page, object id){
         break;
 
     default:
-
-        mixed fs;
-        fs=stat_file(page,id);
+        Stdio.Stat fs;
+        string p = Stdio.append_path(QUERY(storeroot) + "html", page);
+        string rp;
+        fs=predef::file_stat(p);
 
         if(!fs) {
             id->misc->ivend->page=page-".html";
             return find_page(page,id);
         }
-        else if(fs[1]<=0) {
-            page="/"+((page/"/") - ({""})) * "/";
-            fs=stat_file(page+"/index.html",id);
+        else if(fs->isdir) {
+            rp =combine_path(page, "index.html");
+            fs=predef::file_stat(rp);
 
-            if(fs && fs[1]>0) {
+            if(fs && fs->isreg) {
                 return Caudium.HTTP.redirect(page + "/index.html", id);
             }
             else return 0;
@@ -1620,8 +1641,8 @@ mixed handle_page(string page, object id){
 	string template;
         id->misc->ivend->type=get_type(id->misc->ivend->page, id);
 
-        retval=Stdio.read_file(QUERY(storeroot) + "/html/" + page);
-        id->realfile=QUERY(storeroot) +"/html/"+page;
+        retval=Stdio.read_file(p);
+        id->realfile=p;
     }
     if (!retval) return 0;  // error(UNABLE_TO_FIND_PRODUCT +" " + page,id);
     return retval;
@@ -1735,11 +1756,11 @@ admin_user_cache[upper_case(id->variables->user)]="";
 		id->misc->ivend->admin_user=r[0]->username;
 		id->misc->ivend->admin_user_level=r[0]->level;
 
- object md5 = Crypto.md5();
+ object md5 = Crypto.MD5();
     md5->update(id->variables->password);
     md5->update(sprintf("%d", roxen->increase_id()));
     md5->update(sprintf("%d", time(1)));
-    string SessionID = Crypto.string_to_hex(md5->digest());
+    string SessionID = Caudium.Crypto.string_to_hex(md5->digest());
     admin_user_cache[id->misc->ivend->admin_user]=SessionID;
     
              add_cookie(id, (["name":"admin_user",
@@ -1971,7 +1992,7 @@ if(!intp(r)){
                          "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
                          "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
                          "<gtext fg=maroon nfont=bureaothreeseven black>"
-                         + CONFIG->name+
+                         + QUERY(storename)+
                          " Administration</gtext><br>"
 "<config_tablist>"
 "<tab href=\"groups/\">Work With Groups</tab>"
@@ -2584,7 +2605,7 @@ Caudium.add_pre_state(id->not_query,(<"dodelete=" + type >))
                            t + tags,
                            c + containers, id));
                  MODULES=modules;
-                 contents=parse_rxml(contents,id);
+//                 contents=parse_rxml(contents,id);
                  return contents;
 
              }
@@ -2628,37 +2649,6 @@ Caudium.add_pre_state(id->not_query,(<"dodelete=" + type >))
 
              }
 
-
-             mixed stat_file( mixed f, mixed id )  {
-
-
-                 if(catch(CONFIG) || !CONFIG)
-                     return ({ 33204,0,time(),time(),time(),0,0 });
-
-                 if(f=="." || f=="..")
-                     f="/";
-
-                 array fs;
-                 if(!id->pragma["no-cache"] &&
-                             (fs=cache_lookup("stat_cache", QUERY(storeroot) +"/html/"
-                                              +f)))
-                     return fs[0];
-
-                 object privs;
-
-
-
-                 fs = file_stat(
-                          QUERY(storeroot) + "/html/" + f);
-
-#ifndef THREADS
-                 privs = 0;
-#endif
-
-                 cache_set("stat_cache", QUERY(storeroot) + "/html/" +f, ({fs}));
-                 return fs;
-
-             }
 
 
              void error(mixed error, object id){
@@ -2725,7 +2715,7 @@ mapping to=id->misc->defines[" _extra_heads"];
                  int    t;     //time
 
                  if(m->name)
-                     cookies = m->name+"="+http_encode_cookie(m->value||"");
+                     cookies = m->name+"="+Caudium.http_encode_cookie(m->value||"");
                  else
                      return ;
 
@@ -2742,10 +2732,10 @@ mapping to=id->misc->defines[" _extra_heads"];
                      if (m->years)   t+=((int)(m->years))*(3600*(24*365+6));   /* 365.25d */
                  }
 
-                 if(t) cookies += "; expires="+http_date(t+time());
+                 if(t) cookies += "; expires="+Caudium.HTTP.date(t+time());
 
                  //obs! no check of the parameter's usability
-                 cookies += "; path=" +(m->path||"/");
+                 cookies += "; path=" +(m->path||"/") + ";";
 
                  add_header(id, "Set-Cookie", cookies);
 
@@ -2753,11 +2743,11 @@ mapping to=id->misc->defines[" _extra_heads"];
              }
 
 string generate_sessionid(object id){
- object md5 = Crypto.md5();
+ object md5 = Crypto.MD5();
     md5->update((string)(id->remoteaddr));
     md5->update(sprintf("%d", roxen->increase_id()));
     md5->update(sprintf("%d", time(1)));
-    string SessionID = Crypto.string_to_hex(md5->digest());
+    string SessionID = Caudium.Crypto.string_to_hex(md5->digest());
 
 return SessionID;
 }
@@ -2817,7 +2807,7 @@ int read_conf()
   config_file= Stdio.read_file(query("storeroot") + "/config/config.ini");
   if(config_file)
   {
-    mapping c=.Config.read(config_file);
+    mapping c=.IniFile.read(config_file);
     config=c;
   }
   else
@@ -2857,7 +2847,7 @@ mixed load_ivmodule(string name){
   mixed o=modules[m->module_name];
   object s=db->handle();
   if(functionp(o->start)) {
-    o->start(config, s);
+    o->start(this, s);
   }
   db->handle(s);
   mixed p;
@@ -2881,9 +2871,9 @@ mixed load_ivmodule(string name){
                                  }
                                  if(need_to_save) {
                                      object privs=Privs("iVend: Writing Config File " +
-                                                        config->general->config);
+                                                        config->general);
 
-.Config.write_section(query("storeroot")+"/config/config.ini", m->module_name,
+.IniFile.write_section(query("storeroot")+"/config/config.ini", m->module_name,
                                                           config[m->module_name]);
                                      privs=0;
                                  }
@@ -2909,17 +2899,24 @@ mixed load_ivmodule(string name){
 
 void start_db(){
   mixed err;
-  if(!QUERY(db))
+  if(!QUERY(db) || !strlen(QUERY(db)))
     return;
+werror("Starting Database Connection for " + QUERY(db) + "...\n");
   db=.iVend.db_handler(QUERY(db), 4);
-  object s=db->handle();
-  if(s) {
+  object s;
+  catch(s=db->handle());
+  if(!s)
+  {
+    werror("Unable to start Database handler.\n");
+  }
+  else {
+  if(!catch(s->query("CREATE TABLE orderid ("
+    "orderid int(11) NOT NULL)")))
+    s->query("INSERT INTO orderid VALUE(1)");
 
-if(sizeof(s->list_tables("comments"))!=1) {
-  s->query("CREATE TABLE comments ("
+  catch(s->query("CREATE TABLE comments ("
     "orderid varchar(64) DEFAULT '' NOT NULL,"
-    "comments blob)");
-}
+    "comments blob)"));
 
 if(sizeof(s->list_fields("payment_info","Authorization"))!=1) {
   s->query("alter table payment_info add Authorization char(24)");
@@ -2960,8 +2957,10 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
 		"key key1 (orderid))"
 		);
  }
-                             }
- db->handle(s);                 
+
+                            }
+ if(s)
+   db->handle(s);                 
  return;
                       
 }

@@ -8,14 +8,14 @@ mapping query_container_callers2();
 
 int initialized;
 
-void start(mapping config){
+void start(object mo, object db){
 
 
 initialized=1;
 
 }
 
-void stop(mapping config){
+void stop(object mo, object db){
 
 return;
 

@@ -30,8 +30,7 @@ void load_lineitems(object id){
 id->misc->ivend->lineitems=([]);
 
   array r=DB->query("SELECT lineitem,value from lineitems "
-    "WHERE orderid='" + (id->misc->ivend->orderid ||
-	id->misc->ivend->SESSIONID) + "'");
+    "WHERE orderid='" + (id->misc->session_variables->orderid) + "'");
 
   foreach(r, mapping row)
    id->misc->ivend->lineitems+=([ row->lineitem : (float) row->value ]);
@@ -260,7 +259,7 @@ class db {
 
 inherit "html";
 
-    inherit Sql.sql : sqlconn;
+    inherit Sql.Sql : sqlconn;
 
     // object s;//  sql db connection...
 
@@ -274,25 +273,7 @@ mapping local_settings=([]);// local settings cache
 int db_info_loaded=0;
 
 
-    inherit "roxenlib";
-
-    void create(mixed host){
-
-        sqlconn::create(host);
-
-    }
-
-    mixed list_fields(string t, void|string f) {
-
-        //         perror("iVend.db: List_fields\n");
-        return sqlconn::list_fields(t, f);
-    }
-    mixed query(string q){
-
-        //  perror("iVend.db: Query\n");
-        return sqlconn::query(q);
-
-    }
+    inherit "caudiumlib";
 
     string make_safe(string s){
 	if(stringp(s))
@@ -548,7 +529,7 @@ id->variables[lower_case(DB->keys[id->variables->table])]
     }
 
     string generate_query(mapping data, string table, object s){
-
+werror("generate_query: %O\n", data);
 array(mapping(string:mixed)) r=s->list_fields(table);
         for (int i=0; i<sizeof(r); i++)
             r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -571,7 +552,7 @@ array(mapping(string:mixed)) r=s->list_fields(table);
 
     }
 
-    string|int gentable(string table, string return_page,
+   string|int gentable(string table, string return_page,
                         string|void jointable,string|void joindest , object|void id, mapping|void record){
         string retval="";
 array(mapping(string:mixed)) r=list_fields(table);
@@ -1079,6 +1060,23 @@ record[r[i]->name]
         return retval;
 
     }
+
+int reserve_orderid()
+{
+  string orderid;
+
+  query("LOCK TABLES orderid write");
+  array r=query("SELECT orderid+1 as o from orderid");
+  if(!sizeof(r))
+    orderid = "1";
+  else 
+    orderid = r[0]->o;
+  query("UPDATE orderid set orderid = %d", (int)orderid);
+  query("UNLOCK TABLES");
+  return (int)orderid;
+}
+
+
 }
 
 #if constant(thread_create)

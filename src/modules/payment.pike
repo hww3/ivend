@@ -16,12 +16,12 @@ mapping query_container_callers2();
 
 int initialized;
 
-object|void load_module(string module, mapping config)
+object|void load_module(string module, object mo)
 {
 perror("STARTING PAYMENT HANDLER...");
 object m;
 
-string moddir=config->global->general->root + "/src/modules/payment";
+string moddir=mo->query("root") + "/src/modules/payment";
  // perror("loading shipping module "  + module + "\n");
 mixed x;
 mixed xerr;
@@ -32,9 +32,7 @@ master()->set_inhibit_compile_errors(1);
 if(x)
  m=(object)clone(x);
 if(m && objectp(m)) {
-  m->start(config);
-  perror("DONE\n");
-//  perror(sprintf("%O\n", mkmapping(indices(m), values(m))));
+  m->start(mo->config);
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -43,14 +41,11 @@ return;
 
 }
 
-void start(mapping config)
+void start(object mo, object db)
 {
 initialized=0;
-object db;
 handlers=([]);
 
-
-db=iVend.db(config->general->dbhost);
 
 if((sizeof(db->list_tables("payment_types")))==1)
 {  initialized=1;
@@ -68,28 +63,28 @@ foreach(r, mapping row){
   if(objectp(handlers[row->module])) // already loaded that one.
     {
     if(!handlers[row->module]->started)
-       handlers[row->module]->start(config);
+       handlers[row->module]->start(mo->config);
     }
-  else handlers[row->module]=load_module(row->module, config);
+  else handlers[row->module]=load_module(row->module, mo);
   }
 perror("done in start()\n");
 return;
 
 }
 
-void stop(mapping config)
+void stop(object mo)
 {
 
 return;
 
 }
 
-mapping available_modules(mapping config)
+mapping available_modules(object mo)
 {
 object m;
 
 
-string moddir=config->global->general->root + "/src/modules/payment";
+string moddir=mo->query("root") + "/src/modules/payment";
 mapping am=([]);
 
 foreach(get_dir(moddir), string name){
@@ -183,7 +178,7 @@ string addtypemenu(object id)
     "the query using <i>#sessionid#</i>. If the query returns one or "
     "more rows, the method will be made available. Otherwise, "
     "the method will not be displayed as an option. If no query is "
-    provided, this method will always be available.";
+    "provided, this method will always be available.";
 
   return retval;
 }

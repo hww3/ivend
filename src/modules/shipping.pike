@@ -16,12 +16,12 @@ mapping query_container_callers2();
 
 int initialized;
 
-object|void load_module(string module, mapping config, object db)
+object|void load_module(string module, object mo, object db)
 {
-perror("STARTING SHIPPING HANDLER...");
+werror("Starting Shipping Handler...\n");
 object m;
 
-string moddir=config->global->general->root + "/src/modules/shipping";
+string moddir=mo->query("root") + "/src/modules/shipping";
 mixed x;
 mixed xerr;
 master()->set_inhibit_compile_errors(0);
@@ -29,9 +29,9 @@ xerr=catch(x=compile_file(moddir+"/"+module));
 if(xerr) perror(describe_backtrace(xerr));
 master()->set_inhibit_compile_errors(1);
 if(x)
- m=(object)clone(x);
+ m=((program)(x))();
 if(m && objectp(m)) {
-  m->start(config, db);
+  m->start(mo, db);
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -40,15 +40,16 @@ return;
 
 }
 
-void start(mapping config, object db)
+void start(object m, object db)
 {
 initialized=0;
 handlers=([]);
 
 if((sizeof(db->list_tables("shipping_types")))==1)
 {  initialized=1;
-if(sizeof(db->list_fields("shipping_types","availability"))!=1)
-  catch(db->query("alter table shipping_types add availability char(254) default ''"));
+if(sizeof(db->list_fields("shipping_types","availability_check"))!=1)
+  catch(db->
+query("alter table shipping_types add availability_check blob default ''"));
 
 }
 
@@ -62,27 +63,27 @@ foreach(r, mapping row){
   if(objectp(handlers[row->module])) // already loaded that one.
     {
     if(!handlers[row->module]->started)
-       handlers[row->module]->start(config, db);
+       handlers[row->module]->start(m, db);
     }
-  else handlers[row->module]=load_module(row->module, config, db);
+  else handlers[row->module]=load_module(row->module, m, db);
   }
 return;
 
 }
 
-void stop(mapping config, object db)
+void stop(object m, object db)
 {
 
 return;
 
 }
 
-mapping available_modules(mapping config)
+mapping available_modules(object mo)
 {
 object m;
 
 
-string moddir=config->global->general->root + "/src/modules/shipping";
+string moddir=mo->query("root") + "/src/modules/shipping";
 mapping am=([]);
 
 foreach(get_dir(moddir), string name){
@@ -121,7 +122,8 @@ return 0;
 }
 
 float calculate_handlingcharge(string type, string orderid, object id){
-float handling_charge=0.00;
+
+  float handling_charge=0.00;
 
   T_O->trigger_event("calculateHandlingCharge",id,(["type": type,
 	"orderid": orderid]));   
@@ -150,7 +152,8 @@ else {
 	+ "\">" +row->name + "</a></td><td><autoformat>" +
 row->description + 
 	"</autoformat></td><td>" + row->availability + 
-"</td><td> ( <A HREF=\"./?mode=deletetype&deletetype=" + row->type + 
+"</td><td>" 
+        + row->availability_check + "</td><td> ( <A HREF=\"./?mode=deletetype&deletetype=" + row->type + 
 	"\">Delete</a> )</td></tr>\n";
 retval+="</table>\n";
   }
@@ -164,13 +167,15 @@ string addtypemenu(object id)
   string retval="<form action=\"./\">\n"
     "Shipping Type Name: <input type=text size=40 name=name><br>\n"
     "Calculation method: <select name=module>\n";
-  mapping am=available_modules(id->misc->ivend->config);
+  mapping am=available_modules(T_O);
   foreach(indices(am),string method)
     retval+="<option value=\"" +method + "\">" + am[method] + "\n";
   retval+="</select><br>\nDescription:" 
     "<textarea name=\"description\" cols=60 rows=6></textarea><br>"
 	"\nAvailability:"
     "<textarea name=\"availability\" cols=60 rows=6></textarea><br>"
+	"\nAvailability check function:"
+    "<textarea name=\"availability_check\" cols=60 rows=6>int check(mapping data, object db){\n return 1;\n}\n</textarea><br>"
     "<input type=hidden name=mode value=doaddtype>\n"
     "<input type=submit name=doaddtype value=AddShippingType>\n</form>"
     "<b>Shipping Type</b>: This is the name of the shipping type that "
@@ -232,7 +237,8 @@ mixed doaddtype(object id)
 	DB->quote(id->variables->name) + "','" +
 	DB->quote(id->variables->description) + "','" +
 	id->variables->module + "','" +
-	DB->quote(id->variables->availability) + "')");
+	DB->quote(id->variables->availability) + "'," +
+        DB->quote(id->variables->availability_check) + "')");
   
   start(id->misc->ivend->config, id->misc->ivend->db);
 
@@ -313,7 +319,7 @@ float|string tag_shippingcost (string tag_name, mapping args,
 
 array r=DB->query("SELECT value FROM lineitems WHERE "
   "lineitem='shipping' AND orderid='"+
-(args->orderid || id->misc->ivend->orderid || id->misc->session_id)
+(args->orderid || id->misc->session_variables->orderid)
 +
   "'");
 if(sizeof(r)>0) return sprintf("%.2f", (float)(r[0]->value));
@@ -328,8 +334,7 @@ string retval="";
 float charge=0.00;
 
 string type= (args->type || id->variables->type || "1");
-string orderid=(args->orderid || id->misc->ivend->orderid ||
-  id->misc->session_id);
+string orderid=(args->orderid || id->misc->session_variables->orderid);
 
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); 
@@ -337,6 +342,7 @@ if(!r){ perror("error getting shipping type " + type + "\n");
  -1.00; }
 
 else charge=handlers[r[0]->module]->calculate_shippingcost(type, orderid, id); 
+werror("charge: %f\n", charge);
 
 charge+=calculate_handlingcharge(type, orderid, id);
   
@@ -344,14 +350,14 @@ return sprintf("%.2f", ((float)(charge)));
 
 }
 
-string tag_shippingtype (string tag_name, mapping args,
+string|void tag_shippingtype (string tag_name, mapping args,
                     object id, mapping defines) {  
 
 
 string retval;
 array r;
 string query=("SELECT extension FROM lineitems where orderid='" +
-  (id->misc->ivend->orderid || id->misc->session_id)
+  (id->misc->session_variables->orderid)
   + "' AND lineitem='shipping'");
 r=DB->query(query);
 
@@ -378,8 +384,7 @@ string retval;
 
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
-string orderid=(args->orderid || id->misc->ivend->orderid ||
-id->misc->session_id);
+string orderid=(args->orderid || id->misc->session_variables->orderid);
 if(!args->charge){
 array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); return ""; }
@@ -398,9 +403,9 @@ if((float)(charge)==-2.00) {
   typename+=" (" + ACTUAL_CHARGES + ")";
   }
 id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
-	+ id->misc->session_id + "' AND lineitem='shipping'");
+	+ id->misc->session_variables->orderid + "' AND lineitem='shipping'");
 id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
-  id->misc->session_id + "', 'shipping', " + charge + ",'" +
+  id->misc->session_variables->orderid + "', 'shipping', " + charge + ",'" +
   typename + "','" + T_O->is_lineitem_taxable(id, "shipping", "") + "')");
 
 return "";
@@ -427,25 +432,43 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
   return;
 }
 
-string tag_shippingtypes (string tag_name, mapping args,
-                    object id, mapping defines) {  
+array collect_shippingtypes(object id)
+{
+array rw=({});
+array r;
 
+r=DB->query("SELECT * from shipping_types order by type");
+  foreach(r, mapping row)
+  {
+  // check to see if "availability_check" is empty.
+  if(!strlen(row->availability_check))
+    rw+=({row});
+  else
+  {
+    int res;
+    master()->set_inhibit_compile_errors(0);
+    function check =  compile_string(row->availability_check)()->check;
+    if(check)
+    {
+      res = check(id->misc->session_variables, DB);
+    }
+    if(res) rw += ({row});
+  }
+
+}
+
+return rw;
+}
+
+string|void tag_shippingtypes (string tag_name, mapping args,
+                    object id, mapping defines) {  
 string retval="";
 array r;
-catch(
-r=id->misc->ivend->db->query("SELECT * from shipping_types order by type"));
 int t=0;
 int g=0;
 array rw=({});
-foreach(r, mapping row){
-  if(search(lower_case(row->availability), "select")!=-1){
-    row->availability=replace(row->availability, "#sessionid#",
-	id->misc->session_id);
-    array m=id->misc->ivend->db->query(row->availability);
-    if(sizeof(m)>0) rw+=({row});
-  }
-  else rw+=({row});
-}
+
+rw = collect_shippingtypes(id);
 
 if(!rw || sizeof(rw)==0)
   return "No shipping options are currently available.<input type=hidden name=no_shipping_options value=1>";
@@ -465,7 +488,8 @@ if((float)price==-2.00){
     retval+="<dt><input type=radio name=type " +((t==0)?("CHECKED"):("")) 
       +" value=\"" + row->type + "\"> <b>"+ row->name + 
       ": $ " + price +
-      "</b><dd>" + row->description;
+      "</b><dd>" + row->description; 
+
   g=1;
 }
   t=1;

@@ -25,17 +25,9 @@ return 0;
 
 }
 
-void start(mapping config){
+void start(object mo, object db){
 
 started=0;
-
-object db;
-
-if(catch(db=iVend.db(config->general->dbhost)))
-  {
-    perror("iVend: OTShipping: Error Connecting to Database.\n");
-    return;
-  }
 
 if(sizeof(db->list_tables("shipping_ot"))==1);
 else initialize_db(db);
@@ -44,7 +36,7 @@ return;
 
 }
 
-mixed|void stop(mapping config){
+mixed|void stop(object mo, object db){
 
 return 0;
 
@@ -138,21 +130,18 @@ string showtype(object id, mapping row){
 float calculate_shippingtotal(object id, mixed orderid, mixed type){
 
 float subtotal=0.00;
-array r;
 
-
-
-r=id->misc->ivend->db->query("SELECT "
-  "SUM(sessions.price*sessions.quantity) as "
-  "shippingtotal FROM sessions WHERE sessions.sessionid='" +
-  orderid + "'");
-
-if (sizeof(r)!=1) {
+if (!sizeof(id->misc->session_variables->cart)) {
   perror( "Unable to calculate Order Subtotal.");
   return -1.00;
   }
 
-return (float)(r[0]->shippingtotal);
+foreach(id->misc->session_variables->cart, mapping c)
+{
+  subtotal+=(float)((float)(c->quantity) * (float)(c->price));
+}
+
+return (float)(subtotal);
 
 }
 
@@ -167,12 +156,15 @@ if(amt<0.00) {
   return -1.00;
   }
 
- perror("type: " + type + " amt: " + sprintf("%.2f", amt)+"\n");
-
-r=id->misc->ivend->db->query("SELECT charge FROM shipping_ot WHERE type=" +
-  (string)type +  " AND min <= " + 
+ werror("type: " + type + " amt: " + sprintf("%.2f", amt)+"\n");
+string qry = "SELECT charge FROM shipping_ot WHERE type=" +
+  (string)type +  " AND ( min <= " + 
   sprintf("%.2f",amt) + " AND max >= " +
-  sprintf("%.2f",amt) );
+  sprintf("%.2f",amt) +")";
+
+werror("qry: %s\n\n", qry);
+
+r=id->misc->ivend->db->query(qry);
 
 if(sizeof(r)!=1) {
   perror("ERROR GETTING SHIPPINGCOST!\n");

@@ -17,7 +17,7 @@ mapping complex_types=([ "Single Price": "single",
 	"Buy X Get Y": "buyxgetx",
 	"Graduated Price": "grad"]);
 
-void start(mapping config, object db){
+void start(object m, object db){
 
 if(sizeof(db->list_tables("complex_pricing"))<1)
   if(catch(db->query("CREATE TABLE complex_pricing ( "
@@ -53,7 +53,7 @@ if(sizeof(db->list_tables("cp_buyxgetx"))<1)
 }
 
 
-void stop(mapping config){
+void stop(object m){
 
 return;
 }

@@ -7,7 +7,7 @@ inherit "roxenlib";
 constant module_name = "Admin Interface";
 constant module_type = "handler";
 
-void start(mapping config){
+void start(object m){
 
 return;
   
@@ -393,7 +393,7 @@ id->variables->_module +
 
   mapping z;
 object privs=Privs("iVend: Writing Config File ");
-z=Config.read(Stdio.read_file(id->misc->ivend->this_object->query("configdir")+
+z=IniFile.read(Stdio.read_file(id->misc->ivend->this_object->query("configdir")+
   CONFIG->config));
 privs=0;
 
@@ -444,8 +444,8 @@ catch(CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables
   if(id->variables->_action=="Save" && !saved) {
 
   object privs=Privs("iVend: Writing Config File ");
-Config.write_section(id->misc->ivend->this_object->query("configdir")+
-  CONFIG->config, id->variables->_module,
+IniFile.write_section(combine_path(id->misc->ivend->this_object->query("storeroot"),
+  "config/config.ini"), id->variables->_module,
 	CONFIG_ROOT[id->variables->_module]);
 privs=0;
   saved=1;
@@ -766,6 +766,18 @@ return ({
         "Email address of store administrator; emails are addressed from this email.",
         VARIABLE_STRING,
         "address@mydomain.com"
+        }),  
+
+        ({"smtp_server", "SMTP Host",
+        "SMTP Server Host; emails sent by iVend are sent to this host for delivery",
+        VARIABLE_STRING,
+        "localhost"
+        }),  
+
+        ({"smtp_port", "SMTP Port",
+        "SMTP Server Port; emails sent by iVend are sent to this host for delivery",
+        VARIABLE_INTEGER,
+        25
         }),  
 
         ({"productnamefield", "Product Name Field",

@@ -22,14 +22,7 @@ return 0;
 
 }
 
-void start(mapping config){
-
-object db;
-
-if(catch(db=iVend.db(config->general->dbhost))) {
-    perror("iVend: PerProductShipping: Error Connecting to Database.\n");
-    return;
-    }
+void start(object mo, object db){
 
 if(sizeof(db->list_tables("shipping_pp"))==1);
 else initialize_db(db);
@@ -37,7 +30,7 @@ else initialize_db(db);
 return;
 
 }
-void|mixed stop(mapping config){
+void|mixed stop(object mo, object db){
 
 return 0;
 

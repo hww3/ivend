@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.207 1999-05-29 03:43:57 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.208 1999-05-29 03:50:56 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -660,6 +660,7 @@ mixed do_additems(object id, array items){
 perror(o->surcharge +"\n");
 		 price=(float)price + (float)(o->surcharge);
 perror(price+"\n");
+if(item->options) o+=item->options;
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
         return;
@@ -704,11 +705,13 @@ trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
     if(id->variables->update) {
         for(int i=0; i< (int)id->variables->s; i++){
             if((int)id->variables["q"+(string)i]==0) {
+/*
 		array mr=DB->query("SELECT autoadd, locked FROM sessions "
 			"WHERE SESSIONID='" + id->misc->ivend->SESSIONID + 
 			"' AND id='" + id->variables["p" + (string)i] + "'"
 			" AND series=" + id->variables["s" + (string)i]);
 		if(mr[0]->locked==0) 
+*/
                   madechange=1;
                 DB->query("DELETE FROM sessions WHERE SESSIONID='"
                           +id->misc->ivend->SESSIONID+
@@ -739,7 +742,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
                       id->misc->ivend->SESSIONID + "'");
             foreach(r, mapping row) {
                 if(((int)(row->autoadd))==1) continue;
-items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
+items+=({ (["item": row->id, "quantity": row->quantity, "options":
             row->qualifier, "series": row->series ]) });
             }
 //            perror(sprintf("%O", items));

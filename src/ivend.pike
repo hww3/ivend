@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.21 1998-02-12 21:47:50 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.22 1998-02-18 01:27:30 hww3 Exp $";
 
 /*
  *
@@ -450,6 +450,14 @@ void start(){
 }
 
 
+mixed stat_file( mixed f, mixed id )  {
+array fs;
+perror("statting "+id->misc->ivend->root+"/"+f+"\n");
+fs=file_stat(id->misc->ivend->root+"/"+f);
+if(!fs) fs=file_stat(id->misc->ivend->root+"/");
+return fs;
+}
+
 mixed handle_error(string error, object id){
 string retval;
 if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.ivml")))
@@ -540,7 +548,7 @@ return 0;
 retval=Stdio.read_bytes(config[st]->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
-
+id->realfile=config[st]->root+"/"+template;
 // retval="find_page("+page+", s, id)";
 return parse_page(retval, r, f, id);
 }
@@ -576,6 +584,7 @@ mixed retval;
 switch(page){
 
   case "index.ivml":
+    id->realfile=config[st]->root+"/index.ivml";
     retval= Stdio.read_bytes(config[st]->root+"/index.ivml"); 
     break;
 

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.215 1999-06-07 00:57:08 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.216 1999-06-07 01:23:35 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1660,7 +1660,8 @@ string return_to_admin_menu(object id){
              }
 
              mixed admin_handler(string filename, object id){
-
+if(CONFIG->admin_enabled=="No")
+  return 0;
                  if(sizeof(id->prestate)==0) {
                      id->prestate=(<"menu=main">);
                      return http_redirect(id->not_query + (

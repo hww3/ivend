@@ -69,3 +69,12 @@ $siname=RSA Public Key
 $type=string
 $endescription=Pathname of RSA Public Key
 $sidescription=Pathname of RSA Public Key
+
+$varname=config_enabled
+$enname=Enable Store Administration
+$siname=Enable Store Administration
+$type=multiple
+$options=Yes|No
+$description=Should the Administration Interface be enabled for this store?
+$sidescription=Should the Administration Interface be enabled for this store?
+

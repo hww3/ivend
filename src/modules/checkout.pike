@@ -185,7 +185,7 @@ if(sizeof(DB->list_tables("orderid_list"))!=1) {
     "orderid CHAR(64) NOT NULL PRIMARY KEY, "
     "timestmp timestamp )"))) {
       throw_error(ERROR_RESERVING_ORDERID, id);
-      report_critical_error(ERROR_RESERVING_ORDERID,id);
+      T_O->report_critical_error(ERROR_RESERVING_ORDERID,id);
       return -1;
     }
   }

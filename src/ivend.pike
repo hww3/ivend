@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.282 2000-12-28 19:16:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.283 2001-01-02 22:04:42 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -70,6 +70,15 @@ void report_error(string error, string|void orderid, string subsys, object id){
 	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
 	"1, NOW(),'" +
 	DB->quote(error) + "')");  
+
+    return;
+
+}
+
+void report_critical_error(string error, string|void orderid, string
+subsys, object id){
+    perror("critical_error: " + id->remoteaddr + ": " +
+		id->misc->ivend->sessionid +           "\n" + " " + error);
 
     return;
 
@@ -2164,7 +2173,7 @@ if(!intp(r)){
                          name=a[sizeof(a)-1];
 			retval+="<td>";
                          retval+=open_popup( name,
-                                 id->not_query, handler_name ,
+                                 id->not_query + "?window=popup", handler_name ,
 				(["type" : type, "width":550]) ,id);
 			retval+="</td>\n";
                      }
@@ -2276,7 +2285,7 @@ retval+="<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
                          name=a[sizeof(a)-1];
 			retval+="<td>";
                          retval+=open_popup( name,
-                                 id->not_query, handler_name ,
+                                 id->not_query + "?window=popup", handler_name ,
 				(["type": type, "width":550]) ,id);
 			retval+="</td>\n";
                      }
@@ -2458,8 +2467,8 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                      name=a[sizeof(a)-1];
                                      retval+="<td>\n";
                                      retval+=open_popup( name,
-                                 id->not_query, handler_name ,
-(["type": type]) ,id);
+                                 id->not_query+ "?window=popup", handler_name ,
+					(["type": type]) ,id);
                                      retval+="</td>\n";
                                  }
                                  if(sizeof(valid_handlers))
@@ -3069,11 +3078,14 @@ if(id->misc->ivend->redirect) errno=302;
                                  if(file_stat(filen));
                                  else return ({"Unable to find module " + name + "."});
                              }
-                             err=catch(m=(object)clone(compile_file(filen)));
+				master()->set_inhibit_compile_errors(0);
+				err=catch(compile_file(filen));
                              if(err) {
-
+				perror(err*"\n");
                                  return (err);
                              }
+				master()->set_inhibit_compile_errors(1);
+                              m=(object)clone(compile_file(filen));
                          modules[c]+=([  m->module_name : m  ]);
                              mixed o=modules[c][m->module_name];
                              if(functionp(o->start)) {

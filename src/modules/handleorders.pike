@@ -533,6 +533,7 @@ else {
 	"<input type=submit value=\"View Log\"></form>"; 
 
 }
+  if(id->variables->window)
   retval+="<center>"
 	"<form action=''><input type=reset value='Close' "
 	"onClick='javascript:window.close()'></form>"
@@ -1015,7 +1016,7 @@ mixed register_admin(){
 
 return ({
 
-	([ "mode": "menu.main.Orders.View_Activity_Log",
+	([ "mode": "menu.main.Orders.View_Order_History",
 		"handler": view_activity_log,
 		"security_level": 1 ]),
 	([ "mode": "menu.main.Orders.View_Orders",

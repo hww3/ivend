@@ -8,3 +8,7 @@ Multiple language support (2/15/98) [started]
 "point and shoot" configuration of ordering process. (2/20/98) [started]
 
 add hooks for image processing (2/23/98)
+
+persistent database connections (3/15/98)
+
+support for threaded operation (3/15/98)

@@ -43,6 +43,16 @@ string retval;
 return retval;
 }
 
+
+string tag_confirmorder(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+string retval;
+
+return retval;
+
+}
+
 /*
 
   calculate tax
@@ -344,6 +354,7 @@ else return contents;
 mapping query_tag_callers2() {
 
 return (["showorder" : tag_showorder,
+      "confirmorder" : tag_confirmorder,
 	  "shipping" : tag_shipping,
 	"grandtotal" : tag_grandtotal,
   	  "subtotal" : tag_subtotal,

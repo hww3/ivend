@@ -179,8 +179,10 @@ Stdio.write_file(id->misc->ivend->config->root+"/images/"+
     errors+="<li>"+replace(r[i]->name,"_"," ")+" needs a value.<br>\n";
 
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
-    r[i]->type=="enum" ||
-    r[i]->type=="blob") query+="'"+id->variables[r[i]->name]+"',";
+    r[i]->type=="enum" || r[i]->type=="blob" ||
+	stringp(r[i]->name)
+	) query+="'"+id->variables[r[i]->name]+"',";
+
 
   else query+=(id->variables[r[i]->name]||"NULL")+",";
 

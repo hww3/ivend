@@ -5,6 +5,7 @@
  *
  */
 
+#include <messages.h>
 #include <module.h>
 #include <stdio.h>
 #include <simulate.h>
@@ -18,7 +19,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.36 1998-03-10 20:54:48 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.37 1998-03-16 21:11:38 hww3 Exp $";
 
 array register_module(){
 
@@ -956,9 +957,33 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
   
    }
 
-mixed 
 
-admin_handler(string filename, object id){
+mixed order_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Store Orders</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\"/ivend/ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=helvetica black>"
+  +id->misc->ivend->config->name+
+  " Orders</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a><p>\n";
+
+
+return retval;
+
+}
+
+
+mixed admin_handler(string filename, object id){
 
 if(id->auth==0)
   return http_auth_required("iVend Store Administration",
@@ -1048,10 +1073,6 @@ string type=(id->variables->table-"s");
       "<input type=submit value=Delete>\n</form>";
   break;
 
-  case "orders":
-  retval+="Orders:\n";
-  break;
-
   case "clearsessions":
   clean_sessions(id);	
   retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
@@ -1060,7 +1081,7 @@ string type=(id->variables->table-"s");
 
   default:
   retval+= "<ul>\n"
-    "<li><a href=admin?mode=orders>Orders</a>\n"
+    "<li><a href=\"orders\">Orders</a>\n"
     "</ul>\n"
     "<ul>\n"
     "<li><a href=\"admin?mode=addproduct\">Add New Product</a>\n"
@@ -1186,6 +1207,10 @@ else {
 		  perror("ADMIN!\n");
 		  retval=admin_handler(restofrequest, id);
 		  break;
+		case "orders":
+		  perror("ORDERS!\n");
+		  retval=order_handler(restofrequest, id);
+		  break;
 		default:
 		  perror("DEFAULT!\n");
 		  retval=(handle_page(request[1], id));
@@ -1198,7 +1223,11 @@ else {
 	//
 
 #ifdef MODULE_DEBUG	
-//	retval+="<DUMPID>";
+/*
+if(stringp(retval))
+	retval+=sprintf("<pre>ID:%O\n</pre>\n",
+                 mkmapping(indices(id), values(id)));
+*/
 #endif
 
 if(stringp(retval)){

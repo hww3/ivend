@@ -47,9 +47,44 @@ return retval;
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
 
-string retval;
+  string retval;
 
-return retval;
+  object s=Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );   
+
+// get the order from sessions
+
+  array r=s->query("SELECT * FROM sessions WHERE sessionid='"
+	+id->misc->ivend->SESSIONID+ "'");
+
+// and stick it into orders...
+
+  s->query("INSERT INTO orders VALUES(NULL,0,NULL,0,NULL,NULL,NOW())");
+  id->misc->ivend->orderid=s->master_sql->insert_id();
+
+  for(int i=0; i<sizeof(r); i++){
+
+    r[i]->orderid=id->misc->ivend->orderid;
+    m_delete(r[i], "sessionid");
+
+  }
+
+// update customer info and payment info with new orderid
+    
+  s->query("UPDATE customer_info SET orderid='"+
+	id->misc->ivend->orderid+"' WHERE orderid='"
+	+id->misc->ivend->SESSIONID+"'");
+
+  s->query("UPDATE payment_info SET orderid='"+
+	id->misc->ivend->orderid+"' WHERE orderid='"
+	+id->misc->ivend->SESSIONID+"'");
+
+
+  return retval;
 
 }
 

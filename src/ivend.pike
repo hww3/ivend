@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.83 1998-07-23 16:56:37 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.84 1998-07-27 16:53:04 hww3 Exp $";
 
 array register_module(){
 
@@ -290,8 +290,7 @@ if(id->variables->update) {
 //	error(YOUR_CART_IS_EMPTY, id);
       return YOUR_CART_IS_EMPTY +"\n";
     }
-    retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n"
-	"<th bgcolor=maroon><font color=white>"+ PRODUCT +"</th>\n";
+    retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
 	
     foreach(en, field){
 	retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";

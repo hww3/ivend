@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.237 1999-08-04 17:45:12 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.238 1999-08-16 16:51:44 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2721,10 +2721,12 @@ mapping to=id->misc->defines[" _extra_heads"];
 
                  }
 
-                 else if(id->cookies->SESSIONID)
-                     id->misc->ivend->SESSIONID=id->cookies->SESSIONID;
+                 else if(id->variables->SESSIONID)
+id->misc->ivend->SESSIONID=id->variables->SESSIONID;
 
-                 else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
+                 else 
+if(id->cookies->SESSIONID)
+                     id->misc->ivend->SESSIONID=id->cookies->SESSIONID;
 
                  //   if(id->supports->cookies)
                  if(!id->cookies->SESSIONID)

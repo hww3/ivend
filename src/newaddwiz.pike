@@ -421,7 +421,16 @@ ss=ss[0..sizeof(ss)-2];
 s->query("INSERT INTO admin_users VALUES('ADMIN','Store Administrator','"
 	+ v->adminemail + "','" + crypt(adminpassword) + "', 9)");
 }
-
+else {
+  retval+="You chose not to have database tables created. Before you "
+	"can use this store, you must populate the database. You should "
+	"use $STOREROOT/schema.mysql as a starting point. You must also "
+	"add a qualified administrative user to the admin_users table "
+	"using a query like this:<p>"
+	"<blockquote><tt>INSERT INTO admin_users VALUES('ADMIN',"
+	"'Store Administrator','Admin_Email@Address',ENCRYPT('password')"
+	",9)<p>\n";
+}
 
 
 privs=Privs("iVend: Copying key files ");

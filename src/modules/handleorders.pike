@@ -785,9 +785,10 @@ if(id->variables->delete){
 
 else if(id->variables->orderid) {
 
-if(id->variables->print)
+if(id->variables->print) {
   ADMIN_FLAGS=NO_BORDER;
-
+  retval+="<BODY onLoad=\"document.print()\">\n";
+}
 if(id->variables->export) {
   ADMIN_FLAGS=NO_BORDER;
   T_O->add_header(id, "Content-Disposition",
@@ -909,6 +910,10 @@ numpages + " &nbsp; " +
     retval+="</table>\n";
   }
 // }
+}
+
+if(id->variables->print) {
+  retval+="</BODY>\n";
 }
 
 return retval;

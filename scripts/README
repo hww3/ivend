@@ -1,0 +1,10 @@
+Contents of Scripts:
+
+create_store.sh: a simple script to help create new stores. requires a
+working pike and mysql in your search path.
+
+make_key.pike: this script will make a rsa keypair and save it in the file
+you specify.
+
+read_key.pike: this script will demonstrate that the keypair works for
+encryption and decryption.

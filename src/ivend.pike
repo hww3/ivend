@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.227 1999-07-07 02:13:32 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.228 1999-07-07 17:38:41 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -13,7 +13,7 @@ string cvs_version = "$Id: ivend.pike,v 1.227 1999-07-07 02:13:32 hww3 Exp $";
 #include <stdio.h>
 #include <simulate.h>
 
-#define ENABLE_ADMIN_BACKDOOR 1
+// #define ENABLE_ADMIN_BACKDOOR 0
 
 #if __VERSION__ >= 0.6
 import ".";
@@ -58,6 +58,7 @@ mapping global=([]);
 mapping numsessions=([]);
 mapping numrequests=([]);
 mapping local_settings=([]);
+mapping admin_user_cache=([]);
 
 int num;
 int save_status=1;              // 1=we've saved 0=need to save.
@@ -1530,6 +1531,8 @@ add_cookie(id, (["name":"logging_in",
 		id->misc->ivend->admin_user_level=r[0]->level;
              add_cookie(id, (["name":"admin_user",
                               "value":r[0]->username, "seconds": 3600]),([]));
+	     add_cookie(id, (["name":"admin_auth",
+			      "value":"" ]), ([]));
              add_cookie(id, (["name":"logging_in",
                               "value":"", "seconds": 1]),([]));
 		return 1;
@@ -1546,6 +1549,8 @@ add_cookie(id, (["name":"logging_in",
 
              add_cookie(id, (["name":"admin_user",
                               "value":"admin", "seconds": 3600]),([]));
+	     add_cookie(id, (["name":"admin_auth",
+			      "value":"" ]), ([]));
              add_cookie(id, (["name":"logging_in",
                               "value":"", "seconds": 1]),([]));
 
@@ -2523,7 +2528,7 @@ if(STORE)
 
              mixed handle_error(object id){
                  string retval;
-
+		id->misc->ivend->handled_error=1;
                  if(STORE && CONFIG)
                      retval=Stdio.read_file(
                                 CONFIG->root+"/html/error.html");
@@ -2633,10 +2638,11 @@ mapping to=id->misc->defines[" _extra_heads"];
              }
 
              mixed return_data(mixed retval, object id){
+                             // werror("return_Data\n");
+                             if(sizeof(id->misc->ivend->error)>0 &&
+					!id->misc->ivend->handled_error)
+                                 retval=handle_error(id);
                               werror("return_Data\n");
-                             if(sizeof(id->misc->ivend->error)>0)
-                             { perror("go errors...\n"); 
-retval=(handle_error(id)); }
                              if(objectp(DB) && STORE)
                                  db[STORE]->handle(DB);
 

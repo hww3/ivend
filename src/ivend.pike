@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.217 1999-06-07 02:25:09 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.218 1999-06-08 14:04:18 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2041,6 +2041,11 @@ id->variables->__criteria + "%";
                              }
 
                          }
+			if(mappingp(rv)) {
+			  destruct(DB);
+			  return rv;
+			}
+
                          retval+=rv;
                      }
                      else if(mode=="menu" && type=="main")   {

@@ -555,7 +555,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     "<input type=hidden name=referer value=\"" +
       id->variables->referer + "\">\n";
   // if(!args->fields) return "Incomplete cart configuration!";
-  array r= DB->query(
+if(catch(  array r= DB->query(
 		     "SELECT sessions." + KEYS->products +
 		     ",series,quantity,sessions.price "+ 
 		     extrafields+" FROM sessions,products "
@@ -563,7 +563,9 @@ mixed container_icart(string name, mapping args, string contents, object id) {
 		     +id->misc->ivend->SESSIONID+"' AND sessions."+
 		     KEYS->products+"=products." +
 		     KEYS->products
-		     );
+		     )))
+  return "An error occurred while accessing your cart."
+	"<!-- Error follows:\n\n" + DB->error() + "\n\n-->";
   if (sizeof(r)==0) {
     if(id->misc->ivend->error) 
       return YOUR_CART_IS_EMPTY +"\n<false>\n";
@@ -2275,6 +2277,9 @@ perror(filen + "\n");
               array pr=modules[c][m->module_name]->query_preferences(config[c]);
 	perror("got " + sizeof(pr) + " prefs...\n");
               foreach(pr, array pref){
+		if(!config[c]) config[c]=([]);
+		if(!config[c][m->module_name])
+		  config[c][m->module_name]=([]);
                 if(!config[c][m->module_name][pref[0]]){
                   config[c][m->module_name][pref[0]]= pref[4];
 	perror("found a new pref, so we need to save...\n");
@@ -2538,7 +2543,8 @@ perror(filen + "\n");
                           "<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
                           "</TR>\n"
                           "<TR>\n"
-                          "<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n";
+                          "<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER "
+			"TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n";
 
                         
                      if(request[0]=="reload"){
@@ -2574,10 +2580,11 @@ perror(filen + "\n");
                         else {*/   // generate the wizard.
 // string wiz=c->genwizard(0,query("lang"), query("root")+"src/modules");
 // Stdio.write_file("/home/bwellive/ivend/src/addwiz.pike", wiz);
-object w=(object)clone(compile_file(query("root")+"/src/addwiz.pike"));
+object w=(object)clone(compile_file(query("root")+"/src/newaddwiz.pike"));
 // perror(indices(w)*"\n");
 mixed res=w->wizard_for(id, "./");
-if(stringp(res)) retval+=res;
+if(stringp(res)) retval+="<td colspan=6><p>&nbsp;<p>\n" + res +
+	"</td></tr>\n";
 else return res;                        }
                         
                         

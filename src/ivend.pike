@@ -201,7 +201,7 @@ mapping arguments=([]);
 
 arguments["_parsed"]="1";
 
-if (args->external)
+if (arguments->external)
   arguments["href"]=args->href;
 
 else if (args->add) 
@@ -214,7 +214,7 @@ else if(args->cart)
 else if(args->checkout)
   arguments["href"]=query("mountpoint")+
     (id->misc->ivend->moveup?"":id->misc->ivend->st + "/")
-    +"checkout?SESSIONID=" +id->misc->ivend->SESSIONID;
+    +"checkout/?SESSIONID=" +id->misc->ivend->SESSIONID;
 else if(args->href){
   int loc;
   if(loc=search(args->href,"?")==-1)
@@ -351,12 +351,13 @@ if(id->variables->update) {
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
 	"<table><tr><Td><input name=update type=submit value=\"" 
 	+ UPDATE_CART + "\"></form></td>\n";
-if(!args->checkout)
+if(!id->misc->ivend->checkout){
 	retval+="<td> <form action=\""+ query("mountpoint") +
 (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
         ?"":st+"/")+"checkout/?SESSIONID=" + id->misc->ivend->SESSIONID
-	+ "\">"
-	"<input name=update type=submit value=\" Check Out \"></form></td>";
+	+ "\">";
+  retval+="<input name=update type=submit value=\" Check Out \"></form></td>";
+}
 retval+="</tr></table>\n<true>\n"+contents;
 return retval;    
  
@@ -379,7 +380,7 @@ return retval;
 string tag_ivendlogo(string tag_name, mapping args,
                     object id, mapping defines) {
 
-return "<a href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
+return "<a external href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
 	query("mountpoint")+"ivend-image/ivendbutton.gif\" border=0></a>";
 
 }
@@ -508,7 +509,6 @@ if(args->type=="groups") {
   if(!args->show)
     query+=" WHERE status='A' ";
 
-   r=id->misc->ivend->db->query(query);
   }
 else {
   query="SELECT product_id AS pid "+ extrafields+
@@ -523,8 +523,12 @@ else {
   query+=" AND products." +  keys[id->misc->ivend->st]->products +
 	"=product_id";
 
-  r=id->misc->ivend->db->query(query);
 }
+
+if(args->order)
+  query+=" ORDER BY " + args->order;
+
+  r=id->misc->ivend->db->query(query);
 
 if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
 
@@ -691,8 +695,11 @@ if (sizeof(r)==1){
   f=id->misc->ivend->db->list_fields("groups");
   }
 else {
-  r=id->misc->ivend->db->query("SELECT * FROM products WHERE " +
-	keys[id->misc->ivend->st]->products +"='"+page+"'");
+  string q="SELECT *" + (id->misc->ivend->extrafields?"," +
+	id->misc->ivend->extrafields:"") +" FROM products WHERE " +
+	keys[id->misc->ivend->st]->products +"='"+page+"'";
+
+  r=id->misc->ivend->db->query(q);
   id->misc->ivend->type="product";
   if(id->variables->template) template=id->variables->template;
   else template="product_template.html";
@@ -1372,6 +1379,7 @@ mixed err;
     break;
     case "checkout":
 werror("request: checkout\n");
+    id->misc->ivend->checkout=1;
     retval=(handle_checkout(id));
 werror("returned from handle_checkout.\n");
     break;
@@ -1391,6 +1399,9 @@ string|void container_ivml(string name, mapping args,
 {
 
 if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
+
+if(args->extrafields)
+  id->misc->ivend->extrafields=args->extrafields;
 
  mapping tags=    ([
 	"ivstatus":tag_ivstatus, 

@@ -539,6 +539,9 @@ else if(r[i]->type=="string"){
    else if(r[i]["default"]=="Y")
       retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"Y\">"
         "Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
+   else if(r[i]->flags["primary_key"] && record[r[i]->name])
+     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
+	record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
    else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="
       +r[i]->length+" SIZE="+(r[i]->length)+" VALUE=\""+
 	(record[r[i]->name]||"") +"\">\n";

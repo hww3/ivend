@@ -111,8 +111,18 @@ string retval="";
 if(!args->table) return "";
 
  retval+=s->generate_form_from_db(args->table,
-    ((args->exclude-"")/",")||({}),id)+
+    ((
+ 
+      (( (args->exclude||" ")-" ")/",")
+       ||({}))
+        + 
+     ( (
+      ((args->hide||" ")-" ") /",")
+      ||({})) 
+     ),id)+
         "<input type=hidden name=table value=\""+args->table+"\">";
+retval+="<input type=hidden name=aeexclude value=\""+((args->exclude||" ")-" ")
+  + "\">\n";
 return retval;
 }
 
@@ -127,6 +137,16 @@ string tag_addentry(string tag_name, mapping args,
     );
 
 mixed j;
+
+ if(id->variables->aeexclude){
+   array aeexclude=id->variables->aeexclude /",";
+   string exclude;
+   foreach(aeexclude, exclude) {
+     id->variables[exclude]="N/A";
+     perror(exclude + ": N/A\n");
+   }
+   m_delete(id->variables, "aeexclude");
+ }
 
  if(args->encrypt){
 object encryptedid = id;
@@ -210,19 +230,18 @@ int page;
   }
 }
 else if(id->variables["_page"]=="4"){
+  retval+="<font size=+2>4. Payment Information</font>\n<checkout>\n";
    if((string)id->variables->shipsame=="1");
    else {
      retval+="<addentry>\n";
 	}
-  retval+="<font size=+2>4. Payment Information</font>\n"
-  	"<checkout><table><generateform table=payment_info exclude=\""
-    "orderid,type\">";
-
-  retval+="</table>\n"
-
-	"<input type=submit value=\" >> \">"
-        "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
-	"</checkout>\n";
+retval+=
+    "<table><generateform table=payment_info hide=\""
+    "orderid,type\">"
+    "</table>\n"
+    "<input type=submit value=\" >> \">"
+    "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
+    "</checkout>\n";
 
  }
 
@@ -238,9 +257,9 @@ else if(id->variables["_page"]=="3"){
     "<select name=shipsame>"
     "<option value=1>Yes\n<option value=0>No\n</select>"
     "<p>If not, complete the following information:<br><table>\n"
-    "<generateform table=customer_info "
-    "exclude=\"orderid,type,updated,fax,daytime_phone,evening_phone,"
-    "email_address\"></table>"
+    "<generateform table=customer_info hide=orderid,type,updated "
+    "exclude=\"Fax,Daytime_Phone,Evening_Phone,"
+    "EMail_Address\"></table>"
     "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"
 	"<input type=hidden name=type value=1>"
     	"<input type=submit value=\"  >> \">"
@@ -251,7 +270,7 @@ else if(id->variables["_page"]=="3"){
 else if(id->variables["_page"]=="2"){
   retval+="<font size=+2>2. Billing Address</font>\n";
   retval+="<checkout><table>\n";
-  retval+="<generateform table=customer_info exclude=\""
+  retval+="<generateform table=customer_info hide=\""
     "orderid,type,updated\">"
     "</table>"
     "<input type=hidden name=orderid value="+id->misc->ivend->SESSIONID+">"

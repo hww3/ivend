@@ -12,33 +12,9 @@ array productsearchfields=({});
 array stopwords=({});
 mapping idmappings=([]);
 
-void initialize_db(object db) {
-  perror("initializing search module!\n");
-catch(db->query("drop table searchwords"));
-db->query(
-"CREATE TABLE searchwords ("
-"  id char(16) DEFAULT '' NOT NULL,"
-"  type char(1) DEFAULT 'p' NOT NULL,"
-"  occ int DEFAULT 0 NOT NULL,"
-"  word char(64) DEFAULT '' NOT NULL"
-") ");
-
-return;
-
-}   
-
 void start(mapping config)
 {
 perror("start in search.\n");
-// perror(sprintf("%O\n", config));
-
-if(sizeof(stopwords)==0 && 
-	config[module_name]["stopwordfile"]!="" && 
-	file_stat(config[module_name]["stopwordfile"])){
-	perror("Reading stopwords file: " + config[module_name]["stopwordfile"]+ "...");
-stopwords=(lower_case(Stdio.read_file(config[module_name]["stopwordfile"])-"\r"))/"\n";
-stopwords-=({""});
-}
 
 if(config[module_name]->idmappingfile!="" && file_stat(config[module_name]->idmappingfile)) {
 perror("we have specified an idmapping file.\n");
@@ -49,71 +25,6 @@ foreach(r, string line){
    idmappings+=([ l[0] : l[1] ]);
 	}
 }
-}
-
-mixed searchadmin_handler(string mode, object id)
-{ 
-
-// return sprintf("<pre>%O</pre>",
-// mkmapping(indices(id->misc->ivend),
-// values(id->misc->ivend))); 
-
-if(id->variables->initialize) {
-	initialize_db(DB);
-   return "Search module initialized. To use this feature, please "
-    " close this window and start again.<p>\n"
-	+T_O->return_to_admin_menu(id);
-  }
-if(sizeof(DB->list_tables("searchwords"))!=1)
-  return "You have not configured the search handler."
-	"<p><a href=\"./?initialize=true\">Click here</a>"
-	" to do this now.";
-if(id->variables->build_database) {
-build_database(id);
-}
-
-string retval="<title>Search Configuration</title>\n"
-	"<body bgcolor=white text=navy>"
-	"<font face=helvetica, arial>";
-
-if((int)(DB->query("SELECT COUNT(*) as c FROM searchwords")[0]->c)>0)
-  {
-  retval+="The search database has been generated.<p>";
-  retval+=T_O->return_to_admin_menu(id);
-  }
-else
-  {
-  retval+="<form action=./>\n";
-  retval+="The searchwords database has not been built yet. Press the build "
-	"button below to build the initial search database. This process "
-	"will build the search database for products and groups already in "
-	"the store database. <p>"
-	"If you have not yet added any groups or stores to your database, "
-	"you do not need to perform this step. Search words will be "
-	"generated automatically.<p>";
-  retval+="<input type=hidden name=build_database value=1>"
-	"<input type=submit value=\"Build\">";
-  retval+="</form>\n";
-  }
-return retval;
-
-}
-
-void build_database(object id){
-perror("Building searchwords database.\n");
-  array r=DB->query("SELECT " + KEYS->groups + " from groups order by " + KEYS->groups);
-  foreach(r, mapping row){
-	event_adminadd("adminadd", id, (["id": row[DB->keys->groups],
-"type": "group"]));
-  }
-  array r=DB->query("SELECT " + KEYS->products + " from products order by " + KEYS->products);
-  foreach(r, mapping row){
-	event_adminadd("adminadd", id, (["id": row[DB->keys->products],
-"type": "product"]));
-  }
-
-
-
 }
 
 #define _stat defines[" _stat"]
@@ -273,99 +184,11 @@ string cleanword(string word){
   return word;
 }
 
-void event_adminadd(string event, object id, mapping args){
-
-array f=CONFIG_ROOT[module_name][args->type + "searchfields"];
-
-mapping r;
-perror("event_adminadd in search.pike " + args->type + " " + args->id +
-"\n");
-string qry=
-("SELECT " + (f*",") + " FROM " + args->type + 
-			  "s WHERE " + DB->keys[args->type + "s"] + "='" + 
-			  args->id + "'");
-perror("QUERY IN SEARCH: " + qry + "\n");
-r=DB->query(qry)[0];
-mixed e;
-if(e) { 
-	perror("Error selecting searchfields for " + args->type + " " + args->id + ".\n");
-	return;
-	}
-
-if(sizeof(stopwords)==0 && 
-	CONFIG_ROOT[module_name]["stopwordfile"]!="" && 
-	file_stat(CONFIG_ROOT[module_name]["stopwordfile"])){
-	perror("Reading stopwords file: " + CONFIG_ROOT[module_name]["stopwordfile"]+ "...");
-stopwords=(lower_case(Stdio.read_file(CONFIG_ROOT[module_name]["stopwordfile"])-"\r"))/"\n";
-stopwords-=({""});
-
-}
-
-
-string wordstoadd="";
-foreach(indices(r), string f){
- if(search(f,".")>=0) continue;
- wordstoadd+=" ";
- wordstoadd+=r[f];
-}
-
-wordstoadd=lower_case(wordstoadd);
-wordstoadd=(Array.filter((wordstoadd/""),Regexp("[ a-z0-9]")->match))*"";
-array w=wordstoadd/" ";
-w-=({""});
-mapping wc=([]);
-foreach(w, string word){
-word=cleanword(word);
-
- if(search(stopwords, word)>=0) continue;
- if(wc[word]) wc[word]++;
- else wc[word]=1;
- }
-foreach(indices(wc), string word){
-  DB->query("INSERT INTO searchwords VALUES('" + args->id + "','" 
-	+ args->type + "'," + wc[word] + ",'" + word + "')");
-}
-}
-
-void event_adminmodify(string event, object id, mapping args){
-
-perror(sprintf("args: %O\n", args));
-
-// first we delete the existing searchwords.
-
-  event_admindelete(event, id, args);
-
-// now we add searchwords with the modified object.
-
-  event_adminadd(event, id, args);
-
-}
-
-void event_admindelete(string event, object id, mapping args){
-
-// delete the searchwords for the object we are deleting.
-
-  DB->query("DELETE FROM searchwords WHERE id='" + args->id + "'" 
-	" AND type='" + args->type[0..0] + "'");
-
-}
-
 mixed query_tag_callers(){
 
   return ([ "searchform": tag_searchform,
 		"searchresults": tag_searchresults
 	]);
-
-}
-
-mixed register_admin(){
-
-return ({
-
-	([ "mode": "menu.main.Store_Administration.Search_Engine",
-		"handler": searchadmin_handler,
-		"security_level": 7 ])
-	});
 
 }
 
@@ -378,9 +201,6 @@ array query_preferences(void|object id) {
      foreach(f2, mapping m)
 	groupsearchfields +=({m->name});
     }
-
-  if(!catch(T_O->query("root")))
-	swfile=T_O->query("root") + "data/english.stop";
 
   if(!catch(DB) && sizeof(productsearchfields)<=0) {
 
@@ -412,11 +232,6 @@ array query_preferences(void|object id) {
 	productsearchfields
 	}) ,
 
-	({"stopwordfile", "Stop Word File", 
-	"Path to a file that contains words to exclude from search database. (optional but recommended)",
-	VARIABLE_STRING, swfile
-	}),
-
 	({"idmappingfile", "Catalog ID mapping File", 
 	"Path to a file that contains mappings from one catalog number to another (optional). file format is one mapping per line, tab separated in the format: <p>SEARCHEDID<i>(tab)</i>RETURNEDID<i>(newline)</i>",
 	VARIABLE_STRING,
@@ -427,10 +242,3 @@ array query_preferences(void|object id) {
 
 }
 
-mixed query_event_callers(){
- 
-  return ([	"adminadd" : event_adminadd,
-		"adminmodify" : event_adminmodify,
- 		"admindelete" : event_admindelete]);
-
-}

@@ -90,7 +90,8 @@ string retval="";
 array r=DB->query("SELECT "+table+".*, type.name as type FROM "
 		+table+",type "
 		 "WHERE orderid="+ id->variables->orderid +
-		 " AND type.type=" + table + ".type");
+		 " AND type.type=" + table + ".type order by " + table +
+		".type");
 
 array f=DB->list_fields(table);
 

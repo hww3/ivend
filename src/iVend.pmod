@@ -149,6 +149,13 @@ string password;
 inherit "roxenlib";
 
 
+string make_safe(string s){
+
+return replace(s,({"'","\""}),({"\\'","\\\""}));
+
+}     
+
+
 int|string addentry(object id, string referrer){
 string errors="";
 array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
@@ -182,7 +189,7 @@ Stdio.write_file(id->misc->ivend->config->root+"/images/"+
  else if(r[i]->type=="string" || r[i]->type=="var string" || 
     r[i]->type=="enum" || r[i]->type=="blob" ||
 	stringp(r[i]->name)
-	) query+="'"+id->variables[r[i]->name]+"',";
+	) query+="'"+make_safe(id->variables[r[i]->name])+"',";
 
 
   else query+=(id->variables[r[i]->name]||"NULL")+",";

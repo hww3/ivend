@@ -24,6 +24,7 @@ if(sizeof(a)!=2) return 0;
 object d=Protocols.DNS.client();
 
 mixed mxhost=d->get_primary_mx(a[1]);
+werror(mxhost + "\n");
 if(mxhost!=0) mailhost=mxhost;
 else if((mxhost=d->gethostbyname(a[1])) && mxhost[0]!=0)
 	mailhost=mxhost[0];
@@ -35,23 +36,21 @@ if(!f->connect(mailhost, 25)) {
   werror("ERROR ESTABLISHING SMTP CONNECTION!\n");
   return 0;
   }
-
-if(readcode(f)/100 !=2) {
+int r;
+if(r=readcode(f)/100 !=2) {
     f->close();
+    werror("BAD WELCOME MESSAGE: " + r + "\n");
     return 0;
     }
 
 f->write("HELO " + gethostname() + "\n");
-if(readcode(f)/100 !=2){
+if(r=readcode(f)/100 !=2){
   f->close();
-  werror("NO GREETING FROM MAIL SERVER!\n");
+  werror("NO GREETING FROM MAIL SERVER: " + r + "!\n");
   return 0;
   }
 
-f->write("MAIL FROM: <mailcheckr@" + gethostname() + ">\n");
-if(readcode(f)/100 !=2) return 0;	// can't talk to this host.
-
-f->write("RCPT TO: <" + address + ">\n");
+f->write("VRFY <" + address + ">\n");
 if(readcode(f)/100 !=2) return 0;	// bad address!
 
 f->write("QUIT\n");

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.244 1999-09-08 20:31:14 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.245 1999-09-09 02:26:28 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -69,10 +69,10 @@ void report_error(string error, string|void orderid, string subsys, object id){
            "\n" + " " + error);
 
 
-    catch(DB->query("INSERT INTO activity_log VALUES('" + 
-	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
-	"1, NOW()," +
-	DB->quote(error) + "')"));  
+    DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
+	"1, NOW(),'" +
+	DB->quote(error) + "')");  
 
     return;
 
@@ -80,10 +80,10 @@ void report_error(string error, string|void orderid, string subsys, object id){
 
 void report_status(string error, string|void orderid, string subsys, object id){
 
-    catch(DB->query("INSERT INTO activity_log VALUES('" + 
-	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
-	"5, NOW()," +
-	DB->quote(error) + "')"));  
+    DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
+	"5, NOW(),'" +
+	DB->quote(error) + "')");  
 
     return;
 
@@ -91,10 +91,10 @@ void report_status(string error, string|void orderid, string subsys, object id){
 
 void report_warning(string error, string|void orderid, string subsys, object id){
 
-    catch(DB->query("INSERT INTO activity_log VALUES('" + 
-	DB->quote(subsys) + "','" + DB->quote(orderid) + "'," + 
-	"2, NOW()," +
-	DB->quote(error) + "')"));  
+    DB->query("INSERT INTO activity_log VALUES('" + 
+	DB->quote(subsys) + "','" + DB->quote((string)orderid) + "'," + 
+	"2, NOW(),'" +
+	DB->quote(error) + "')");  
 
     return;
 

@@ -199,7 +199,7 @@ if(sizeof(s)==0) {
 id->misc->ivend->orderid=getorderid(id);
 if(stop_error(id))
  {
- T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
 	"checkout", id);
 // id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
@@ -210,7 +210,7 @@ id->misc->ivend->this_object->trigger_event("preconfirmorder", id,
 
 if(stop_error(id))
  {
- T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
 	"checkout", id);
 // id->misc->ivend->error+=({stop_error(id)});
  return "<false><!-- " + stop_error(id) + " -->\n";
@@ -237,7 +237,8 @@ else type=typer[0]->type;
 
 // replace sessionid with orderid
 string query;
-mixed error; //= catch{  
+mixed error; 
+error= catch{  
 for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
@@ -248,13 +249,13 @@ for(int i=0; i<sizeof(r); i++){
 id->misc->ivend->db);
     id->misc->ivend->db->query(query);
   }
-// } ;
+ } ;
 if(!error)
 id->misc->ivend->db->query(
   "DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
 else {
- T_O->report_error(stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
 	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
@@ -330,7 +331,7 @@ if(note) {
 
 }
 
- T_O->report_error("Order confirmed successfully." ,
+ T_O->report_status("Order confirmed successfully." ,
    id->misc->ivend->orderid ||"NA", "checkout", id);
 
 return retval;

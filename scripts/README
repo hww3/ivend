@@ -8,3 +8,6 @@ you specify.
 
 read_key.pike: this script will demonstrate that the keypair works for
 encryption and decryption.
+
+clean_db.sh: cleans all sessions from your store. good to run following a
+heavy testing session.

@@ -253,6 +253,78 @@ return 1;
 
 }
 
+mixed modifyentry(object id, string referrer){
+array errors=({});
+array(mapping(string:mixed)) r=::list_fields(id->variables->table);
+string query="UPDATE "+id->variables->table+" SET ";
+for (int i=0; i<sizeof(r); i++){
+	r[i]->name=lower_case(r[i]->name);  // lower case it all...
+
+  if(lower_case(r[i]->name[0..4])=="image"){
+
+  if(sizeof(id->variables[r[i]->name])>3)
+    {
+
+	string f=id->variables[ r[i]->name+".filename"];
+	if(f){
+		string e= extension(f);
+    	string filename=id->variables->id+
+		r[i]->name[5..]+"."+e;
+        rm(filename);
+if(file_stat(id->misc->ivend->config->root+"/images/"+id->variables->table));
+else mkdir(id->misc->ivend->config->root+ "/images/" + id->variables->table);
+
+rm(id->misc->ivend->config->root + "/images/" + id->variables->table + "/" +
+filename );
+
+
+Stdio.write_file(id->misc->ivend->config->root+"/images/"+
+	id->variables->table+"/"+filename,id->variables[r[i]->name]);
+ perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
+id->misc->ivend->config->root + "/images/" + id->variables->table + "/" +
+filename + 
+".\n");
+    query+=r[i]->name+"='"+filename+"',";
+}
+else perror("ARGH! Can't get image's original filename from browser!\n");
+    }
+  }
+
+ else if(id->variables[r[i]->name]=="" && r[i]->flags["not_null"])
+    errors+=({replace(r[i]->name,"_"," ")+" needs a value."});
+
+ else if(r[i]->type=="string" || r[i]->type=="var string" || 
+    r[i]->type=="enum" || r[i]->type=="blob" ||
+	stringp(r[i]->name)
+	) query+=r[i]->name+"='"+make_safe(id->variables[r[i]->name])+"',";
+
+
+  else query+=r[i]->name+"="+(id->variables[r[i]->name]||"NULL")+",";
+
+  }
+query=query[0..sizeof(query)-2]+" WHERE id='" + id->variables->id + "'";
+if (sizeof(errors)>0) return errors;
+::query(query);
+ if(id->variables->jointable) {
+ array jointable;
+catch(jointable=id->variables[id->variables->jointable]/"\000");
+perror(id->variables[id->variables->jointable]+"\n\n");
+ ::query("DELETE FROM " + id->variables->joindest + " WHERE " +
+(id->variables->table-"s") +"_id='" + id->variables->id
++ "'");
+if(jointable && sizeof(jointable)>0)
+ for(int i=0; i<sizeof(jointable); i++){
+    query="INSERT INTO "
+      + id->variables->joindest +" VALUES('"+
+	jointable[i]+ "','"
+        +id->variables->id+"')";
+    ::query(query);
+    }
+ }
+return 1;
+
+}
+
 string generate_query(mapping data, string table, object s){
 
 array(mapping(string:mixed)) r=s->list_fields(table);
@@ -275,16 +347,21 @@ return query;
 }
 
 string|int gentable(string table, string return_page, 
-    string|void jointable,string|void joindest , object|void id){
+    string|void jointable,string|void joindest , object|void id, mapping|void record){
 string retval="";
 array(mapping(string:mixed)) r=::list_fields(table);
 array vals;
 
-retval+="<FORM ACTION=\""+return_page+"\" ENCTYPE=multipart/"
-	"form-data>\n"
+retval+="<FORM ACTION=\""+return_page+"\" "
+"ENCTYPE=multipart/"
+	"form-data "
+"method=post>\n"
         "<INPUT TYPE=HIDDEN NAME=table VALUE=\""+table+"\">\n"
-        "<INPUT TYPE=HIDDEN NAME=mode VALUE=\"doadd\">\n";
+        "<INPUT TYPE=HIDDEN NAME=mode VALUE=\""+
+	(record?"domodify":"doadd") +"\">\n";
         "<TABLE>\n";
+
+if(!record) record=([]);
 
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
 if(lower_case(r[i]->name[0..4])=="image"){
@@ -292,8 +369,12 @@ if(lower_case(r[i]->name[0..4])=="image"){
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
     +replace(r[i]->name,"_"," ")+
     "</FONT></TD>\n"
-    "<TD>\n"
-    "<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
+    "<TD>\n";
+   if (record[r[i]->name])
+	retval+="<img src=\"images/" + table + "/" + record[r[i]->name] 
+	+ "\"><br>";
+	retval+="<input type=file name=\""+r[i]->name+"\"></td></tr>\n";
+
 }
 
 else if(lower_case(r[i]->name)=="taxable"){
@@ -303,7 +384,8 @@ else if(lower_case(r[i]->name)=="taxable"){
     +"taxable?"+
     "</FONT></TD>\n"
     "<TD>\n"
-    "<input type=checkbox name=taxable value=Y checked>\n";
+    "<input type=checkbox name=taxable value=Y " +
+	(record[r[i]->name]!="Y"?"":"CHECKED") +">\n";
 
 }
 
@@ -313,7 +395,8 @@ else if(r[i]->type=="blob"){
     +replace(r[i]->name,"_"," ")+
     "</FONT></TD>\n"
     "<TD>\n"
-    "<TEXTAREA NAME=\""+r[i]->name+"\" COLS=70 ROWS=5></TEXTAREA>\n";
+    "<TEXTAREA NAME=\""+r[i]->name+"\" COLS=70 ROWS=5>"
+	+ (record[r[i]->name]||"")+ "</TEXTAREA>\n";
         }
 
 else if(r[i]->type=="decimal" || r[i]->type=="float"){
@@ -323,7 +406,8 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
     " <b>$</b></FONT></TD>\n"
     "<TD>\n"
     "<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+
-    " MAXLEN="+r[i]->length+">\n";
+    " MAXLEN="+r[i]->length+" VALUE=\"" 
+	+ (record[r[i]->name] ||"") +"\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+ REQUIRED +"\n";
@@ -339,7 +423,8 @@ else if(r[i]->type=="var string"){
 
 
     retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
-      "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+">\n";
+      "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+" VALUE=\""
+	+( record[r[i]->name]||"") + "\">\n";
     
     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
       "SIZE=-1><I> "+REQUIRED+"\n";
@@ -359,14 +444,15 @@ else if(r[i]->type=="string"){
       retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"Y\">"
         "Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
    else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="
-      +r[i]->length+" SIZE="+(r[i]->length)+">\n";
+      +r[i]->length+" SIZE="+(r[i]->length)+" VALUE=\""+
+	(record[r[i]->name]||"") +"\">\n";
     }       
 
 else if(r[i]->type=="long" && r[i]->flags["not_null"]){
     retval+="<TR>\n"
     "<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD>\n";
     retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+
-      "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=NULL>\n";
+      "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=\"NULL\">\n";
 
         }
  
@@ -390,7 +476,9 @@ if(jointable){
     "face=helvetica,arial size=-1>"+jointable+"</td><td>"
     "<select multiple size=5 name="+jointable+">\n";
   for(int i=0; i<sizeof(j); i++)
-    retval+="<option value=\""+j[i]->id+"\">"+j[i]->name+"\n";
+    retval+="<option " + ( (record->group_id &&
+	  record->group_id[j[i]->id])?"SELECTED":"" ) +
+	" value=\""+j[i]->id+"\">"+j[i]->name+"\n";
   retval+="</select>\n<input type=hidden name=jointable value=\""
     +jointable+"\">\n<input type=hidden name=joindest value=\""
     +joindest+"\">"
@@ -399,7 +487,7 @@ if(jointable){
 }
 
 retval+="</TABLE>\n"
-    "<INPUT TYPE=SUBMIT VALUE=Add>\n"
+    "<INPUT TYPE=SUBMIT VALUE=\""+(sizeof(record)>0?"Modify":"Add")+"\">\n"
     "<INPUT TYPE=HIDDEN VALUE=" + return_page + ">\n"
     "</FORM>\n";
 
@@ -471,7 +559,7 @@ return capitalize(type)+" "+id+ DELETED_SUCCESSFULLY +"\n";
 
 
 string generate_form_from_db(string table, array|void exclude,
-object|void id, array|void pulldown){
+object|void id, array|void pulldown, mapping|void record){
 
 
 string retval="";
@@ -510,7 +598,9 @@ if(search(pulldown,lower_case(r[i]->name))!=-1) {
 	vals-=({""});
     if(sizeof(vals)>0) {
 	for(int j=0; j<sizeof(vals); j++)
-	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	  retval+="<option " +((record &&
+		record[r[i]->name]==vals[j])?"SELECTED":"")+ // this is the one.
+		" value=\""+vals[j]+"\">"+vals[j]+"\n";
 	}
     else retval+="<option>" + NO_OPTIONS_AVAILABLE + "\n";
    
@@ -528,7 +618,9 @@ else if(r[i]->type=="blob"){
 	"<TD>\n";
 
 	retval+="<TEXTAREA NAME=\""
-	+lower_case(r[i]->name)+"\" COLS=70 ROWS=5></TEXTAREA>\n";
+	+lower_case(r[i]->name)+"\" COLS=70 ROWS=5>"+
+	record[r[i]->name]||""
+	+"</TEXTAREA>\n";
 	}
 
 else if(r[i]->type=="var string"){
@@ -542,7 +634,7 @@ else if(r[i]->type=="var string"){
 	lower_case(r[i]->name)+"\" SIZE="
 	  +
 	(r[i]->length)
-	+" >\n";
+	+"  VALUE=\""+ 	record[r[i]->name]||"" + "\">\n";
 	if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
 	}
 
@@ -555,12 +647,23 @@ else if(r[i]->type=="string"){
 
 	if(r[i]["default"]=="N")
 	retval+="<SELECT NAME=\""+
-	lower_case(r[i]->name)+"\"><OPTION VALUE=\"N\">No\n<OPTION VALUE=\"Y\">Yes\n</SELECT>\n";
+	lower_case(r[i]->name)+"\">"
+	"<OPTION VALUE=\"N\"" + ((record &&
+                record[r[i]->name]=="N")?"SELECTED":"")+ 
+	">No\n<OPTION VALUE=\"Y\"" +((record &&
+                record[r[i]->name]=="Y")?"SELECTED":"")+
+	">Yes\n</SELECT>\n";
 	else if(r[i]["default"]=="Y")
 	retval+="<SELECT NAME=\""
-	+lower_case(r[i]->name)+"\"><OPTION VALUE=\"Y\">Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
+	+lower_case(r[i]->name)+"\">"
+	"<OPTION VALUE=\"Y\" "+((record &&
+                record[r[i]->name]=="Y")?"SELECTED":"")+">Yes\n"
+	"<OPTION VALUE=\"N\"" +((record &&
+                record[r[i]->name]=="N")?"SELECTED":"")+ 
+	">No\n</SELECT>\n";
 	else {
-	  retval+="<INPUT TYPE=TEXT NAME=\""+
+	  retval+="<INPUT TYPE=TEXT VALUE=\"" + record[r[i]->name]||"" +
+	"\" NAME=\""+
 	lower_case(r[i]->name)+"\" SIZE="+
 	(r[i]->length)+">\n";
 	  if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
@@ -590,7 +693,9 @@ else if(r[i]->type=="enum" ){
 	vals-=({""});
     if(sizeof(vals)>0) {
 	for(int j=0; j<sizeof(vals); j++)
-	  retval+="<option value=\""+vals[j]+"\">"+vals[j]+"\n";
+	  retval+="<option value=\""+vals[j]+"\""
+	+((record && 
+	record[r[i]->name]==vals[j])?"SELECTED":"")+">"+vals[j]+"\n";
 	}
     else retval+="<option>"+ NO_OPTIONS_AVAILABLE +"\n";
    

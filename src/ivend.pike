@@ -29,7 +29,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.74 1998-06-21 18:13:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.75 1998-06-22 00:53:24 hww3 Exp $";
 
 array register_module(){
 
@@ -176,12 +176,14 @@ if (args->add)
   "\">"+contents+"</a>";
 else if(args->cart)
   return "<a _parsed=1 href=\""+query("mountpoint")+
-  id->misc->ivend->st+"/cart?SESSIONID="
+(id->misc->ivend->moveup?"":id->misc->ivend->store+ "/")
++"cart?SESSIONID="
   +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->checkout)
   return "<a _parsed=1 href=\""+query("mountpoint")+
-  id->misc->ivend->st+"/checkout?SESSIONID="
+  (id->misc->ivend->moveup?"":id->misc->ivend->store + "/")
++"checkout?SESSIONID="
   +id->misc->ivend->SESSIONID+
   "\">"+contents+"</a>";
 else if(args->href){
@@ -715,8 +717,10 @@ mixed find_file(string file_name, object id){
     }
 
 
-  if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
+  if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") {
     id->misc->ivend->st=indices(config)[0];
+    id->misc->ivend->moveup=1;
+}
   else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
 
     { 
@@ -929,6 +933,8 @@ void error(mixed error, object id){
 mixed handle_error(object id){
 string retval;
 
+// if(!id->misc->ivend->config[id->misc->ivend->st])
+
 if(!(retval=Stdio.read_file(
   id->misc->ivend->config[id->misc->ivend->st]->root+"/error.html")))
   retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
@@ -949,8 +955,8 @@ mixed get_image(string filename, object id){
 // perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
-	id->misc->ivend->config[id->misc->ivend->st]->root+"/"+filename);
-id->realfile=id->misc->ivend->config[id->misc->ivend->st]->root+"/"+filename;
+	id->misc->ivend->config->root+"/"+filename);
+id->realfile=id->misc->ivend->config->root+"/"+filename;
 
 return http_string_answer(data,
 	id->conf->type_from_filename(id->realfile));
@@ -1052,8 +1058,9 @@ retval+="<title>iVend Shipping Administration</title>"
   "href=shipping>Shipping</a><p>\n";
 
 
- mixed
-d=id->misc->ivend->modules[id->misc->ivend->config->shipping_module]->shipping_admin(id);
+ mixed d=id->misc->ivend->modules[
+	id->misc->ivend->config->shipping_module
+	]->shipping_admin(id);
  if(stringp(d))
  retval+=d;
 
@@ -1064,7 +1071,34 @@ return retval;
 
 mixed getmodify(string type, string pid, object id){
 
-return "";
+string retval="";
+multiset gid=(<>);
+array record=id->misc->ivend->db->query("SELECT * FROM " + type + "s WHERE "
+ "id='" + pid +"'");
+if (sizeof(record)!=1)
+  return "Error Finding " + capitalize(type) + " ID " + pid + ".<p>";
+
+if(type=="product") {
+  array groups=id->misc->ivend->db->query("SELECT group_id from "
+    "product_groups where product_id='"+ pid + "'");
+  if(sizeof(groups)>0)
+    foreach(groups, mapping g)
+      gid[g->group_id]=1;
+  record[0]->group_id=gid;
+  }
+
+  retval+="&gt <b>Modify " + capitalize(id->variables->type)
++"</b><br>\n";
+
+if(id->variables->type=="product")
+  retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups",
+        "product_groups", id, record[0])+"</table>\n";
+  else if(id->variables->type=="group")
+
+retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id,
+record[0])+"</table>\n";
+ 
+return retval;
 
 }
 
@@ -1091,13 +1125,7 @@ retval+="<title>iVend Store Administration</title>"
 switch(id->variables->mode){
 
   case "doadd":
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  mixed j=s->addentry(id,id->referrer);
+  mixed j=id->misc->ivend->db->addentry(id,id->referrer);
   retval+="<br>";
   if(stringp(j))
     return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
@@ -1107,20 +1135,25 @@ switch(id->variables->mode){
   return retval+type+" Added Sucessfully.";
   break;
 
+  case "domodify":
+  mixed j=id->misc->ivend->db->modifyentry(id,id->referrer);
+  retval+="<br>";
+  if(stringp(j))
+    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+
+
+  string type=(id->variables->table-"s");
+  return retval + capitalize(type) + " Modified Sucessfully.";
+  break;
+
   case "add":
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
   retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
 
   if(id->variables->type=="product")
-    retval+="<table>\n"+s->gentable("products","./admin","groups", 
+    retval+="<table>\n"+id->misc->ivend->db->gentable("products","./admin","groups", 
 	"product_groups", id)+"</table>\n";
   else if(id->variables->type=="group")
-    retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
+    retval+="<table>\n"+id->misc->ivend->db->gentable("groups","./admin",0,0,id)+"</table>\n";
   break;
 
   case "dodelete":
@@ -1186,13 +1219,13 @@ switch(id->variables->mode){
   break;
 
   case "modify":
+  retval+="&gt <b>Modify " + capitalize(id->variables->type)
+	+"</b><br>\n";
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=getmodify>\n"
-      "ID to Modify: \n"
+      + capitalize(id->variables->type) + " ID to Modify: \n"
       "<input type=text size=10 name=id>\n"
-      "&nbsp; <input type=radio name=type selected value=product>\n"
-      "Product &nbsp; <input type=radio name=type value=group>\n"
-      "Group<p>"
+      "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=submit value=Modify>\n</form>";
   break;
 
@@ -1205,14 +1238,14 @@ switch(id->variables->mode){
     "<ul>"
     "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
     "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
-    "(Non Functional)\n"
+    "(Beta Test)\n"
     "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
     "</ul>"
     "<li>Products\n"
     "<ul>"
     "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
     "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
-    "(Non Functional)\n"
+    "(Beta Test)\n"
     "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
     "</ul>"
     "</ul>\n"

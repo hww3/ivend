@@ -76,18 +76,42 @@ string|int listorder(object id, object s){
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
 			"Unable to find data for this order.");
-  retval+="<tr><td><font face=helvetica size=-1>Qty</font></td>\n"
-    "<td><font face=helvetica size=-1>Item</font></td>\n"
-    "<td><font face=helvetica size=-1>Description</font></td>\n"
-    "<td><font face=helvetica size=-1>Unit Cost</font></td>\n"
-    "<td><font face=helvetica size=-1>Item Total</font></td>\n";
+  retval+="<tr><td align=left><font face=helvetica size=-1>Qty</font></td>\n"
+    "<td align=left><font face=helvetica size=-1>Item</font></td>\n"
+    "<td align=left><font face=helvetica size=-1>Description</font></td>\n"
+    "<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
+    "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
     retval+="<tr><td>" + row->quantity + "</td><td>" + row->id 
-      + "</td><td>" + row->name + "</td><td>" + row->cost + "</td><td>"
-      + sprintf("%.2f", (float)row->cost * (float)row->quantity) 
+      + "</td><td>" + row->name + "</td><td align=right>" + row->price +
+	"</td><td align=right>"
+      + sprintf("%.2f", (float)row->price * (float)row->quantity) 
       + "</td></tr>\n";
   }
+
+retval+="<tr><td colspan=5> &nbsp; </td></tr>\n";
+
+r=s->query("select * from lineitems where orderid='"+
+id->variables->orderid + "'");
+
+   foreach(r, mapping row) {
+
+  retval+="<tr>\n<td></td><td></td>\n<td align=right><font "
+	"face=helvetica>" +
+	capitalize(row->lineitem)
+	+"</td>\n<td> &nbsp; </td><td align=right>" 
+	+ row->value + "</td></tr>\n";
+  
+  }
+
+r=s->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
+	"orderid='"+ id->variables->orderid + "'");
+
+  retval+="<tr><td></td><td></td><td align=right>"
+	"<font face=helvetica><b>Grand Total</b></td><td></td>"
+	"<td align=right><b>" + r[0]->grandtotal + "</b></td></tr>\n";
+
   retval+="</table>\n";
   return create_panel("Order Manifest", "darkgreen", retval);
 
@@ -127,7 +151,8 @@ if(id->variables->delete){
 }
 
 else if(id->variables->orderid) {
-
+retval+="<a href=./orders?fprint=1&orderid="+ id->variables->orderid+">"
+	"Display for Printing</a><p>";
 retval+=show_orderdetails(id->variables->orderid, s, id);
 
 retval+="<form action=./orders>\n"

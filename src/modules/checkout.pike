@@ -77,7 +77,7 @@ string tag_confirmorder(string tag_name, mapping args,
 
 // get the order from sessions
 
-  array r=s->query("SELECT sessions.*,products.cost, products.taxable from sessions,products  WHERE sessionid='"
+  array r=s->query("SELECT sessions.*,products.price, products.taxable from sessions,products  WHERE sessionid='"
 	+id->misc->ivend->SESSIONID+ "' and products.id=sessions.id");
 
 // replace sessionid with orderid
@@ -87,8 +87,8 @@ mixed error= catch{  for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
     r[i]->status=0;
-    if(functionp(currency_convert))
-       r[i]->cost=currency_convert(r[i]->cost, id);
+    if(args->currency_convert && functionp(currency_convert))
+       r[i]->price=currency_convert((float)r[i]->price, id);
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
     query=iVend.db()->generate_query(r[i], "orderdata", s);
@@ -109,6 +109,10 @@ else {
 	+id->misc->ivend->SESSIONID+"'");
 
   s->query("UPDATE payment_info SET orderid='"+
+	id->misc->ivend->orderid+"' WHERE orderid='"
+	+id->misc->ivend->SESSIONID+"'");
+
+  s->query("UPDATE lineitems SET orderid='" +
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
@@ -190,7 +194,6 @@ id->misc->ivend->lineitems->nontaxable=
 	(float)id->misc->ivend->lineitems->nontaxable - (float)ntdiscount;
 
 if(args->convert && functionp(currency_convert) ) {
-    perror("converting currency...\n");
     tdiscount=currency_convert(tdiscount,id) ;
     ntdiscount=currency_convert(ntdiscount,id) ;
     }
@@ -236,7 +239,6 @@ else {
   query=
   "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
 
-perror(query+"\n");
   r=s->query(query);
   if(sizeof(r)==1) {
     totaltax=(float)r[0]->taxrate *
@@ -245,7 +247,6 @@ perror(query+"\n");
    id->misc->ivend+= (["lineitems":([])]);
     id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
 if(args->convert && functionp(currency_convert) ) {
-    perror("converting currency...\n");
     totaltax=currency_convert(totaltax,id) ;
     }
 	
@@ -312,7 +313,6 @@ mixed j;
    string exclude;
    foreach(aeexclude, exclude) {
      id->variables[exclude]="N/A";
-     perror(exclude + ": N/A\n");
    }
    m_delete(id->variables, "aeexclude");
  }
@@ -320,13 +320,11 @@ mixed j;
  if(args->encrypt){
 object encryptedid = id;
 
-  perror("reading "+id->misc->ivend->config->keybase+".pub");
   string key=Stdio.read_file(id->misc->ivend->config->keybase+".pub");
 
 array e=(args->encrypt-" ")/",";
  for(int i=0; i<sizeof(e); i++){
 
-perror("Encrypting var: " + e[i] + ", value: "+ id->variables[e[i]] + "\n");
   encryptedid->variables[lower_case(e[i])]=
     Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
  }
@@ -392,7 +390,6 @@ subtotal=(float)id->misc->ivend->lineitems->taxable +
 	(float)id->misc->ivend->lineitems->nontaxable;
 
 if(args->convert && functionp(currency_convert) ) {
-    perror("converting currency...\n");
     subtotal=currency_convert(subtotal,id) ;
     }
 
@@ -420,14 +417,12 @@ string item;
    grandtotal+=id->misc->ivend->lineitems[item];
    float i= id->misc->ivend->lineitems[item];
    if(args->convert && functionp(currency_convert) ) {
-     perror("converting currency...\n");
 	i=currency_convert(i, id);
 	}
    s->query("INSERT INTO lineitems VALUES('"+ id->variables->orderid + 
 	"','" + item + "',"+ i + ")");
   }
    if(args->convert && functionp(currency_convert) ) {
-     perror("converting currency...\n");
   return(sprintf("%.2f",(float)currency_convert(grandtotal,id))) ;
    }
 else return sprintf("%.2f",(float)grandtotal);
@@ -454,21 +449,18 @@ string query="SELECT sessions.quantity, "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
 
 array r=s->query(query);
-perror("sizeof result: "+sizeof(r)+"\n");
  for(int i=0; i < sizeof(r); i++) {
    retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n"
      "<td>"+ r[i]->name + "</td>\n"
      "<td align=right>";
 
    if(args->convert && functionp(currency_convert) ) {
-     perror("converting currency...\n");
   retval+=sprintf("%.2f",(float)currency_convert(r[i]->price,id)) ;
    }
 else retval+=r[i]->price;
    retval+= "</td>\n"
      "<td align=right>";
    if(args->convert && functionp(currency_convert) ) {
-     perror("converting currency...\n");
   retval+=sprintf("%.2f",(float)currency_convert(r[i]->linetotal,id)) ;
    }
 else retval+=r[i]->linetotal;

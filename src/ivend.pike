@@ -1714,7 +1714,8 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
                   "<ul>\n"
                   "<li>Groups\n"
                   "<ul>"
-                  "<li><a href="+ add_pre_state(id->not_query,(<"showgroups">))
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"showgroups">))
  		+">Show Groups</a>\n"
                   "<li><a href="+
 add_pre_state(id->not_query,(<"addgroups">))
@@ -1731,22 +1732,41 @@ add_pre_state(id->not_query,(<"dumpgroups">))
                   "</ul>"
                   "<li>Products\n"
                   "<ul>"
-                  "<li><a href=\"admin?mode=show&type=product\">Show Products</a>\n"
-                  "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
-                  "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
-                  "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
-                  "<li><a href=\"admin?mode=dump&type=product\">Dump Products</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"showproducts">))
+ 		+">Show Products</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"addproducts">))
+	+">Add New Product</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"modifyproducts">))
+	+">Modify a Product</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"deleteproducts">))
+	+">Delete a Product</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"dumpproducts">))
+	+">Dump Products</a>\n"
+
+
                   "</ul>"
                   "</ul>\n"
                   "<ul>\n"
-                  "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
-                  "<li><a href=\"admin?mode=restartstore\">Restart Store</a>\n"
+
+                  "<li><a href=" 
++add_pre_state(id->not_query,(<"clearsessions">))+
+ ">Clear Stale Sessions</a>\n"
+                  "<li><a href="
++add_pre_state(id->not_query,(<"restartstore">))+
+">Restart Store</a>\n"
                   "</ul>\n"
                   "<ul>\n"		
                   "<li><a href=\"shipping\">Shipping Administration</a>\n"
 		  "</ul>\n"
 		  "<ul>\n"
-		  "<li><a href=\"addins\">Add-ins</a>\n"
+		  "<li><a href="
++add_pre_state(id->not_query,(<"addins">))+
+">Add-ins</a>\n"
 		  "</ul>\n"
                   "<p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";

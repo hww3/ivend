@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.220 1999-06-08 19:44:35 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.221 1999-06-09 03:06:08 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1677,16 +1677,16 @@ if(CONFIG->admin_enabled=="No")
 
 
                  string mode, type;
-                     err=catch(DB=db[STORE]->handle());
+//                     err=catch(DB=db[STORE]->handle());
 
-/*
+
                  if(id->auth==0)
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!");
                  else if(!admin_auth(id))
                      return http_auth_required("iVend Store Administration",
                                                "Silly user, you need to login!");
-*/
+
                  string retval="";
                  retval+="<title>iVend Store Administration</title>"
                          "<body bgcolor=white text=navy>"

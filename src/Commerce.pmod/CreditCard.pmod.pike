@@ -19,7 +19,8 @@ WARRANTY - NONE WHAT SO EVER - implied or otherwise.
 This is some constants for number of digits per card
 */
 constant hash_function = ({ 0, 2, 4, 6, 8, 1, 3, 5, 7, 9 });
-constant card_digits =([ "VISA":16, "AMEX":15, "MasterCard":16 ]);
+constant card_digits =([ "VISA":16, "AMEX":15, "MasterCard":16,
+ "Discover": 16]);
 
 
 // subroutine creditcheck() starts here

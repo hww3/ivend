@@ -41,7 +41,7 @@ array r=DB->query("SELECT payment_info.*, status.name as status from "
 
 array f=DB->list_fields("payment_info");
 
-if(sizeof(r)==0) return create_panel("Payment Information", "maroon", 
+if(!r || sizeof(r)==0) return create_panel("Payment Information", "maroon", 
 	      "Unable to find Payment Info for Order ID " + 
 		   id->variables->orderid);
 

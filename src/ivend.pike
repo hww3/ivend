@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.242 1999-09-05 23:34:32 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.243 1999-09-07 15:04:07 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1594,7 +1594,8 @@ admin_user_cache[STORE][upper_case(id->variables->user)]="";
 	"<b>Invalid Login.</b>"
 	"<form action=./ method=post>"
 	"<input type=hidden name=" + time() + ">"
-	"<table><tr><th>Username:</th>\n"
+	"<table><tr><td rowspan=2><img src=\"" +
+	query("mountpoint")+"ivend-image/auth.gif\">&nbsp;&nbsp;</td><th>Username:</th>\n"
 	"<td><input type=text size=15 name=user></td></tr>\n"
 	"<tr><th>Password:</th>\n"
 	"<td><input type=password size=15 name=password></td></tr>\n"
@@ -1628,10 +1629,12 @@ admin_user_cache[STORE][upper_case(id->variables->user)]="";
           "value":"1", "seconds": 120]),([]));
   return "<html><head><title>Login</title></head>\n"
 	"<body bgcolor=white text=navy>\n"
-	"<h1>iVend Login</h1>"
+	"<h1>iVend Login</h1>"+
+	(id->variables->user?"<b>Invalid Login.</b>":"")+
 	"<form action=./ method=post>"
 	"<input type=hidden name=" + time() + ">"
-	"<table><tr><th>Username:</th>\n"
+	"<table><tr><td rowspan=2><img src=\"" +
+	query("mountpoint") +"ivend-image/auth.gif\">&nbsp;&nbsp;</td><th>Username:</th>\n"
 	"<td><input type=text size=15 name=user></td></tr>\n"
 	"<tr><th>Password:</th>\n"
 	"<td><input type=password size=15 name=password></td></tr>\n"

@@ -65,6 +65,7 @@ CREATE TABLE payment_info (
   Expiration_Date varchar(10) DEFAULT '' NOT NULL,
   orderid varchar(16) DEFAULT '' NOT NULL,
   status int(11) DEFAULT '3' NOT NULL,
+  Authorization char(24) DEFAULT '',
   PRIMARY KEY (orderid)
 )\g
 

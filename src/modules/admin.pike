@@ -43,6 +43,8 @@ string action_cleansessions(string mode, object id){
 }                    
 
 
+int saved=1;
+
 string action_preferences(string mode, object id){
   string retval="";
 
@@ -58,7 +60,7 @@ string action_preferences(string mode, object id){
        array p=({});
        
        if(MODULES[m]->query_preferences && functionp(MODULES[m]->query_preferences))
-	 p=MODULES[m]->query_preferences();
+	 p=MODULES[m]->query_preferences(id);
 
        if(sizeof(p)!=0) {
            retval+="<li><a href=\"./?_module=" + m +
@@ -85,7 +87,7 @@ else {
 //  4: default value (optional)
 //  5: a string or array containing valid values (optional)
 
-array  p=MODULES[id->variables->_module]->query_preferences();
+array  p=MODULES[id->variables->_module]->query_preferences(id);
 
 mapping pton=([]);
 foreach(p, array pref)
@@ -99,7 +101,10 @@ if(!id->variables->_varname) {
 
       retval+="<a href=\"./?_module=" + id->variables->_module +
 		"&_varname=" + pref[0] + "\">" + pref[1] + "</a>: "
-	+ CONFIG_ROOT[id->variables->_module][pref[0]] + 
+	+
+(arrayp(CONFIG_ROOT[id->variables->_module][pref[0]])? 
+(CONFIG_ROOT[id->variables->_module][pref[0]]*", ")
+: CONFIG_ROOT[id->variables->_module][pref[0]]) + 
 	"<br>";
 
     }
@@ -110,15 +115,155 @@ if(!id->variables->_varname) {
 
   else {  // we've got the varname specified.
 
-  retval+="<obox title=\"<font face=helvetica,arial>" +
-	id->variables->_module + " : " + pton[id->variables->_varname][1]
+  if(id->variables->_action=="Cancel") {
+
+  mapping z;
+
+z=Config.read(Stdio.read_file(id->misc->ivend->this_object->query("configdir")+
+  CONFIG->config));
+
+
+CONFIG_ROOT[id->variables->_module][id->variables->_varname]=z[id->variables->_module][id->variables->_varname];
+id->variables[id->variables->_varname]=CONFIG_ROOT[id->variables->_module][id->variables->_varname];
+  }
+
+
+if(id->variables[id->variables->_varname])
+switch(pton[id->variables->_varname][3]){  
+case VARIABLE_INTEGER: 
+	int d;
+	if(sscanf(id->variables[id->variables->_varname],"%d",d)!=1) {
+	  retval+="<b>You must supply an integer value for this preference.</b><p>";
+	id->variables[id->variables->_varname]=id->variables["_" + 
+		id->variables->_varname];
+	}
+
+  break;
+case VARIABLE_FLOAT: 
+	float d;
+	if(sscanf(id->variables[id->variables->_varname],"%f",d)!=1) {
+	  retval+="<b>You must supply a float value for this preference.</b><p>";
+	id->variables[id->variables->_varname]=id->variables["_" + 
+		id->variables->_varname];
+	}
+
+  break;
+
+  }
+
+  if(id->variables->_action=="Apply" || id->variables->_action=="Save") {
+
+
+    if(id->variables[id->variables->_varname]!=
+	id->variables["_" + id->variables->_varname]) {
+    if(pton[id->variables->_varname][3]==VARIABLE_MULTIPLE) {
+m_delete(CONFIG_ROOT[id->variables->_module], id->variables->_varname);
+CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->variables->_varname]/"\000";
+	}
+    else
+    CONFIG_ROOT[id->variables->_module][id->variables->_varname]=
+	id->variables[id->variables->_varname];
+    saved=0;
+    }
+  }
+
+  if(id->variables->_action=="Save" && !saved) {
+
+  Config.write_section(id->misc->ivend->this_object->query("configdir")+
+  CONFIG->config, id->variables->_module,
+	CONFIG_ROOT[id->variables->_module]);
+  saved=1;
+
+  }
+
+  retval+="<obox title=\"<font face=helvetica,arial><a href='" 
+	"?_module="+ id->variables->_module + "'>" +
+	id->variables->_module + "</a> : " +
+	pton[id->variables->_varname][1]
         + "</font>\"><font face=helvetica,arial>"
-	  "<form action=\"./?_module=" + id->variables->_module + 
+	  "<form method=post action=\"./?_module=" +
+	  id->variables->_module + 
 	  "&_varname=" + id->variables->_varname + "\">\n";
 
+    retval+=(pton[id->variables->_varname][2] ||"") + "<br>";
+
+    switch(pton[id->variables->_varname][3]){
+
+      case VARIABLE_INTEGER:
+	retval+="<input type=hidden name=\"_" +id->variables->_varname
+	  + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+	 || "~BLANK_VALUE~" ) + "\">\n";
+	retval+="<input type=text size=20 name=\"" +
+	  id->variables->_varname + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+                || pton[id->variables->_varname][4] || "" ) + "\">\n";
+	retval+=" <i>(An Integer Value)</i><p>"; 
+      break;
+
+      case VARIABLE_FLOAT:
+	retval+="<input type=hidden name=\"_" +id->variables->_varname
+	  + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+	 || "~BLANK_VALUE~" ) + "\">\n";
+	retval+="<input type=text size=20 name=\"" +
+	  id->variables->_varname + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+                || pton[id->variables->_varname][4] || "" ) + "\">\n";
+	retval+=" <i>(A Float Value)</i><p>"; 
+      break;
+
+      case VARIABLE_STRING:
+	retval+="<input type=hidden name=\"_" +id->variables->_varname
+	  + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+		|| "~BLANK_VALUE~" ) + "\">\n";
+	retval+="<input type=text size=40 name=\"" +
+	  id->variables->_varname + "\" value=\"" +
+	( CONFIG_ROOT[id->variables->_module][id->variables->_varname]
+                || pton[id->variables->_varname][4] || "" ) + "\">\n";
+	retval+=" <i>(A String)</i><p>"; 
+      break;
+
+      case VARIABLE_MULTIPLE:
+
+	retval+="<input type=hidden name=\"_" + id->variables->_varname
+	  + "\" value=\"" + 
+	  (
+(arrayp(CONFIG_ROOT[id->variables->_module][id->variables->_varname])?
+	(CONFIG_ROOT[id->variables->_module][id->variables->_varname] *
+"\000"):CONFIG_ROOT[id->variables->_module][id->variables->_varname])
+                || "~BLANK_VALUE~" ) + "\">\n";
+
+	retval+="<SELECT MULTIPLE SIZE=5 NAME=\"" +
+	  id->variables->_varname + "\">";
+	array selected_options=({});
+
+if(arrayp(CONFIG_ROOT[id->variables->_module][id->variables->_varname]))
+ selected_options=CONFIG_ROOT[id->variables->_module][id->variables->_varname];
+else
+if(zero_type(CONFIG_ROOT[id->variables->_module][id->variables->_varname])==1)
+ selected_options=({pton[id->variables->_varname][4]});
+else
+selected_options=({CONFIG_ROOT[id->variables->_module][id->variables->_varname]});
+	multiset selected=mkmultiset(selected_options);
+        foreach(pton[id->variables->_varname][5], string choice){
+
+	  retval+="<option " +(selected[choice]?"SELECTED":"") +">" +
+choice
+	+ "\n";
+	}
+	retval+="</select><p>";
+
+      break;    
+
+    }
+
     retval+="<input type=submit name=_action value=\"Cancel\"> "
-	"<input type=submit name=_action value=\"Apply\"></form>\n"
-	"</font></obox>";
+	"<input type=submit name=_action value=\"Apply\">\n";
+    if(!saved)
+      retval+="<input type=submit name=_action value=\"Save\">";
+    retval+="</form></font></obox>";
 
   }
 

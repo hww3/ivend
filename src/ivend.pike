@@ -360,7 +360,11 @@ void start_store(string c){
 
 
 void stop_store(string c){
-// perror("dropping db object...\n");
+  foreach(indices(modules[c]), string m) {
+    if(modules[c][m]->stop && functionp(modules[c][m]->stop))
+	modules[c][m]->stop();
+	destruct(modules[c][m]);
+  }  
   destruct(db[c]);
 
 }
@@ -2328,7 +2332,7 @@ perror(filen + "\n");
 
 
                save_status=1;// We've saved.
-
+		stop();
                start();// Reload all of the modules and crap.
                return http_redirect(id->referer, id);
 
@@ -2491,7 +2495,8 @@ perror(filen + "\n");
 
                         
                      if(request[0]=="reload"){
-                           start();
+                          stop(); 
+			  start();
                            return http_redirect(query("mountpoint")+"config/configs",id);
 
                         }

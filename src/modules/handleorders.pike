@@ -8,6 +8,8 @@ constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
 int saved=1;
+array fields=({});
+
 
 string|int show_orderdetails(string orderid, object s, object id);
 
@@ -94,13 +96,15 @@ string|int listorder(object id, object s){
 
   string manifestfields="";
 array mf=({});
-  if(CONFIG->handleorders && CONFIG->handleorders->manifestfields) {
-    if(!arrayp(CONFIG->handleorders->manifestfields)) {
-      manifestfields=", products." + CONFIG->handleorders->manifestfields;
-	mf=({CONFIG->handleorders->manifestfields});
+  if(CONFIG_ROOT[module_name] && CONFIG_ROOT[module_name]->manifestfields)
+{
+    if(!arrayp(CONFIG_ROOT[module_name]->manifestfields)) {
+      manifestfields=", products." +
+CONFIG_ROOT[module_name]->manifestfields;
+	mf=({CONFIG_ROOT[module_name]->manifestfields});
       }
     else {
-	mf=CONFIG->handleorders->manifestfields;
+	mf=CONFIG_ROOT[module_name]->manifestfields;
       foreach(mf, string f)
         manifestfields += ", products." + f ;
       }
@@ -474,37 +478,6 @@ return retval;
 
 }
 
-mixed prefs_handler (string mode, object id)
-
-{
-
-string retval="";
-
-if(id->variables->write_config){
-
-Config.write_section(id->misc->ivend->this_object->query("configdir")+
-  CONFIG->config, "addins", id->misc->ivend->config->handleorders);
-  saved=1;
-id->misc->ivend->this_object->start_store(STORE);
-  }
-
-retval+="<body bgcolor=white text=navy>\n"
-  "<font face=helvetica,arial>\n"
-  "<h2>Preferences Manager: Orders</h2>";
-
-retval+="<form action=./>\n"
-  "<input type=hidden name=change_settings value=1>\n";
-
-retval+="<p><input type=submit value=\"Update Settings\">\n</form>";
-
-if(!saved)
-  retval+="<br><a href=./?write_config=1>Save Configuration</a>";
-return retval;
-
-}
-
-
-
 mapping register_admin(){
 
 return ([
@@ -515,13 +488,23 @@ return ([
 
 }
 
-array query_preferences() {
+array query_preferences(object id) {
 
-  return ({ ({"manifestfields", "Manifest Fields", 
+  if(sizeof(fields)<=0) {
+
+     array f2=DB->list_fields("products");
+     foreach(f2, mapping m)
+	fields +=({m->name});
+    }
+   
+  return ({ 
+	({"manifestfields", "Manifest Fields", 
 	"Fields to be included in the order manifest listing.",
 	VARIABLE_MULTIPLE,
-	"",
-	0
-	}) });
+	"name",
+	fields
+	}) 
+
+	});
 
 }

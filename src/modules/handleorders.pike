@@ -1,5 +1,8 @@
 #!NOMODULE
 
+#define CONFIG id->misc->ivend->config
+#define DB id->misc->ivend->config
+
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
@@ -85,9 +88,18 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
 
 string|int listorder(object id, object s){
 
+  string manifestfields="";
+
+  if(CONFIG->handleorders->manifestfields) {
+    if(mappingp(CONFIG->handleorders->manifestfields))
+      manifestfields=", " + CONFIG->handleorders->manifestfields;
+    else
+      manifestfields=", " + (CONFIG->handleorders->manifestfields*", ");
+  }
   string retval="<table width=100%>\n";
 
-  array r=s->query("SELECT orderdata.*, products.name,status.name as status FROM "
+  array r=s->query("SELECT orderdata.*, status.name as status " 
+	+ manifestfields +" FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
 	   " AND products." + id->misc->ivend->keys->products +
@@ -340,13 +352,14 @@ else {
 	"FROM orders,status "
 	"WHERE status.status=orders.status ORDER BY status, updated");
 
-  retval+="Click on a name to display an order.\n\n";
+
+  if(sizeof(r) <1) retval+="No orders.\n";
+  else {
+  retval+="<br>Click on a name to display an order.\n\n<br>";
   retval+="<table>\n<tr><td><font face=helvetica><b>Order ID</font></td>\n"
     "<td><font face=helvetica><b>Status</font></td>\n"
     "<td><font face=helvetica><b>Record Updated</font></td>\n"
     "<td><font face=helvetica><b>Notes</b></font></td>\n</tr>";
-
-  if(sizeof(r) <1) retval+="No orders.\n";
 
   for(int i=(sizeof(r)-1); i>=0; i--){
     retval+="<tr>\n";
@@ -357,10 +370,10 @@ else {
     retval+="<td>"+(r[i]->updated)+"</td><td>"
 	"</tr>\n";
 
+    }
+
+    retval+="</table>\n";
   }
-
-  retval+="</table>\n";
-
 }
 
 return retval;

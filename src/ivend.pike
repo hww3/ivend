@@ -1181,7 +1181,7 @@ int do_clean_sessions(object db){
 int clean_sessions(object id){
 
    int num=do_clean_sessions(DB);
-   numsessions[STORE]+=num;
+//   numsessions[STORE]+=num;
    return num;
 }
 
@@ -1199,10 +1199,10 @@ void background_session_cleaner(){
        
       else { 
          int num=do_clean_sessions(d);
-         if(num)
+        // if(num)
             //      perror("iVend: BackgroundSessionCleaner cleaned " + num +
             //         " sessions from database " + store->db + ".\n");
-            numsessions[st]+=num;
+          //  numsessions[st]+=num;
       }
       db[st]->handle(d);
    }
@@ -1421,7 +1421,7 @@ mixed admin_handler(string filename, object id, object this_object){
          break;
       case "clearsessions":
          int r =clean_sessions(id);
-         retval+=r+ " Sessions Cleaned Successfully.<p><a href=\"./admin\">"
+         retval+="<p>"+ r+ " Sessions Cleaned Successfully.<p><a href=\"./admin\">"
          "Return to Store Administration</a>.\n";
          break;
 
@@ -1544,7 +1544,7 @@ mixed admin_handler(string filename, object id, object this_object){
                   "</ul>\n"
                   "<ul>\n"
                   "<li><a href=\"shipping\">Shipping Administration</a>\n"
-                  "<p><b>" + numsessions[STORE] + "</b> sessions cleaned since last startup."
+                  "<p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
 
 
@@ -1581,7 +1581,6 @@ mixed find_file(string file_name, object id){
          
          default:
 
-         handle_sessionid(id);
          break;
          
    }
@@ -1618,6 +1617,7 @@ mixed find_file(string file_name, object id){
    KEYS=keys[STORE];
    mixed err;
    numrequests[STORE]+=1;
+         handle_sessionid(id);
 
    if(!objectp(DB))
       err=catch(DB=db[STORE]->handle());
@@ -1861,10 +1861,10 @@ void handle_sessionid(object id) {
 
 
    if(!id->variables->SESSIONID) {
-
       id->misc->ivend->SESSIONID=
         "S" + (string)hash((string)time(1))+num;
       num+=1;
+      numsessions[STORE]+=1;
       trigger_event("newsessionid", id, (["sessionid" :
 	id->misc->ivend->SESSIONID]) );
    }
@@ -2106,9 +2106,10 @@ mixed return_data(mixed retval, object id){
                      }
                      
                case "save": {
-                     if(arrayp(global->configurations->active))
-                           global->configurations->active=Array.uniq(global->configurations->active);
 
+  if(global->configurations->active
+    && arrayp(global->configurations->active))
+         global->configurations->active=Array.uniq(global->configurations->active);
                         return write_configuration(id);
                         
                         break;

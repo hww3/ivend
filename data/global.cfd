@@ -1,0 +1,18 @@
+iVcd
+
+$varname=move_onestore
+$enname=Move Only Store to Root?
+$siname=Move Only Store to Root? (si)
+$type=multiple
+$options=Yes|No
+$endescription=Should the only configured store be moved to the ivend mount point?
+$sidescription=Should the only configured store be moved to the ivend mount point?
+
+$varname=create_index
+$enname=Generate Index?
+$siname=Generate Index? (si)
+$type=multiple
+$options=Yes|No
+$endescription=Should iVend generate a store index when the root is called?
+$sidescription=Should iVend generate a store index when the root is called?
+

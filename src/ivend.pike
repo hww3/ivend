@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.257 2000-01-13 21:36:25 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.258 2000-02-04 16:53:22 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -3083,12 +3083,11 @@ if(id->cookies->SESSIONID)
 
 
                          mixed load_ivmodule(string c, string name){
-
+                             perror("loading module " + name + " for store " + c + ".\n");
                              mixed err;
                              mixed m;
 
                              if(!modules[c]) modules[c]=([]);
-//                             perror("loading module " + name + ".\n");
                              string filen;
                              filen=query("root")+"/src/modules/"+name;
                              if(file_stat(filen));
@@ -3106,7 +3105,7 @@ if(id->cookies->SESSIONID)
                          modules[c]+=([  m->module_name : m  ]);
                              mixed o=modules[c][m->module_name];
                              if(functionp(o->start)) {
-//                                 perror("calling start() for " + m->module_name + ".\n");
+                                 perror("calling start() for " + m->module_name + ".\n");
                                  o->start(config[c]);
                              }
                              mapping p;
@@ -3243,7 +3242,10 @@ db[c->config]->handle(s);
                              mixed err;
                              if(!c) return;
                              if(!config[c]) return;
-                             array mtl=({});
+                             array mtl=({
+                                    "checkout.pike", "addins.pike",
+					"shipping.pike",
+                                    "handleorders.pike", "admin.pike"});
                              if(config[c]->addins)
                                  foreach(indices(config[c]->addins), string miq)
                                  if(config[c]->addins[miq]=="load")
@@ -3252,11 +3254,8 @@ db[c->config]->handle(s);
 			       perror("adding complex_pricing to module startup list.\n");
 			       mtl+=({"complex_pricing.pike"});
 			     }
-
-                             mtl+=({"shipping.pike",
-                                    "checkout.pike", "addins.pike",
-                                    "handleorders.pike", "admin.pike"});
-                             foreach(mtl,string name) {
+perror("Found " + sizeof(mtl) + " modules to load.\n");
+                             foreach(mtl, string name) {
                                  err=load_ivmodule(c,name);
                                  if(err) perror("iVend: The following error occured while loading the module "
                                                     + name + "\n" +  describe_backtrace(err));

@@ -47,6 +47,12 @@ string write(mapping config){
     return s;
 }
 
+array get_section_names(contents){
+array sections=({});
+return sections;
+
+}
+
 int write_section(string file, string section, mapping attributes){
 
   if(!(file || !section || !attributes))
@@ -57,6 +63,9 @@ int write_section(string file, string section, mapping attributes){
     werror("Couldn't read contents of " + file + ".\n");
     return -1;
     }
+
+  array sections=get_section_names(contents);
+
   string before,during,after;
   if(search(contents, "[" + section + "]\n") !=-1){ //create new section
   sscanf(contents, "%s[" + section + "]\n%s\n[%s", before, during, after);

@@ -18,7 +18,7 @@ int initialized;
 
 object|void load_module(string module, mapping config)
 {
-
+perror("STARTING SHIPPING HANDLER...");
 object m;
 
 string moddir=config->global->general->root + "/src/modules/shipping";
@@ -26,6 +26,8 @@ string moddir=config->global->general->root + "/src/modules/shipping";
 catch(m=(object)clone(compile_file(moddir+"/"+module)));
 if(m && objectp(m)) {
   m->start(config);
+  perror("DONE\n");
+  perror(sprintf("%O\n", mkmapping(indices(m), values(m))));
   return m;
   }
 else perror("iVend: the module " + module + " did not load properly.\n");
@@ -36,30 +38,30 @@ return;
 
 void start(mapping config)
 {
-
+perror("start in shipping.pike\n");
 initialized=0;
 object db;
 handlers=([]);
 
-// perror(sprintf("%O\n", config));
 
-//if(catch(
 db=iVend.db(config->general->dbhost, config->general->db,
   config->general->dblogin, config->general->dbpassword);
-//))
-//  {
-//    perror("iVend: Shipping: Error Connecting to Database.\n");
-//    return;
-//  }
+
+perror("got the database connection.\n");
 
 if((sizeof(db->list_tables("shipping_types")))==1)
 {  initialized=1;
+  perror("checking the table.\n");
 if(sizeof(db->list_fields("shipping_types","availability"))!=1)
-  db->query("alter table shipping_types add availability char(254) default ''");
+  catch(db->query("alter table shipping_types add availability char(254) default ''"));
+  perror("done checking the table.\n");
 
 }
 
-else {initialized=0;  return; }
+else {initialized=0;  perror("module not initialized.\n"); return; }
+
+perror("module inititalized.\n");
+
 array r=db->query("select * from shipping_types");
 
 foreach(r, mapping row){
@@ -71,7 +73,7 @@ foreach(r, mapping row){
     }
   else handlers[row->module]=load_module(row->module, config);
   }
-
+perror("done in start()\n");
 return;
 
 }
@@ -136,12 +138,17 @@ catch(array r=DB->query("SELECT * FROM shipping_types ORDER BY type"));
 if(!r || sizeof(r)==0)
     retval+="No Shipping Types Configured.";
 else {
+  retval+="<table>\n"
+	"<tr><th>Name</th><th>Description</th><th>Avail. Query</th>"
+	"<th></th></tr>\n";
     foreach(r, mapping row)
-      retval+= "<A HREF=\"./?mode=showtype&showtype=" + row->type
-	+ "\">" +row->name + "</a>: " + row->description + 
-	" ( <A HREF=\"./?mode=deletetype&deletetype=" + row->type + 
-	"\">Delete</a> )<br>";
-
+      retval+= "<tr><td><A HREF=\"./?mode=showtype&showtype=" + row->type
+	+ "\">" +row->name + "</a></td><td><autoformat>" +
+row->description + 
+	"</autoformat></td><td>" + row->availability + 
+"</td><td> ( <A HREF=\"./?mode=deletetype&deletetype=" + row->type + 
+	"\">Delete</a> )</td></tr>\n";
+retval+="</table>\n";
   }
 retval+="<p><a href=\"./?mode=addtypemenu\">Add Shipping Type</a>";
 

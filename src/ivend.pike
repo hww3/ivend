@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.248 1999-10-26 01:23:13 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.249 1999-11-10 18:35:36 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -616,15 +616,11 @@ void|string container_form(string name, mapping args,
                            string contents, object id)
 {
     if(args["_parsed"]) return;
-    contents="<input type=hidden name=SESSIONID value="+
+    contents="<!-- form container --><input type=hidden name=SESSIONID value="+
              id->misc->ivend->SESSIONID+">"+contents;
-    string formargs="";
-    string a;
-    foreach(indices(args),a)
-    formargs=formargs+a+"=\""+args[a]+"\" ";
-    formargs+="_parsed=1";
+    args["_parsed"]="1";
+    return make_container("FORM", args, contents);
 
-    return "<form "+formargs+">"+contents+"</form>";
 
 }
 
@@ -1686,7 +1682,8 @@ int do_clean_sessions(object db){
     array r;
 	catch(r=db->query(query));
     foreach(r,mapping record){
-        foreach(({"customer_info","payment_info","orderdata","lineitems"}),
+        foreach(({"customer_info","payment_info","orderdata","lineitems",
+		"comments"}),
                 string table)
         catch(db->query("DELETE FROM " + table + " WHERE orderid='"
                   + record->sessionid + "'"));
@@ -2792,7 +2789,7 @@ mapping to=id->misc->defines[" _extra_heads"];
 			DB->query("INSERT INTO session_time VALUES('" +
 		id->misc->ivend->SESSIONID + "',"  +(time(0)+
                          (int)CONFIG->session_timeout)+ ")");
-
+		
                  }
 
                  else if(id->variables->SESSIONID)
@@ -2991,6 +2988,13 @@ Config.write_section(query("configdir")+
                                      s->query("alter table sessions add autoadd integer");
 if(sizeof(s->list_fields("payment_info","Authorization"))!=1)
          s->query("alter table payment_info add Authorization char(24)");
+
+if(sizeof(s->list_tables("comments"))!=1) {
+  perror("adding comments table...\n");
+  s->query("CREATE TABLE comments ("
+    "orderid varchar(24) DEFAULT '' NOT NULL,"
+    "comments blob");
+}
 
 if(sizeof(s->list_tables("admin_users"))!=1) {
   perror("adding admin_users table...\n");

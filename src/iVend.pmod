@@ -460,7 +460,8 @@ id->variables[lower_case(id->misc->ivend->keys[id->variables->table])] +
             catch(jointable=id->variables[id->variables->jointable]/"\000");
             // perror(id->variables[id->variables->jointable]+"\n\n");
             query("DELETE FROM " + id->variables->joindest + " WHERE " +
-                  (id->variables->table-"s") +"_id='" + id->variables->id
+                  (id->variables->table-"s") +"_id='" +
+id->variables[lower_case(KEYS[id->variables->table])]
                   + "'");
             if(jointable && sizeof(jointable)>0)
                 for(int i=0; i<sizeof(jointable); i++){

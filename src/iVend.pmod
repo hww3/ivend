@@ -154,6 +154,7 @@ string errors="";
 array(mapping(string:mixed)) r=s->list_fields(id->variables->table);
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
+	r[i]->name=lower_case(r[i]->name);  // lower case it all...
 
   if(lower_case(r[i]->name[0..4])=="image"){
 
@@ -476,7 +477,8 @@ if(r[i]->type=="blob"){
 	"</FONT></TD>\n"
 	"<TD>\n";
 
-	retval+="<TEXTAREA NAME=\""+r[i]->name+"\" COLS=70 ROWS=5></TEXTAREA>\n";
+	retval+="<TEXTAREA NAME=\""
+	+lower_case(r[i]->name)+"\" COLS=70 ROWS=5></TEXTAREA>\n";
 	}
 
 else if(r[i]->type=="var string"){
@@ -486,7 +488,8 @@ else if(r[i]->type=="var string"){
 	"</FONT></TD>\n"
 	"<TD>\n";
 
-	retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="
+	retval+="<INPUT TYPE=TEXT NAME=\""+
+	lower_case(r[i]->name)+"\" SIZE="
 	  +
 	(r[i]->length)
 	+" >\n";
@@ -501,11 +504,14 @@ else if(r[i]->type=="string"){
 	"<TD>\n";
 
 	if(r[i]["default"]=="N")
-	retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"N\">No\n<OPTION VALUE=\"Y\">Yes\n</SELECT>\n";
+	retval+="<SELECT NAME=\""+
+	lower_case(r[i]->name)+"\"><OPTION VALUE=\"N\">No\n<OPTION VALUE=\"Y\">Yes\n</SELECT>\n";
 	else if(r[i]["default"]=="Y")
-	retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"Y\">Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
+	retval+="<SELECT NAME=\""
+	+lower_case(r[i]->name)+"\"><OPTION VALUE=\"Y\">Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
 	else {
-	  retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+
+	  retval+="<INPUT TYPE=TEXT NAME=\""+
+	lower_case(r[i]->name)+"\" SIZE="+
 	(r[i]->length)+">\n";
 	  if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";	
 	  }
@@ -514,7 +520,8 @@ else if(r[i]->type=="string"){
 else if(r[i]->type=="long" && r[i]->flags["not_null"]){
 	retval+="<TR>\n"
 	"<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD>\n";
-	retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+" VALUE=NULL>\n";
+	retval+="<INPUT TYPE=HIDDEN NAME=\""+
+	lower_case(r[i]->name)+"\" SIZE="+r[i]->length+" VALUE=NULL>\n";
 
 	}
 
@@ -525,11 +532,11 @@ else if(r[i]->type=="enum"){
 	"</font></td>\n"
 	"<td>\n";
 
-    retval+="<select name=\""+r[i]->name+"\">\n";
+    retval+="<select name=\""+lower_case(r[i]->name)+"\">\n";
 
   array vals;
    if(!catch( vals=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	"db/"+table+"_"+r[i]->name+".val")/"\n")){
+	"db/"+table+"_"+lower_case(r[i]->name)+".val")/"\n")){
 	vals-=({""});
     if(sizeof(vals)>0) {
 	for(int j=0; j<sizeof(vals); j++)
@@ -550,7 +557,8 @@ else if(r[i]->type=="unknown")	{
 	"&nbsp; </FONT></TD>\n"
 	"<TD>\n";
 
-	retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+"\" VALUE=NULL>\n";
+	retval+="<INPUT TYPE=HIDDEN NAME=\""
+	+lower_case(r[i]->name)+"\" VALUE=NULL>\n";
 	}
 retval+="</TD>\n"
 	"</TR>\n";

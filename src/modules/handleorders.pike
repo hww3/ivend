@@ -146,7 +146,7 @@ else if(id->variables->orderid) {
 	"<tr><td width=30%><font face=helvetica>Status</td><td>"+r[0]->status+"</td></tr>\n"
 	"<tr><td width=30%><font face=helvetica>Last Action</td><td>"+r[0]->updated+"</td></tr>\n"
 	"<tr><td width=30%><font face=helvetica>Creation</td><td>"+r[0]->created+"</td></tr>\n"
-	"<tr><td width=30%><font face=helvetica>Notes:</td><td><pre>"+
+	"<tr><td width=30%><font face=helvetica>Notes</td><td><pre>"+
 	(r[0]->notes||"")+"</pre></td></tr>\n"
 	"</table>"
 	"\n\n");

@@ -185,3 +185,19 @@ be made through the corresponding private key. For this reason, it is
 preferably on different systems. This way, if the system running iVend is
 compromised, it would not be possible to decrypt secured information
 because the required private key would not be present.
+
+
+Other Ramblings
+---------------
+
+If a function called currency_convert is present in the checkout module,
+currencies from product records will be called as the argument to this 
+function. The function currency_convert will return the converted float.
+
+
+Checkout Tags
+-------------
+
+confirmemail
+  field=fieldname	name of field containing email address to check.
+

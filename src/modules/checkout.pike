@@ -44,6 +44,19 @@ return retval;
 }
 
 
+string tag_confirmemail(string tag_name, mapping args,
+		     object id, mapping defines) {
+if(!args->field) 
+  return "";
+else if(Commerce.Sendmail.check_address(id->variables[lower_case(args->field)]))
+  return "";
+else id->misc->ivend->error+=
+	"You have provided an invalid email address.";
+
+return "";
+
+}
+
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
 
@@ -74,6 +87,8 @@ mixed error= catch{  for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
     r[i]->status=0;
+    if(functionp(currency_convert))
+       r[i]->cost=currency_convert(r[i]->cost, id);
     m_delete(r[i], "sessionid");    
     m_delete(r[i], "timeout");
     query=iVend.db()->generate_query(r[i], "orderdata", s);
@@ -440,7 +455,10 @@ contents=parse_html(contents,
 		  containers,
 		  id);
 
- if(id->misc->ivend->error) return  (id->misc->ivend->error[1..]);
+ if(id->misc->ivend->error) return 
+	"<b>An error occurred while processing your request.</b><p>" 
+	"Please review the cause of this error and go back to correct it:<p>" 
+	+ (id->misc->ivend->error[1..]);
 else return contents;
 }
 
@@ -451,6 +469,7 @@ mapping query_tag_callers2() {
 
 return (["showorder" : tag_showorder,
       "confirmorder" : tag_confirmorder,
+      "confirmemail" : tag_confirmemail,
 	  "shipping" : tag_shipping,
 	"grandtotal" : tag_grandtotal,
   	  "subtotal" : tag_subtotal,

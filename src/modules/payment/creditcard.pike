@@ -153,3 +153,8 @@ if(sizeof(r)!=1) {
 else return (float)(r[0]->shipping);
 
 }
+
+string|int validate_payment(mapping data);
+string|int authorize_payment(mapping data);
+string|int process_payment(mapping_data);
+string|int cancel_payment(mapping data);

@@ -1,3 +1,5 @@
+<define tag="storeurl">__STOREURL__</define>
+<define tag="checkouturl">__CHECKOUTURL__</define>
 <define tag="storename">
 __STORENAME__
 </define>

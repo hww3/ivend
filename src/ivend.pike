@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.214 1999-06-05 04:00:31 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.215 1999-06-07 00:57:08 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1311,6 +1311,7 @@ array(mapping(string:string)) r;
     // perror(page + " is a " + type + "\n");
     if(!type)
         return 0;
+id->misc->ivend->template="";
     if(id->variables->template)
 id->misc->ivend->template=id->variables->template;
     if(id->misc->ivend->template=="DEFAULT")

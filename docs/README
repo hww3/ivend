@@ -175,14 +175,14 @@ database. This tag takes the following attributes:
 <icart></icart> displays the store shopping cart for the current
 sessionid. This tag takes the following attributes:
 
-  fields: a comma separated list of additional fields to include in the cart.
+  fields: a comma separated list of fields to include in the cart.
 
 <form></form> has been modified to automatically handle session tracking.
 
 <listitems> generates a table of products which fall in a particular
 group. The following attributes affect this tag:
 
-  fields: a comma separated list of additional fields to include in the table.
+  fields: a comma separated list of fields to include in the table.
   names: a comma separated list of alternate names for fields included in
      the table.
 

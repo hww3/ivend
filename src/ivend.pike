@@ -22,7 +22,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.57 1998-04-27 02:43:32 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.58 1998-04-29 01:53:18 hww3 Exp $";
 
 array register_module(){
 
@@ -571,9 +571,8 @@ void start(){
 
   if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
     else  read_conf();   // Read the config data.
-  add_include_path(query("root") + "include");
-perror("added module path include...\n");
-  add_module_path(query("root"));
+ add_include_path(query("root") + "include");
+ add_module_path(query("root"));
   
   foreach(indices(config), string c)
     load_modules(config[c]->config);

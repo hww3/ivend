@@ -1,0 +1,23 @@
+About the Order Total Shipping Module
+-------------------------------------
+
+This module will calculate shipping charges based upon the total amount of
+product purchased, before discounts and taxes are applied. This module
+will initialize all required database tables itself, and provides a
+browser based administration interface.
+
+Using the OTShipping Module
+---------------------------
+
+After choosing this module to handle shipping for a store, you should
+enter that store's administration interface, and choose "Shipping
+Administration". If this is the first time you are using this module, or
+any shipping module, you will note a message indicating that the module
+needs to be initialized. By selecting the link that is provided, the
+module will create any shipping tables nessecary for proper operation. If
+you have used a different shipping module previously, your shipping types
+will be retained.
+
+
+13 April 1998
+Bill Welliver <hww3@riverweb.com>

@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.90 1998-08-12 03:26:11 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.91 1998-08-15 00:11:33 hww3 Exp $";
 
 array register_module(){
 
@@ -79,7 +79,7 @@ string getmwd(){
   catch { mwd=combine_path(combine_path(mwd, ".."), readlink(mwd)); };
   mwd=combine_path(mwd, "../");
 
-  perror("getmwd(): "+mwd + "\n\n");
+//  perror("getmwd(): "+mwd + "\n\n");
 
   return mwd;
 }
@@ -134,9 +134,9 @@ void start(){
 
 num=0;
  add_include_path(getmwd() + "include");
-perror("iVend: added include path: "+getmwd()+"include\n"); 
+// perror("iVend: added include path: "+getmwd()+"include\n"); 
 add_module_path(getmwd()+"src");
-perror("iVend: added module path: "+getmwd()+"src\n"); 
+// perror("iVend: added module path: "+getmwd()+"src\n"); 
   loaded=1;
 if(catch(perror(query("datadir")))) return;
 
@@ -311,7 +311,7 @@ if(id->variables->update) {
         +r[i]->id+" &nbsp;</TD>\n";
 
 	foreach(en, field){
-		perror(field +"\n");
+//		perror(field +"\n");
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 
@@ -541,7 +541,7 @@ return retval;
 
 mixed handle_cart(string st, object id){
 #ifdef MODULE_DEBUG
-perror("iVend: handling cart for "+st+"\n");
+// perror("iVend: handling cart for "+st+"\n");
 #endif
 
 string retval;
@@ -576,7 +576,7 @@ else  if(desc[i]->type=="decimal")
 
 mixed find_page(string page, object id){
 #ifdef MODULE_DEBUG
-perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
+// perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
 #endif
 
 string retval;
@@ -641,7 +641,7 @@ return 0;
 
 mixed handle_page(string page, object id){
 #ifdef MODULE_DEBUG
-perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
+// perror("iVend: handling page "+ page+ " in "+ id->misc->ivend->st +"\n");
 #endif
 
 id->misc->ivend["page"]=page-".html";
@@ -784,8 +784,9 @@ foreach(indices(config), string st){
     
  else { 
     int numsessions=do_clean_sessions(db);
-    perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
-       " sessions from database " + store->db + ".\n");
+    if(numsessions)
+      perror("iVend: BackgroundSessionCleaner cleaned " + numsessions +
+         " sessions from database " + store->db + ".\n");
     }
   }
 call_out(background_session_cleaner, 900);
@@ -1263,10 +1264,8 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 	"ivindex":container_ivindex,
 	"category_output":container_category_output
     ]);
-
-if(
-//!catch(id->misc->ivend->st) && 
-id->misc->ivend->st){
+catch {
+if(id->misc->ivend->st){
   if(functionp( modules[id->misc->ivend->config->checkout_module
     ]->query_container_callers))
     containers+=  modules[id->misc->ivend->config->checkout_module
@@ -1286,9 +1285,8 @@ id->misc->ivend->st){
     ]->query_tag_callers))
     tags+=modules[id->misc->ivend->config->shipping_module
     ]->query_tag_callers();
-}
-
-
+  }
+};
   id->misc->ivend->modules=modules;
  return "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
@@ -1348,7 +1346,7 @@ if(! id->misc->ivend)
 	return ({ 33204,0,time(),time(),time(),0,0 });
 array fs;
 #ifdef MODULE_DEBUG
- perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
+//  perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
 #endif
 fs=file_stat(id->misc->ivend->root+"/"+f);
 return fs;
@@ -1370,7 +1368,7 @@ if(id->misc->ivend->st && id->misc->ivend->config)
   retval=Stdio.read_file(
     id->misc->ivend->config->root+"/error.html");
 
-perror("error: " + retval + "\n");
+// perror("error: " + retval + "\n");
 
 if(!retval) retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
     "<b>One or more errors have occurred. Please review the following "
@@ -1451,12 +1449,12 @@ c=iVend.config();
 g=iVend.config();
 if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
    perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
-else 
-   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
+// else 
+//   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
 if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
    perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
-else 
-   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
+// else 
+//   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
 
 array|int configfiles=get_dir(query("configdir"));
 
@@ -1468,7 +1466,7 @@ for(int i=0; i<sizeof(configfiles); i++){
 
   if(search(configfiles[i], "~")>0) {
 #ifdef MODULE_DEBUG
-    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
+//    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
 #endif
     continue;
     }
@@ -1477,7 +1475,7 @@ for(int i=0; i<sizeof(configfiles); i++){
 	configfiles[i])/"\n");
 
 #ifdef MODULE_DEBUG
- perror("iVend: parsing configuration "+configfiles[i]+"\n");
+ // perror("iVend: parsing configuration "+configfiles[i]+"\n");
 #endif
 
   current_config=configfiles[i];
@@ -1520,14 +1518,14 @@ return 0;
 
 void load_modules(string c){
 
-perror("iVend: running load_modules() for " + c + "\n");
+// perror("iVend: running load_modules() for " + c + "\n");
 
 mixed err;
 if(!c) return;
 if(!config[c]) return;
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
-      perror("iVend: loading module " + config[c][n] + "\n");
+//      perror("iVend: loading module " + config[c][n] + "\n");
       err=load_ivmodule(c, config[c][n]);
       if(err) {
         perror("iVend: The following error occured while loading the module "
@@ -1573,7 +1571,7 @@ for(int i=0; i<sizeof(configs); i++){
 
 
 save_status=1;	// We've saved.
-perror("iVend: reloading all modules...\n");
+// perror("iVend: reloading all modules...\n");
 start();	// Reload all of the modules and crap.
 return http_redirect(id->referer, id);
 
@@ -1599,13 +1597,13 @@ retval+="<HTML>\n"
 "<BODY BGCOLOR=\"White\" BACKGROUND=\""+query("mountpoint")+"ivend-image/ivendbg.gif\" TEXT=\"#000066\" LINK=\"#000066\">\n"
 "<CENTER><FONT COLOR=\"White\"><TABLE COOL WIDTH=\"786\" BORDER=\"0\" CELLPADDING=\"0\" CELLSPACING=\"0\">\n"
 "<TR HEIGHT=\"8\">\n"
-"	<TD WIDTH=\"32\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
-"	<TD WIDTH=\"182\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"32\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"6\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"6\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"186\" HEIGHT=\"8\"></TD>\n"
+"<TD WIDTH=\"182\" HEIGHT=\"8\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"8\"></TD>\n"
 "</TR>\n";
 
 // Do filefolder tabs
@@ -1615,15 +1613,15 @@ retval+="<HTML>\n"
 		case "status": {
 		retval+=
 "<TR HEIGHT=\"28\">\n"
-"	<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A "
-"	HREF=\""+query("mountpoint")+"config/configs\"><IMG SRC=\""+query("mountpoint")+"ivend-image/configurationsunselect.gif\" "
-"	WIDTH=\"186\" HEIGHT=\"28\" BORDER=\"0\" ALT=\"/  Configurations  \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\">"
+"<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"32\"><A "
+"HREF=\""+query("mountpoint")+"config/configs\"><IMG SRC=\""+query("mountpoint")+"ivend-image/configurationsunselect.gif\" "
+"WIDTH=\"186\" HEIGHT=\"28\" BORDER=\"0\" ALT=\"/  Configurations  \\\"></A></TD>\n"
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"224\">"
 "<A HREF=\""+query("mountpoint")+"config/global\"><IMG SRC=\""+query("mountpoint")+"ivend-image/globalunselect.gif\" WIDTH=\"186\" HEIGHT=\"28\" BORDER=\"0\" ALT=\"/ Global Variables \\\"></A></TD>\n"
-"	<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
-"	<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+
+"<TD WIDTH=\"6\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"6\" HEIGHT=\"28\"></TD>\n"
+"<TD WIDTH=\"186\" HEIGHT=\"28\" COLSPAN=\"1\" ROWSPAN=\"1\" VALIGN=\"top\" ALIGN=\"left\" XPOS=\"416\"><A HREF=\""+query("mountpoint")+"config/status\"><IMG SRC=\""+query("mountpoint")+
 "ivend-image/statusselect.gif\" WIDTH=\"186\" HEIGHT=\"28\" BORDER=\"0\" ALT=\"/        Status        \\\"></A></TD>\n"
 "<TD WIDTH=\"182\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"182\" HEIGHT=\"28\"></TD>\n"
 "</TR>\n"
@@ -1716,18 +1714,24 @@ retval+="\n</TD></TR>";
 "<TD WIDTH=\"32\" HEIGHT=\"28\"><SPACER TYPE=\"BLOCK\" WIDTH=\"32\" HEIGHT=\"28\"></TD>\n";
 
 		
-		if(request[0]=="new"){
+  if(request[0]=="reload"){
+	start();
+	return http_redirect(query("mountpoint")+"config/configs",id);
+
+  }
+
+  if(request[0]=="new"){
 			
-			if(id->variables->config && !config[id->variables->config]){
+	if(id->variables->config && !config[id->variables->config]){
 			
-				array(string) variables= indices(id->variables);
-				for(int i=0; i<sizeof(variables); i++){
+		array(string) variables= indices(id->variables);
+		for(int i=0; i<sizeof(variables); i++){
 				
-					if(!config[id->variables->config]) 
+			if(!config[id->variables->config]) 
 config[id->variables->config]= ([]);
 config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 				
-					}
+			}
 				
 				save_status=0;
 				return http_redirect(query("mountpoint")+"config/configs",id);
@@ -1765,10 +1769,11 @@ config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 			
 				}
 
-			retval+="<P><FONT FACE=\"times\" SIZE=+1>To View, Modify or Delete a Configuration, Click on it's name in the list above.</FONT><P>\n"
-				"<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; ";
-			if(save_status!=1)
-				retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";
+	retval+="<P><FONT FACE=\"times\" SIZE=+1>To View, Modify or Delete a Configuration, Click on it's name in the list above.</FONT><P>\n"
+  "<A HREF=\""+query("mountpoint")+"config/new\">New Configuration</A> &nbsp; ";
+  "<A HREF=\""+query("mountpoint")+"config/reload\">Reload Configurations</A> &nbsp; ";
+  if(save_status!=1)
+   	  retval+="<A HREF=\""+query("mountpoint")+"config/save\">Save Changes</A>";
 
 			}
 		

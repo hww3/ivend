@@ -1,3 +1,5 @@
+#!NOMODULE
+
 /*
  * iztokcurrency.pike: iztok's currency module for iVend.
  *
@@ -7,7 +9,7 @@
 
 inherit "roxenlib";
 
-constant module_name="Iztok's Currency Module";
+constant module_name="Translation Currency";
 constant module_type="currency";
 
 

@@ -1,3 +1,5 @@
+#!NOMODULE
+
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 

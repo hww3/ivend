@@ -1,3 +1,5 @@
+#!NOMODULE
+
 #include "../include/messages.h"
 
 constant module_name = "Per Product Shipping";

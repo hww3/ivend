@@ -1,3 +1,5 @@
+#!NOMODULE
+
 constant module_name = "UPS Zone Shipping";
 constant module_type = "shipping";
 

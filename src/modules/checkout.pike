@@ -1,3 +1,5 @@
+#!NOMODULE
+
 /*
  * checkout.pike: default checkout module for iVend.
  *

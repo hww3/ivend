@@ -1,3 +1,5 @@
+#!NOMODULE
+
 constant module_name = "Order Total Shipping";
 constant module_type = "shipping";
 

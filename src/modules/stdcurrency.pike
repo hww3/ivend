@@ -1,3 +1,5 @@
+#!NOMODULE
+
 /*
  * stdcurrency.pike: default currency module for iVend.
  *

@@ -23,8 +23,8 @@ useful tool.
 What do I need for iVend to work?
 ---------------------------------
 
-* A system running Roxen Challenger version 1.2 or higher. See the
-  section "A Note About Compatibility" below.
+* A system running Roxen Challenger version 1.2 or higher **with Crypto
+  enabled**. See the section "A Note About Compatibility" below.
 * A copy of Pike in your PATH for running the setup scripts.
 * An SQL database server supported by Pike and Roxen Challenger.
   (iVend was developed using mysql, however other dbms systems should 
@@ -55,7 +55,8 @@ release.
   download site: http://hww3.riverweb.com/dist/patches
 
 iVend was written to work with the mySQL database system. There is very
-little reason that another RDBMS would not work. Your mileage may vary.
+little reason that another RDBMS would not work with minor modifications. 
+Your mileage may vary.
 
 
 Installation Instructions
@@ -169,4 +170,4 @@ because the required private key would not be present.
 trusted users.
 
 
-19 june 1998
+14 august 1998

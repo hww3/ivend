@@ -3,8 +3,6 @@ iVend todo list
 
 Add support for multiple datasources per store. (2/15/98)
 
-Multiple language support (2/15/98) [started]
-
 "point and shoot" configuration of ordering process. (2/20/98) [started]
 
 add hooks for image processing (2/23/98)
@@ -13,15 +11,10 @@ persistent database connections (3/15/98)
 
 support for threaded operation (3/15/98)
 
-add error handling for sendmail() (3/25/98) [partially done]
-
 add configurable order handling functions ie fax, etc. (3/25/98)
-
-abstract database routines (3/26/98)
 
 add support for databases other than mysql (maybe) (3/26/98)
 
-add email address verification (3/25/98) [done]
+better documentation (8/14/98) [started]
 
-allow seperate names for order and admin functions (3/27/98)
-
+installation script (8/14/98) [started]

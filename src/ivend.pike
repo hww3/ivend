@@ -864,7 +864,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
   string headlinebgcolor= args->headlinebgcolor || "navy";
   string headlinefontcolor= args->headlinefontcolor || "white";
   string listbgcolor= args->listbgcolor || "white";
-  string listbgcolor2= args->listbgcolor2 || "lightlightblue";
+  string listbgcolor2= args->listbgcolor2 || "#ddeeff";
   string listfontcolor= args->listfontcolor || "navy";
 
   if(!id->misc->ivend->page) 
@@ -884,19 +884,20 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
       extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
     }
   }
-  
+  string tablename;
   array r;
   if(args->type=="groups") {
     query="SELECT " + KEYS->groups + " AS pid " +
       extrafields+ " FROM groups";
     if(!args->show)
       query+=" WHERE status='A' ";
-    
+    tablename="groups";
   }
   else {
     query="SELECT product_id AS pid "+ extrafields+
       " FROM product_groups,products where group_id='"+
 	id->misc->ivend->page+"'";
+    tablename="products";
     
     if(!args->show)
       query+=" AND status='A' ";
@@ -938,7 +939,8 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     rows[p]=thisrow;
     p++;
   }
-  
+//  array flds=DB->list_fields(table);
+
   if(args->title) retval+="<h2>" + args->title + "</h2>\n";
    
   retval += "<table bgcolor=#000000 cellpadding=1 cellspacing=0 border=0>";
@@ -956,7 +958,10 @@ int i=0;
 
   retval +="<tr bgcolor=" +  (((i/m)%2)?listbgcolor:listbgcolor2) +">\n";
     foreach(indices(rows[cnt]), cnt2) {
-      retval += sprintf("<td nowrap><font color=%s>%s&nbsp;&nbsp;</td>\n",
+	if((float)rows[cnt][cnt2])
+          string align="right";
+        else string align="left";
+      retval += sprintf("<td nowrap align=" + align + "><font color=%s>%s&nbsp;&nbsp;</td>\n",
 			listfontcolor, (string)rows[cnt][cnt2]);
  
   i++;

@@ -724,7 +724,7 @@ else if(r[i]->name == id->misc->ivend->keys[table]) {
         lower_case(r[i]->name)+"\" SIZE="
           +
         (r[i]->length)
-        +"  VALUE=\""+  record[r[i]->name]||"" + "\">\n")) +
+        +"  VALUE=\""+ (record[r[i]->name]||"") + "\">\n")) +
 	"</td></tr>\n" ;
 	}
 else if(r[i]->type=="blob"){
@@ -736,7 +736,7 @@ else if(r[i]->type=="blob"){
 
 	retval+="<TEXTAREA NAME=\""
 	+lower_case(r[i]->name)+"\" COLS=70 ROWS=5>"+
-	record[r[i]->name]||""
+	(record[r[i]->name]||"")
 	+"</TEXTAREA>\n";
 	}
 

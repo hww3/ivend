@@ -103,10 +103,11 @@ string|int listorder(object id, object s){
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
-    retval+="<tr><td><input type=checkbox value=ship name=\"" + 
+    retval+="<tr><td>" + (row->status=="Shipped"?"(S)" : 
+	"<input type=checkbox value=ship name=\"" + 
 	row[id->misc->ivend->keys->products ]+
-      "." + row->series + "\"></td>"
-      "<td>" + row->quantity + (row->status=="Shipped" ?" (S)":"")+"</td><td>" + row->id 
+      "." + row->series + "\">")+ "</td>"
+      "<td>" + row->quantity + "</td><td>" + row->id 
       + "</td><td>" + row->name + "</td><td align=right>" + row->price +
 	"</td><td align=right>"
       + sprintf("%.2f", (float)row->price * (float)row->quantity) 

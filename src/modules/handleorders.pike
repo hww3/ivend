@@ -246,14 +246,13 @@ string archive_orders(string mode, object id){
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
   retval+="Archiving " + sizeof(orders_to_archive) + " orders:<p>";
   foreach(orders_to_archive, mapping o){
+retval+="Records for " + o->id+ "<br>";
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info"});
     foreach(tables, string t){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
 	o->id + "'");
-retval+="Records " + sizeof(r) + " from " + t + " for " + o->id 
-+ "<br>";
       array fl,dl=({});
       foreach(r, mapping row){	
         foreach(fields, mapping f){

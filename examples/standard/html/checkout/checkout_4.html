@@ -1,0 +1,16 @@
+<ivml>
+<head>
+<title>Checkout</title>
+</head>
+<body bgcolor=white text=navy>
+<font face=helvetica>
+<font size=+2>4. Payment Information</font>
+<checkout>
+<addentry>
+<table>
+<generateform table=payment_info hide="orderid,type">
+</table>
+<input type=submit value=" >> ">
+<input type=hidden name=orderid value="<sessionid>">
+</checkout>
+</ivml>

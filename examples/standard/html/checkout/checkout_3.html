@@ -1,0 +1,26 @@
+<ivml>
+<head>
+<title>Checkout</title>
+</head>
+<body bgcolor=white text=navy>
+<font face=helvetica>
+<checkout>
+<addentry>
+<font size=+2>3. Shipping Address</font>
+Is this order to be shipped to the Billing address?
+<select name=shipsame>
+<option value=1>Yes
+<option value=0>No
+</select>
+<p>
+If not, complete the following information:
+<br>
+<table>
+<generateform table=customer_info hide="orderid,type,updated"
+exclude="Fax,Daytime_Phone,Evening_Phone,EMail_Address">
+</table>
+<input type=hidden name=orderid value="<sessionid>">
+<input type=hidden name=type value=1>
+<input type=submit value="  >> ">
+</checkout>
+</ivml>

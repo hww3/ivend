@@ -33,7 +33,7 @@ mixed handle_cart(string filename, object id);
 #endif
 
 int loaded;
-
+int need_rsa;
 object c;                       // configuration object
 object g;                       // global object
 mapping paths=([]);// path registry
@@ -61,17 +61,22 @@ void report_ivend_error(mixed msg, object id, mixed err){
 array register_module(){
 
    string s="";
+   if(need_rsa)
+     s += 
+     ("<b>\nWe don't have Standards.PKCS.RSA.parse_public_key...\n"
+	"<br>Please Install new RSA.pmod from "
+	"ftp.riverweb.com:/pub/hww3/ivend/patches.</b>\n");
    if(loaded) {
-      s = "<br>Go to the <a href='"+
+      s += "<br>Go to the <a href='"+
           my_configuration()->query("MyWorldLocation")+ query("mountpoint") +
-          "config/'>iVend Configuration Interface</a>";
-
+          "config/'>iVend Configuration Interface</a><p>";
    }
+
 
    return( {
            MODULE_LOCATION | MODULE_PARSER,
            "iVend 1.0",
-           "iVend enables online shopping within Roxen." + s,
+           s+"iVend enables online shopping within Roxen.",
            0,
            1
          } );
@@ -416,6 +421,14 @@ void start(){
    else {
      read_conf();   // Read the config data.
      }
+
+   if(search(indices(Standards.PKCS.RSA), "parse_public_key")==-1) {
+     perror("\nWe don't have Standards.PKCS.RSA.parse_public_key...\n"
+	"Please Install new RSA.pmod from "
+	"ftp.riverweb.com/pub/hww3/ivend/patches.\n");
+     need_rsa=1;
+    }
+    else need_rsa=0;
    foreach(indices(config), string c) {
       start_store(c);
    }

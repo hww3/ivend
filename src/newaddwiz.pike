@@ -135,6 +135,12 @@ string|int page_3(object id){
 "<help><tr><td colspan=2>"
 "Number of seconds before a session is cleared from database."
 "</td></tr></help>"
+"<tr><Td>Secure DB Permissions? &nbsp</td><td> "
+" <var type=\"select\" name=\"secureperms\" options=\"Yes,No\"></td></tr>"
+"<help><tr><td colspan=2>"
+"Should DB access be secured to the iVend host only? Answer 'No' only if "
+"you get db access errors while creating the store."
+"</td></tr></help>"
 "</table>"
 ;
 }
@@ -270,14 +276,18 @@ string host=(lower_case(v->dbhost)=="localhost"?"localhost":gethostname());
 //perror(v->dbpassword + "\n");
 
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
-	v->config + ".* TO " + v->config + "@" + host); 
+	v->config + ".* TO " + v->config + (v->secureperms=="Yes"?("@" +
+host):"")); 
 
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE on " +
-	v->config + ".* TO " + adminuser + "@" + host ); 
+	v->config + ".* TO " + adminuser + (v->secureperms=="Yes"?("@" +
+host):"") ); 
 
-s->query("SET PASSWORD FOR " + v->config + "@\"" + host +  
+s->query("SET PASSWORD FOR " + v->config + (v->secureperms=="Yes"?("@\"" +
+host):"") +  
 	"\" = PASSWORD(\"" + v->dbpassword + "\")");
-s->query("SET PASSWORD FOR " + adminuser + "@\"" + host + "\" = PASSWORD(\"" +
+s->query("SET PASSWORD FOR " + adminuser + (v->secureperms=="Yes"?("@\"" +
+host):"") + "\" = PASSWORD(\"" +
 	adminpassword + "\")");
 
 retval+="<b><font face=+1>Store Created Successfully.</b><p></font>"
@@ -342,6 +352,7 @@ m_delete(v, "_name");
 m_delete(v, "createdir");
 m_delete(v, "copyfiles");
 m_delete(v, "style");
+m_delete(v, "secureperms");
 
 
     array(string) variables= indices(v);

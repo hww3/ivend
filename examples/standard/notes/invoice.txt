@@ -1,9 +1,10 @@
-orderguy@foo.com
+<use file="/store_package"><orderemail>
 email_address
 iVend Order ##orderid#
-This notice is your invoice. Please keep a copy for future reference or in
-case you need to return an item. Our policies for returns and refunds are
-included below for your convenience.
+<use file="/store_package">
+This notice is your invoice. Please keep a copy  for future reference or
+in case you need to return an item. Our policies for returns and refunds
+are included below for your convenience.
 <formoutput quote="~">
 Order: ~orderid~ 
 <sqloutput query="select * from orders where id='~orderid~'"

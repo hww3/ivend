@@ -1,10 +1,8 @@
 <use file="./store_package">
 <page title="Your Order Status">
-<img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
 <img src=images/checkcart.gif> &nbsp; 
-
 <gtext fg=maroon nfont=helvetica black>Order Status</gtext><p>
-<font face=helvetica,arial size=++1>
+<font size=++1>
 <p>
 <sqloutput host=IVDBHOST database=IVDBNAME user=IVDBUSER
 password=IVDBPASSWORD
@@ -33,9 +31,10 @@ shipments.orderid='#orderid#' and products.id=shipments.item">
 <sqlelse>Sorry, we couldn't find your order.</sqlelse>
 
 <ul>
-<li><a href="./">Return to the top.</a>
+<li><a href="<storeurl>">Return to the home page.</a>
 </ul>
 <hr>
 Please direct questions or comments to &lt; <a
 href="mailto:<adminemail>"><adminemail></a> &gt;.
 </formoutput>
+</page>

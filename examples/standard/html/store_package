@@ -1,11 +1,8 @@
 <define tag="storeurl">__STOREURL__</define>
 <define tag="checkouturl">_CHECKOUTURL__</define>
-<define tag="storename">
-__STORENAME__
-</define>
-<define tag="adminemail">
-__ADMINEMAIL__
-</define>
+<define tag="orderemail">__ORDEREMAIL__</define>
+<define tag="adminemail">__ADMINEMAIL__</define>
+<define tag="storename">__STORENAME__</define>
 <define container="page">
 <html>
 <head>

@@ -1861,11 +1861,7 @@ mixed find_file(string file_name, object id){
    if(!retval)
       switch(request[0]) {
          case "":
-            if(objectp(DB))
-               db[STORE]->handle(DB);
-            return http_redirect(simplify_path(id->not_query +
-                                               "/index.html")+"?SESSIONID="+getsessionid(id), id);
-            break;
+	   request=({"index.html"});
             default:
             retval=(handle_page(request*"/", id));
 

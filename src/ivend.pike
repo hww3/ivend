@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.208 1999-05-29 03:50:56 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.209 1999-05-29 03:57:01 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -741,7 +741,8 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
             DB->query("DELETE FROM sessions WHERE sessionid='" +
                       id->misc->ivend->SESSIONID + "'");
             foreach(r, mapping row) {
-                if(((int)(row->autoadd))==1) continue;
+                if(((int)(row->locked))==1 || ((int)(row->autoadd)==1))
+		 continue;
 items+=({ (["item": row->id, "quantity": row->quantity, "options":
             row->qualifier, "series": row->series ]) });
             }

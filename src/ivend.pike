@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.53 1998-04-22 00:18:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.54 1998-04-22 02:13:15 hww3 Exp $";
 
 array register_module(){
 
@@ -562,8 +562,8 @@ void start(){
   if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
     else  read_conf();   // Read the config data.
   add_include_path(query("root") + "include");
+perror("added module path include...\n");
   add_module_path(query("root"));
-  add_program_path(query("root")[0..sizeof(query("root"))-2]);
   
   foreach(indices(config), string c)
     load_modules(config[c]->config);
@@ -750,7 +750,6 @@ return retval;
 
 
 mapping write_configuration(object id){
-perror("write_configuration()\n");
 string config_file="";
 
 array(string) configs= indices(config);
@@ -771,9 +770,10 @@ for(int i=0; i<sizeof(configs); i++){
     if(configs[i]=="global")
       config_file+="$" +this_config[j]+ "=" +
        global[this_config[j]] + "\n";
-    else
+    else {
       config_file+="$" +this_config[j]+ "=" +
         config[configs[i]][this_config[j]] + "\n";
+      }
     }
   config_file+="\n";
   }
@@ -788,8 +788,8 @@ return http_redirect(query("mountpoint")+"config", id);
 }
 
 int get_auth(object id, int|void i){
-if(i){
-// perror(query("config_password")+" "+query("config_user")+"\n");
+if(i){	// we're login in to the main config interface.
+
   array(string) auth=id->realauth/":";
   if(auth[0]!=query("config_user")) return 0;
   else if(query("config_password")==auth[1])
@@ -798,7 +798,7 @@ if(i){
 }
   array(string) auth=id->realauth/":";
   if(auth[0]!=id->misc->ivend->config->config_user) return 0;
-  else if(id->misc->ivend->config->config_password==auth[1])
+  else if(crypt(auth[1],id->misc->ivend->config->config_password))
         return 1;
   else return 0;
 
@@ -1012,16 +1012,22 @@ perror("DELETING " + request[1] + "\n");
 
 				}			
 
-			else if(!catch(request[2]) && request[2]=="config_modify") {
-				array(string) variables= (indices(id->variables)- ({"config_modify"}));
-                                for(int i=0; i<sizeof(variables); i++){
- 
-                                	config[id->variables->config][variables[i]]=id->variables[variables[i]];
+	else if(!catch(request[2]) && request[2]=="config_modify") {
+		array(string) variables= (indices(id->variables)- ({"config_modify"}));
+                  for(int i=0; i<sizeof(variables); i++){
+ 	if(variables[i]=="config_password" &&
+id->variables[variables[i]]!=config[id->variables->config][variables[i]])
+{
+  perror("crypting password...\n");
+  id->variables[variables[i]]=crypt(id->variables[variables[i]]);
+}
 
-                                        }
+ config[id->variables->config][variables[i]]=id->variables[variables[i]];
+
+           }
  
-                                save_status=0;   
-                                return http_redirect(query("mountpoint")+"config/configs/"+request[1]+"?"+time(),id);
+          save_status=0;   
+          return http_redirect(query("mountpoint")+"config/configs/"+request[1]+"?"+time(),id);
 
 
 				}

@@ -267,6 +267,11 @@ shippingtype		show the shipping type
 addentry		add the data from the previous form.
   encrypt=field1,field2..  encrypt these fields using rsa.
 
+cardcheck		check credit card number
+  cardnumber=field	use this field name for card number
+  cardtype=field	use this field name for card type (AMEX,VISA,etc)
+  expdate=field		use this field name for expiration date
+
 Other Stuff
 -----------
 

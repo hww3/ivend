@@ -1,6 +1,6 @@
 #!NOMODULE
 
-#include "../include/ivend.h"
+#include <ivend.h>
 
 #define CONFIG id->misc->ivend->config
 

@@ -1,8 +1,8 @@
 #!NOMODULE
 
 
-#include "../include/ivend.h"
-#include "../include/messages.h"
+#include <ivend.h>
+#include <messages.h>
 
 inherit "roxenlib";
 

@@ -27,9 +27,9 @@ mapping configuration_interface(array(string) request, object id);
 void handle_sessionid(object id);
 mixed getglobalvar(string var);
 mixed return_data(mixed retval, object id);
-mixed  get_image(string filename, object id, object this_object);
-mixed admin_handler(string filename, object id, object this_object);
-mixed handle_cart(string filename, object id, object this_object);
+mixed  get_image(string filename, object id);
+mixed admin_handler(string filename, object id);
+mixed handle_cart(string filename, object id);
 #endif
 
 int loaded;
@@ -149,7 +149,9 @@ void get_dbinfo(mapping c){
    }
    foreach(({"products", "groups"}), string t) {
       array r;
-      r=s->query("SHOW INDEX FROM " + t );  // MySQL dependent?
+      err=catch(r=s->query("SHOW INDEX FROM " + t ));  // MySQL dependent?
+      if(err)
+        perror("iVend: Unable to show indices from " + t + ".\n");
       if(sizeof(r)==0)
          keys[c->config][t]="id";
       else {
@@ -172,7 +174,7 @@ mixed handle_path(string s, string p, object id) {
 
    string np=((p/"/")-({""}))[0];
    mixed rv;
-   rv=paths[s][np](p, id, this_object());
+   rv=paths[s][np](p, id);
    // perror(sprintf("%O\n",rv));
    return rv;
 }
@@ -193,7 +195,7 @@ int have_path_handler(string s, string p){
 
 void register_path_handler(string c, string path, function f){
 
-   perror("registering path " + path + " for " + c + "...\n");
+//   perror("registering path " + path + " for " + c + "...\n");
 
    if(functionp(f))
       paths[c][path]=f;
@@ -358,7 +360,7 @@ void start_store(string c){
 
 
 void stop_store(string c){
-perror("dropping db object...\n");
+// perror("dropping db object...\n");
   destruct(db[c]);
 
 }
@@ -380,7 +382,7 @@ int write_config_section(string store, string section, mapping attributes){
 void start(){
 
    num=0;
-   add_include_path(getmwd() + "include");
+   add_include_path(getmwd() + "src/include");
    add_module_path(getmwd()+"src");
    loaded=1;
    if(catch(query("datadir"))) return;
@@ -800,7 +802,7 @@ else if(args->type=="groups") {
     query+=" ORDER BY " + args->order;
   
   r=DB->query(query);
-perror("Query: " +query + "\n");
+// perror("Query: " +query + "\n");
   
   if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
   
@@ -935,7 +937,7 @@ string container_ivindex(string name, mapping args,
 }
 
 
-mixed handle_cart(string filename, object id, object this_object){
+mixed handle_cart(string filename, object id){
 #ifdef MODULE_DEBUG
    // perror("iVend: handling cart for "+st+"\n");
 #endif
@@ -1297,7 +1299,7 @@ mixed have_admin_handler(string type, object id){
    if(search(h, type, loc)!=-1)
      type=h;
    }
-perror(type + "\n");
+// perror(type + "\n");
    if(admin_handlers[STORE][type] &&
 functionp(admin_handlers[STORE][type]))
       //  perror("have handler for " + type + " in " + STORE + "\n");
@@ -1373,7 +1375,7 @@ string action_clearsessions(string mode, object id){
          return retval;
 }
 
-mixed admin_handler(string filename, object id, object this_object){
+mixed admin_handler(string filename, object id){
 
 if(sizeof(id->prestate)==0) {
   id->prestate=(<"menu=main">);
@@ -1644,7 +1646,7 @@ KEYS[type+"s"]);
 	string m;
 	 if(m=have_admin_handler(mode, id)){
 	   string rv=handle_admin_handler(m,id);
-perror(id->query+"\n");
+// perror(id->query+"\n");
 	  if(ADMIN_FLAGS==NO_BORDER)
             retval=rv;
 	  else{ array mn=mode/".";
@@ -2019,7 +2021,7 @@ mixed handle_error(object id){
 }
 
 
-mixed get_image(string filename, object id, object this_object){
+mixed get_image(string filename, object id){
 
    string data=Stdio.read_bytes(
                  CONFIG->root+"/html/"+filename);
@@ -2188,7 +2190,7 @@ mixed return_data(mixed retval, object id){
                mixed m;
 
             if(!modules[c]) modules[c]=([]);
-perror("loading module " + name + ".\n");
+// perror("loading module " + name + ".\n");
 string filen;
 filen=query("root")+"/src/modules/"+name;
              if(file_stat(filen));

@@ -1,4 +1,4 @@
-#include "../include/ivend.h"
+#include <ivend.h>
 
 inherit "roxenlib";
 

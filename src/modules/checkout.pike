@@ -9,8 +9,8 @@
 
 inherit "roxenlib";
 
-#include "../include/ivend.h"
-#include "../include/messages.h"
+#include <ivend.h>
+#include <messages.h>
 
 constant module_name="Default Checkout Module";
 constant module_type="checkout";
@@ -385,8 +385,8 @@ id->misc->ivend->error+=
 return "";
 }
 
-mixed checkout(string p, object id, object this_object){
-
+mixed checkout(string p, object id){
+perror(p + "\n");
 id->misc->ivend->checkout=1;
 
 string retval=

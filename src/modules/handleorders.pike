@@ -483,14 +483,14 @@ string retval="";
 if(id->variables->write_config){
 
 Config.write_section(id->misc->ivend->this_object->query("configdir")+
-  CONFIG->config, "addins", id->misc->ivend->config->addins);
+  CONFIG->config, "addins", id->misc->ivend->config->handleorders);
   saved=1;
 id->misc->ivend->this_object->start_store(STORE);
   }
 
 retval+="<body bgcolor=white text=navy>\n"
   "<font face=helvetica,arial>\n"
-  "<h2>Add-In Manager</h2>";
+  "<h2>Preferences Manager: Orders</h2>";
 
 retval+="<form action=./>\n"
   "<input type=hidden name=change_settings value=1>\n";
@@ -510,7 +510,7 @@ mapping register_admin(){
 return ([
 
 	"menu.main.Orders.View_Orders" : show_orders ,
-	"Orders.View_Orders.Preferences" : prefs_handler 
+	"menu.main.Orders.Preferences" : prefs_handler 
 
 	]);
 

@@ -1423,9 +1423,11 @@ if(id->prestate && sizeof(id->prestate)>0){
 array valid_handlers=({});
 
 foreach(indices(admin_handlers[STORE]), string h)
-  if(search(h, mode + "." + type||"")!=-1)
-    valid_handlers+=({h});
-
+  if(search(h, mode + (type?"."+type:""))!=-1){
+	string m=h-(mode + (type?"."+type:""));
+	if((m+(mode + (type?"."+type:"")))!=h)
+	valid_handlers+=({h});
+	}
    switch(mode){
 
       case "doadd":
@@ -1647,14 +1649,32 @@ KEYS[type+"s"]);
 	 if(m=have_admin_handler(mode, id)){
 	   string rv=handle_admin_handler(m,id);
 // perror(id->query+"\n");
-	  if(ADMIN_FLAGS==NO_BORDER)
-            retval=rv;
+	  if(ADMIN_FLAGS==NO_BORDER) retval="";
 	  else{ array mn=mode/".";
 		mode=mn[sizeof(mn)-1];
 		retval+= " &gt; <b>" + (id->query?"<a href=./>":"") +  
 			replace(mode,({"_"}),({" "}))
-		 + (id->query?"</a>":"") + "</b><p>" + rv;
+		 + (id->query?"</a>":"") + "</b><p>";
+	  if(ADMIN_FLAGS==NO_ACTIONS);
+		else{
+	if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+		"face=helvetica,arial>Actions\"><table><tr>\n";
+	
+         foreach(valid_handlers, string handler_name) {
+		string name;
+		array a=handler_name/".";
+		name=a[sizeof(a)-1];
+		retval+="<td>\n";
+	 retval+=open_popup( name,
+	id->not_query, handler_name , (["id" : id->variables->id]) ,id);
+	retval+="</td>\n";
+	}
+	if(sizeof(valid_handlers))
+		retval+="</tr></table>\n</obox>";
+			}
+
 		}
+	retval+=rv;
 	 }
          else if(mode=="menu" && type=="main")   {
  retval+= 
@@ -1712,7 +1732,8 @@ foreach(cats, string category){
       "face=helvetica,arial><ul>\n";
   foreach(valid_handlers, string hn)
     if(search(hn, category)!=-1)
-      retval+="<li><a href=" + add_pre_state(id->not_query, (<hn>)) + ">"
+      retval+="<li><a href=" + add_pre_state(id->not_query,
+(<replace(hn, mode+"."+(type||"")+".","")>)) + ">"
 	+ replace(hn,({"_",mode + "." + (type||"") +"." +category
 +"."}),({" ",""})) +
       "</a>\n";

@@ -1025,6 +1025,10 @@ mixed additem(object id){
          items+=({v});
    }  
 
+
+  if(id->variables->item)
+	items+=({id->variables->item});
+
    foreach(items, string item){
       float price=DB->query("SELECT price FROM products WHERE " 
                             + KEYS->products +  "='" + item + "'")[0]->price;

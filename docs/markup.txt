@@ -1,7 +1,7 @@
 THIS DOCUMENT DESCRIBES IVEND SPECIFIC MARKUP TAGS AND CONTAINERS.
 
-<IVML>..</
-<HTML>..</
+<IVML>..</>
+<HTML>..</>
 
 The IVML and HTML containers are interchangable. They are the master containers that enable parsing of all other iVend tags. Each page within a store should contain the HTML/IVML container. All attributes are passed through the HTML/IVML container.
 
@@ -10,13 +10,13 @@ ATTRIBUTES
 QUIET do not output HTML container. Only return the parsed contents of the container. (Optional)
 EXTRAFIELDS 
 
-<ICART>..</
+<ICART>..</>
 
 Display the Cart. Items in the cart to be updated and deleted.
 
 You may specify as many fields from the products table to be included in the cart display in addition to the item's price, options selected and quantity. The first field specified by the FIELDS attribute will be displayed with a link to the product's information page.
 
-Upon a successful access to the cart, the contents of this container are returned following the Cart Widget along with a TRUE result. If an error occurrs, a FALSE result will be returned, allowing the use of <ELSE>...</.
+Upon a successful access to the cart, the contents of this container are returned following the Cart Widget along with a TRUE result. If an error occurrs, a FALSE result will be returned, allowing the use of <ELSE>...</>.
 
 ATTRIBUTES
 
@@ -58,7 +58,7 @@ To add item ABC123 and DEF456 to the cart, use the following:
 <form action="my_additem_page.html">
 <additem item="ABC123" quantity="1" noform silent>
 <additem item="DEF456" quantity="1" noform>
-</form>
+</>form>
 
 
 <IVENDLOGO>
@@ -121,7 +121,7 @@ will generate a series of item listings that contain all products in group PRODG
 
 <LISTITEMS>
 
-Generates lists of items (product or group) formatted for display and browsing. If the query returns no items, a <FALSE> tag is returned, allowing use of the <ELSE>..</ container.
+Generates lists of items (product or group) formatted for display and browsing. If the query returns no items, a <FALSE> tag is returned, allowing use of the <ELSE>..</> container.
 
 ATTRIBUTES
 HEADLINEBGCOLOR	Specifies the background color of the title bar. (Optional)
@@ -139,15 +139,15 @@ LIMIT If present, the tag will limit like an addition to an SQL WHERE clause. (O
 ORDER If present, the tag will order the results of the item selection by "VALUE". (Optional)
 QUIET If this attribute is specified and no items are returned, the tag will return nothing. Otherwise, a message indicating the situation will be returned. (Optional)
 TEMPLATE If present, the tag will add a TEMPLATE specification of VALUE to the Item's link. (Optional)
-TITLE If present, this tag will return VALUE in a <listitemstitle>...</ container. (Optional) 
+TITLE If present, this tag will return VALUE in a <listitemstitle>...</> container. (Optional) 
 MODULO Specifies the number of lines in each color band. Default value is 1. (Optional)
 
 EXAMPLES
 
 
-<A>...</
+<A>...</>
 
-This modified version of the <A>...</ tag handles session tracking and also provides some shortcuts to common iVend paths. The contents of the container will be contained within the <A>..</ container.
+This modified version of the <A>...</> tag handles session tracking and also provides some shortcuts to common iVend paths. The contents of the container will be contained within the <A>..</ container.
 
 ATTRIBUTES
 HREF Specifies the location of a file to be linked to. (Optional)
@@ -164,7 +164,7 @@ All other attributes are passed on to the browser.
 
 <IVSTATUS>
 
-Displays session status information such as items added to the session cart. Returns a <STATUS>...</ container for each status message.
+Displays session status information such as items added to the session cart. Returns a <STATUS>...</> container for each status message.
 
 <IVMG>
 
@@ -176,12 +176,47 @@ FIELD If specified, will return the image attached to field VALUE for the curren
 SRC If specified, will return the image VALUE located in the directory $STOREROOT/html/images/. (Optional)
 
 
-<FORM>..</
+<FORM>..</>
 
-The <FORM>..</ container has been modified to provide session tracking capabilities. All arguments to the form container are passed through to the browser.
+The <FORM>..</> container has been modified to provide session tracking capabilities. All arguments to the form container are passed through to the browser.
 
-category_output
-itemoutput
+
+<CATEGORY_OUTPUT>..</>
+
+The <CATEGORY_OUTPUT>..</> container allows custom output for groups and types based using the features available in the Roxen <*OUTPUT>...</> containers.
+
+If one or more <FORMROTATE>..</> containers are present within the contents of this container, the contents of the <FORMROTATE>..</> containers will be used in a rotating fashion as input to the <CATEGORY_OUTPUT>..</> container, allowing more complex markup to be generated.
+
+ARGUMENTS
+
+TYPE Selects the type of record to operate on. Legitimate values include PRODUCTS or GROUPS. (Required unless using QUERY attribute below)
+SHOWALL If TYPE attribute is set to PRODUCTS, all items will be returned, regardless of their status with a group. (Optional)
+SHOW If selected, only items with a status of 'A / Active' will be eligible for selection. (Optional)
+RESTRICTION Allows further eligibility restriction. Value must be a valid SQL where substring. (Optional)
+ORDER Allows ordering of the selected items. The value of this attribute should follow SQL syntax for the ORDER BY clause. (Optional)
+PARENT If TYPE attribute is set to GROUPS, only those items with a Parent field equal to the value of this attribute will be eligible for selection. Alternately, if a form variable "parent" is present, the value of that will be used instead. The value of this attribute should either be empty ('') or the ID/primary key value of another group. (Optional)
+QUERY Bypasses all other listed arguments by passing a SQL statement directly to the underlying database system. (Optional)
+RANDOM If used with <FORMROTATE>..</> containers, the order of <FORMROTATE>..</> will be randomly selected. (Optional)
+
+Additionally, all attributes supported by the <FORMOUTPUT>..</> container are available for use by <CATEGORY_OUTPUT>..</>.
+
+
+<FORMROTATE>..</>
+
+This container is used within the <CATEGORY_OUTPUT>..</> container, and is only active within that container.
+
+
+<ITEMOUTPUT>..</>
+
+<ITEMOUTPUT>..</> generates output for an item (GROUP or PRODUCT) using same facility as other Roxen <*OUTPUT>..</> containers.
+
+ATTRIBUTES
+
+ITEM Specifies the item to use as source for the output. (Required when not used on a Group/Product page, or when the current Group/Product is not the desired source)
+TYPE Specifies the type of item as source. Legitimate values for this attribute are PRODUCT or GROUP. (Required when the current item scope is not the same as the desired output type)
+EXTRAFIELDS Allows additional or calculated fields to be included for use in the output of this container. Value should be legitimate SQL field specifications- field as 'field1', COUNT(*) as 'field2', etc. (Optional) 
+
+Additionally, all attributes recognized by <FORMOUTPUT>..</> are available for use within this container.
 
 ivindex
 

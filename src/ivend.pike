@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.255 1999-12-23 19:52:42 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.256 2000-01-05 17:46:11 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2127,7 +2127,13 @@ if(!intp(r)){
                          "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
                          "<gtext fg=maroon nfont=bureaothreeseven black>"
                          + CONFIG->name+
-                         " Administration</gtext><p>"
+                         " Administration</gtext><br>"
+"<config_tablist>"
+"<tab href=\"groups/\">Work With Groups</tab>"
+"<tab href=\"products/\">Work With Products</tab>"
+"<tab href=\"orders/\">Work With Orders</tab>"
+"<tab href=\"setup/\">Store Setup</tab>"
+"</config_tablist><p>"
                          "<font face=helvetica,arial size=+1>"
                          "<a href=\"" +
                          id->misc->ivend->storeurl + "\">Storefront</a> &gt; <a href=\"" +
@@ -3168,23 +3174,34 @@ Config.write_section(query("configdir")+
 
                              catch(object s=db[c->config]->handle());
                              if(s) {
+perror("Checking tables...\n");
+
+perror("Checking comments table...");
+if(sizeof(s->list_tables("comments"))!=1) {
+  perror("adding.\n");
+  s->query("CREATE TABLE comments ("
+    "orderid varchar(24) DEFAULT '' NOT NULL,"
+    "comments blob)");
+}
+
+perror("Checking payment_info table for Authorization...");
+if(sizeof(s->list_fields("payment_info","Authorization"))!=1) {
+  perror("adding.\n");
+  s->query("alter table payment_info add Authorization char(24)");
+  }
+else perror("have it.\n");
+
+
 if(sizeof(s->list_fields("sessions","autoadd"))!=1)
   s->query("alter table sessions add autoadd integer");
+
 if(sizeof(s->list_fields("sessions","taxable"))!=1)
   s->query("alter table sessions add taxable char(1) default 'Y'");
+
 if(sizeof(s->list_fields("lineitems","taxable"))!=1) {
   perror("ADDING TAXABLE FIELD TO LINEITEMS\n");
   s->query("alter table lineitems add taxable char(1) default 'Y'");
   }
-if(sizeof(s->list_fields("payment_info","Authorization"))!=1)
-  s->query("alter table payment_info add Authorization char(24)");
-
-if(sizeof(s->list_tables("comments"))!=1) {
-  perror("adding comments table...\n");
-  s->query("CREATE TABLE comments ("
-    "orderid varchar(24) DEFAULT '' NOT NULL,"
-    "comments blob");
-}
 
 if(sizeof(s->list_tables("admin_users"))!=1) {
   perror("adding admin_users table...\n");
@@ -3196,6 +3213,7 @@ if(sizeof(s->list_tables("admin_users"))!=1) {
 		"level int(2) not null default 9)"
 		);
 }
+
 if(sizeof(s->list_tables("activity_log"))!=1) {
   perror("adding activity_log table...\n");
 	s->query("CREATE TABLE activity_log ("
@@ -3208,6 +3226,7 @@ if(sizeof(s->list_tables("activity_log"))!=1) {
 		);
 
  }
+
 db[c->config]->handle(s);
                              }
 

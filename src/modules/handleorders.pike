@@ -1,6 +1,20 @@
 constant module_name = "Stock Order Handler";
 constant module_type = "order";
 
+string|int show_orderdetails(string orderid, object s, object id);
+
+
+string create_panel(string name, string color, string contents){
+
+  string retval="";
+
+   retval+="<table width=80%><tr><td colspan=1 bgcolor=" + color +">\n";
+   retval+=" &nbsp; <font face=helvetica color=white><b>"+ name +"</font></b> &nbsp; </td></tr>\n";
+   retval+="<tr><td>\n" + contents + "\n</td></tr>\n</table>\n";
+
+  return retval;
+}
+
 string|int genpayment(object id, object s){
 string retval="";
 
@@ -117,16 +131,6 @@ r=s->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
 
 }
 
-string create_panel(string name, string color, string contents){
-
-  string retval="";
-
-   retval+="<table width=80%><tr><td colspan=1 bgcolor=" + color +">\n";
-   retval+=" &nbsp; <font face=helvetica color=white><b>"+ name +"</font></b> &nbsp; </td></tr>\n";
-   retval+="<tr><td>\n" + contents + "\n</td></tr>\n</table>\n";
-
-  return retval;
-}
 
 string show_orders(object id, object s){
 string retval="";

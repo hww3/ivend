@@ -1,3 +1,21 @@
+int readcode(object f){
+
+int code;
+int space;
+string r;
+
+do {
+space=' ';
+r=f->gets();
+if(!r) return 0;
+sscanf(r, "%d%c%*s", code, space);
+}
+while (space=='-');
+return code;
+}
+
+
+
 int check_address(string address){
 string mailhost;
 array a=address/"@";
@@ -41,22 +59,6 @@ f->close();
 
 return 1;	// good address!
 
-}
-
-int readcode(object f){
-
-int code;
-int space;
-string r;
-
-do {
-space=' ';
-r=f->gets();
-if(!r) return 0;
-sscanf(r, "%d%c%*s", code, space);
-}
-while (space=='-');
-return code;
 }
 
 int sendmail(string sender, string recipient, string message){

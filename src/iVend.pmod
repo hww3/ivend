@@ -254,6 +254,42 @@ return retval;
 
 }
 
+string|int showdepends(string type, string id){
+string query="";
+if(type=="" || id=="")
+return "Delete unsuccessful.\n";
+string retval="";
+
+if(type=="group"){
+  query="SELECT * FROM groups WHERE id='"+id+"'";
+  array j=s->query(query);
+  if(sizeof(j)!=1) return 0;
+  else {
+    retval+="Group "+j[0]->id+" ( "+j[0]->name+" ) is linked to the following"
+      " products:<p>";
+    query="SELECT product_groups.product_id,products.name FROM "
+	"products,product_groups WHERE product_groups.group_id='"
+        +id+"' AND products.id=product_groups.product_id";
+    j=s->query(query);
+    if(sizeof(j)==0) retval+="<blockquote>No Products in this group.</blockquote>";
+    else {
+      retval+="<blockquote>\n";
+      for(int i=0; i<sizeof(j); i++)
+        retval+=j[i]->product_id+" ( "+j[i]->name+" )<br>";
+      }
+    }
+  }
+
+else if(type=="product") {
+  query="SELECT id,name FROM products WHERE id='"+id+"'";
+  array j=s->query(query);
+  if(sizeof(j)!=1) return 0;
+  else retval+="<blockquote>"+j[0]->id+" ( "+j[0]->name+" )<br>\n";
+  }
+
+retval+="</blockquote>\n";
+return retval; 
+}
 string dodelete(string type, string id){
 string query="";
 

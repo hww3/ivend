@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.4 1997-12-16 17:51:29 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.5 1997-12-17 00:57:07 hww3 Exp $";
 
 /*
  *
@@ -490,7 +490,7 @@ retval=Stdio.read_bytes(config[st]->root+"/"+template);
 if (catch(sizeof(retval)))
   return handle_error(config[st]->root+"/"+template,st,id);
 
-// retval="find_page("+page+", "+s+", id)";
+// retval="find_page("+page+", s, id)";
 return parse_page(retval, r, f);
 }
 
@@ -847,7 +847,8 @@ retval+="<title>iVend Store Administration</title>"
   "<gtext fg=maroon nfont=helvetica black>"
   +id->misc->ivend->config->name+
   " Administration</gtext><p>"
-  "<font face=helvetica,arial size=+1>";
+  "<font face=helvetica,arial size=+1>"
+  "<a href=./>To Storefront</a><p>\n";
 
 switch(id->variables->mode){
 
@@ -892,17 +893,35 @@ switch(id->variables->mode){
     id->misc->ivend->config->user,
     id->misc->ivend->config->password
     );
-  retval+=s->dodelete(id->variables->type, id->variables->id);  
-  case "delete":
-  retval+="<form action=./admin>\n"
-    "<input type=hidden name=mode value=dodelete>\n"
-    "<input type=hidden name=SESSIONID value="+id->variables->SESSIONID+">\n"
-    "ID to Delete: \n"
-    "<input type=text size=10 name=id>\n"
-    "&nbsp; <input type=radio name=type default value=product>\n"
-    "Product &nbsp; <input type=radio name=type value=group>\n"
-    "Group<p>"
-    "<input type=submit value=Delete>\n</form>";
+  if(id->variables->confirm){
+    retval+=s->dodelete(id->variables->type, id->variables->id);  }
+  else {
+    retval+="Are you sure you want to delete the following?<p>";
+    mixed n=s->showdepends(id->variables->type, id->variables->id);
+    if(n){ retval+=n;
+    retval+="<form action=./admin>\n<input type=hidden value="+
+      id->variables->SESSIONID+ " NAME=SESSIONID>\n"
+      "<input type=hidden name=mode value=dodelete>\n"
+      "<input type=hidden name=type value="+id->variables->type+">\n"
+      "<input type=hidden name=id value="+id->variables->id+">\n"
+      "<input type=submit name=confirm value=\" Delete \">"
+      " &nbsp; <input type=submit value=\" Cancel \">\n</form>";  
+      }
+    else retval+="Couldn't find "+capitalize(id->variables->type) +" "
+      +id->variables->id+".<p>";
+    }
+
+    case "delete":
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=dodelete>\n"
+      "<input type=hidden name=SESSIONID value="+id->variables->SESSIONID+">\n"
+      "ID to Delete: \n"
+      "<input type=text size=10 name=id>\n"
+      "&nbsp; <input type=radio name=type default value=product>\n"
+      "Product &nbsp; <input type=radio name=type value=group>\n"
+      "Group<p>"
+      "<input type=submit value=Delete>\n</form>";
+    
   break;
   default:
   retval+= "<ul>\n"
@@ -982,7 +1001,7 @@ return http_redirect(query("mountpoint")+
 
 	if(config[request[0]])
 	  {
-
+	    if(!config[request[0]]) return http_string_answer("NO SUCH STORE!");
             id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
 
 	    if(catch(request[1])) {
@@ -990,7 +1009,7 @@ return http_redirect(query("mountpoint")+
 	      return http_string_answer(parse_rxml(handle_page("index.ivml", request[0], id),id));
 	    }
 	    else {
-
+perror("finding request...\n");
               id->misc->ivend+=(["st":request[0], "config":config[request[0]] ]);	
 // perror(sprintf("%O",id));	
 	      switch(request[1]) {
@@ -1005,10 +1024,11 @@ return http_redirect(query("mountpoint")+
 		  return get_image(restofrequest, id);
 		  break;
 		case "admin":
-//		  perror("ADMIN!\n");
+		  perror("ADMIN!\n");
 		  return admin_handler(restofrequest, id);
 		  break;
 		default:
+perror("doing the default thing...\n");
 		  return http_string_answer(handle_page(request[1], request[0], id));
 		}
 	    }

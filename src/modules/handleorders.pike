@@ -104,24 +104,27 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
    m_delete(row, "type");
 array wx=DB->query("SELECT status FROM orders WHERE id='" +
 id->misc->ivend->orderid + "'");
-if(((int)(wx[0]->status) > 1)|| id->variables->print);
+perror("generating table for " + table + "\n");
 
+if(((int)(wx[0]->status) > 1)|| id->variables->print);
 else if(!id->variables->edit_data || id->variables->edit_data!=type)
   d+="<a href=\"./?orderid="
         + id->misc->ivend->orderid + "&edit_data=" + type +
         "\"><img src=\"" + T_O->query("mountpoint") +
 "ivend-image/edit.gif\" alt=\"Edit\" border=0></a>\n";
  else  {
-  d+="<input alt=\"Commit\""
+  d+="<form action=\"./\" method=get _parsed=1>"
+   "blah <input alt=\"Commit\""
    " type=image name=\"commit_data\" value=\"" + table +
    "\" src=\"" + T_O->query("mountpoint") +
    "ivend-image/commit.gif\" border=0>"
-   "<input type=hidden name=commit value=\"" + type
+   "<input type=hidden name=table value=\"" + table
         + "\"></td></tr>\n";
   } 
    if(id->variables->edit_data && id->variables->edit_data==type)
 	{
 	d+=DB->generate_form_from_db(table, ({"orderid"}), id, ({}), row);
+	d+="</form>\n";
 	}
    else 
 	{
@@ -260,7 +263,7 @@ else if(!id->variables->editli || id->variables->editli!=row->lineitem)
  }
 
 float tax=T_O->get_tax(id, id->misc->ivend->orderid);
-perror("tax: " + tax + "\n");
+perror("orderid: " + id->misc->ivend->orderid + " tax: " + tax + "\n");
   retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica>Sales Tax</td>"
@@ -548,7 +551,7 @@ string status="";
 if(id->variables->orderid) status=DB->query(
       "SELECT status FROM status WHERE name='Shipped' AND tablename='orders'"
       )[0]->status;
-
+perror("show_orders\n");
  if(id->variables->valpay && id->variables->orderid){
 // perror("validating Payment\n");
 if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
@@ -797,6 +800,7 @@ if(id->variables->notes){
   }
 
 
+
 if(id->variables->delete){
   DB->query("DELETE FROM display_orders WHERE id=" 
 +id->variables->orderid);
@@ -805,6 +809,16 @@ if(id->variables->delete){
 }
 
 else if(id->variables->orderid) {
+
+//perror("do we have the variables present to commit data?\n");
+//perror(sprintf("%O\n", id->variables));
+if(id->variables["commit_data.x"] && id->variables->table){
+ // we are commiting data.
+ id->misc->ivend->clear_oldrecord=1;
+//perror("updating info for table " + id->variables->table +"\n");
+ DB->addentry(id);
+}
+
 
 if(id->variables->print) {
   ADMIN_FLAGS=NO_BORDER;
@@ -846,8 +860,9 @@ retval+= "<input type=submit name=export value=\"Export Order\"><br>"
 	"<input type=submit name=print value=\"Format for Printing\"><br>"
     "</form>";
 if(!id->variables->print) {
-retval+=T_O->open_popup( "View Activity Log",
-                                 id->not_query, "View_Activity_Log" ,
+retval+=T_O->open_popup( "View Order History",
+                                 id->not_query,
+				"Orders.View_Order_History",
                                 (["orderid" : id->variables->orderid,
 				"height": 500, "width":550]) ,id);
 

@@ -280,9 +280,12 @@ array f=CONFIG_ROOT[module_name][args->type + "searchfields"];
 mapping r;
 perror("event_adminadd in search.pike " + args->type + " " + args->id +
 "\n");
-r=DB->query("SELECT " + (f*",") + " FROM " + args->type + 
+string qry=
+("SELECT " + (f*",") + " FROM " + args->type + 
 			  "s WHERE " + DB->keys[args->type + "s"] + "='" + 
-			  args->id + "'")[0];
+			  args->id + "'");
+perror("QUERY IN SEARCH: " + qry + "\n");
+r=DB->query(qry)[0];
 mixed e;
 if(e) { 
 	perror("Error selecting searchfields for " + args->type + " " + args->id + ".\n");

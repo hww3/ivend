@@ -23,7 +23,14 @@ object m;
 
 string moddir=config->global->general->root + "/src/modules/shipping";
  // perror("loading shipping module "  + module + "\n");
-catch(m=(object)clone(compile_file(moddir+"/"+module)));
+mixed x;
+mixed xerr;
+master()->set_inhibit_compile_errors(0);
+xerr=catch(x=compile_file(moddir+"/"+module));
+if(xerr) perror(describe_backtrace(xerr));
+master()->set_inhibit_compile_errors(1);
+if(x)
+ m=(object)clone(x);
 if(m && objectp(m)) {
   m->start(config);
   perror("DONE\n");
@@ -429,7 +436,7 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
 	array r=DB->query("SELECT sum(products.handling_charge*sessions.quantity) as hc "
 	  "from products,sessions where sessions.sessionid='" 
 	  + args->orderid + "' and products." +
-	id->misc->ivend->keys->products + "=sessions.id");
+	id->misc->ivend->db->keys->products + "=sessions.id");
 
         if(r && sizeof(r)==1) charge=(float)(r[0]->hc);
    }
@@ -442,7 +449,7 @@ perror("Handling Charge: " + charge + "\n");
 string tag_shippingtypes (string tag_name, mapping args,
                     object id, mapping defines) {  
 
-
+perror("tag_shippingtypes\n");
 string retval="";
 array r;
 catch(
@@ -451,6 +458,7 @@ int t=0;
 int g=0;
 array rw=({});
 foreach(r, mapping row){
+perror("got a type.\n");
   if(search(lower_case(row->availability), "select")!=-1){
     row->availability=replace(row->availability, "#sessionid#",
 	id->misc->ivend->SESSIONID);
@@ -464,6 +472,7 @@ if(!rw || sizeof(rw)==0)
   return "No shipping options are currently available.<input type=hidden name=no_shipping_options value=1>";
 
 foreach(rw, mapping row){
+perror("checking cost.\n");
 args->type=row->type;
 string price=tag_shippingcalc ("shippingcalc", args,
                     id, defines);

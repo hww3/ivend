@@ -26,8 +26,7 @@ void start(mapping config){
 
 object db;
 
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword))) {
+if(catch(db=iVend.db(config->general->dbhost))) {
     perror("iVend: PerProductShipping: Error Connecting to Database.\n");
     return;
     }
@@ -38,10 +37,9 @@ else initialize_db(db);
 return;
 
 }
+void|mixed stop(mapping config){
 
-void stop(mapping config){
-
-return;
+return 0;
 
 }
 
@@ -111,7 +109,7 @@ string retval="<tr><td><b>Method:</b></td><td>Charge based on "
   if(id->variables->addlookup)
     retval+=addlookup(id, row->type);
   else if(id->variables->doaddlookup)
-    retval+=doaddlookup(id, row->type);
+    retval+=doaddlookup(id);
   else if(id->variables->addtype) 
     retval+=addtype(id, row->type); 
   else if(id->variables->deletetype) 
@@ -143,7 +141,7 @@ string query="SELECT SUM(sessions.quantity*products." +
 	r[0]->fieldname + ") AS shipping FROM "
 	" products,sessions WHERE sessionid='" +
 	orderid + "' and products." +
-	id->misc->ivend->keys->products + "=sessions.id";
+	id->misc->ivend->db->keys->products + "=sessions.id";
 
 // perror(query);
 r=id->misc->ivend->db->query(query);

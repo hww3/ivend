@@ -31,8 +31,7 @@ started=0;
 
 object db;
 
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
+if(catch(db=iVend.db(config->general->dbhost)))
   {
     perror("iVend: OTShipping: Error Connecting to Database.\n");
     return;
@@ -45,9 +44,9 @@ return;
 
 }
 
-void stop(mapping config){
+mixed|void stop(mapping config){
 
-return;
+return 0;
 
 }
 

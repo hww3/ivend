@@ -257,7 +257,8 @@ if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
 mixed error=catch(DB->query("INSERT INTO orders VALUES(" +
     id->misc->ivend->orderid + ",0," +
-    type + ",NOW(),NULL,NOW())"));
+    type + ",NOW()," + (id->variables->ordernotes?"'" +
+DB->make_safe(id->variables->ordernotes) + "'":"NULL") + ",NOW())"));
 if(error)
 {
  T_O->report_error(error*"\n", id->misc->ivend->orderid ||"NA",
@@ -546,7 +547,7 @@ if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
     throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad card number -->";
   }
-else if(Commerce.CreditCard.expdate_verify(exp_date)!=1)
+else if(Commerce.CreditCard.expdate_verify(exp_date)!=0)
  {
    throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad date -->";

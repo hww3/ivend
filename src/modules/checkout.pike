@@ -510,6 +510,8 @@ string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
 if(sizeof(id->misc->ivend->error)>0) return "";
+if(args->orderid)
+  id->misc->ivend->orderid=args->orderid;
 mapping tags,containers;
 if(functionp(query_tag_callers2))
  tags=query_tag_callers2();

@@ -95,7 +95,7 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
 		   id->variables->orderid+"</b></i><p>\n";
 
  foreach(r, mapping row){
-   string d="<table width=100%>";
+   string d="<table width=100% valign=top>";
    string type=row->type;
    m_delete(row, "type");
    foreach(f, mapping field){
@@ -592,12 +592,14 @@ else {
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
+	id->misc->ivend->this_object->trigger_event("rejectpayment",id,
+		(["orderid": id->variables->orderid]));
    send_notification(id, id->variables->orderid, "rejpay");
 
  } 
 
  if(id->variables->docancel && id->variables->orderid){
-   
+   if(id->variables->reallydocancel){
    array r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
    DB->query("UPDATE payment_info SET status=" + 
@@ -611,7 +613,22 @@ else {
 
 	id->misc->ivend->this_object->trigger_event("cancelorder",id,
 		(["orderid": id->variables->orderid]));
-
+  }
+  else return "<b>Do you really want to cancel this order?</b>"
+	"<table><tr><td>"
+	"<form action=\"./" method=post>"
+	"<input type=hidden name=reallydocancel value=1>\n"
+	"<input type=hidden name=docancel value=1>\n"
+	"<input type=hidden name=orderid value=\" +
+		id->variables->orderid + "\">\n"
+	"<input type=submit value=\"Yes\">"
+	"</form>\n"
+	"</td><td>\n"
+	"<form action=\"./" method=post>"
+	"<input type=hidden name=orderid value=\" +
+		id->variables->orderid + "\">\n"
+	"<input type=submit value=\"No\">"
+	"</form></td></tr></table>\n";
  }
 
  if(id->variables->doship && id->variables->orderid){

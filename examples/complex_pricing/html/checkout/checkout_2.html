@@ -1,14 +1,30 @@
 <use file="../store_package">
 <page title="Checkout">
-<h1>1a. Mix-N-Match</h1>
+<H1>2. Billing Address</H1>
 <p>
-You have selected products that may choose custom grit mixes. In the form
-below, please enter the number of each grit for the products listed below.
-When you have finished selecting your grit mixes, click on the button
-below labelled "Continue".
+Please provide your billing address as it appears on your Credit Card
+statement. When you are finished, click 'Continue' to proceed to the next
+page. An asterisk (*) indicates that you must provide the information
+requested. 
 <p>
+Your email address will be checked for validity after you press
+'Continue'. It may take a few moments to confirm this information. 
+<br>
 <checkout>
 <checkouterror>
-<mixnmatch>
+<table>
+<generateform table=customer_info hide="orderid,type,updated"
+pulldown="state,country" autofill="1" type="0">
+</table>
+<input type=hidden name=orderid value="<sessionid>">
+<input type=hidden name=type value=0>	
+<input type=submit name="_backup" value=" Back Up "> 
+<input type=submit value=" Continue ">
 </checkout>
 </page>
+
+
+
+
+
+

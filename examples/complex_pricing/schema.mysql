@@ -8,6 +8,7 @@ CREATE TABLE customer_info (
   City char(64) DEFAULT '' NOT NULL,
   State char(4) DEFAULT '' NOT NULL,
   ZIP_Code char(10) DEFAULT '' NOT NULL,
+  Country char(24) DEFAULT 'USA' NOT NULL,
   Daytime_Phone char(32) DEFAULT '' NOT NULL,
   Evening_Phone char(32),
   FAX char(32),

@@ -5,6 +5,8 @@
  *
  */
 
+constant cvs_version="";
+
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.233 1999-07-28 21:00:53 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.234 1999-07-31 20:41:21 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -798,53 +798,54 @@ array r;
 //<th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
 
     foreach(en, field){
-        retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
+        retval+="<cartheader>&nbsp; "+field+" &nbsp; </cartheader>\n";
     }
     retval+="<th bgcolor=maroon><font color=white>&nbsp; " + WORD_OPTIONS
 +
 " &nbsp;</th>\n"
-	"<th bgcolor=maroon><font color=white>&nbsp; "
-            + PRICE +" &nbsp;</th>\n"
-            "<th bgcolor=maroon><font color=white>&nbsp; "
-            + QUANTITY +" &nbsp;</th>\n"
-            "<th bgcolor=maroon><font color=white>&nbsp; "
-            + TOTAL + " &nbsp;</th><th></th></tr>\n";
+	"<cartheader>&nbsp; "
+            + PRICE +" &nbsp;</cartheader>\n"
+            "<cartheader>&nbsp; "
+            + QUANTITY +" &nbsp;</cartheader>\n"
+            "<cartheader>&nbsp; "
+            + TOTAL + " &nbsp;</cartheader><td></td></tr>\n";
     for (int i=0; i< sizeof(r); i++){
      for (int j=0; j<sizeof(en); j++)
-       if(j==0) retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+ 	
+       if(j==0) retval+="<TR><cartcell><INPUT TYPE=HIDDEN NAME=s"+i+ 	
 		" VALUE="+r[i]->series+">\n"
                 "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
                 ">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl  +
                 r[i]->id + ".html\">"
-                +r[i][en[j]]+"</A> &nbsp;</TD>\n";
+                +r[i][en[j]]+"</A> &nbsp;</cartcell>\n";
 
-       else retval+="<td>"+(r[i][en[j]] || " N/A ")+"</td>\n";
+       else retval+="<cartcell>"+(r[i][en[j]] || " N/A ")+"</cartcell>\n";
 
         //    r[i]->price=convert((float)r[i]->price,id);
 
-	retval+="<td align=left>";
+	retval+="<cartcell align=left>";
 array o=r[i]->options/"\n";
-// perror("options:" + r[i]->options + "\n");
+
 foreach(o, string opt){
-// perror(opt + "\n");
+
   array o_=opt/":";
 catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
    "product_id='" + r[i]->id + "' AND option_type='" +
    o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description +"<br>");
 }
-	retval+="</td>\n";
-        retval+="<td align=right>" + MONETARY_UNIT +
-                sprintf("%.2f",(float)r[i]->price)+"</td>\n"
-                "<TD><INPUT TYPE="+ (r[i]->locked=="1"?"HIDDEN":"TEXT") +
+	retval+="</cartcell>\n";
+        retval+="<cartcell align=right>" + MONETARY_UNIT +
+                sprintf("%.2f",(float)r[i]->price)+"</cartcell>\n"
+                "<cartcell><INPUT TYPE="+
+		(r[i]->locked=="1"?"HIDDEN":"TEXT") +
 		" SIZE=3 NAME=q"+i+" VALUE="+
                 r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
-		+ "</td><td align=right>" + MONETARY_UNIT
-                +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td>"
-                "<td>";
+		+ "</cartcell><cartcell align=right>" + MONETARY_UNIT
+		+sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</cartcell>"
+                "<cartcell>";
 if(r[i]->autoadd!="1")
   retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
    r[i]->id + "/" + r[i]->series + "\">";
-                retval+="</td></tr>\n";
+                retval+="</cartcell></tr>\n";
     }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
             "<table><tr><Td><input name=update type=submit value=\""

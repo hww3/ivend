@@ -251,3 +251,18 @@ The database schema to use currently is located in examples/schema.mysql
 If the form generator finds an enum type (must be using patched mysql for
 this), it will look for values in a file called 
 	storeroot/db/tablename_fieldname.val ...
+
+The iVend Main Index
+--------------------
+
+If you place a file called index.html in the iVend data directory (as
+specified in the roxen config interface), and change "CreateIndex" to yes
+in iVend's global variables, that file will be returned upon an access to
+the ivend root mountpoint (such as /ivend/). This is useful for providing
+a list of lists for all stores provided by a particular module. 
+
+To aid in the generation of a list of lists, a special container called
+<ivindex></ivindex> is available in this page. It works much like the 
+formoutput container in that field names from store configurations that
+are surrounded by #s like this: #name# will be replaced with that store's
+value. For a better example, see the file data/index.html.

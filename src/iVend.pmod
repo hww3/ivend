@@ -410,7 +410,8 @@ if(!table) return "";
 
 array(mapping(string:mixed)) r=s->list_fields(table);
 
-
+for(int i=0; i<sizeof(exclude); i++)
+  exclude[i]=lower_case(exclude[i]);
 
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 

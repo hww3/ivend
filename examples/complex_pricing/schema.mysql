@@ -83,17 +83,12 @@ CREATE TABLE products (
   manufacturer varchar(12),
   shipping decimal(10,2),
   cost decimal(10,2),
+  options varchar(24),
   image varchar(24),
   template varchar(16),
   taxable enum('Y','N') DEFAULT 'N',
   status char(1) DEFAULT 'A' NOT NULL,
   PRIMARY KEY (id)
-)\g
-
-CREATE TABLE complex_pricing (
-  product_id varchar(16) not null,
-  type varchar(16) not null,
-  priority integer not null default 1
 )\g
 
 CREATE TABLE sessions (
@@ -148,11 +143,18 @@ INSERT INTO status VALUES (9,'Shipped','Order has been completely shipped.','ord
 INSERT INTO status VALUES (10,'Error','An error has occurred during order processing.','orders')\g
 INSERT INTO status VALUES (11,'Cancelled','Order has been cancelled.','orders')\g
 
-
 CREATE TABLE item_options (
-  product_id VARCHAR(16) NOT NULL,
+  product_id  VARCHAR(16) NOT NULL,
   option_type VARCHAR(6) NOT NULL,
   option_code VARCHAR(6) NOT NULL,
   description CHAR(36),
   surcharge decimal(7,2)
 )\g
+
+CREATE TABLE admi users (
+  username char(16) not null primary key,
+  real_name char(24) not null,
+  email char(48) not null,
+  password char(16) not null,
+  level integer not null default 9
+ )\g

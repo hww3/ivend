@@ -1,7 +1,11 @@
 inherit "wizard";
 
 constant name= "Add New Store...";
- 
+
+
+#if __VERSION__ >= 0.6
+import ".";
+#endif 
 
 #define ERROR(X) id->misc->wizerr=X;
 #define IFERROR (id->misc->wizerr?"<tr><td colspan=2><b>Error: "+id->misc->wizerr+"</b></td></tr>":"")
@@ -42,17 +46,28 @@ return 0;
 
 string|int verify_1(object id) {
 object s;
-if(catch(s=Sql.sql(id->variables->dbhost, id->variables->db, 
-  id->variables->dblogin, id->variables->dbpassword))) {
+perror("dbhost: " + id->variables->dbhost + " dblogin: " +
+id->variables->dblogin + " dbpassword: " + id->variables->dbpassword +
+"\n");
+s=Sql.sql(id->variables->dbhost, "", 
+  id->variables->dblogin, id->variables->dbpassword);
+ if(catch(
+s=Sql.mysql(id->variables->dbhost, "", 
+  id->variables->dblogin, id->variables->dbpassword)
+))
+ {
 
   ERROR("Unable to connect to database. Please verify connection setup.");
   return 1;
   }
-else {
-
+else 
+{
+perror( sprintf("<pre>%O</pre>", mkmapping(indices(s), values(s))));
+if(functionp(s->server_info))
+ {
   string v=s->server_info();
-
-  if(v[0..4]!="mysql" || "postg"){
+perror(v + "\n");
+  if(v[0..4]!="mysql" && v[0..4]!="postg"){
    ERROR("You must be running mySQL or Postgres to use this Wizard.");
    return 1;
    }
@@ -63,6 +78,7 @@ else {
       ERROR("You must be running mySQL 3.22 or higher to use this Wizard.");
       return 1;
       }
+   }
   }
 }
 return 0;
@@ -96,15 +112,15 @@ string|int page_1(object id){
 "<help><tr><td colspan=2>"
 "Hostname of SQL Database Server.</td></tr>"
 "</help>"
-"<tr><td>DB User &nbsp</td><td> "
+"<tr><td>DB Administrator &nbsp</td><td> "
 " <var type=\"string\" name=\"dblogin\" value=\"\"></td></tr>"
 "<help><tr><td colspan=2>"
-"Username with access permissions to Database."
+"Username with administrative access permissions to Database."
 "</td></tr></help>"
-"<tr><td>DB Password &nbsp </td>"
+"<tr><td>DB Administrator's Password &nbsp </td>"
 "<td> <var type=\"password\" name=\"dbpassword\" value=\"\"></td></tr>"
 "<help><tr><td colspan=2>"
-"Password for DB User.</td></tr>"
+"Password for DB Administrator.</td></tr>"
 "</help>"
 "</table>"
 ;
@@ -164,6 +180,10 @@ string|int page_4(object id){
   "type=checkbox value=yes></td></tr>"
   "<help><tr><td colspan=2>Copy files into this store "
   "directory?</td></tr></help>"
+  "<tr><td>Administrator Email &nbsp;</td><td><var name=adminemail "
+  "type=text></td></tr>"
+  "<help><tr><td colspan=2>This is an email address for this store's administrator. "
+  "</td></tr></help>"
   "</table>";
 }
 
@@ -251,13 +271,15 @@ object privs;
 
 object s;
 
-  if(catch(s=Sql.sql(id->variables->dbhost, 0, 
-    id->variables->dblogin, id->variables->dbpassword))) {
+//  if(catch(
+s=Sql.sql(id->variables->dbhost, "", 
+    id->variables->dblogin, id->variables->dbpassword);
+/*)) {
     return "An error occurred while connecting to the database server "
 	"as db administrator.";
     }
-
-catch(s->create_db(v->config));
+*/
+s->query("CREATE DATABASE " + v->config);
 if(!s->select_db(v->config))
   return "An error occurred while creating the store database. "
 	"This usually means that either 1) the database already exists, "
@@ -275,27 +297,21 @@ v->db=v->config;
 string host=(lower_case(v->dbhost)=="localhost"?"localhost":gethostname());
  v->dbpassword=MIME.encode_base64((string)hash(ctime(time())))[0..7];
 //perror(v->dbpassword + "\n");
-
-string vsr=s->server_info();
+string vsr;
+if(functionp(s->server_info))
+catch(vsr=s->server_info());
 
 s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
 	v->config + ".* TO " + v->config +
-	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" +
-host):"")); 
-
-s->query("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP on " +
-	v->config + ".* TO " + adminuser +
-(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" +
-host):"") ); 
+	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")); 
 
 s->query("SET PASSWORD FOR " + v->config +
 (v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@\"" +
 host + "\""):"") +  
 	" = PASSWORD(\"" + v->dbpassword + "\")");
-s->query("SET PASSWORD FOR " + adminuser +
-(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@\"" +
-host + "\""):"") + " = PASSWORD(\"" +
-	adminpassword + "\")");
+
+s->query("INSERT INTO admin_users VALUES('admin','Store Administrator','"
+	+ v->adminemail + "','" + crypt(adminpassword) + "')");
 
 retval+="<b><font face=+1>Store Created Successfully.</b><p></font>"
   "Your store has been successfully created. Please make a note of the "

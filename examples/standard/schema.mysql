@@ -151,3 +151,11 @@ CREATE TABLE item_options (
   description CHAR(36),
   surcharge decimal(7,2)
 )\g
+
+CREATE TABLE admi users (
+  username char(16) not null primary key,
+  real_name char(24) not null,
+  email char(48) not null,
+  password char(16) not null,
+  level integer not null default 9
+ )\g

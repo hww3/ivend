@@ -417,12 +417,13 @@ if((int)id->variables->shipsame==1) return "";
 if(!args->noflush)
   id->misc->ivend->clear_oldrecord=1;
 
-if(args->encrypt){	// handle encrypting of records...
-  array toencrypt=(lower_case(args->encrypt)-" ")/",";
+// handle encrypting of records...
+  array toencrypt=CONFIG_ROOT[module_name]->encryptfields;
   string key;
   catch(key=Stdio.read_file(id->misc->ivend->config->general->publickey));
   if(key)
   foreach(toencrypt, string encrypt){
+    encrypt=lower_case(encrypt);
     if(id->variables[encrypt])
 	id->variables[encrypt]=
 	  Commerce.Security.encrypt(id->variables[encrypt],key)||
@@ -745,7 +746,23 @@ return ([
 
 array query_preferences(object id){
 
+  if(!catch(DB) && sizeof(fields)<=0) {
+
+     array f2=DB->list_fields("payment_info");
+     foreach(f2, mapping m)
+        fields +=({m->name});
+    }
+
+
 return ({
+
+        ({"encryptfields", "Encrypt Fields",
+        "Payment fields to be encrypted.",
+        VARIABLE_MULTIPLE,
+        "Card_Number",
+        fields
+        }) ,
+
   ({
   "shipping_taxable", "Tax Shipping?", "Some governments require "
   "that shipping charges be included in sales tax calculations. If your "

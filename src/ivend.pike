@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.221 1999-06-09 03:06:08 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.222 1999-06-14 03:53:17 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1459,16 +1459,29 @@ int admin_auth(object id)
                        auth[0],
                        auth[1]
                    ))) {
-        //      destruct(m);
-        return 0;
+	{
+	array r=DB->query("SELECT * FROM admin_users WHERE username='" +
+		auth[0] + "'");
+	if(sizeof(r)==1)
+	  { // we've got a valid user.
+		if(!crypt(auth[1], r[0]->password))
+		  return 0;
+		id->misc->ivend->admin_user=r[0]->username;
+		id->misc->ivend->admin_user_level=r[0]->level;
+		return 1;
+	  }
+	else return 0;
+	}
     }
-    else {
-        db[STORE]->handle(DB);
+    else { // the user id they provided was good.
+      db[STORE]->handle(DB);
+	id->misc->ivend->admin_user="admin";
+	id->misc->ivend->admin_user_level=0;
         DB=m;
-        //   destruct(m);
+
 
         return 1;
-    }
+   }
 }
 
 
@@ -2691,6 +2704,16 @@ Config.write_section(query("configdir")+
                              if(s) {
                                  if(sizeof(s->list_fields("sessions","autoadd"))!=1)
                                      s->query("alter table sessions add autoadd integer");
+
+if(sizeof(s->list_tables("admin_users"))!=1)
+	s->query("CREATE TABLE admin_users ("
+		"username char(16) not null primary key, "
+		"real_name char(24) not null, "
+		"email char(48) not null, "
+		"password char(16) not null, "
+		"level int(2) not null default 9)"
+		);
+db[c->config]->handle(s);
                              }
 
                              return;

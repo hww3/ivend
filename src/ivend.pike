@@ -414,7 +414,6 @@ void start(){
    if(file_stat(query("datadir")+"ivend.cfd")==0) 
       return; 
    else {
-     perror("reading conf in start()\n");
      read_conf();   // Read the config data.
      }
    foreach(indices(config), string c) {
@@ -2395,10 +2394,12 @@ perror(filen + "\n");
 
             mapping write_configuration(object id){
                string config_file="";
-               array active;
-            if(!arrayp(global->configurations->active))
+               array active=({});
+    
+	if(global->configurations && global->configurations->active)
+		if(!arrayp(global->configurations->active))
                   active=({global->configurations->active});
-            else active=global->configurations->active;
+	else active=global->configurations->active;
 
 	object privs=Privs("iVend: Writing Config Files");
 
@@ -2484,7 +2485,7 @@ perror(filen + "\n");
                      
                case "save": {
 
-  if(global->configurations->active
+  if(global->configurations && global->configurations->active
     && arrayp(global->configurations->active))
          global->configurations->active=Array.uniq(global->configurations->active);
                         return write_configuration(id);
@@ -2502,7 +2503,8 @@ perror(filen + "\n");
                            foreach((vars),v){
 
                            if(!global) global=([]);
-                              global["general"]+=([v : id->variables[v]]);
+                           if(!global->general) global->general=([]);
+				   global->general+=([v : id->variables[v]]);
                            }
 
                            save_status=0;// we need to save.

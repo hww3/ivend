@@ -302,9 +302,9 @@ if(file_stat(v->root + "/schema.mysql")){
 
   array ss=Stdio.read_file(v->root +  "/schema.mysql")/"\\g\n";
   if(catch(object s=Sql.sql(id->variables->dbhost, v->config , 
-    v->config, v->dbpassword))) {
+    adminuser, adminpassword))) {
     return "An error occurred while connecting to the store database" 
-	"as " + adminuser + " with password.";
+	"as " + adminuser + " with password " + adminpassword + ".";
     }
 ss=ss[0..sizeof(ss)-2];
   foreach(ss, string statement)

@@ -404,15 +404,19 @@ else {
 
   if(sizeof(r) <1) retval+="No orders.\n";
   else {
-  retval+="<br>Click on a name to display an order.\n\n<br>";
-  retval+="<table>\n<tr><td><font face=helvetica><b>Order ID</font></td>\n"
-    "<td><font face=helvetica><b>Status</font></td>\n"
-    "<td><font face=helvetica><b>Record Updated</font></td>\n"
-    "<td><font face=helvetica><b>Notes</b></font></td>\n</tr>";
+  retval+="<br>Click on an order id to display an order.\n\n<br>";
+  retval+="<table>\n<tr><td bgcolor=navy><font color=white "
+    " face=helvetica><b>Order ID</b></font></td>\n"
+    "<td bgcolor=navy><font color=white "
+    "face=helvetica><b>Status</font></td>\n"
+    "<td bgcolor=navy><font color=white face=helvetica><b>Record "
+    "Updated</font></td>\n"
+    "<td bgcolor=navy><font color=white "
+    "face=helvetica><b>Notes</b></font></td>\n</tr>";
 
   for(int i=(sizeof(r)-1); i>=0; i--){
     retval+="<tr>\n";
-    retval+="<td><a href=\"./orders?orderid="
+    retval+="<td><a href=\"./?orderid="
 	+r[i]->id+"\">"+
 	r[i]->id+"</a></td>";
     retval+="<td>"+ r[i]->status+"</td>\n";

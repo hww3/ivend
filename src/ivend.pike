@@ -804,7 +804,6 @@ string tag_listitems(string tag_name, mapping args,
       query+=" ORDER BY " + args->order;
 
    array r=DB->query(query);
-
    if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
 
    array rows=({});
@@ -869,7 +868,12 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
   }
   string tablename;
   array r;
-  if(args->type=="groups") {
+if(args->type=="custom") {
+
+  query=args->query;
+  tablename="products";
+}
+else  if(args->type=="groups") {
     query="SELECT " + KEYS->groups + " AS pid " +
       extrafields+ " FROM groups";
     if(!args->show)
@@ -896,6 +900,7 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     query+=" ORDER BY " + args->order;
   
   r=DB->query(query);
+perror("Query: " +query + "\n");
   
   if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
   

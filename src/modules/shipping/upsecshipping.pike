@@ -172,7 +172,8 @@ else foreach(r, mapping row) {
 
 mapping options=(["PackagingType": id->variables->packagingtype,
 	"ResidentialInd": id->variables->residentialind,
-	"OversizeInd", id->variables->oversize]);
+	"OversizeInd", id->variables->oversize
+	]);
 
 if(id->variables->dolookup)
   retval+="<b>Calculated Shipping cost: " +

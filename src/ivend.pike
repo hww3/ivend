@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.267 2000-06-23 20:15:56 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.268 2000-07-20 17:24:48 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -117,7 +117,7 @@ mapping lookup=([]);
 // do we have tax exemption support?
 if(local_settings[STORE]->tax_exemption_support==TRUE){
   query="SELECT tax_exempt FROM customer_info WHERE orderid='"
-	+ orderid + "' AND type=0 AND (tax_exempt<>0 OR tax_exempt IS NOT NULL)";
+	+ orderid + "' AND type=0 AND (tax_exempt<>0)";
   r=DB->query(query);
   if(sizeof(r)>0) return 0.00;
   } 

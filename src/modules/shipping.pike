@@ -403,6 +403,8 @@ if(charge==-1.0)
   return "Error.";
 }
 else charge=args->charge;
+charge+=calculate_handlingcharge((string)type, (string)orderid, id);
+
 string typename=id->misc->ivend->db->query("SELECT name FROM shipping_types "
   "WHERE type=" + id->variables->type )[0]->name;
 if((float)(charge)==-2.00) {

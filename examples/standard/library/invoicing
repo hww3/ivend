@@ -7,35 +7,156 @@
 // see: notes/invoice.txt
 //
 
-string cc_recipient="orders@foo.com";
-string note;
-note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/invoice.txt");
-if(note) {
+array page=({});
 
-  string subject,sender, recipient;
-  sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
-  array r=id->misc->ivend->db->query("SELECT " + recipient + " FROM "
-        " customer_info WHERE orderid='"+args->orderid+"' AND "
-                   "type=0");
-  recipient=r[0][recipient];
-//  note=replace(note,"#orderid#",(string)args->orderid);
-  subject=replace(subject,"#orderid#",(string)args->orderid);
-id->variables+=args;
-  note=parse_rxml(note, id);
-  object message=MIME.Message(note, (["MIME-Version":"1.0",
+string note;
+
+array r=id->misc->ivend->db->query("SELECT email_address FROM "
+        " customer_info WHERE orderid='"+args->orderid+"' AND type=0");
+
+string recipient=r[0]->email_address;
+
+  string subject="Shipping confirmation for IAC Order " + (string)(args->orderid);
+
+  id->variables+=args;
+
+  string line=" "*72;
+  page+=({"This notice is your invoice. Please keep a copy for future "});
+  page+=({"reference or in case you need to return an item. Please see "});
+  page+=({"our website at http://www.industrialabrasives.com/ for more "});
+  page+=({"information regarding our return policy."});
+  page+=({" "});
+  page+=({"Order Number: " + (string) args->orderid});
+  
+  r=id->misc->ivend->db->query("SELECT * FROM orders WHERE id=" +
+    args->orderid);
+  
+  page+=({"Order Date:   " + r[0]->created });
+  page+=({"Order Notes:  " + r[0]->notes });
+  page+=({" "}); 
+  page+=({"Billing Address"}); 
+  page+=({"=================="}); 
+
+  r=id->misc->ivend->db->query("SELECT * FROM customer_info WHERE orderid="
+    + args->orderid + " AND type=0");
+
+
+  page+=({T_O->At(line, 2, (upper_case(r[0]->First_Name + " "+
+	r[0]->Last_Name)), 70)});
+  if(r[0]->Company!="")
+    page+=({T_O->At(line, 2, (upper_case(r[0]->Company)), 70)});
+  page+=({T_O->At(line, 2, (upper_case(r[0]->Address_1)), 70)});
+  if(r[0]->Address_2!="")
+    page+=({T_O->At(line, 2, (upper_case(r[0]->Address_2)), 70)});
+  page+=({T_O->At(line, 2, (upper_case(r[0]->City + " " + r[0]->State + 
+	" " + r[0]->ZIP_Code + " " + r[0]->Country)), 70)});
+  page+=({" "}); 
+
+
+  page+=({"Shipping Address"}); 
+  page+=({"=================="}); 
+  r=id->misc->ivend->db->query("SELECT * FROM customer_info WHERE orderid="
+    + args->orderid + " AND type=1");
+
+  page+=({T_O->At(line, 2, (upper_case(r[0]->First_Name + " "+
+	r[0]->Last_Name)), 70)});
+  if(r[0]->Company!="")
+    page+=({T_O->At(line, 2, (upper_case(r[0]->Company)), 70)});
+  page+=({T_O->At(line, 2, (upper_case(r[0]->Address_1)), 70)});
+
+
+  if(r[0]->Address_2!="")
+    page+=({T_O->At(line, 2, (upper_case(r[0]->Address_2)), 70)});
+
+  page+=({T_O->At(line, 2, (upper_case(r[0]->City + " " + r[0]->State + 
+	" " + r[0]->ZIP_Code + " " + r[0]->Country)), 70) });
+
+
+
+  page+=({" "}); 
+  page+=({"Payment Method"}); 
+  page+=({"=================="}); 
+  r=id->misc->ivend->db->query("SELECT * FROM payment_info WHERE orderid="
+	+ args->orderid );
+
+
+
+  page+=({"Card Type:    " + r[0]->Payment_Method}); 
+  page+=({"Cardholder:   " + upper_case(r[0]->Cardholder_Name)}); 
+  page+=({" "}); 
+
+  string line2;
+  line2=T_O->At(line, 2, "Qty", 4, "right" );
+  line2=T_O->At(line2, 7, "Item", 42);
+  line2=T_O->At(line2, 50, "Cost", 9, "right");
+  line2=T_O->At(line2, 60, "Total", 11, "right");
+  page+=({line2});
+  page+=({"="*71}); 
+
+  r=id->misc->ivend->db->query("SELECT orderdata.quantity as qty, "
+	"orderdata.quantity*orderdata.price as total, "
+	"orderdata.price as price, products.product_name, "
+	"products.catalog_number from orderdata,products where "
+	"orderid="+ args->orderid + " AND products.catalog_number"
+	"=orderdata.id");
+
+  foreach(r, mapping row)
+  {
+      line2=T_O->At(line, 2, row->qty, 4, "right");
+      line2=T_O->At(line2, 7, (row->catalog_number + "/" +
+	row->product_name), 42);
+      line2=T_O->At(line2, 50, row->price, 9, "right");
+      line2=T_O->At(line2, 60, row->total, 11, "right");
+      page+=({line2});
+  }
+  
+  page+=({" "});
+  line2=T_O->At(line, 50, "Subtotal", 9, "right");
+  line2=T_O->At(line2, 60, sprintf("%.2f", T_O->get_subtotal(id,
+	args->orderid)), 11, "right");
+  page+=({ line2 });
+  line2=T_O->At(line, 50, "Shipping", 9, "right");
+  line2=T_O->At(line2, 60, sprintf("%.2f", T_O->get_shipping(id,
+	args->orderid)), 11, "right");
+  page+=({ line2 });
+  line2=T_O->At(line, 50, "Salestax", 9, "right");
+  line2=T_O->At(line2, 60, sprintf("%.2f", T_O->get_tax(id,
+	args->orderid)), 11, "right");
+  page+=({ line2 });
+  line2=T_O->At(line, 50, "Total", 9, "right");
+  line2=T_O->At(line2, 60, sprintf("%.2f", T_O->get_grandtotal(id,
+	args->orderid)), 11, "right");
+  page+=({ line2 });
+  page+=({" "});
+  page+=({" "});
+  page+=({"You may view the status of your order, including "});
+  page+=({"any available tracking numbers by visiting our "});
+  page+=({"customer service center at the following address: "});
+  page+=({" "});  
+  page+=({"  http://www.industrialabrasives.com/status/"});  
+  page+=({" "});  
+  page+=({"You will need your order number, as well as the ZIP "});  
+  page+=({"code your order was shipped to."});
+  page+=({" "});  
+  
+  object message=MIME.Message((page*"\n"), (["MIME-Version":"1.0",
                                      "To":recipient,
-					"cc": cc_recipient,
                                      "X-Sender":"iVend 1.0",
                                      "Subject":subject
                                      ]));
 
-  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
-   perror("Error sending invoice note for " +
-        args->orderid + ".\n");
-  if(!Commerce.Sendmail.sendmail(sender, cc_recipient, (string)message))
-   perror("Error sending cc invoice note for " +
-        args->orderid + ".\n");
-}
-else perror("error sending invoice for order " + args->orderid +".\n");
-return;
+  if(!Commerce.Sendmail.sendmail("orderguy@industrialabrasives.com",
+recipient, (string)message))
+  {
+    T_O->report_status("Error sending invoice to " + recipient + ".",
+                args->orderid || "NA", "library/invoicing", id);
+  }
+  else
+  {
+    T_O->report_status("Sent invoice to " + recipient + ".",
+                args->orderid || "NA", "library/invoicing", id);
+  }
+
+return 0;
 </procedure>
+

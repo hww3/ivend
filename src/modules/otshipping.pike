@@ -8,6 +8,7 @@ int initialized;
 
 void start(mapping config){
 
+
 initialized=0;
 
 object db;

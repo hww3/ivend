@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.50 1998-04-13 21:25:12 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.51 1998-04-15 01:13:03 hww3 Exp $";
 
 array register_module(){
 
@@ -522,12 +522,20 @@ m_delete(config,"global");
 
 
 void load_modules(string c){
+
+mixed error;
 if(!c) return;
 if(!config[c]) return;
   foreach(indices(config[c]), string n)
     if(Regexp("._module")->match(n)) {
       perror("loading module " + config[c][n] + "\n");
-      load_ivmodule(c, config[c][n]);
+      error=catch(load_ivmodule(c, config[c][n]));
+      if(error) {
+        perror("\nThe following error occured while loading the module "
+	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
+	  + error[0]);
+        config[c]->error=1;
+	}
       }
   return;
 }
@@ -613,7 +621,7 @@ perror("iVend: finding page "+ page+" in "+id->misc->ivend->st+"\n");
 
 string retval;
 
-page=page-".html";	// get to the core of the matter.
+page=(page/".")[0];	// get to the core of the matter.
 id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
@@ -1367,6 +1375,9 @@ mixed find_file(string file_name, object id){
     request=request[1..];
     }
 
+  if(config[id->misc->ivend->st]->error)
+    retval="An error has prevented iVend from servicing your request."
+	"<br>Please check your debug logs.<br>";
 	
   if(retval) return return_data(retval, id);
 

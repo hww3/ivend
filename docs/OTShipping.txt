@@ -18,6 +18,40 @@ module will create any shipping tables nessecary for proper operation. If
 you have used a different shipping module previously, your shipping types
 will be retained.
 
+In order for this module to calculate shipping properly, you must add at
+least one shipping type, and then add one or more shipping rules to that
+type. A shipping rule consists of 3 numbers. The "Charge" is the
+shipping charge that will be applied to the order if the rule matches. The
+other two numbers, "From $" and "To $" are the low and high boundaries of
+the order total. 
+
+For example, if you specify a "Charge" value of 5.00, a "From $" value of
+0.00 and "To $" value of 9.99, any order between 0.00 and 9.99 will be
+charged 5.00 shipping. If you specify overlapping values for "To $" and
+"From $" (which is not recommended for obvious reasons), the first
+matching rule in the list will determine the shipping charge. 
+
+OTShipping Tags
+---------------
+
+These tags work within the <checkout></checkout> container.
+
+<allshippingtypes> displays a set of radiobuttons that allows selection of
+  shipping. Charges for selecting that shipping type are displayed as
+  well. Use this tag in a page following shipping and billing address
+  collection.
+
+<addshipping> adds the shipping lineitem to the session in preparation for
+  checkout confirmation. Place this tag on the page following
+  allshippingtypes. 
+
+<shippingtype> displays a text string describing the shipping type
+  selected for the current order.
+
+<shipping> displays the charge for shipping to be added to the order.
+
+Examples of tag usage can be found in the examples/checkout directory.
+
 
 13 April 1998
 Bill Welliver <hww3@riverweb.com>

@@ -21,7 +21,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.49 1998-04-12 22:38:23 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.50 1998-04-13 21:25:12 hww3 Exp $";
 
 array register_module(){
 
@@ -1355,10 +1355,13 @@ mixed find_file(string file_name, object id){
 
   if(sizeof(config)==1 && getglobalvar("move_onestore")=="yes") 
     id->misc->ivend->st=indices(config)[0];
-  else  if(sizeof(request)==1 && getglobalvar("create_index")=="yes")
-    retval=create_index(id);
-  else if(sizeof(request)==1)
-    retval="you must enter through a store!\n";
+  else if(sizeof(request)==0 || (sizeof(request)==1 && !config[request[0]])) 
+
+    { 
+    if(getglobalvar("create_index")=="yes")
+      retval=create_index(id);
+    else  retval="you must enter through a store!\n";
+    }
   else {
     id->misc->ivend->st=request[0];
     request=request[1..];
@@ -1394,8 +1397,8 @@ mixed find_file(string file_name, object id){
 
   switch(request[0]) {
     case "":
-      return http_redirect(id->not_query +
-        "index.html?SESSIONID="+getsessionid(id), id);
+      return http_redirect(simplify_path(id->not_query +
+        "/index.html")+"?SESSIONID="+getsessionid(id), id);
     case "index.html":
     retval=(handle_page("index.html", id));
     break;

@@ -44,9 +44,14 @@ respectively.
 5. Save the settings and you're ready to go! iVend will be mounted by 
 default on /ivend/, and configuration is located at /ivend/config/.
 
-Adding a new store
 
-1. Create a directory where all store related files will be kept.
+Adding a new store
+------------------
+
+1. Create a directory where all store related files will be kept. You
+should copy all of the files and directories in the examples directory to
+this new location using "cp -r examples newlocation". This will ensure
+that all of the files required for operation are present.
 
 2. Create a database where iVend will store all store related 
 transactions. mysql users can use the 'mysqladmin create dbname' command. 
@@ -107,7 +112,9 @@ username and password.
 
 6. Click on 'New Store Configuration'. A form will be presented in which 
 you should provide the information requested. Note: some information may 
-not be nessecary ( such as database users and passwords, etc).
+not be nessecary ( such as database users and passwords, etc). When you
+are offered an option of one or more Modules (such as shipping or
+currency) , you may find the documentation in docs/ helpful.
 
 7. After completing the information, click on the 'Add' button. You should be
 returned to the main configuration screen. Click on the 'Save Changes' 

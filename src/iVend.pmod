@@ -626,8 +626,9 @@ o+=query("SELECT id,parent,name FROM groups");
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
 
                 else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
-                        "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+" VALUE=\""
-                        +( record[r[i]->name]||"") + "\">\n";
+                        "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+
+		(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
+		+ ">\n";
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
                                                       "SIZE=-1><I> "+REQUIRED+"\n";
@@ -650,15 +651,18 @@ o+=query("SELECT id,parent,name FROM groups");
                     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
                 else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="
-                                 +r[i]->length+" SIZE="+(r[i]->length)+" VALUE=\""+
-                                 (record[r[i]->name]||"") +"\">\n";
+                                 +r[i]->length+" SIZE="+(r[i]->length)+
+		(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
+			+">\n";
             }
 
             else if(r[i]->type=="long" && r[i]->flags["not_null"]){
                 retval+="<TR>\n"
                         "<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD><!-- long / not null -->\n";
                 retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+
-                        "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=\"" + (record[r[i]->name]||"NULL")+ "\">\n";
+                        "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+
+		(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
+		+ ">\n";
 
             }
             else if(r[i]->type=="long"){
@@ -668,7 +672,8 @@ o+=query("SELECT id,parent,name FROM groups");
                         "</FONT></TD>\n<td><!-- long -->"  ;
                 retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
                         "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" value=\""
-                        + (record[r[i]->name] ||"") +"\">\n";
+		+(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
+		+">\n";
 
             }
 

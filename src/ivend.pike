@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.230 1999-07-09 03:40:52 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.231 1999-07-09 19:37:04 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -195,12 +195,12 @@ void get_dbinfo(mapping c){
     if(sizeof(n)<1)
         // we're doing complex pricing
         local_settings[c->config]->pricing_model=COMPLEX_PRICING;
-
+/*
     if(local_settings[c->config]->pricing_model==COMPLEX_PRICING)
         perror("We're doing complex pricing.\n");
     else
         perror("We're doing regular (simple) pricing.\n");
-
+*/
     db_info_loaded=1;
     return;
 
@@ -257,7 +257,7 @@ void register_event(mapping config, mapping events){
         library[config->config]->event=([]);
 
     foreach(indices(events), string ename){
-        perror("Registering event " + ename + "\n");
+//        perror("Registering event " + ename + "\n");
         if(!library[config->config]->event[ename])
             library[config->config]->event[ename]=({});
         library[config->config]->event[ename]+=({events[ename]});
@@ -370,6 +370,7 @@ mixed register_admin_handler(string c, mapping f){
 
 
 void start_store(string c){
+    perror("Starting store " + c + "...\n");
 
     if(!paths[c]) paths[c]=([]);
     if(!admin_handlers[c]) admin_handlers[c]=([]);
@@ -675,10 +676,10 @@ mixed do_additems(object id, array items){
 		else if(id->variables->options)
 		 o=get_options(id, item->item);
             //      price=convert((float)price,id);
-		if(o->surcharge)
-perror(o->surcharge +"\n");
+//		if(o->surcharge)
+// perror(o->surcharge +"\n");
 		 price=(float)price + (float)(o->surcharge);
-perror(price+"\n");
+// perror(price+"\n");
 // if(item->options) o+=item->options;
             int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
@@ -693,8 +694,6 @@ mixed container_icart(string name, mapping args, string contents, object id) {
     array ef=({});
     array en=({});
     int madechange=0;
-
-//    perror("doing cart...\n");
     if(args->fields){
         ef=args->fields/",";
         if(args->names)
@@ -714,7 +713,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
             DB->query("DELETE FROM sessions WHERE SESSIONID='"
                       +id->misc->ivend->SESSIONID+
                       "' AND id='"+ p +"' AND series=" +s );
-perror("DELETED ITEM " + p + " SERIES " + s + "\n");
+// perror("DELETED ITEM " + p + " SERIES " + s + "\n");
             madechange=1;
 trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
         }
@@ -827,7 +826,7 @@ array r;
 array o=r[i]->options/"\n";
 // perror("options:" + r[i]->options + "\n");
 foreach(o, string opt){
-perror(opt + "\n");
+// perror(opt + "\n");
   array o_=opt/":";
 catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
    "product_id='" + r[i]->id + "' AND option_type='" +
@@ -861,6 +860,10 @@ if(r[i]->autoadd!="1")
                     + "\">";
         retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
     }
+    if(args->cont){
+	retval+="<td> <form action=\"" + args->cont + "\">"
+		"<input type=submit value=\"Continue\"></form></td>";
+	}
     retval+="</tr></table>\n<true>\n"+contents;
     return retval;
 }
@@ -1500,6 +1503,8 @@ int get_auth(object id){
 int admin_auth(object id)
 
 {
+if(!admin_user_cache[STORE])  // if we don't have it already, make space for our store's cache.
+  admin_user_cache[STORE]=([]);
 if(id->cookies->admin_user && id->cookies->admin_user!="")
  { 
   id->misc->ivend->admin_user=id->cookies->admin_user;
@@ -1514,15 +1519,6 @@ add_cookie(id, (["name":"logging_in",
 
     array(string) auth=id->realauth/":";
     mixed m;
-#ifdef ENABLE_ADMIN_BACKDOOR
-    if(catch(m=iVend.db(
-                       CONFIG->dbhost,
-                       CONFIG->db,
-                       auth[0],
-                       auth[1]
-                   ))) 
-#endif
-	{
 	{
 	array r=DB->query("SELECT * FROM admin_users WHERE username='" +
 		auth[0] + "'");
@@ -1542,24 +1538,6 @@ add_cookie(id, (["name":"logging_in",
 	  }
 	else return 0;
 	}
-    }
-#ifdef ENABLE_ADMIN_BACKDOOR
-    else { // the user id they provided was good.
-      db[STORE]->handle(DB);
-	id->misc->ivend->admin_user="admin";
-	id->misc->ivend->admin_user_level=0;
-        DB=m;
-
-             add_cookie(id, (["name":"admin_user",
-                              "value":"admin", "seconds": 3600]),([]));
-	     add_cookie(id, (["name":"admin_auth",
-			      "value":"" ]), ([]));
-             add_cookie(id, (["name":"logging_in",
-                              "value":"", "seconds": 1]),([]));
-
-        return 1;
-   }
-#endif
 }
 
 
@@ -1719,16 +1697,17 @@ mixed open_popup(string name, string location, string mode, mapping
             "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
             "\n"
-	    " id=document.gentable." + lower_case( KEYS[options->type + "s"]) + ".value;\n"
-	    " document.popupform" + id->misc->ivend->popup +".id.value=id;\n"
-	    " if(id==\"\") { alert('You must have an item " +
+	    "var id=document.gentable." + lower_case( KEYS[options->type + "s"]) +
+		".value;\n"
+	    " document.popupform" + id->misc->ivend->popup +".id.value=id;"
+	    " if(document.gentable.id.value==\"\") { alert('You have not specified a " +
 		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
             "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
             "        palette=window.open(location,name,param);\n"
             // "        window.open('',name,param);\n"
             "        \n"
             "        if (palette!=null) palette.opener=mainWin; \n"
-	    "document.popupform" + id->misc->ivend->popup + ".submit();\n"
+	    "popupform" + id->misc->ivend->popup + ".submit();\n"
             "}\n"
             "</SCRIPT>"
             "<form name=popupform" + id->misc->ivend->popup + " target=" +
@@ -2400,6 +2379,7 @@ id->variables->__criteria + "%";
                      id->misc->ivend->extrafields=args->extrafields;
 
                  mapping tags=    ([
+				   "additem" : tag_additem,
                                    "ivstatus":tag_ivstatus,
                                    "ivmg":tag_ivmg,
                                    "listitems":tag_listitems,
@@ -2449,7 +2429,7 @@ if(STORE)
 
              mapping query_tag_callers()
              {
-             return ([ "ivendlogo" : tag_ivendlogo, "additem" : tag_additem,
+             return ([ "ivendlogo" : tag_ivendlogo, 
                        "sessionid" : tag_sessionid
 			]); }
 
@@ -2653,7 +2633,7 @@ mapping to=id->misc->defines[" _extra_heads"];
                              if(sizeof(id->misc->ivend->error)>0 &&
 					!id->misc->ivend->handled_error)
                                  retval=handle_error(id);
-                              werror("return_Data\n");
+                             // werror("return_Data\n");
                              if(objectp(DB) && STORE)
                                  db[STORE]->handle(DB);
 

@@ -7,7 +7,7 @@ constant module_type = "handler";
 
 void start(mapping config){
 
-  perror("starting admin handler...\n");
+//  perror("starting admin handler...\n");
   
 }
 

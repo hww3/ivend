@@ -9,6 +9,9 @@ space=' ';
 r=f->gets();
 if(!r) return 0;
 sscanf(r, "%d%c%*s", code, space);
+perror("r is eq to " + r + ".\n");
+perror("space is eq to " + space + ".\n");
+perror("code is eq to " + code + ".\n");
 }
 while (space=='-');
 return code;
@@ -51,15 +54,16 @@ if(r=readcode(f)/100 !=2){
   }
 
 f->write("VRFY <" + address + ">\n");
-if(readcode(f)/100 !=2) return 0;	// bad address!
+if(r=readcode(f)/100 !=2) {
+  return 0; // bad address!
+} else {
+  perror("The VRFY TEST has passed\n");
+  f->write("QUIT\n");
+  f->close();
 
-f->write("QUIT\n");
-f->close();
-
-return 1;	// good address!
-
+  return 1;       // good address!
 }
-
+}
 int sendmail(string sender, string|array recipient, string message){
 int code;
 array recip=({});

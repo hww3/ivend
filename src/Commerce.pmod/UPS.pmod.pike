@@ -19,7 +19,7 @@ for(int i=2; i<sizeof(z);i++){
   mapping line=([]);
 // perror(sizeof(a)+"\n");
   if(sizeof(a)!=sizeof(t)) {
-    werror("mismatched line!\n");
+    werror("UPSZone: Expected " + t + " columns, got " + a + ".\n");
     continue;
     }
   if(a[0]=="")

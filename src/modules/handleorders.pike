@@ -389,6 +389,7 @@ if(!id->variables->print)
     "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; "
     "<input type=submit name=doship value=\"Ship All\"> &nbsp; "
     "<input type=submit name=doship value=\"Ship Selected\"> &nbsp; "
+    "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
     "<input type=submit name=print value=\"Format for Printing\">"
     "</form>";
     }

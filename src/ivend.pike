@@ -59,11 +59,12 @@ mapping numrequests=([]);
 
 int num;
 int save_status=1;              // 1=we've saved 0=need to save.
+int db_info_loaded=0;
+
 
 array register_module(){
 
    string s="";
-
    if(loaded) {
       s = "<br>Go to the <a href='"+
           my_configuration()->query("MyWorldLocation")+ query("mountpoint") +
@@ -147,6 +148,7 @@ void get_dbinfo(mapping c){
    keys[c->config]=([]); // make the entry.
    if(err) {
       perror("An error occurred while trying to grab a db object.\n");
+	db_info_loaded=0;
       return;
    }
    foreach(({"products", "groups"}), string t) {
@@ -164,7 +166,7 @@ void get_dbinfo(mapping c){
       }  
 
    }
-
+   db_info_loaded=1;
    return;
 
 }
@@ -245,6 +247,7 @@ string|void container_procedure(string name, mapping args,
                 "#define CONFIG id->misc->ivend->config->general\n"
                 "#define DB id->misc->ivend->db\n"
                 "#define KEYS id->misc->ivend->keys\n" 
+		"inherit \"roxenlib\";\n"
                 "mixed proc(string tag_name, mapping "
                 "args, object id, mapping defines){\n";
          footer="\n}";
@@ -257,6 +260,7 @@ string|void container_procedure(string name, mapping args,
                 "#define CONFIG id->misc->ivend->config->general\n"
                 "#define DB id->misc->ivend->db\n"
                 "#define KEYS id->misc->ivend->keys\n" 
+		"inherit \"roxenlib\";\n"
                 "mixed proc(string event_name, "
                 "object|void id, mapping|void args){\n";
          footer="\n}";
@@ -269,6 +273,7 @@ string|void container_procedure(string name, mapping args,
                 "#define CONFIG id->misc->ivend->config->general\n"
                 "#define DB id->misc->ivend->db\n"
                 "#define KEYS id->misc->ivend->keys\n" 
+		"inherit \"roxenlib\";\n"
                 "mixed proc(string container_name, mapping args,"
                 " string contents, object id){\n";
          footer="\n}";
@@ -350,7 +355,6 @@ void start_store(string c){
    get_entities(config[c]->general);
    load_library(config[c]->general);
    perror("done.\n");
-
 }
 
 void stop_store(string c){
@@ -539,6 +543,7 @@ mixed container_icart(string name, mapping args,
            "<input type=hidden name=referer value=\"" +
            id->variables->referer + "\">\n";
    //    if(!args->fields) return "Incomplete cart configuration!";
+
    array r= DB->query(
               "SELECT sessions." + KEYS->products +
               ",series,quantity,sessions.price "+ 
@@ -590,7 +595,12 @@ mixed container_icart(string name, mapping args,
            "<table><tr><Td><input name=update type=submit value=\"" 
            + UPDATE_CART + "\"></form></td>\n";
    if(!id->misc->ivend->checkout){
-      retval+="<td> <form action=\""+ query("mountpoint") +
+	if(args->checkout_url)
+
+      retval+="<td> <form action=\""+ args->checkout_url + "?SESSIONID=" +
+              id->misc->ivend->SESSIONID
+              + "\">";
+     else retval+="<td> <form action=\""+ query("mountpoint") +
               (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
                  ?"": STORE+"/")+"checkout/?SESSIONID=" +
               id->misc->ivend->SESSIONID
@@ -780,8 +790,11 @@ string tag_listitems(string tag_name, mapping args,
       }
    }
 
-   array r;
-   if(args->type=="groups") {
+   if(args->type=="custom") {
+      query=args->query;
+
+   }
+   else if(args->type=="groups") {
       query="SELECT " + KEYS->groups + " AS pid " +
             extrafields+ " FROM groups";
       if(!args->show)
@@ -806,34 +819,28 @@ string tag_listitems(string tag_name, mapping args,
    if(args->order)
       query+=" ORDER BY " + args->order;
 
-   r=DB->query(query);
+   array r=DB->query(query);
 
    if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
 
-   mapping row;
-
-   array(array(string)) rows=allocate(sizeof(r));
-   int p=0;
-   foreach(r,row){
-      array thisrow=allocate(sizeof(row)-1);
+   array rows=({});
+   foreach(r,mapping row){
+	array thisrow=({});
       string t;
       int n=0;
-      // perror(indices(row)*" - ");
       foreach(en, t){
-         //perror(t);
 
          if(n==0) {
-            thisrow[n]=("<A " + (args->template?("TEMPLATE=\"" +
+            thisrow+=({("<A " + (args->template?("TEMPLATE=\"" +
                                                  args->template + "\""):"") +
-                        " HREF=\""+row->pid+".html\">"+row[t]+"</A>");
+                        " HREF=\""+row->pid+".html\">"+row[t]+"</A>")});
          }
          else
-            thisrow[n]=row[t]; 
+            thisrow+=({row[t]}); 
          n++;
 
       }
-      rows[p]=thisrow;
-      p++;
+      rows+=({thisrow});
    }
 
    if(args->title) retval+="<h2>" + args->title + "</h2>\n";
@@ -1026,9 +1033,8 @@ mixed additem(object id){
          items+=({v});
    }  
 
-
-  if(id->variables->item)
-	items+=({id->variables->item});
+ if(id->variables->item)
+        items+=({id->variables->item});          
 
    foreach(items, string item){
       float price=DB->query("SELECT price FROM products WHERE " 
@@ -1227,7 +1233,8 @@ mixed order_handler(string filename, object id, object this_object){
    "<gtext fg=maroon nfont=bureaothreeseven black>"
    + CONFIG->name+
    " Orders</gtext><p>"
-   "<font face=helvetica,arial size=+1>"
+   "<font face=helvetica,arial size=+1>";
+if(!id->variables->print) retval+=
    "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
 
 
@@ -1613,11 +1620,12 @@ mixed find_file(string file_name, object id){
    // load id->misc->ivend with the good stuff...
    id->misc->ivend->config=config[STORE];
    id->misc->ivend->config->global=global;
+   if(!db_info_loaded)
+     start_store(STORE);
    MODULES=modules[STORE];
    KEYS=keys[STORE];
    mixed err;
    numrequests[STORE]+=1;
-         handle_sessionid(id);
 
    if(!objectp(DB))
       err=catch(DB=db[STORE]->handle());
@@ -1625,6 +1633,8 @@ mixed find_file(string file_name, object id){
       error(err[0] || config[STORE]->error, id);
       return return_data(retval, id);
    }
+
+         handle_sessionid(id);
     
    if(request*"/" && have_path_handler(STORE, request*"/"))
       retval= handle_path(STORE, request*"/" , id);    
@@ -1725,10 +1735,10 @@ string|void container_ivml(string name, mapping args,
              library[STORE]->container), string n)
    c[n]=generic_container_handler;
 
-   contents= "<html>"+parse_html(contents,
+   contents= (!args->quiet?"<html>":"")+parse_html(contents,
                                  t + tags, 
                                  c + containers, id)
-             +"</html>";
+             +(!args->quiet?"</html>":"");
 
    MODULES=modules[STORE];
    contents=parse_rxml(contents,id);

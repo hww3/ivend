@@ -238,7 +238,7 @@ class db {
 
       mixed list_fields(string t) {
 
-         perror("iVend.db: List_fields\n");
+//         perror("iVend.db: List_fields\n");
          return ::list_fields(t);
       }
 
@@ -1005,7 +1005,7 @@ class db_handler
                }
             }
             else {
-               werror("Handler: duplicate return: \n");
+//               werror("Handler: duplicate return: \n");
             }
             //      destruct(d);
          } 

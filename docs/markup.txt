@@ -1,3 +1,5 @@
+THIS DOCUMENT DESCRIBES IVEND SPECIFIC MARKUP TAGS AND CONTAINERS.
+
 <ICART>..</
 
 Display the Cart. Items in the cart to be updated and deleted.

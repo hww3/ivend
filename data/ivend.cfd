@@ -10,7 +10,7 @@ $varname=config
 $enname=Store ID
 $siname=Store ID
 $type=string
-$endescription=One word used to describe this store.
+$endescription=One word used to uniquely identfy this store.
 $sidescription=One word used to describe this store (slovenian).
 
 $varname=dblogin

@@ -1,3 +1,0 @@
-* too many db connections are made per request (not really a bug)
-* salestax roundoff is high by 1 penny. (is this really a bug?)
-* hitting reload during checkout causes an error.

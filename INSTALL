@@ -358,6 +358,19 @@ you provide 2 formrotate containers, every odd record will be processed
 using the contents of the first container and every even record will be
 processed using the second container as the template.
 
+<itemoutput></itemoutput> is used on product pages. It surrounds text that
+will be parsed for embedded fields, much the same as the categoryoutput
+container. It takes the following attributes:
+  extrafields="field1,field2...": additional fields such as calculations
+	that are selected from the product table.
+
+<additem> is used to add one or more items.
+  noform: do not generate form tags surrounding the item.
+  silent: do not show quantity and submit buttons.
+  showquantity: do not show quantity box.
+  item: item number.
+  quantity: quantity to add.
+ 
 Checkout Tags
 -------------
 
@@ -386,9 +399,17 @@ grandtotal
 
 showorder		show all items in this order.
 
-shipping		show the shipping charges
+shippingcost		show the shipping charges
 
 shippingtype		show the shipping type
+
+shippingtypes		show all shipping types with a cost calculation in
+			a menu.
+
+shippingcalc		show the charge for using a certain shipping
+			method.
+
+shippingadd		add shipping to the order.
 
 addentry		add the data from the previous form.
   encrypt=field1,field2..  encrypt these fields using rsa.
@@ -466,6 +487,16 @@ formoutput container in that field names from store configurations that
 are surrounded by #s like this: #name# will be replaced with that store's
 value. For a better example, see the file data/index.html.
 
+
+Actions and Events
+
+During the course of it's operation, events that iVend handles will
+trigger actions.
+ 
++ additem
++ deleteitem
++ newsessionid
++ confirmorder
 
 
 Appendix D

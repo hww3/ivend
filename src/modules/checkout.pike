@@ -24,6 +24,8 @@ constant module_type="checkout";
 mapping query_tag_callers2();
 mapping query_container_callers2();
 
+object ivend;
+
 void load_lineitems(object id){
 
 id->misc->ivend->lineitems=([]);
@@ -154,18 +156,14 @@ else {
   return "An error occurred while moving your order to confirmed status.\n";
 }
 // update customer info and payment info with new orderid
-    
-  id->misc->ivend->db->query("UPDATE customer_info SET orderid='"+
+
+foreach(({"customer_info","payment_info","lineitems"}), string t)
+  id->misc->ivend->db->query("UPDATE " + t + " SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
 
-  id->misc->ivend->db->query("UPDATE payment_info SET orderid='"+
-	id->misc->ivend->orderid+"' WHERE orderid='"
-	+id->misc->ivend->SESSIONID+"'");
-
-  id->misc->ivend->db->query("UPDATE lineitems SET orderid='" +
-	id->misc->ivend->orderid+"' WHERE orderid='"
-	+id->misc->ivend->SESSIONID+"'");
+ivend->trigger_event("confirmorder", id, (["orderid":
+	id->misc->ivend->orderid]));
 
 // do we send a confirmation note? if so, do it.
 
@@ -184,6 +182,7 @@ if(note) {
   object message=MIME.Message(parse_rxml(note,id),
 				   (["MIME-Version":"1.0",
 				     "To":recipient,
+				     "X-Mailer":"iVend 1.0 for Roxen",
 				     "Subject":subject
 				     ]));
 
@@ -206,6 +205,7 @@ if(note) {
   
   object message=MIME.Message(parse_rxml(note,id), (["MIME-Version":"1.0",
 				     "To":recipient,
+				     "X-Mailer":"iVend 1.0 for Roxen",
 				     "Subject":subject
 				     ]));
 
@@ -279,15 +279,17 @@ else {
   query=
   "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
 
-
   r=id->misc->ivend->db->query(query);
   if(sizeof(r)==1) {
     if(id->misc->ivend->config->shipping_taxable=="Yes")
       totaltax=(float)r[0]->taxrate *
-        ((id->misc->ivend->lineitems->taxable +
+        (float)((id->misc->ivend->lineitems->taxable +
          id->misc->ivend->lineitems->shipping) || 0.00);
+    else totaltax=(float)r[0]->taxrate *
+	(float)(id->misc->ivend->lineitems->taxable || 0.00);
+	totaltax=(float)sprintf("%.2f", (float)totaltax);
     id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
-      return sprintf("%.2f",(float)totaltax);
+      return sprintf("%.2f",totaltax);
     }
 
   else return ("0.00");
@@ -332,13 +334,15 @@ if(!args->noflush)
 if(args->encrypt){	// handle encrypting of records...
   array toencrypt=(lower_case(args->encrypt)-" ")/",";
   string key;
-  key=Stdio.read_file(id->misc->ivend->config->publickey);
+  catch(key=Stdio.read_file(id->misc->ivend->config->publickey));
+  if(key)
   foreach(toencrypt, string encrypt){
     if(id->variables[encrypt])
 	id->variables[encrypt]=
 	  Commerce.Security.encrypt(id->variables[encrypt],key)||
 	id->variables[encrypt];
     }
+  else perror("Can't load public key.\n");
 }
 
 mixed j;
@@ -379,7 +383,10 @@ id->misc->ivend->error+=
 return "";
 }
 
-mixed checkout(string p, object id){
+mixed checkout(string p, object id, object this_object){
+
+ivend=this_object;
+id->misc->ivend->checkout=1;
 
 string retval=
   Stdio.read_file(id->misc->ivend->config->general->root +

@@ -1,10 +1,10 @@
 /* Decode a coded RSAPublicKey structure */
 object parse_public_key(string key)
 {
-  WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
+//  WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
   array a = Standards.ASN1.decode(key)->get_asn1();
 
-  WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
+//  WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
   if (!a
       || (a[0] != "SEQUENCE")
       || (sizeof(a[1]) != 3)

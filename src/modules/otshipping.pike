@@ -158,6 +158,19 @@ else {
     retval+="<br>Shipping Range Deleted Successfully.<br>\n";
     }
 
+ if(id->variables->dodeletetype) {
+
+    mixed j=id->misc->ivend->db->query("DELETE FROM shipping_types "
+                                       "WHERE type=" + 
+				       id->variables->dodeletetype);
+
+    mixed j=id->misc->ivend->db->query("DELETE FROM shipping_ot "
+                                       "WHERE type=" + 
+				       id->variables->dodeletetype);
+    retval+="<br>Shipping Type Deleted Successfully.<br>\n";
+    }  
+
+
   if(id->variables->addtype)
     retval+=addtype(id);
   else {
@@ -168,7 +181,8 @@ else {
     array r=id->misc->ivend->db->query("SELECT * FROM shipping_types");
     foreach(r, mapping row) {
       retval+="<li><a href=shipping?viewtype="+row->type+ ">" + row->name
-        +"</a>\n<font size=2>"
+        +"</a>\n<font size=2>( <a href="+id->not_query+"?dodeletetype="+
+	row->type +">Delete"+"</a> )"
         "<dd>"+ row->description+"</font>\n\n";
       if (row->type==id->variables->viewtype || id->variables->showall=="1")
 	retval+=show_type(row->type, id);

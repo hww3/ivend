@@ -108,7 +108,7 @@ string|int listorder(object id, object s){
 	row[id->misc->ivend->keys->products ]+
       "." + row->series + "\">")+ "</td>"
       "<td>" + row->quantity + "</td><td>" + row->id 
-      + "</td><td>" + row["1"] + "</td><td align=right>" + row->price +
+      + "</td><td>" + row["name"] + "</td><td align=right>" + row->price +
 	"</td><td align=right>"
       + sprintf("%.2f", (float)row->price * (float)row->quantity) 
       + "</td></tr>\n";

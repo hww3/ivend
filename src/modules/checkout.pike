@@ -459,7 +459,7 @@ array en=({});
  }     
 
 string query="SELECT sessions.quantity, "
-  "products.name, products.price, "
+  "products.price, " 
   "sessions.quantity*products.price AS linetotal, taxable " + extrafields +
   " FROM sessions,products WHERE products." +
 id->misc->ivend->keys->products + "=sessions.id AND "

@@ -5,7 +5,6 @@
 <body bgcolor=white text=navy>
 <font face=helvetica>
 <checkout>
-<addentry encrypt="Card_Number">
 <font size=+2>5. Confirm Order</font>
 <table>
 <tr>
@@ -15,6 +14,13 @@
 <th align=left>Subtotal</th>
 </tr>
 <showorder convert>
+<tr>
+<td> &nbsp; </td>
+<td> &nbsp; </td>
+<td align=right>Discount:</td>
+<td align=right><discount percent=15 convert></td>
+</tr>
+
 <tr>
 <td> &nbsp; </td>
 <td> &nbsp; </td>
@@ -45,8 +51,9 @@ Click the button below to confirm and place your order.
 <p>
 <input type=submit value=" Confirm ">
 <input type=hidden name=orderid value="<sessionid>"> 
-
 </checkout>
+<dumpid>
+
 </ivml>
 
 

@@ -198,9 +198,26 @@ function. The function currency_convert will return the converted float.
 Checkout Tags
 -------------
 
+the subtotal is the sum of all taxable and nontaxable items ( including
+shipping if taxable ). discounts and salestax are calculated from the
+subtotal.
+
+
 confirmemail
   field=fieldname	name of field containing email address to check.
 
+salestax		added as a lineitem
+  locality=fieldname	name of field in billing address to determine
+			taxrate.
+  excludediscount	should discounts be excluded from calculation of
+			salestax?
+
+discount
+  percent=percentage	percent discount of subtotal, added as a lineitem.
+  convert		convert currency if converter is present.
+
+grandtotal
+			sum of all lineitems
 
 Other Stuff
 -----------

@@ -22,3 +22,6 @@ abstract database routines (3/26/98)
 add support for databases other than mysql (maybe) (3/26/98)
 
 add email address verification (3/25/98) [done]
+
+allow seperate names for order and admin functions (3/27/98)
+

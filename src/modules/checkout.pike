@@ -164,6 +164,43 @@ if(note) {
 return retval;
 }
 
+
+string tag_discount(string tag_name, mapping args,
+		     object id, mapping defines) {
+
+float tdiscount, ntdiscount;
+
+float tsubtotal=id->misc->ivend->lineitems->taxable;
+float ntsubtotal=id->misc->ivend->lineitems->nontaxable;
+
+if(args->percent) { 
+
+
+	tdiscount= (tsubtotal *
+	((float)args->percent / 100));
+	ntdiscount= (ntsubtotal *
+	((float)args->percent / 100));
+
+}
+
+
+id->misc->ivend->lineitems->taxable= 
+	(float)id->misc->ivend->lineitems->taxable - (float)tdiscount;
+id->misc->ivend->lineitems->nontaxable=
+	(float)id->misc->ivend->lineitems->nontaxable - (float)ntdiscount;
+
+if(args->convert && functionp(currency_convert) ) {
+    perror("converting currency...\n");
+    tdiscount=currency_convert(tdiscount,id) ;
+    ntdiscount=currency_convert(ntdiscount,id) ;
+    }
+
+
+return sprintf("%.2f", tdiscount + ntdiscount);
+
+}
+
+
 /*
 
   calculate tax
@@ -197,24 +234,22 @@ if(!r) perror("iVend: ERROR locating customerinfo!\n");
 else { 
 
   query=
-  "select sessions.sessionid, SUM(products.price*sessions.quantity) "
-  "as grandtotaltaxable, taxrates.taxrate as taxrate, "
-  "SUM(products.price*sessions.quantity)*taxrates.taxrate as "
-  "salestax from sessions, products, taxrates where "
-  "(sessions.id=products.id and taxrates.locality='"+ r[0][locality]
-  +"' and SESSIONID='"+ id->misc->ivend->SESSIONID +"')";
+  "select taxrate from taxrates where locality='"+ r[0][locality] + "'";
+
 perror(query+"\n");
   r=s->query(query);
-  if(sizeof(r)==1 && r[0]->salestax) {
+  if(sizeof(r)==1) {
+    totaltax=(float)r[0]->taxrate *
+      (id->misc->ivend->lineitems->taxable || 0.00);
  if(!id->misc->ivend->lineitems) 
    id->misc->ivend+= (["lineitems":([])]);
-
-
-    id->misc->ivend->lineitems+=(["salestax":(float)r[0]->salestax]);
-    if(args->convert && functionp(currency_convert))
-      return sprintf("%.2f",currency_convert((float)r[0]->salestax,id));
-    else
-      return sprintf("%.2f",(float)r[0]->salestax);
+    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
+if(args->convert && functionp(currency_convert) ) {
+    perror("converting currency...\n");
+    totaltax=currency_convert(totaltax,id) ;
+    }
+	
+      return sprintf("%.2f",(float)totaltax);
 
   }
   else {
@@ -291,9 +326,9 @@ object encryptedid = id;
 array e=(args->encrypt-" ")/",";
  for(int i=0; i<sizeof(e); i++){
 
-
-  encryptedid->variables[e[i]]=
-    Commerce.Security.encrypt(id->variables[e[i]],key);
+perror("Encrypting var: " + e[i] + ", value: "+ id->variables[e[i]] + "\n");
+  encryptedid->variables[lower_case(e[i])]=
+    Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
  }
 
  j=s->addentry(encryptedid);
@@ -351,13 +386,18 @@ return retval;
 string tag_subtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 
-   if(args->convert && functionp(currency_convert) ) {
-     perror("converting currency...\n");
-  return(sprintf("%.2f",
-    (float)currency_convert(id->misc->ivend->lineitems->subtotal,id))) ;
-   }
-else return sprintf("%.2f",
-    (float)id->misc->ivend->lineitems->subtotal);
+float subtotal;
+
+subtotal=(float)id->misc->ivend->lineitems->taxable + 
+	(float)id->misc->ivend->lineitems->nontaxable;
+
+if(args->convert && functionp(currency_convert) ) {
+    perror("converting currency...\n");
+    subtotal=currency_convert(subtotal,id) ;
+    }
+
+
+return sprintf("%.2f", subtotal);
 
 
 
@@ -366,12 +406,26 @@ else return sprintf("%.2f",
 string tag_grandtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 
+ object s=(object)Sql.sql(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+
+
 float grandtotal=0.00;
 string item;
- foreach(indices(id->misc->ivend->lineitems), item)
+ foreach(indices(id->misc->ivend->lineitems), item) {
    grandtotal+=id->misc->ivend->lineitems[item];
-
-
+   float i= id->misc->ivend->lineitems[item];
+   if(args->convert && functionp(currency_convert) ) {
+     perror("converting currency...\n");
+	i=currency_convert(i, id);
+	}
+   s->query("INSERT INTO lineitems VALUES('"+ id->variables->orderid + 
+	"','" + item + "',"+ i + ")");
+  }
    if(args->convert && functionp(currency_convert) ) {
      perror("converting currency...\n");
   return(sprintf("%.2f",(float)currency_convert(grandtotal,id))) ;
@@ -382,7 +436,8 @@ else return sprintf("%.2f",(float)grandtotal);
 
 string tag_showorder(string tag_name, mapping args,
 		     object id, mapping defines) {
-float subtotal=0.00;
+float taxable=0.00;
+float nontaxable=0.00;
 string retval="";
 
  object s=Sql.sql(
@@ -394,11 +449,9 @@ string retval="";
 
 string query="SELECT sessions.quantity, "
   "products.name, products.price, "
-  "sessions.quantity*products.price AS linetotal FROM "
+  "sessions.quantity*products.price AS linetotal, taxable FROM "
   "sessions,products WHERE products.id=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
-
-perror("QUERY:\n\n"+query+"\n\n");
 
 array r=s->query(query);
 perror("sizeof result: "+sizeof(r)+"\n");
@@ -419,13 +472,16 @@ else retval+=r[i]->price;
   retval+=sprintf("%.2f",(float)currency_convert(r[i]->linetotal,id)) ;
    }
 else retval+=r[i]->linetotal;
-subtotal+=(float)r[i]->linetotal;
+if(r[i]->taxable=="N") nontaxable+=(float)r[i]->linetotal;
+  else taxable+=(float)r[i]->linetotal;
 retval+= "</td></tr>\n"; 
  }
 
 
+
  if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
-id->misc->ivend->lineitems+=(["subtotal":(float)subtotal]);
+id->misc->ivend->lineitems+=(["taxable":(float)taxable]);
+id->misc->ivend->lineitems+=(["nontaxable":(float)nontaxable]);
 
 
 return retval;
@@ -474,6 +530,7 @@ return (["showorder" : tag_showorder,
 	"grandtotal" : tag_grandtotal,
   	  "subtotal" : tag_subtotal,
 	  "salestax" : tag_salestax, 
+	  "discount" : tag_discount, 
 	 "cardcheck" : tag_cardcheck,
 	  "addentry" : tag_addentry,
 	"generateform": tag_generateform

@@ -128,41 +128,12 @@ if(id->variables->delete){
 
 else if(id->variables->orderid) {
 
-  array r=s->query("SELECT id, status.name as status, "
-	"DATE_FORMAT(updated, 'm/d/y h:m') as updated, "
-	"DATE_FORMAT(created, 'm/d/y h:m') as created, "
-	"notes "
-	"FROM orders,status WHERE id=" 
-	+id->variables->orderid +" AND orders.status=status.status");
-  if(sizeof(r)!=1) retval="Error finding the requested record.\n";
-
-  else {
-
-	string key=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	  id->misc->ivend->config->keybase+".priv");	
-	retval+=create_panel("Order Details","hunter","<table width=100%>"
-	"<tr><td><font face=helvetica>"
-	"Order ID</td><td>"+r[0]->id+"</td></tr>\n"
-	"<tr><td width=30%><font face=helvetica>Status</td><td>"+r[0]->status+"</td></tr>\n"
-	"<tr><td width=30%><font face=helvetica>Last Action</td><td>"+r[0]->updated+"</td></tr>\n"
-	"<tr><td width=30%><font face=helvetica>Creation</td><td>"+r[0]->created+"</td></tr>\n"
-	"<tr><td width=30%><font face=helvetica>Notes</td><td><pre>"+
-	(r[0]->notes||"")+"</pre></td></tr>\n"
-	"</table>"
-	"\n\n");
-
-	 // get address information...
-
-retval+=gentable(id, s, "customer_info", "N/A", 1);
-	
-retval+="<p>\n" + genpayment(id, s);
-
-retval+="<p>\n" + listorder(id, s);
+retval+=show_orderdetails(id->variables->orderid, s, id);
 
 retval+="<form action=./orders>\n"
 	"Change this order's status to: "
 	"<input type=hidden name=orderid value="+
-	r[0]->id+">\n"
+	id->variables->orderid+">\n"
 	"<select name=status>";
 
 array status=s->query("SELECT status, name from status where tablename='orders'");
@@ -172,7 +143,6 @@ foreach(status, mapping v)
 retval+="</select><input type=submit value=Change></form>\n";
 
 
-    }
   }
 
 else {
@@ -211,7 +181,44 @@ return retval;
 
 
 
+string|int show_orderdetails(string orderid, object s, object id){
 
+string retval="";
+
+  array r=s->query("SELECT id, status.name as status, "
+	"DATE_FORMAT(updated, 'm/d/y h:m') as updated, "
+	"DATE_FORMAT(created, 'm/d/y h:m') as created, "
+	"notes "
+	"FROM orders,status WHERE id=" 
+	+id->variables->orderid +" AND orders.status=status.status");
+  if(sizeof(r)!=1) retval="Error finding the requested record.\n";
+
+  else {
+
+	string key=Stdio.read_file(id->misc->ivend->config->root+"/"+
+	  id->misc->ivend->config->keybase+".priv");	
+	retval+=create_panel("Order Details","hunter","<table width=100%>"
+	"<tr><td><font face=helvetica>"
+	"Order ID</td><td>"+r[0]->id+"</td></tr>\n"
+	"<tr><td width=30%><font face=helvetica>Status</td><td>"+r[0]->status+"</td></tr>\n"
+	"<tr><td width=30%><font face=helvetica>Last Action</td><td>"+r[0]->updated+"</td></tr>\n"
+	"<tr><td width=30%><font face=helvetica>Creation</td><td>"+r[0]->created+"</td></tr>\n"
+	"<tr><td width=30%><font face=helvetica>Notes</td><td><pre>"+
+	(r[0]->notes||"")+"</pre></td></tr>\n"
+	"</table>"
+	"\n\n");
+
+	 // get address information...
+
+retval+=gentable(id, s, "customer_info", "N/A", 1);
+	
+retval+="<p>\n" + genpayment(id, s);
+
+retval+="<p>\n" + listorder(id, s);
+}
+return retval;
+
+}
 
 
 

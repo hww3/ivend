@@ -494,10 +494,12 @@ string|void container_ia(string name, mapping args,
    if (args->external)
       arguments["href"]=args->href;
    else if (args->referer)
-      arguments["href"]= (id->variables->referer || ((id->referer*"")-"ADDITEM=1") || "");
+      arguments["href"]= (id->variables->referer || ((id->referer*"")- 
+	"ADDITEM=1") || "");
    else if (args->add)
       arguments["href"]="./"+id->misc->ivend->page+".html?SESSIONID="
-                        +id->misc->ivend->SESSIONID+"&ADDITEM=1&"+id->misc->ivend->page+"=ADDITEM";
+                        +id->misc->ivend->SESSIONID+"&ADDITEM=1&" 
+	+id->misc->ivend->item+"=ADDITEM";
    else if(args->cart)
       arguments["href"]=query("mountpoint")+
                         (id->misc->ivend->moveup?"": STORE+ "/")
@@ -2084,10 +2086,61 @@ mixed get_image(string filename, object id, object this_object){
 
 }
 
+void add_header(mapping to, string name, string value)
+{
+  if(to[name])
+    if(arrayp(to[name]))
+      to[name] += ({ value });
+    else
+      to[name] = ({ to[name], value });
+  else
+    to[name] = value;
+return;
+}          
+
+#define _extra_heads id->misc->defines[" _extra_heads"]
+
+void add_cookie( object id, mapping m, mapping defines)
+{
+  if(!id->misc->defines)
+    id->misc->defines=([]);
+  if(!id->misc->defines[" _extra_heads"])
+    id->misc->defines[" _extra_heads"]=([]);
+  string cookies;
+  int    t;     //time
+
+  if(m->name)
+    cookies = m->name+"="+http_encode_cookie(m->value||"");
+  else
+    return ;
+
+  if(m->persistent)
+    t=(3600*(24*365*2));
+  else
+  {
+    if (m->hours)   t+=((int)(m->hours))*3600;
+    if (m->minutes) t+=((int)(m->minutes))*60;
+    if (m->seconds) t+=((int)(m->seconds));
+    if (m->days)    t+=((int)(m->days))*(24*3600);
+    if (m->weeks)   t+=((int)(m->weeks))*(24*3600*7);
+    if (m->months)  t+=((int)(m->months))*(24*3600*30+37800); /* 30.46d */
+    if (m->years)   t+=((int)(m->years))*(3600*(24*365+6));   /* 365.25d */
+  }
+
+  if(t) cookies += "; expires="+http_date(t+time());
+
+  //obs! no check of the parameter's usability
+  cookies += "; path=" +(m->path||"/");
+
+  add_header(_extra_heads, "Set-Cookie", cookies);
+
+  return;
+}     
+
 void handle_sessionid(object id) {
 
 
-   if(!id->variables->SESSIONID) {
+   if(!id->cookies->SESSIONID && !id->variables->SESSIONID) {
       id->misc->ivend->SESSIONID=
         "S" + (string)hash((string)time(1))+num;
       num+=1;
@@ -2096,7 +2149,15 @@ void handle_sessionid(object id) {
 	id->misc->ivend->SESSIONID]) );
    }
 
+   else if(id->cookies->SESSIONID)
+     id->misc->ivend->SESSIONID=id->cookies->SESSIONID;
+
    else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
+
+//   if(id->supports->cookies)
+if(!id->cookies->SESSIONID)
+   add_cookie(id, (["name":"SESSIONID",
+	"value":id->misc->ivend->SESSIONID, "seconds": 3600]),([]));
 
    m_delete(id->variables,"SESSIONID");
 

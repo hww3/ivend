@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.204 1999-05-28 19:55:42 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.205 1999-05-29 03:21:09 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -722,7 +722,7 @@ trigger_event("updateitem", id, (["item" : id->variables["p" +
             }
         }
     }
-
+madechange=0;
     if(madechange==1){
         array r=DB->query("SELECT id, price, quantity, series, qualifier, autoadd "
                           " FROM sessions WHERE sessionid='" +  id->misc->ivend->SESSIONID + "'");
@@ -748,7 +748,8 @@ items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
     // if(!args->fields) return "Incomplete cart configuration!";
     if(catch(  array r= DB->query(
                                 "SELECT sessions." + KEYS->products +
-                                ",series,quantity,sessions.price "+
+                                ",series,quantity,sessions.price, "
+				"sessions.locked, sessions.autoadd " +
                                 extrafields+" FROM sessions,products "
                                 "WHERE sessions.SESSIONID='"
                                 +id->misc->ivend->SESSIONID+"' AND sessions."+
@@ -788,12 +789,16 @@ items+=({ (["item": row->id, "quantity": row->quantity, "qualifier":
 
         retval+="<td align=right>" + MONETARY_UNIT +
                 sprintf("%.2f",(float)r[i]->price)+"</td>\n"
-                "<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
-                r[i]->quantity+"></td><td align=right>" + MONETARY_UNIT
+                "<TD><INPUT TYPE="+ (r[i]->locked=="1"?"HIDDEN":"TEXT") +
+		" SIZE=3 NAME=q"+i+" VALUE="+
+                r[i]->quantity+">" + (r[i]->locked=="1"?r[i]->quantity:"")
+		+ "</td><td align=right>" + MONETARY_UNIT
                 +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td>"
-                "<td><input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i][KEYS->products] +
-                "/" + r[i]->series + "\">"
-                "</tr>\n";
+                "<td>";
+if(r[i]->autoadd=="1")
+  retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
+   r[i][KEYS->products] + "/" + r[i]->series + "\">";
+                retval+="</td></tr>\n";
     }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
             "<table><tr><Td><input name=update type=submit value=\""

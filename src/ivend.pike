@@ -2108,6 +2108,7 @@ mixed return_data(mixed retval, object id){
                case "save": {
                      if(arrayp(global->configurations->active))
                            global->configurations->active=Array.uniq(global->configurations->active);
+
                         return write_configuration(id);
                         
                         break;

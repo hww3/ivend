@@ -168,8 +168,10 @@ if(v->copyfiles=="yes")
   retval+="<li>Install store  templates for " + capitalize(v->style) +", overwriting existing files.\n";
 // if((int)v->overwrite)
 // else retval+=" preserving existing files.\n";
-retval+="<li>Setup Database tables for this store.\n";
-retval+="<li>Generate 2048 bit RSA Keypair.\n";
+if(file_stat(v->root + "/schema.mysql"))
+  retval+="<li>Setup Database tables for this store.\n";
+if(!file_stat(v->root +"/private/key.pub"))
+  retval+="<li>Generate 2048 bit RSA Keypair.\n";
 retval+="</ul>";
 
 return retval;
@@ -240,19 +242,24 @@ mixed result=Process.system("/bin/cp -rf " +
 //   id->misc->ivend->this_object->query("root") + "examples/" +
 //   v->style + "/* " + v->root);
 
-array ss=Stdio.read_file(v->root +  "/schema.mysql")/";\n";
-if(catch(object s=Sql.sql(id->variables->dbhost, id->variables->db, 
-  id->variables->dblogin, id->variables->dbpassword))) {
-  return "An error occurred while connecting to the store database.";
-  }
+if(file_stat(v->root + "/schema.mysql")){
 
-foreach(ss, string statement)
-    if(catch(s->query(statement)))
-//      return statement
-;
+  array ss=Stdio.read_file(v->root +  "/schema.mysql")/";\n";
+  if(catch(object s=Sql.sql(id->variables->dbhost, id->variables->db, 
+    id->variables->dblogin, id->variables->dbpassword))) {
+    return "An error occurred while connecting to the store database.";
+    }
+
+  foreach(ss, string statement)
+      if(catch(s->query(statement)))
+  //      return statement
+  ;
+}
 
 mkdir(v->root + "/private");
-write_keys(v->root + "/private/key");
+
+if(!file_stat(v->root +"/private/key.pub"))
+  write_keys(v->root + "/private/key");
 
 v->publickey=v->root+ "/private/key.pub";
 v->privatekey=v->root + "/private/key.priv";

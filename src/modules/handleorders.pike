@@ -429,13 +429,15 @@ if(v->method=="Mail Archive" && v->email!=""){
  object dns=Protocols.DNS.client();
 string server=dns->get_primary_mx(gethostname());
 if(!server) server="localhost";
- if(catch(
+// mixed e=catch(
   Protocols.SMTP.client(server)->simple_mail(v->email, 
-	"Archive Orders " + (orders_to_archive*", "), "ivend@" +
-	gethostname(), retval)
- ))
-	return "An error occurred while mailing your archive request.<p>"
-	 "Your archive request was cancelled. Please try again later.";
+	"Archive Orders " + (orders_to_archive*", "),
+        CONFIG_ROOT["Admin Interface"]->email, retval)
+ ;
+//if(e)
+//  error(e);
+//	return "An error occurred while mailing your archive request.<p>"
+//	 "Your archive request was cancelled. Please try again later.";
   if(id->variables->delete=="yes")
   foreach(orders_to_archive, mapping or){
 	delete_order(or->id, id);

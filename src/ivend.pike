@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.251 1999-11-12 20:42:43 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.252 1999-11-30 02:17:11 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1025,9 +1025,11 @@ string container_category_output(string name, mapping args,
     }
     else {
 
+	string parent="";
+	if(args->parent) parent=args->parent;
+	if(id->variables->parent) parent=id->variables->parent;
         query="SELECT * FROM " + lower_case(args->type);
-            query+=" WHERE parent='" +
-            (id->variables->parent||args->parent||"") + "' ";
+            query+=" WHERE parent='" + parent + "' ";
         if(args->restriction)
             query+="AND " + args->restriction;
         if(args->show)
@@ -1038,6 +1040,7 @@ string container_category_output(string name, mapping args,
 
     }
     array r;
+perror("CATEGORY_OUTPUT QUERY: " + query + "\n\n");
 	catch(r=DB->query(query));
 
     if(!r || sizeof(r)==0) return "<!-- No Records Found.-->\n";
@@ -1179,9 +1182,10 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
     catch(r=DB->query(query));
     // perror("Query: " +query + "\n");
 
-    if(sizeof(r)==0 && !args->quiet) return NO_PRODUCTS_AVAILABLE;
+    if(sizeof(r)==0 && !args->quiet) return "<false>\n";
     else if(sizeof(r)==0 && args->quiet) return "<!-- " +
-	NO_PRODUCTS_AVAILABLE + " -->";
+	NO_PRODUCTS_AVAILABLE + " -->\n<false>\n";
+    else retval+="<true><!-- returned true -->\n";
     mapping row;
 
     array(array(string)) rows=allocate(sizeof(r));

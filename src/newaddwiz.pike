@@ -7,8 +7,6 @@ constant name= "Add New Store...";
 import ".";
 #endif 
 
-import ".";
-
 #define ERROR(X) id->misc->wizerr=X;
 #define IFERROR (id->misc->wizerr?"<tr><td colspan=2><b>Error: "+id->misc->wizerr+"</b></td></tr>":"")
 
@@ -384,7 +382,7 @@ retval+= "<b>Admin User:</b> admin<br>\n"
 
 retval+="<p>\nYou may edit $DATALOCATION/store_package "
   "to customize the overall look of your store.\n"
-  "<p>Be sure to save your store configurations.";
+  "<p><b>Be sure to save your store configurations now.</b>";
 
 privs=Privs("iVend: Creating store directory");
 if(v->createdir && !file_stat(v->root)) mkdir(v->root);
@@ -397,7 +395,7 @@ mixed result=Process.system("/bin/cp -rf " +
    id->misc->ivend->this_object->query("root") + "examples/" +
    v->style +"/* " + v->root + "/");
 #if efun(chmod)
-chmod(v->root, 0775);
+catch(chmod(v->root, 0775));
 #endif
 
 privs=0;
@@ -411,7 +409,6 @@ if(file_stat(v->root + "/schema.mysql") && v->populatedb=="Yes"){
     return "An error occurred while connecting to the store database" 
 	"as " + v->config + " with password " + v->dbpassword + "."
 	"<p>This is sometimes due to improper host table setup on "
-<<<<<<< newaddwiz.pike
 	"the database host.";
 //	+ s->error();
     }

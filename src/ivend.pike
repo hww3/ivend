@@ -5,13 +5,17 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.219 1999-06-08 17:48:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.220 1999-06-08 19:44:35 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
 #include <simulate.h>
+
+#if __VERSION__ >= 0.6
+import ".";
+#endif
 
 inherit "roxenlib";
 inherit "module";
@@ -768,7 +772,8 @@ items+=({ (["item": row->id, "quantity": row->quantity, "options":
             "<input type=hidden name=referer value=\"" +
             id->variables->referer + "\">\n";
     // if(!args->fields) return "Incomplete cart configuration!";
-    if(catch(  array r= DB->query(
+array r;
+    if(catch(r= DB->query(
                                 "SELECT sessions.id" +
                                 ",series,quantity,sessions.price, "
 				"sessions.locked, sessions.autoadd, " 
@@ -2642,7 +2647,8 @@ mapping to=id->misc->defines[" _extra_heads"];
                                      //                perror("writing config file " + config[c]->general->config + "\n");
                                      object privs=Privs("iVend: Writing Config File " +
                                                         config[c]->general->config);
-                                     Config.write_section(query("configdir")+
+
+Config.write_section(query("configdir")+
                                                           config[c]->general->config, m->module_name,
                                                           config[c][m->module_name]);
                                      privs=0;
@@ -2747,12 +2753,14 @@ mapping to=id->misc->defines[" _extra_heads"];
                                  mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
                                  if(confname=="global")
                                      Stdio.write_file(query("configdir")+"global",
-                                                      Config.write(global));
+
+Config.write(global));
                                  else {
                                      if(config[confname]->global)
                                          m_delete(config[confname], "global");
                                      Stdio.write_file(query("configdir")+confname,
-                                                      Config.write(config[confname]));
+
+Config.write(config[confname]));
 
                                  }
 #if efun(chmod)

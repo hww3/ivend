@@ -227,29 +227,11 @@ if(note) {
   return;
 }
 
-string|mapping archive_orders(string mode, object id){
- string retval="";
- mapping v=id->variables;
+string|int archive_order(string orderid, object id){
+string retval="";
+orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
+"'");
 
- if(!v->archive){
- // return the usage screen.
- retval+="<form action=\"./\">\n"
-	"<input type=hidden name=archive value=1>\n";
-
- retval+="Archive all closed/cancelled orders more than "
-	"<input type=text size=3 name=days value=30> days old. "; 
-
- retval+="<input type=submit value=\"Archive\"></form>\n";
- }
-
- else {
-
-  if(v->doit){
-  array orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
-	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
-	+ " AND (status.name!='Shipped' OR status.name!='Cancelled') "
-	" AND orders.status=status.status" );
-//  retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p><pre>";
   foreach(orders_to_archive, mapping or){
 retval+="<order id=\"" + or->id + "\">\n"
 	"<created>" + or->created + "</created>\n"
@@ -277,16 +259,62 @@ catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
     retval+="</order>\n";
 catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
      } 
+
+return retval;
+
+}
+
+string|mapping archive_orders(string mode, object id){
+ string retval="";
+ mapping v=id->variables;
+
+ if(!v->archive){
+ // return the usage screen.
+ retval+="<form action=\"./\">\n"
+	"<input type=hidden name=archive value=1>\n";
+
+ retval+="Archive all closed/cancelled orders more than "
+	"<input type=text size=3 name=days value=30> days old.<p>"; 
+ retval+="Archive order #"
+	"<input type=text size=5 name=orderid>.";
+ retval+="<input type=submit value=\"Archive\"></form>\n";
+ }
+
+ else {
+
+  if(v->doit){
+  array orders_to_archive;
+  if(v->orderid)
+   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"(status.name='Shipped' or status.name='Cancelled') AND "
+	"id='" + v->orderid + "'");
+  else
+   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
+	+ " AND (status.name='Shipped' or status.name='Cancelled') "
+	" AND orders.status=status.status" );
+
+  foreach(orders_to_archive, mapping or){
+	retval+=archive_order(or->id, id);
+     } 
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "orders.xml");
     return http_rxml_answer(retval, id, 0, "text/archive");
 
    }
   else {
-  array orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+
+  array orders_to_archive;
+  if(v->orderid)
+   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"(status.name='Shipped' or status.name='Cancelled') AND "
+	"id='" + v->orderid + "'");
+  else
+   orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
 	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
-	+ " AND (status.name!='Shipped' OR status.name!='Cancelled') "
+	+ " AND (status.name='Shipped' or status.name='Cancelled') "
 	" AND orders.status=status.status" );
+
   retval+="Found " + sizeof(orders_to_archive) + " orders"
 	" to archive.";
   if(sizeof(orders_to_archive)>0)

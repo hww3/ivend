@@ -1,5 +1,5 @@
 /*
- * ivend.pike: Electronic Shopping for Roxen.
+ * ivend.pike: Electronic Commerce for Roxen.
  *
  * Bill Welliver <hww3@riverweb.com>
  *
@@ -10,23 +10,26 @@
 #include <stdio.h>
 #include <simulate.h>
 
-inherit "module";
 inherit "roxenlib";
+inherit "module";
 inherit "wizard";
 
 #if __VERSION__ >= 0.6
-import "./";
+import ".";
 #endif
 
-mapping(string:mapping(string:mixed)) config=([]);
-mapping(string:mixed) global=([]) ;
-object c;			// configuration object
-object g;			// global object
-mapping(string:object) modules=([]);			// module cache
-int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.73 1998-06-12 19:38:07 hww3 Exp $";
+object c;                       // configuration object
+object g;                       // global object   
+
+mapping(string:object) modules=([]);                    // module cache
+mapping config=([]);
+mapping global=([]);
+
+int save_status=1;              // 1=we've saved 0=need to save.    
+
+string cvs_version = "$Id: ivend.pike,v 1.74 1998-06-21 18:13:15 hww3 Exp $";
 
 array register_module(){
 
@@ -62,27 +65,32 @@ void create(){
           "This is where the module will be inserted in the "
           "namespace of your server.");
 
-   defvar("root", getcwd(), "iVend Root Location",
+   defvar("root", getmwd() , 
+	  "iVend Root Location",
           TYPE_DIR,
           "This is the root directory of the iVend distribution. "
           );
 
-   defvar("datadir", query("root")+"data" , "iVend Data Location",
+   defvar("datadir", getmwd() + "data" , 
+	  "iVend Data Location",
           TYPE_DIR,
           "This is location where iVend will store "
           "data files nessecary for operation.");
 
-   defvar("configdir", query("root")+"configurations" , "iVend Configuration Directory",
+   defvar("configdir", getmwd() + "configurations" , 
+	  "iVend Configuration Directory",
           TYPE_DIR,
           "This is location where iVend will keep Store "
           "configuration files nessecary for operation.");
 
-   defvar("config_user", "ivend", "Configuration User",
+   defvar("config_user", roxen->query("ConfigurationUser") ,
+	  "Configuration User",
 	  TYPE_STRING,
 	  "This is the username to use when accessing the iVend Configuration "
 	  "interface.");
 
-   defvar("config_password", "", "Configuration Password",
+   defvar("config_password", roxen->query("ConfigurationPassword") ,
+	  "Configuration Password",
 	  TYPE_STRING,
 	  "The password to use when accessing the iVend Configuration "
 	  "interface.");
@@ -92,6 +100,40 @@ void create(){
 	  ({"en","si"})
 	  );
 }
+
+
+string getmwd(){
+
+ string mwd=combine_path(combine_path(getcwd(), backtrace()[-1][0]), "..");
+  catch { mwd=combine_path(combine_path(mwd, ".."), readlink(mwd)); };
+  mwd=combine_path(mwd, "../");
+
+  perror("getmwd(): "+mwd + "\n\n");
+
+  return mwd;
+}
+
+void start(){
+
+
+ add_include_path(getmwd() + "include");
+perror("iVend: added include path: "+getmwd()+"include\n"); 
+add_module_path(getmwd()+"src");
+perror("iVend: added module path: "+getmwd()+"src\n"); 
+  loaded=1;
+if(catch(perror(query("datadir")))) return;
+
+  if(file_stat(query("datadir")+"ivend.cfd")==0) 
+      return; 
+    else  read_conf();   // Read the config data.
+  
+  foreach(indices(config), string c)
+    load_modules(config[c]->config);
+
+  return;	
+
+}
+
 
 string|void check_variable(string variable, mixed set_to){
 
@@ -111,47 +153,6 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-mixed load_ivmodule(string c, string name){
-
-mixed err;
-mixed m;
-
-    err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
-    name)));
-if(err) {
-
-  return (err);
-  }
-modules+=([ name : m  ]);
-if(objectp(modules[name]) && functionp(modules[name]->start))
-  modules[name]->start(config[c]);
-return 0;
-
-}
-
-
-mixed getglobalvar(string var){
-
-  if(catch(global[var]))
-    return 0;
-  else return global[var];
-
-}
-
-float convert(float value, object id){
-
-if(functionp(modules[id->misc->ivend->config->currency_module]->currency_convert))
-	  value=
-	  modules[id->misc->ivend->config->currency_module
-	  ]->currency_convert(value,id);
-
-else ;
-
-return value;
-
-
-}
-
 
 
 mixed handle_search(object id){
@@ -159,30 +160,6 @@ mixed handle_search(object id){
 return "";
 }
 
-int clean_sessions(object id){
-
-string query="DELETE FROM sessions WHERE timeout < "+time(0);
-id->misc->ivend->db->query(query);
-return 0;
-}
-
-array|int size_of_image(string filename){
-
-  object fop;
-  string sizes;
-  array res = ({ 0,0 });
-  fop = Stdio.File();
-  if(!fop->open(filename, "r")) return -1;
-  fop->seek(0);
-  if(fop->read(3) !="GIF") return 0;
-  fop->seek(6); 
-  sizes = fop->read(4);
-  if(!sizes || (strlen(sizes) < 4)) return 0; //  short file
-  res[0] = (sizes[1]<<8) + sizes[0];
-  res[1] = (sizes[3]<<8) + sizes[2];
-  return res;
-
-}
 
 string|void container_ia(string name, mapping args,
                       string contents, object id)
@@ -539,142 +516,6 @@ return retval;
 
 }
 
-int read_conf(){          // Read the config data.
-
-string current_config="";
-string attribute;
-string value;
-
-c=iVend.config();
-g=iVend.config();
-if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
-   perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
-else 
-   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
-if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
-   perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
-else 
-   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
-
-array|int configfiles=get_dir(query("configdir"));
-
-if(intp(configfiles)) return 0;	// no config directory.
-
-configfiles-=({"CVS",".",".."});
-
-for(int i=0; i<sizeof(configfiles); i++){
-
-  if(search(configfiles[i], "~")>0) {
-#ifdef MODULE_DEBUG
-    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
-#endif
-    continue;
-    }
-
-  catch(array(string) config_file= read_file(query("configdir")+ 
-	configfiles[i])/"\n");
-
-#ifdef MODULE_DEBUG
- perror("iVend: parsing configuration "+configfiles[i]+"\n");
-#endif
-
-  current_config=configfiles[i];
-
-  for(int j=0; j<sizeof(config_file);j++)
-	if(config_file[j][0..0]=="$"){
-	  array(mixed) current_line=config_file[j][1..]/"=";
-	  attribute=current_line[0];
-	  value=current_line[1];
-	  if(!config[current_config])
-	    config[current_config]= ([attribute:value]);
-	  else config[current_config][attribute]=value;
-          }
-  }
-
-
-global=config["global"];
-m_delete(config,"global");
-return 0;
-}
-
-
-
-void load_modules(string c){
-
-perror("iVend: running load_modules() for " + c + "\n");
-
-mixed err;
-if(!c) return;
-if(!config[c]) return;
-  foreach(indices(config[c]), string n)
-    if(Regexp("._module")->match(n)) {
-      perror("iVend: loading module " + config[c][n] + "\n");
-      err=load_ivmodule(c, config[c][n]);
-      if(err) {
-        perror("iVend: The following error occured while loading the module "
-	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
-	  + describe_backtrace(err));
-        config[c]->error=err;
-	}
-      }
-  return;
-}
-
-void start(){
-
- add_include_path(query("root") + "include");
-perror("iVend: added include path: "+query("root")+"include\n"); 
-add_module_path(query("root")+"src");
-perror("iVend: added module path: "+query("root")+"src\n"); 
-
-  loaded=1;
-
-  if(file_stat(query("datadir")+"ivend.cfd")==0) 
-      return; 
-    else  read_conf();   // Read the config data.
-  
-  foreach(indices(config), string c)
-    load_modules(config[c]->config);
-
-  return;	
-
-
-}
-
-mixed stat_file( mixed f, mixed id )  {
-if(! id->misc->ivend) 
-	return ({ 33204,0,time(),time(),time(),0,0 });
-array fs;
-#ifdef MODULE_DEBUG
- perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
-#endif
-fs=file_stat(id->misc->ivend->root+"/"+f);
-return fs;
-}
-
-void error(mixed error, object id){
-  if(arrayp(error)) id->misc->ivend->error +=({	
-    replace(describe_backtrace(error),"\n","<br>\n") });
-  else if(stringp(error)) id->misc->ivend->error += ({ error });
-  return;
-
-}
-
-mixed handle_error(object id){
-string retval;
-
-if(!(retval=Stdio.read_file(config[id->misc->ivend->st]->root+"/error.html")))
-  retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
-    "<b>One or more errors have occurred. Please review the following "
-    "information and, if necessary, make any changes on the previous page "
-    "before continuing.<p>If you feel that this is a configuration error, "
-    "please contact the administrator of this system for assistance."
-    "<error>";
-
-return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
-	       +"</ul>\n");
-
-}
 
 mixed handle_cart(string st, object id){
 #ifdef MODULE_DEBUG
@@ -833,6 +674,696 @@ return retval;
 }
 
 
+string create_index(object id){
+string retval="";
+retval=Stdio.read_bytes(query("datadir")+"index.html");
+return retval;
+}
+
+mixed getsessionid(object id) {
+
+  return id->misc->ivend->SESSIONID;
+
+}
+
+mixed find_file(string file_name, object id){
+
+  id->misc["ivend"]=([]);
+  id->misc->ivend->modules=modules;
+  id->misc["ivendstatus"]="";
+  string retval;
+  id->misc->ivend->error=({});
+  array(string) request=(file_name / "/") - ({""});
+  if(catch(request[0])) request+=({""});
+  switch(request[0]){
+	
+    case "config":
+    request=request[1..];
+    return configuration_interface(request, id);
+    break;
+		
+    case "ivend-image":
+    request=request[1..];
+    return ivend_image(request, id);
+    break;
+		
+    default:
+
+    handle_sessionid(id);
+    break;
+	
+    }
+
+
+  if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
+    id->misc->ivend->st=indices(config)[0];
+  else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
+
+    { 
+    if(getglobalvar("create_index")=="Yes")
+      retval=create_index(id);
+    else  retval="you must enter through a store!\n";
+    }
+  else {
+    id->misc->ivend->st=request[0];
+    request=request[1..];
+    }
+
+  if(retval) return return_data(retval, id);
+
+/*
+if(config[id->misc->ivend->st]->error)
+    error(config[id->misc->ivend->st]->error, id);
+    return return_data("An error has prevented iVend from servicing your request.", id);
+*/	
+
+  else if(!config[id->misc->ivend->st]) {
+
+    return return_data("NO SUCH STORE!", id);
+    }
+
+  else if(catch(request[0])) {
+    request+=({""});
+
+    }
+// load id->misc->ivend with the good stuff...
+  id->misc->ivend->config=config[id->misc->ivend->st];	
+
+mixed err;
+
+  switch(request[0]) {
+    case "images":
+    break;
+    default:
+    err=catch(id->misc->ivend->db=iVend.db(
+      id->misc->ivend->config->dbhost,
+      id->misc->ivend->config->db,
+      id->misc->ivend->config->dblogin,
+      id->misc->ivend->config->dbpassword
+    ));
+    if(err || config[id->misc->ivend->st]->error) { 
+       error(err || config[id->misc->ivend->st]->error, id);
+       return return_data(retval, id);
+       }
+
+  }
+
+// perror("REQUEST[0]: " + request[0] + "\n");
+
+
+
+  switch(request[0]) {
+    case "":
+      return http_redirect(simplify_path(id->not_query +
+        "/index.html")+"?SESSIONID="+getsessionid(id), id);
+    case "index.html":
+    retval=(handle_page("index.html", id));
+    break;
+    case "cart":
+    retval=(handle_cart(id->misc->ivend->st,id));
+    break;
+    case "checkout":
+    retval=(handle_checkout(id));
+    break;
+    case "images":
+    return get_image(request*"/", id);
+    break;
+    case "admin":
+    retval=admin_handler(request*"/", id);
+    break;
+    case "orders":
+    retval=order_handler(request*"/", id);
+    break;
+    case "shipping":
+    retval=shipping_handler(request*"/", id);
+    break;
+    default:
+    retval=(handle_page(request*"/", id));
+
+    }
+
+  return return_data(retval, id);
+
+}
+
+string|void container_ivml(string name, mapping args,
+                      string contents, object id)
+{
+
+if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
+
+ mapping tags=    ([
+	"ivstatus":tag_ivstatus, 
+	"ivmg":tag_ivmg, 
+	"listitems":tag_listitems
+    ]);
+
+
+ mapping containers= ([
+	"a":container_ia, 
+	"form":container_form,
+	"icart":container_icart, 
+	"ivindex":container_ivindex,
+	"category_output":container_category_output
+    ]);
+
+if(
+//!catch(id->misc->ivend->st) && 
+id->misc->ivend->st){
+  if(functionp( modules[id->misc->ivend->config->checkout_module
+    ]->query_container_callers))
+    containers+=  modules[id->misc->ivend->config->checkout_module
+    ]->query_container_callers();
+
+  if(functionp( modules[id->misc->ivend->config->checkout_module
+    ]->query_tag_callers))
+    tags+=  modules[id->misc->ivend->config->checkout_module
+    ]->query_tag_callers();
+
+  if(functionp( modules[id->misc->ivend->config->shipping_module
+    ]->query_container_callers))
+    containers+= modules[id->misc->ivend->config->shipping_module
+    ]->query_container_callers();
+
+  if(functionp( modules[id->misc->ivend->config->shipping_module
+    ]->query_tag_callers))
+    tags+=modules[id->misc->ivend->config->shipping_module
+    ]->query_tag_callers();
+}
+
+
+  id->misc->ivend->modules=modules;
+ return "<html>"+parse_html(contents,
+       tags,containers,id) +"</html>";
+
+}
+
+mapping query_container_callers()
+{
+  return ([ "ivml": container_ivml ]); }
+
+mapping query_tag_callers()
+{
+  return ([ "ivendlogo" : tag_ivendlogo, "additem" : tag_additem,
+	"sessionid" : tag_sessionid ]); }
+
+
+// Start of support functions
+
+
+float convert(float value, object id){
+
+if(functionp(id->misc->ivend->modules[
+	id->misc->ivend->config->currency_module
+	]->currency_convert))
+	  value=id->misc->ivend->modules[id->misc->ivend->config->currency_module
+	  ]->currency_convert(value,id);
+
+else ;
+
+return value;
+
+
+}
+
+
+array|int size_of_image(string filename){
+
+  object fop;
+  string sizes;
+  array res = ({ 0,0 });
+  fop = Stdio.File();
+  if(!fop->open(filename, "r")) return -1;
+  fop->seek(0);
+  if(fop->read(3) !="GIF") return 0;
+  fop->seek(6); 
+  sizes = fop->read(4);
+  if(!sizes || (strlen(sizes) < 4)) return 0; //  short file
+  res[0] = (sizes[1]<<8) + sizes[0];
+  res[1] = (sizes[3]<<8) + sizes[2];
+  return res;
+
+}
+
+
+mixed stat_file( mixed f, mixed id )  {
+if(! id->misc->ivend) 
+	return ({ 33204,0,time(),time(),time(),0,0 });
+array fs;
+#ifdef MODULE_DEBUG
+ perror("iVend: statting "+id->misc->ivend->root+"/"+f+"\n");
+#endif
+fs=file_stat(id->misc->ivend->root+"/"+f);
+return fs;
+}
+
+
+void error(mixed error, object id){
+  if(arrayp(error)) id->misc->ivend->error +=({	
+    replace(describe_backtrace(error),"\n","<br>\n") });
+  else if(stringp(error)) id->misc->ivend->error += ({ error });
+  return;
+
+}
+
+mixed handle_error(object id){
+string retval;
+
+if(!(retval=Stdio.read_file(
+  id->misc->ivend->config[id->misc->ivend->st]->root+"/error.html")))
+  retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
+    "<b>One or more errors have occurred. Please review the following "
+    "information and, if necessary, make any changes on the previous page "
+    "before continuing.<p>If you feel that this is a configuration error, "
+    "please contact the administrator of this system for assistance."
+    "<error>";
+
+return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
+	       +"</ul>\n");
+
+}
+
+
+mixed get_image(string filename, object id){
+
+// perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
+
+string data=Stdio.read_bytes(
+	id->misc->ivend->config[id->misc->ivend->st]->root+"/"+filename);
+id->realfile=id->misc->ivend->config[id->misc->ivend->st]->root+"/"+filename;
+
+return http_string_answer(data,
+	id->conf->type_from_filename(id->realfile));
+
+}
+
+void handle_sessionid(object id) {
+
+
+  if(!id->variables->SESSIONID) 
+    id->misc->ivend->SESSIONID=
+      "S"+(string)hash((string)time(1)+(string)random(32201));	
+    else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
+
+  m_delete(id->variables,"SESSIONID");
+
+}
+
+mixed return_data(mixed retval, object id){
+
+    if(sizeof(id->misc->ivend->error)>0)
+      retval=handle_error(id);
+
+  if(stringp(retval)){
+
+    retval=parse_rxml(retval, id);
+
+    return http_string_answer(retval,
+       id->conf->type_from_filename(id->realfile|| "index.html"));
+  }
+
+  else return retval;
+
+}
+
+
+// Start of admin functions
+
+
+int clean_sessions(object id){
+
+string query="DELETE FROM sessions WHERE timeout < "+time(0);
+id->misc->ivend->db->query(query);
+return 0;
+}
+
+
+mixed order_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Orders",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Store Orders</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Orders</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
+
+
+ mixed
+d=id->misc->ivend->modules[id->misc->ivend->config->order_module]->show_orders(id, 
+   id->misc->ivend->db);
+ if(stringp(d))
+ retval+=d;
+
+
+return retval;
+
+}
+
+mixed shipping_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Shipping",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Shipping Administration</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Shipping</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
+  "href=shipping>Shipping</a><p>\n";
+
+
+ mixed
+d=id->misc->ivend->modules[id->misc->ivend->config->shipping_module]->shipping_admin(id);
+ if(stringp(d))
+ retval+=d;
+
+
+return retval;
+
+}
+
+mixed getmodify(string type, string pid, object id){
+
+return "";
+
+}
+
+mixed admin_handler(string filename, object id){
+
+if(id->auth==0)
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!"); 
+else if(!get_auth(id)) 
+  return http_auth_required("iVend Store Administration",
+	"Silly user, you need to login!");
+
+string retval="";
+retval+="<title>iVend Store Administration</title>"
+  "<body bgcolor=white text=navy>"
+  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
+  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
+  "<gtext fg=maroon nfont=bureaothreeseven black>"
+  +id->misc->ivend->config->name+
+  " Administration</gtext><p>"
+  "<font face=helvetica,arial size=+1>"
+  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
+
+switch(id->variables->mode){
+
+  case "doadd":
+  object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+  mixed j=s->addentry(id,id->referrer);
+  retval+="<br>";
+  if(stringp(j))
+    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
+
+
+  string type=(id->variables->table-"s");
+  return retval+type+" Added Sucessfully.";
+  break;
+
+  case "add":
+  object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+  retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
+
+  if(id->variables->type=="product")
+    retval+="<table>\n"+s->gentable("products","./admin","groups", 
+	"product_groups", id)+"</table>\n";
+  else if(id->variables->type=="group")
+    retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
+  break;
+
+  case "dodelete":
+//  perror("doing delete...\n");
+  object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->dblogin,
+    id->misc->ivend->config->dbpassword
+    );
+  if(id->variables->confirm){
+    if(id->variables->id==0 || id->variables->id=="") 
+      retval+="You must select an ID to act upon!<br>";
+    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
+  else {
+    if(id->variables->match) {
+    mixed n=s->showmatches(id->variables->type, id->variables->id);
+    if(n)
+      retval+="<form action=./admin>\n"
+        + n +
+        "<input type=hidden name=mode value=dodelete>\n"
+        "<input type=submit value=Delete>\n</form>";
+    else retval+="No " + capitalize(id->variables->type) + " found.";
+    }
+    else {
+      mixed n=s->showdepends(id->variables->type, id->variables->id);
+      if(n){ 
+        retval+="<form action=./admin>\n"
+          "<input type=hidden name=mode value=dodelete>\n"
+          "<input type=hidden name=type value="+id->variables->type+">\n"
+          "<input type=hidden name=id value="+id->variables->id+">\n"
+          "Are you sure you want to delete the following?<p>";
+          retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
+        }
+      else retval+="Couldn't find "+capitalize(id->variables->type) +" "
+        +id->variables->id+".<p>";
+      }
+
+    }
+
+    case "delete":
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=dodelete>\n"
+      +capitalize(id->variables->type) + " ID to Delete: \n"
+      "<input type=text size=10 name=id>\n"
+      "<input type=hidden name=type value=" + id->variables->type + ">\n"
+      "<br><font size=2>If using FindMatches, you may type any part of an ID"
+      " or Name to search for.<br></font>"
+      "<input type=submit name=match value=FindMatches> &nbsp; \n"
+      "<input type=submit value=Delete>\n</form>";
+  break;
+
+  case "clearsessions":
+  clean_sessions(id);	
+  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
+	"Return to Administration Menu.</a>\n";
+  break;
+
+  case "getmodify":
+
+  retval+=getmodify(id->variables->type, id->variables->id, id);
+
+  break;
+
+  case "modify":
+    retval+="<form action=./admin>\n"
+      "<input type=hidden name=mode value=getmodify>\n"
+      "ID to Modify: \n"
+      "<input type=text size=10 name=id>\n"
+      "&nbsp; <input type=radio name=type selected value=product>\n"
+      "Product &nbsp; <input type=radio name=type value=group>\n"
+      "Group<p>"
+      "<input type=submit value=Modify>\n</form>";
+  break;
+
+  default:
+  retval+= "<ul>\n"
+    "<li><a href=\"orders\">Orders</a>\n"
+    "</ul>\n"
+    "<ul>\n"
+    "<li>Groups\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
+    "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
+    "(Non Functional)\n"
+    "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
+    "</ul>"
+    "<li>Products\n"
+    "<ul>"
+    "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
+    "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
+    "(Non Functional)\n"
+    "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
+    "</ul>"
+    "</ul>\n"
+    "<ul>\n"
+    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
+    "</ul>\n"
+    "<ul>\n"
+    "<li><a href=\"shipping\">Shipping Administration</a>\n";
+
+
+
+  break;
+
+}
+
+return retval;  
+
+}
+
+
+// Start of auth functions.
+
+
+int get_auth(object id, int|void i){
+if(i){	// we're login in to the main config interface.
+
+  array(string) auth=id->realauth/":";
+  if(auth[0]!=query("config_user")) return 0;
+  else if(query("config_password")==auth[1])
+        return 1;
+  else return 0;                   
+}
+  array(string) auth=id->realauth/":";
+  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
+  else if(crypt(auth[1],id->misc->ivend->config->config_password))
+        return 1;
+  else return 0;
+
+}
+
+
+
+// Start of config functions.
+
+
+
+mixed getglobalvar(string var){
+
+  if(catch(global[var]))
+    return 0;
+  else return global[var];
+
+}
+
+int read_conf(){          // Read the config data.
+
+string current_config="";
+string attribute;
+string value;
+
+c=iVend.config();
+g=iVend.config();
+if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")))
+   perror("iVend: ERROR LOADING CONFIGURATION DEFINITION!\n");
+else 
+   perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
+if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")))
+   perror("iVend: ERROR LOADING GLOBAL VARIABLES DEFINITION!\n");
+else 
+   perror("iVend: LOADED GLOBAL VARIABLES DEFINITION!\n");
+
+array|int configfiles=get_dir(query("configdir"));
+
+if(intp(configfiles)) return 0;	// no config directory.
+
+configfiles-=({"CVS",".",".."});
+
+for(int i=0; i<sizeof(configfiles); i++){
+
+  if(search(configfiles[i], "~")>0) {
+#ifdef MODULE_DEBUG
+    perror("iVend: Skipping Config File " + configfiles[i] + ".\n");
+#endif
+    continue;
+    }
+
+  catch(array(string) config_file= Stdio.read_file(query("configdir")+ 
+	configfiles[i])/"\n");
+
+#ifdef MODULE_DEBUG
+ perror("iVend: parsing configuration "+configfiles[i]+"\n");
+#endif
+
+  current_config=configfiles[i];
+
+  for(int j=0; j<sizeof(config_file);j++)
+	if(config_file[j][0..0]=="$"){
+	  array(mixed) current_line=config_file[j][1..]/"=";
+	  attribute=current_line[0];
+	  value=current_line[1];
+	  if(!config[current_config])
+	    config[current_config]= ([attribute:value]);
+	  else config[current_config][attribute]=value;
+          }
+  }
+
+
+global=config["global"];
+m_delete(config,"global");
+return 0;
+}
+
+
+mixed load_ivmodule(string c, string name){
+
+mixed err;
+mixed m;
+
+    err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
+    name)));
+if(err) {
+
+  return (err);
+  }
+modules+=([ name : m  ]);
+if(objectp(modules[name]) && functionp(modules[name]->start))
+  modules[name]->start(config[c]);
+return 0;
+
+}
+
+void load_modules(string c){
+
+perror("iVend: running load_modules() for " + c + "\n");
+
+mixed err;
+if(!c) return;
+if(!config[c]) return;
+  foreach(indices(config[c]), string n)
+    if(Regexp("._module")->match(n)) {
+      perror("iVend: loading module " + config[c][n] + "\n");
+      err=load_ivmodule(c, config[c][n]);
+      if(err) {
+        perror("iVend: The following error occured while loading the module "
+	  + config[c][n] + " in configuration " + config[c]->name + ".\n\n"
+	  + describe_backtrace(err));
+        config[c]->error=err;
+	}
+      }
+  return;
+}
 
 mapping write_configuration(object id){
 string config_file="";
@@ -861,7 +1392,7 @@ for(int i=0; i<sizeof(configs); i++){
     }
   config_file+="\n";
   mv(query("configdir")+configs[i],query("configdir")+configs[i]+"~");
-  write_file(query("configdir")+configs[i], config_file);
+  Stdio.write_file(query("configdir")+configs[i], config_file);
   config_file="";
   }
 	
@@ -871,23 +1402,6 @@ save_status=1;	// We've saved.
 perror("iVend: reloading all modules...\n");
 start();	// Reload all of the modules and crap.
 return http_redirect(query("mountpoint")+"config", id);
-
-}
-
-int get_auth(object id, int|void i){
-if(i){	// we're login in to the main config interface.
-
-  array(string) auth=id->realauth/":";
-  if(auth[0]!=query("config_user")) return 0;
-  else if(query("config_password")==auth[1])
-        return 1;
-  else return 0;                   
-}
-  array(string) auth=id->realauth/":";
-  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
-  else if(crypt(auth[1],id->misc->ivend->config->config_password))
-        return 1;
-  else return 0;
 
 }
 
@@ -1158,473 +1672,4 @@ id->variables[variables[i]]!=config[id->variables->config][variables[i]])
    }
 
 
-mixed order_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Orders",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Orders",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Store Orders</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Orders</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=./>Storefront</a> &gt; <a href=./admin>Admin</a> &gt; <a href=./orders>Orders</a><p>\n";
-
-
- mixed d=modules[id->misc->ivend->config->order_module]->show_orders(id, 
-   id->misc->ivend->db);
- if(stringp(d))
- retval+=d;
-
-
-return retval;
-
-}
-
-mixed shipping_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Shipping",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Shipping",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Shipping Administration</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Shipping</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a> &gt; <a "
-  "href=shipping>Shipping</a><p>\n";
-
-
- mixed d=modules[id->misc->ivend->config->shipping_module]->shipping_admin(id);
- if(stringp(d))
- retval+=d;
-
-
-return retval;
-
-}
-
-mixed getmodify(string type, string pid, object id){
-
-return "";
-
-}
-
-mixed admin_handler(string filename, object id){
-
-if(id->auth==0)
-  return http_auth_required("iVend Store Administration",
-	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
-  return http_auth_required("iVend Store Administration",
-	"Silly user, you need to login!");
-
-string retval="";
-retval+="<title>iVend Store Administration</title>"
-  "<body bgcolor=white text=navy>"
-  "<img src=\""+query("mountpoint")+"ivend-image/ivendlogosm.gif\"> &nbsp;"
-  "<img src=\""+query("mountpoint")+"ivend-image/admin.gif\"> &nbsp;"
-  "<gtext fg=maroon nfont=bureaothreeseven black>"
-  +id->misc->ivend->config->name+
-  " Administration</gtext><p>"
-  "<font face=helvetica,arial size=+1>"
-  "<a href=index.html>Storefront</a> &gt; <a href=admin>Admin</a>\n";
-
-switch(id->variables->mode){
-
-  case "doadd":
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  mixed j=s->addentry(id,id->referrer);
-  retval+="<br>";
-  if(stringp(j))
-    return retval+= "The following errors occurred:<p><li>" + (j*"<li>");
-
-
-  string type=(id->variables->table-"s");
-  return http_string_answer(parse_rxml(retval+type+" Added Sucessfully.",id));
-  break;
-
-  case "add":
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  retval+="&gt <b>Add New " + capitalize(id->variables->type) +"</b><br>\n";
-
-  if(id->variables->type=="product")
-    retval+="<table>\n"+s->gentable("products","./admin","groups", 
-	"product_groups", id)+"</table>\n";
-  else if(id->variables->type=="group")
-    retval+="<table>\n"+s->gentable("groups","./admin",0,0,id)+"</table>\n";
-  break;
-
-  case "dodelete":
-//  perror("doing delete...\n");
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
-  if(id->variables->confirm){
-    if(id->variables->id==0 || id->variables->id=="") 
-      retval+="You must select an ID to act upon!<br>";
-    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
-  else {
-    if(id->variables->match) {
-    mixed n=s->showmatches(id->variables->type, id->variables->id);
-    if(n)
-      retval+="<form action=./admin>\n"
-        + n +
-        "<input type=hidden name=mode value=dodelete>\n"
-        "<input type=submit value=Delete>\n</form>";
-    else retval+="No " + capitalize(id->variables->type) + " found.";
-    }
-    else {
-      mixed n=s->showdepends(id->variables->type, id->variables->id);
-      if(n){ 
-        retval+="<form action=./admin>\n"
-          "<input type=hidden name=mode value=dodelete>\n"
-          "<input type=hidden name=type value="+id->variables->type+">\n"
-          "<input type=hidden name=id value="+id->variables->id+">\n"
-          "Are you sure you want to delete the following?<p>";
-          retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
-        }
-      else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-        +id->variables->id+".<p>";
-      }
-
-    }
-
-    case "delete":
-    retval+="<form action=./admin>\n"
-      "<input type=hidden name=mode value=dodelete>\n"
-      +capitalize(id->variables->type) + " ID to Delete: \n"
-      "<input type=text size=10 name=id>\n"
-      "<input type=hidden name=type value=" + id->variables->type + ">\n"
-      "<br><font size=2>If using FindMatches, you may type any part of an ID"
-      " or Name to search for.<br></font>"
-      "<input type=submit name=match value=FindMatches> &nbsp; \n"
-      "<input type=submit value=Delete>\n</form>";
-  break;
-
-  case "clearsessions":
-  clean_sessions(id);	
-  retval+="Sessions Cleaned Successfully.<p><a href=\"./admin\">"
-	"Return to Administration Menu.</a>\n";
-  break;
-
-  case "getmodify":
-
-  retval+=getmodify(id->variables->type, id->variables->id, id);
-
-  break;
-
-  case "modify":
-    retval+="<form action=./admin>\n"
-      "<input type=hidden name=mode value=getmodify>\n"
-      "ID to Modify: \n"
-      "<input type=text size=10 name=id>\n"
-      "&nbsp; <input type=radio name=type selected value=product>\n"
-      "Product &nbsp; <input type=radio name=type value=group>\n"
-      "Group<p>"
-      "<input type=submit value=Modify>\n</form>";
-  break;
-
-  default:
-  retval+= "<ul>\n"
-    "<li><a href=\"orders\">Orders</a>\n"
-    "</ul>\n"
-    "<ul>\n"
-    "<li>Groups\n"
-    "<ul>"
-    "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
-    "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
-    "(Non Functional)\n"
-    "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
-    "</ul>"
-    "<li>Products\n"
-    "<ul>"
-    "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
-    "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
-    "(Non Functional)\n"
-    "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
-    "</ul>"
-    "</ul>\n"
-    "<ul>\n"
-    "<li><a href=\"admin?mode=clearsessions\">Clear Stale Sessions</a>\n"
-    "</ul>\n"
-    "<ul>\n"
-    "<li><a href=\"shipping\">Shipping Administration</a>\n";
-
-
-
-  break;
-
-}
-
-return retval;  
-return http_string_answer(
-    parse_rxml(parse_html(retval,([]),
-        (["a":container_ia, "form":container_form]),id),id));
-
-}
-
-mixed get_image(string filename, object id){
-
-// perror("** "+config[id->misc->ivend->st]->root+filename+"\n\n");
-
-string data=Stdio.read_bytes(
-	config[id->misc->ivend->st]->root+"/"+filename);
-id->realfile=config[id->misc->ivend->st]->root+"/"+filename;
-
-return http_string_answer(data,
-	id->conf->type_from_filename(id->realfile));
-
-}
-
-string create_index(object id){
-string retval="";
-retval=Stdio.read_bytes(query("datadir")+"index.html");
-return retval;
-}
-
-mixed getsessionid(object id) {
-
-  return id->misc->ivend->SESSIONID;
-
-}
-
-void handle_sessionid(object id) {
-
-
-  if(!id->variables->SESSIONID) 
-    id->misc->ivend->SESSIONID=
-      "S"+(string)hash((string)time(1)+(string)random(32201));	
-    else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
-
-  m_delete(id->variables,"SESSIONID");
-
-}
-
-mixed return_data(mixed retval, object id){
-
-    if(sizeof(id->misc->ivend->error)>0)
-      retval=handle_error(id);
-
-  if(stringp(retval)){
-
-    retval=parse_rxml(retval, id);
-
-    return http_string_answer(retval,
-       id->conf->type_from_filename(id->realfile|| "index.html"));
-  }
-
-  else return retval;
-
-}
-
-
-mixed find_file(string file_name, object id){
-
-  id->misc["ivend"]=([]);
-  id->misc["ivendstatus"]="";
-  string retval;
-  id->misc->ivend->error=({});
-  array(string) request=(file_name / "/") - ({""});
-  if(catch(request[0])) request+=({""});
-  switch(request[0]){
-	
-    case "config":
-    request=request[1..];
-    return configuration_interface(request, id);
-    break;
-		
-    case "ivend-image":
-    request=request[1..];
-    return ivend_image(request, id);
-    break;
-		
-    default:
-
-    handle_sessionid(id);
-    break;
-	
-    }
-
-
-  if(sizeof(config)==1 && getglobalvar("move_onestore")=="Yes") 
-    id->misc->ivend->st=indices(config)[0];
-  else if(sizeof(request)==0 || (sizeof(request)>=1 && !config[request[0]])) 
-
-    { 
-    if(getglobalvar("create_index")=="Yes")
-      retval=create_index(id);
-    else  retval="you must enter through a store!\n";
-    }
-  else {
-    id->misc->ivend->st=request[0];
-    request=request[1..];
-    }
-
-  if(retval) return return_data(retval, id);
-
-/*
-if(config[id->misc->ivend->st]->error)
-    error(config[id->misc->ivend->st]->error, id);
-    return return_data("An error has prevented iVend from servicing your request.", id);
-*/	
-
-  else if(!config[id->misc->ivend->st]) {
-
-    return return_data("NO SUCH STORE!", id);
-    }
-
-  else if(catch(request[0])) {
-    request+=({""});
-
-    }
-// load id->misc->ivend with the good stuff...
-  id->misc->ivend->config=config[id->misc->ivend->st];	
-
-mixed err;
-
-  switch(request[0]) {
-    case "images":
-    break;
-    default:
-    err=catch(id->misc->ivend->db=iVend.db(
-      id->misc->ivend->config->dbhost,
-      id->misc->ivend->config->db,
-      id->misc->ivend->config->dblogin,
-      id->misc->ivend->config->dbpassword
-    ));
-    if(err || config[id->misc->ivend->st]->error) { 
-       error(err || config[id->misc->ivend->st]->error, id);
-       return return_data(retval, id);
-       }
-
-  }
-
-// perror("REQUEST[0]: " + request[0] + "\n");
-
-
-
-  switch(request[0]) {
-    case "":
-      return http_redirect(simplify_path(id->not_query +
-        "/index.html")+"?SESSIONID="+getsessionid(id), id);
-    case "index.html":
-    retval=(handle_page("index.html", id));
-    break;
-    case "cart":
-    retval=(handle_cart(id->misc->ivend->st,id));
-    break;
-    case "checkout":
-    retval=(handle_checkout(id));
-    break;
-    case "images":
-    return get_image(request*"/", id);
-    break;
-    case "admin":
-    retval=admin_handler(request*"/", id);
-    break;
-    case "orders":
-    retval=order_handler(request*"/", id);
-    break;
-    case "shipping":
-    retval=shipping_handler(request*"/", id);
-    break;
-    default:
-    retval=(handle_page(request*"/", id));
-
-    }
-
-  return return_data(retval, id);
-
-}
-
-string|void container_ivml(string name, mapping args,
-                      string contents, object id)
-{
-
-if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
-
- mapping tags=    ([
-	"ivstatus":tag_ivstatus, 
-	"ivmg":tag_ivmg, 
-	"listitems":tag_listitems
-    ]);
-
-
- mapping containers= ([
-	"a":container_ia, 
-	"form":container_form,
-	"icart":container_icart, 
-	"ivindex":container_ivindex,
-	"category_output":container_category_output
-    ]);
-
-if(
-//!catch(id->misc->ivend->st) && 
-id->misc->ivend->st){
-  if(functionp( modules[id->misc->ivend->config->checkout_module
-    ]->query_container_callers))
-    containers+=  modules[id->misc->ivend->config->checkout_module
-    ]->query_container_callers();
-
-  if(functionp( modules[id->misc->ivend->config->checkout_module
-    ]->query_tag_callers))
-    tags+=  modules[id->misc->ivend->config->checkout_module
-    ]->query_tag_callers();
-
-  if(functionp( modules[id->misc->ivend->config->shipping_module
-    ]->query_container_callers))
-    containers+= modules[id->misc->ivend->config->shipping_module
-    ]->query_container_callers();
-
-  if(functionp( modules[id->misc->ivend->config->shipping_module
-    ]->query_tag_callers))
-    tags+=modules[id->misc->ivend->config->shipping_module
-    ]->query_tag_callers();
-}
-
-
-  id->misc->ivend->modules=modules;
- return "<html>"+parse_html(contents,
-       tags,containers,id) +"</html>";
-
-}
-
-mapping query_container_callers()
-{
-  return ([ "ivml": container_ivml ]); }
-
-mapping query_tag_callers()
-{
-  return ([ "ivendlogo" : tag_ivendlogo, "additem" : tag_additem,
-	"sessionid" : tag_sessionid ]); }
 

@@ -164,6 +164,8 @@ mixed insert_id(){
   if(functionp(::master_sql->insert_id))
     return ::master_sql->insert_id();
 
+  else return -1;
+
 }
 
 mixed showmatches(string type, string id) {

@@ -1,12 +1,26 @@
 INSTALL
 
-very preliminary installation instructions:
+A note about compatibility
+--------------------------
+
+iVend has been tested with Roxen 1.(2/3).25 and up. If you are using iVend
+with Roxen 1.(2/3).25 through 29, you will need to replace the file
+RSA.pmod in server/lib/pike/modules/Standards.pmod/PKCS.pmod with a copy
+of RSA.pmod available from the same location you downloaded iVend.  
+Releases after .29 do not require any patches to the Roxen base release. 
+
+iVend was written to work with the mySQL database system. There is very
+little reason that another RDBMS would not work. Your mileage may vary.
+
+Installation Instructions
+-------------------------
 
 1. Unpack the iVend distribution using this command:
 
     tar xzvf ivend-1.0.XX.tar.gz (XX is the build number)
 
-This should give you a directory called ivend/. Do not move or rename
+This should give you a directory called ivend/. We'll call this
+directory the iVend distribution directory. Do not move or rename
 files in this directory.
 
 2. Make sure that the iVend distribution directory is in Roxen's module
@@ -14,13 +28,31 @@ search path.
 
 3. Be sure to set all the directories in the iVend section of the Roxen
 Config Interface. If you don't provide the correct directory information,
-iVend will not work properly.
+iVend will not work properly:
+
+  a. iVend Root Directory: This is the iVend distribution directory.
+  b. iVend Config Directory: This is usually ivend/configurations.
+  c. iVend Data Directory: This is usually ivend/data.
+
+4. Assign values for any other configuration variables such as config user
+and password.
+
+Setting Up a New Store
+----------------------
 
 For each store you set up you'll need to do the following:
 
+There is a script called create_store.sh in the scripts directory which
+may be helpful for creating new stores. It makes certain assumptions about
+your setup (such as the use of mySQL), but if you don't deviate too much
+from the standard, you should have good results. The create_store.sh
+script assumes that you have already created a database and have a
+username and password that has create/update permissions for that database
+before you start. 
+
 1. Create a directory and fill it with the proper html files. You can
 duplicate the examples/ directory as a starting point (ie cp -r examples
-someplaceelse).
+someplace else).
 
 2. Create a database with the sql server of your choice and generate the
 nessecary tables. Again, you can use the sample database schema located in
@@ -36,4 +68,4 @@ to activate the new store.
 
 for more information, see doc/README.
 
-29 april 1998
+19 june 1998

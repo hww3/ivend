@@ -100,6 +100,9 @@ else type=typer[0]->type;
   id->misc->ivend->orderid=
     id->misc->ivend->db->insert_id(); // mysql only
 
+  if(id->misc->ivend->orderid<1)
+    id->misc->ivend->orderid=id->misc->ivend->db->query("SELECT MAX(id) "
+	"as max FROM orders")[0]->max;
 
 
 // get the order from sessions

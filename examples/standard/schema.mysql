@@ -109,21 +109,6 @@ CREATE TABLE shipments (
   ship_group int(11) DEFAULT '1' NOT NULL
 );
 
-CREATE TABLE status (
-  status int(11) DEFAULT '0' NOT NULL,
-  name char(24) DEFAULT '' NOT NULL,
-  description char(128),
-  tablename char(20) DEFAULT '' NOT NULL,
-  PRIMARY KEY (status)
-);
-
-INSERT INTO status VALUES (0,'Unprocessed','Indicates an order awating initial processing.','orders');
-INSERT INTO status VALUES (1,'Shipped','Indicates an order that has been shipped.','orders');
-INSERT INTO status VALUES (2,'PShipped','Indicates an order that has not completely shipped.','orders');
-INSERT INTO status VALUES (3,'Unprocessed','Indicates unprocessed payment information','payment_info');
-INSERT INTO status VALUES (4,'Validated','Indicates validated payment information','payment_info');
-INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info');
-
 CREATE TABLE taxrates (
   locality char(4) DEFAULT '' NOT NULL,
   taxrate float(10,2) DEFAULT '0.00' NOT NULL,
@@ -140,3 +125,22 @@ CREATE TABLE type (
 
 INSERT INTO type VALUES (0,'Billing Address','Customer Billing Address','customer_info');
 INSERT INTO type VALUES (1,'Shipping Address','Customer Shipping Address if different than Billing Address','customer_info');
+
+CREATE TABLE status (
+  status int(11) DEFAULT '0' NOT NULL,
+  name char(24) DEFAULT '' NOT NULL,
+  description char(128),
+  tablename char(20) DEFAULT '' NOT NULL,
+  PRIMARY KEY (status)
+);
+
+
+INSERT INTO status VALUES (0,'Unprocessed','Order is awaiting initial processing.','orders');
+INSERT INTO status VALUES (1,'In Progress','Order is currently being processed.','orders');
+INSERT INTO status VALUES (2,'Partially Shipped','Portions of order have been shipped.','orders');
+INSERT INTO status VALUES (3,'Unprocessed','Indicates unprocessed payment information','payment_info');
+INSERT INTO status VALUES (4,'Validated','Indicates validated payment information','payment_info');
+INSERT INTO status VALUES (5,'Rejected','Indicates rejected payment information','payment_info');
+INSERT INTO status VALUES (9,'Shipped','Order has been completely shipped.','orders');
+INSERT INTO status VALUES (10,'Error','An error has occurred during order processing.','orders');
+

@@ -683,11 +683,12 @@ string container_category_output(string name, mapping args,
 
    if(!args->type) return YOU_MUST_SUPPLY_A_CATEGORY_TYPE;
 
-   query="SELECT * FROM " + lower_case(args->type);
-
-   query+=" WHERE " + KEYS[lower_case(args->type)] + "='" +
-	id->misc->ivend->page + "' ";
-
+   query="SELECT * FROM " + lower_case(args->type) + ",product_groups ";
+   query+=" WHERE product_groups.group_id='" +
+	id->misc->ivend->page + "' AND "
+ + lower_case(args->type) + "." +
+KEYS[lower_case(args->type)] + "=product_groups.product_id ";
+perror(query + "\n");
    if(!args->show)
       query+=" AND status='A' ";
 

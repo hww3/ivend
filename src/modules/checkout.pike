@@ -33,6 +33,16 @@ mixed currency_convert(mixed v, object id){
   return v;
 }
 
+
+string tag_shipping(string tag_name, mapping args,
+		     object id, mapping defines) {
+string retval;
+ if(!id->misc->ivend->lineitems) 
+   id->misc->ivend+= (["lineitems":([])]);
+
+return retval;
+}
+
 /*
 
   calculate tax
@@ -334,6 +344,7 @@ else return contents;
 mapping query_tag_callers2() {
 
 return (["showorder" : tag_showorder,
+	  "shipping" : tag_shipping,
 	"grandtotal" : tag_grandtotal,
   	  "subtotal" : tag_subtotal,
 	  "salestax" : tag_salestax, 

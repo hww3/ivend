@@ -12,10 +12,11 @@ Price: #price#<br>
 Shipping: #shipping#
 <p>
 <ul>
-<li><a add>Add to Shopping Cart.</ia>
-<li><a cart>Check Shopping Cart!</ia>
+<li><a add>Add to Shopping Cart.</a>
+<li><a cart>Check Shopping Cart!</a>
 <li><a href="./">Return to the top.</a>
 </ul>
+<ivstatus>
 <hr>
 Please direct questions or comments to &lt; <a
 href=mailto:hww3@riverweb.com>hww3@riverweb.com</a> &gt;.

@@ -13,11 +13,11 @@ inherit "module";
 inherit "roxenlib";
 inherit "wizard";
 
-mapping(string:mapping(string:mixed)) config = ([]);
+mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.1 1997-12-16 13:16:24 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.2 1997-12-16 17:35:20 hww3 Exp $";
 
 /*
  *
@@ -442,18 +442,22 @@ if(!(retval= Stdio.read_bytes(id->misc->ivend->config->root+"/cart.ivml")))
 
 }
 
-mixed parse_page(string page, array(mapping(string:string)) r){
+mixed parse_page(string page, array(mapping(string:string)) r, array desc){
 
 string field;
 array fields=indices(r[0]);
 
-foreach(fields,field){
+for(int i=0; i<sizeof(desc); i++){
+  // page+=field +": "+r[0][field];
+  if(desc[i]->type=="decimal") {
+    string 
+page2=replace(page,("#"+desc[i]->name+"#"),sprintf("%.2f",(float)(r[0][desc[i]->name])));
+  }
+  else 
+  string page2=replace(page,("#"+desc[i]->name+"#"),(string)r[0][desc[i]->name]);
+  page=page2;
+  }
 
-// page+=field +": "+r[0][field];
-string page2=replace(page,("#"+field+"#"),(string)r[0][field]);
-page=page2;
-
-}
 
 return page;
 }
@@ -470,11 +474,17 @@ object s=Sql.sql(config[st]->dbhost, config[st]->db,
 page=page-".ivml";	// get to the core of the matter.
 string template;
 array(mapping(string:string)) r;
+array f;
 r=s->query("SELECT * FROM groups WHERE id='"+page+"'");
-if (sizeof(r)==1) template="group_template.ivml";
+if (sizeof(r)==1){
+  template="group_template.ivml";
+  f=s->list_fields("groups");
+  }
 else {
   r=s->query("SELECT * FROM products WHERE id='"+page+"'");
   template="product_template.ivml";
+  f=s->list_fields("products");
+
   }
 if (sizeof(r)!=1) 
 return http_redirect(query("mountpoint")+st+"/nosuch.ivml");
@@ -484,8 +494,7 @@ if (catch(sizeof(retval)))
   return handle_error(config[st]->root+"/"+template,st,id);
 
 // retval="find_page("+page+", "+s+", id)";
-
-return parse_page(retval, r);
+return parse_page(retval, r, f);
 }
 
 mixed additem(string item, object id){
@@ -719,8 +728,9 @@ retval+="</TD></TR>\n"
 				array(string) variables= indices(id->variables);
 				for(int i=0; i<sizeof(variables); i++){
 				
-					if(!config[id->variables->config]) config[id->variables->config]= ([variables[i]:id->variables[variables[i]]]);
-					else config[id->variables->config][variables[i]]=id->variables[variables[i]];
+					if(!config[id->variables->config]) 
+config[id->variables->config]= ([]);
+config[id->variables->config]+=([variables[i]:id->variables[variables[i]] ]);
 				
 					}
 				
@@ -877,7 +887,25 @@ switch(id->variables->mode){
   retval+=s->gentable("groups","./admin",0,0,id->variables->SESSIONID);
   break;
 
+  case "dodelete":
+  perror("doing delete...\n");
+  object s=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    id->misc->ivend->config->user,
+    id->misc->ivend->config->password
+    );
+  retval+=s->dodelete(id->variables->type, id->variables->id);  
   case "delete":
+  retval+="<form action=./admin>\n"
+    "<input type=hidden name=mode value=dodelete>\n"
+    "<input type=hidden name=SESSIONID value="+id->variables->SESSIONID+">\n"
+    "ID to Delete: \n"
+    "<input type=text size=10 name=id>\n"
+    "&nbsp; <input type=radio name=type default value=product>\n"
+    "Product &nbsp; <input type=radio name=type value=group>\n"
+    "Group<p>"
+    "<input type=submit value=Delete>\n</form>";
   break;
   default:
   retval+= "<ul>\n"
@@ -916,7 +944,7 @@ return retval;
 
 mixed find_file(string file_name, object id){
 	id->misc["ivend"]=([]);
-
+	id->misc["ivendstatus"]="";
 	string retval="";
    	array(string) request=explode(file_name,"/");
 	string restofrequest=request[2..]*"/";

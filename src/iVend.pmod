@@ -31,7 +31,7 @@ return 1;
 string|int genform(void|mapping config){
 
 string retval="";
-
+perror(sprintf("%O",config));
 if(sizeof(config_setup)<1) return 0;
 array vars=sort(indices(config_setup));
 for(int i=0; i<sizeof(vars); i++){
@@ -56,8 +56,12 @@ for(int i=0; i<sizeof(vars); i++){
 
     case "string":
     default:
-    retval+="<input type=\"text\" name=\""+vars[i]+"\" value=\""+
-      (config[vars[i]] || config_setup[vars[i]]->default_value||"")+"\">";
+    if(config)
+      retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
+      (config[vars[i]]||config_setup[vars[i]]->default_value ||"")+"\">";      
+    else
+      retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
+      (config_setup[vars[i]]->default_value ||"")+"\">";
     break;
 
     }
@@ -249,6 +253,31 @@ return retval;
  
 
 }
+
+string dodelete(string type, string id){
+string query="";
+
+if(type=="" || id=="")
+return "Delete unsuccessful.\n";
+
+if(type=="group") {
+  query="DELETE FROM groups WHERE id='"+id+"'";
+  s->query(query);
+  query="DELETE FROM product_groups WHERE group_id='"+id+"'";
+  s->query(query);
+  }
+
+else if(type="product") {
+  query="DELETE FROM products WHERE id='"+id+"'";
+  s->query(query);
+  query="DELETE FROM product_groups WHERE product_id='"+id+"'";
+  s->query(query);
+  }
+return capitalize(type)+" "+id+" deleted successfully.\n";
+
+}
+
+
 
 void create(string|void host, string|void db, string|void user, 
 string|void password){

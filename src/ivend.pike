@@ -324,7 +324,8 @@ void get_entities(mapping c){
 }
 
 mixed register_admin_handler(string c, string mode, mixed f){
-mode=lower_case(mode);
+
+// mode=lower_case(mode);
   if(functionp(f))
       admin_handlers[c][mode]=f;
    else perror("no function provided!\n");
@@ -1359,7 +1360,7 @@ add_pre_state(id->not_query, (<"domodify=product">)),0,0,id,
 int have_admin_handler(string type, object id){
    if(!type || type=="")
       return 0;
-type=lower_case(type);
+// type=lower_case(type);
 //   p=((p/"/")-({""}))[0];
    if(admin_handlers[STORE][type] &&
 functionp(admin_handlers[STORE][type]))
@@ -1399,7 +1400,7 @@ retval+="<SCRIPT LANGUAGE=javascript>"
 "}\n"
 	"</SCRIPT>"
 	"<form target=" + lower_case(name) + 
-	" ACTION=\"" + add_pre_state(id->not_query, (<lower_case(name)>))
+	" ACTION=\"" + add_pre_state(id->not_query, (<lower_case(mode)>))
 	+"\">";
 foreach(indices(options), string o){
 
@@ -1469,8 +1470,14 @@ if(id->prestate && sizeof(id->prestate)>0){
    type=m[1];
 }
 
-perror(mode +"\n" + type + "\n");
+array valid_handlers=({});
+perror(sprintf("%O\n", admin_handlers[STORE]));
 
+foreach(indices(admin_handlers[STORE]), string h)
+  if(search(h, mode + "_" + type)!=-1)
+    valid_handlers+=({h});
+
+perror(sprintf("%O\n", valid_handlers));
    switch(mode){
 
       case "doadd":
@@ -1578,9 +1585,9 @@ KEYS[type+"s"]);
       case "getmodify":
    retval+="&gt <b>Modify " + capitalize(type)
    +"</b><br>\n";
-	if(DB->list_tables("upsell"))
-	 retval+=open_popup("Upsell",
-id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
+         foreach(valid_handlers, string handler_name)
+	 retval+=open_popup(((handler_name/".")[1]||handler_name) +" &nbsp;",
+	id->not_query, handler_name , (["id" : id->variables->id]) ,id);
 
          retval+=getmodify(type,
                            id->variables[KEYS[type+"s"]], id);
@@ -1590,7 +1597,7 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
       case "show":
          retval+="&gt <b>Show " + capitalize(type)
          +"</b><br>\n";
-         retval+="<form action=./admin>\n"
+         retval+="<form action=./>\n"
          "<input type=hidden name=mode value=show>\n"
          "<input type=hidden name=type value="+ type + ">\n"
          "<table><tr><td><input type=submit value=Show></td><td>\n";
@@ -1673,11 +1680,12 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
          break;
 
          default:
-
+	  perror(mode + "\n");
 	 if(have_admin_handler(mode, id)){
 	   retval=handle_admin_handler(mode,id);
 	 }
-         else retval+= "<ul>\n"
+         else   {
+ retval+= "<ul>\n"
                   "<li><a href=\"../orders\">Orders</a>\n"
                   "</ul>\n"
                   "<ul>\n"
@@ -1737,10 +1745,17 @@ add_pre_state(id->not_query,(<"dump=product">))
 +add_pre_state(id->not_query,(<"addins">))+
 ">Add-ins Manager</a>\n"
 		  "</ul>\n"
-                  "<p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
+		  "<p><ul>";
+foreach(indices(admin_handlers[STORE]), string hn){
+  if(search(hn, "menu_main.")!=-1)
+    retval+="<li><a href=" + add_pre_state(id->not_query, (<hn>)) + ">"
+	+ replace(hn,({"_","menu_main."}),({" ",""})) + "</a>\n";
+}
+
+retval+=       "</ul><p><b>" + numsessions[STORE] + "</b> sessions created since last startup."
                   "<br><b>" + numrequests[STORE] + "</b> requests handled since last startup.";
 
-
+}
          break;
 
    }
@@ -2181,7 +2196,7 @@ mixed return_data(mixed retval, object id){
                   return 0;
 
                array configfiles=global->configurations->active;
-            if(sizeof(configfiles)<1) return 0;
+            if(!configfiles || sizeof(configfiles)<1) return 0;
 
             if(stringp(configfiles)) configfiles=({configfiles});
             if(!global->general)

@@ -24,9 +24,11 @@ mixed upsell_handler(string mode, object id){
 // return sprintf("<pre>%O</pre>", mkmapping(indices(id->misc->ivend),
 // values(id->misc->ivend))); 
 
-if(id->variables->initialize)
+if(id->variables->initialize) {
 	initialize_db(DB);
-
+   return "Upsell module initialized. To use this feature, please "
+    " close this window and start again.";
+  }
 if(sizeof(DB->list_tables("upsell"))!=1)
   return "You have not configured the upsell handler."
 	"<p><a href=./?initialize=1>Click here</a>"
@@ -115,7 +117,7 @@ mixed query_tag_callers(){
 
 mixed register_admin(){
 
-  return ([ "upsell":upsell_handler ]);
+  return ([ "getmodify_product.Upsell":upsell_handler ]);
 }
 
 

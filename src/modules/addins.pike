@@ -74,7 +74,7 @@ mixed query_tag_callers(){
 
 mixed register_admin(){
 
-  return ([ "addins" : addin_handler ]);
+  return ([ "menu_main.Add-ins_Manager" : addin_handler ]);
 }
 
 

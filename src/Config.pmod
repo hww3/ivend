@@ -49,6 +49,7 @@ mapping read(string contents){
 string write(mapping config, array|void order){
     string s="# Configuration file.\n";
     array configs;
+    if(!config) return s;
 
     if(order) configs=order;
     else configs=indices(config);

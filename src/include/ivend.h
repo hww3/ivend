@@ -16,6 +16,8 @@
 
 #define COMPLEX_ADD_ERROR id->misc->ivend->complex_add_error
 
+#define HAVE_ERRORS sizeof(id->misc->ivend->error)>0
+
 #define ADD_FAILED 1
 #define NO_ADD 2
 #define ADD_SUCCESSFUL 0

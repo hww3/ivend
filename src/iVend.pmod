@@ -503,7 +503,7 @@ array(mapping(string:mixed)) r=list_fields(table);
 
         array vals;
 
-        retval+="<FORM ACTION=\""+return_page+"\" "
+        retval+="<FORM name=gentable ACTION=\""+return_page+"\" "
                                         "ENCTYPE=multipart/"
                                         "form-data "
                                         "method=post>\n"
@@ -627,8 +627,11 @@ o+=query("SELECT id,parent,name FROM groups");
                         "</FONT></TD>\n"
                         "<TD><!-- var string -->\n";
 
+                if(r[i]->flags["primary_key"] && record[r[i]->name])
+                    retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
+                            record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
 
-                retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
+                else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
                         "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+" VALUE=\""
                         +( record[r[i]->name]||"") + "\">\n";
 

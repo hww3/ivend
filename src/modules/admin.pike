@@ -37,6 +37,57 @@ int do_clean_sessions(object db){
    return sizeof(r);
 }     
 
+string action_itemoptions(string mode, object id){
+string retval="";
+mapping v=id->variables;
+retval+="Options for " + v->id +"<p>";
+
+if(v->add) {
+  if(!catch(DB->query("INSERT INTO item_options VALUES('" + v->id + "','"
++ v->option_type + "','" + v->option_code + "','" +
+DB->quote(v->description)  + "'," + (v->surcharge||0.00) + ")")))
+    retval+="<font size=1>Item Option Added Successfully.</font><br>";
+
+}
+
+if(v->delete) {
+  if(!catch(DB->query("DELETE FROM item_options WHERE product_id='" +
+   v->id + "' AND option_type='" + v->option_type + "' AND option_code='"
+   + v->option_code + "'"))) 
+    retval+="<font size=1>Item Option Deleted Successfully.</font><br>";
+}
+
+retval+="<form action=\"./\">\n"
+  "<input type=hidden name=id value=\"" + v->id + "\">\n";
+
+array r=DB->query("SELECT * FROM item_options WHERE product_id='" + v->id
++ "' ORDER BY option_type, option_code");
+
+  retval+="<table border=1>\n<tr><th>Option Type</th><th>Option Code</th>"
+   "<th>Option Name</th><th>Surcharge</th><td></td></tr>\n";
+if(!r || sizeof(r)<1) retval+="<tr><td colspan=5 align=center>No Item "
+  "Options Defined.</td></tr>\n";
+
+else {
+
+  foreach(r,mapping row)
+   retval+="<tr><td>" + row->option_type + "</td><td>" + row->option_code
+    + "</td><td>" + row->description + "</td><td>" + sprintf("%.2f",
+    (float)(row->surcharge)) + "</td><td><font size=1><a href=\"./?id=" +
+	v->id + "&option_type=" + row->option_type + "&option_code=" +
+	row->option_code + "&delete=1\">Delete</a></font></td></tr>\n";
+}
+
+retval+="<tr><td><input type=text name=option_type size=10></td><td>"
+  "<input type=text name=option_code size=10></td><td>"
+  "<input type=text name=description size=30></td><td>"
+  "<input type=text name=surcharge size=10</td><td><font size=2><input "
+  "type=submit name=add value=add></font></td></tr>\n";
+  retval+="</table>";
+retval+="</form>";
+return retval;
+}
+
 string action_dropdown(string mode, object id){
   string retval="";
   if(!id->variables->edit){
@@ -338,7 +389,10 @@ return ([
 	"menu.main.Store_Maintenance.Clean_Stale_Sessions" : action_cleansessions,
 	"menu.main.Store_Maintenance.Reload_store" : action_reloadstore,
 	"menu.main.Store_Maintenance.Preferences" : action_preferences,
-	"menu.main.Store_Administration.DropDownMenus" : action_dropdown
+	"menu.main.Store_Administration.DropDownMenus" : action_dropdown,
+	"add.product.Item Options":action_itemoptions,
+	"getmodify.product.Item_Options":action_itemoptions
+
 	]);
 
 

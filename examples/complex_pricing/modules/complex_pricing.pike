@@ -103,7 +103,12 @@ void cpsingle(string event, object id, mapping args){
  else {
   // add the item.
   float price=(r[0]->price||0.00);
-  int result=T_O->do_low_additem(id, item, quantity, price);
+  mapping o;
+  if(id->variables->options){
+   o=T_O->get_options(id, item);
+  }
+  if(o->surcharge) price+=(float)(o->surcharge);
+  int result=T_O->do_low_additem(id, item, quantity, price, o);
   if(!result) {
    COMPLEX_ADD_ERROR=ADD_FAILED;
    perror("An error occurred adding item: " + item + " price: " +

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.200 1999-05-19 19:05:20 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.201 1999-05-21 18:31:48 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -575,14 +575,50 @@ trigger_event("additem",id,(["item": i->item, "quantity":
     return 0;
 }
 
+mapping get_options(object id, string item)
+  {
+	array opt;
+	array options=({});
+	float surcharge;
+        array types=DB->query("SELECT option_type FROM item_options "
+		"WHERE product_id='" + item + "' GROUP BY option_type");
+	foreach(types, mapping c){
+	 if(id->variables[c->option_type])
+          options+=({([ "option_code": id->variables[c->option_type],
+		"option_type": c->option_type])});
+	}
+	 foreach(options, mapping o) {
+	array optr=DB->query("SELECT * FROM item_options "
+		"WHERE product_id='" + item + 
+		" AND option_code='" + o->option_code  + "' "
+		"AND option_type='" + o->option_type + "'");
+	if(!optr || sizeof(optr)<1) {
+	  error("Invalid Option " + o->option_type + " for item " +
+		item + ".", id);
+	}
+	else {
+	  surcharge+=(float)(optr[0]->surcharge);
+	  opt+=({optr[0]->option_code + ":" + optr[0]->option_id});			
+	}
+    }
+	return (["options": opt*"\000", "surcharge": surcharge]);
+}
+
+
 int do_low_additem(object id, mixed item, mixed quantity, mixed
                    price, mapping|void args){
+    if(HAVE_ERRORS) { 
+	id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
+	return 0;
+	}
+
     if(!args) args=([]);
     int max=sizeof(DB->query("select id FROM sessions WHERE SESSIONID='"+
                              id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
     string query="INSERT INTO sessions VALUES('"+
                  id->misc->ivend->SESSIONID+
-                 "','"+item+"',"+ quantity +","+(max+1)+",'Standard','"+(time(0)+
+                 "','"+item+"',"+ quantity +","+(max+1)+",'" +
+		(args->options||"") + "','"+(time(0)+
                          (int)CONFIG->session_timeout)+"'," + price +
                  "," + (args->autoadd||0) +")";
 
@@ -610,10 +646,14 @@ mixed do_additems(object id, array items){
             float price=DB->query("SELECT price FROM products WHERE "
                                   + KEYS->products +  "='" + item->item +
                                   "'")[0]->price;
-
+		array opt=({});
+		mapping o;
+		if(id->variables->options)
+		 o=get_options(id, item->item);
             //      price=convert((float)price,id);
-            mapping m=([]);
-            int result=do_low_additem(id, item->item, item->quantity, price, m);
+		if(o->surcharge)
+		 price+=(float)(o->surcharge);
+            int result=do_low_additem(id, item->item, item->quantity, price, o);
         }
         return;
     }
@@ -1497,25 +1537,30 @@ mixed handle_admin_handler(string type, object id){
 
 mixed open_popup(string name, string location, string mode, mapping
                  options, object id){
-    name=name-" ";
+    name=replace(name," ","_");
     string retval="";
     retval+="<SCRIPT LANGUAGE=javascript>"
             "\n"
             "function popup(name,location,w,h) {\n"
-            "        mainWin=self;\n"
+            " mainWin=self;\n"
             "	if(h<1) h=300;\n"
             "	if(w<1) w=300;\n"
             "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
             "\n"
+	    " id=document.gentable." + KEYS[options->type + "s"] + ".value;\n"
+	    " document.popupform.id.value=id;\n"
+	    " if(id==\"\") { alert('You must have an item " +
+		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
             "param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
             "        palette=window.open(location,name,param);\n"
             // "        window.open('',name,param);\n"
             "        \n"
             "        if (palette!=null) palette.opener=mainWin; \n"
+	    "document.popupform.submit();\n"
             "}\n"
             "</SCRIPT>"
-            "<form target=" + name +
+            "<form name=popupform target=" + name +
             " ACTION=\"" + add_pre_state(id->not_query, (<mode>))
             +"\">";
     foreach(indices(options), string o){
@@ -1524,10 +1569,12 @@ mixed open_popup(string name, string location, string mode, mapping
                 "\">\n";
     }
 
+    retval+="<input type=hidden name=id>";
     retval+="<input type=hidden name=mode value=\""  +mode + "\">"
-            "<input onclick=popup('" +name +"','" +
+            "<input onclick=\"popup('" +name +"','" +
             add_pre_state(id->not_query,
-                          (<mode>))  + "',300,300) type=submit value=\"" + name + "\">"
+                          (<mode>))  + "',300,300)\" type=reset value=\""
+		+ replace(name,"_"," ") + "\">"
             "</form>";
 
     return retval;
@@ -1639,6 +1686,20 @@ string return_to_admin_menu(object id){
 
                  case "add":
                      retval+="&gt <b>Add New " + capitalize(type) +"</b><br>\n";
+                     if(sizeof(valid_handlers)) retval+="<obox title=\"<font "
+                                                            "face=helvetica,arial>Actions\">";
+
+                     foreach(valid_handlers, string handler_name) {
+                         string name;
+                         array a=handler_name/".";
+                         name=a[sizeof(a)-1];
+
+                         retval+=open_popup( name,
+                                 id->not_query, handler_name ,
+				(["type" : type]) ,id);
+                     }
+                     if(sizeof(valid_handlers))
+                         retval+="</obox>";
 
                      if(type=="product")
                          retval+="<table>\n"+ DB->gentable("products",
@@ -1663,7 +1724,7 @@ string return_to_admin_menu(object id){
                                                      id->variables->id,
                                                      KEYS[type+"s"]);
                              if(n)
-                                 retval+="<form action=" +
+                                 retval+="<form name=form action=" +
                                          add_pre_state(id->not_query,(<"dodelete=" + type>)) +">\n"
                                          + n +
                                          "<input type=hidden name=mode value=dodelete>\n"
@@ -1676,7 +1737,7 @@ string return_to_admin_menu(object id){
                                                       , KEYS[type+"s"],
                                                       (type=="group"?KEYS->products:0));
                              if(n){
-                                 retval+="<form action=" +
+                                 retval+="<form name=form action=" +
                                          add_pre_state(id->not_query,(<"dodelete=" + type>))
                                          + ">\n"
                                          "<input type=hidden name=id value=\""+id->variables[
@@ -1693,7 +1754,7 @@ string return_to_admin_menu(object id){
                      }
 
                  case "delete":
-                     retval+="<form action="+
+                     retval+="<form name=form action="+
                              add_pre_state(id->not_query,(<"dodelete=" + type>))+">\n"
                              "<input type=hidden name=mode value=dodelete>\n"
                              +capitalize(type) + " "+
@@ -1731,7 +1792,8 @@ string return_to_admin_menu(object id){
                          name=a[sizeof(a)-1];
 
                          retval+=open_popup( name,
-                                 id->not_query, handler_name , (["id" : id->variables->id]) ,id);
+                                 id->not_query, handler_name ,
+				(["type": type]) ,id);
                      }
                      if(sizeof(valid_handlers))
                          retval+="</obox>";
@@ -1743,7 +1805,7 @@ string return_to_admin_menu(object id){
                  case "show":
                      retval+="&gt <b>Show " + capitalize(type)
                              +"</b><br>\n";
-                     retval+="<form action=./>\n"
+                     retval+="<form name=form action=./>\n"
                              "<input type=hidden name=mode value=show>\n"
                              "<input type=hidden name=type value="+ type + ">\n"
                              "<table><tr><td><input type=submit value=Show></td><td>\n";
@@ -1816,7 +1878,7 @@ string return_to_admin_menu(object id){
                  case "modify":
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
-                     retval+="<form action="+add_pre_state(id->not_query,(<"getmodify=" + type>))+">\n"
+                     retval+="<form name=form action="+add_pre_state(id->not_query,(<"getmodify=" + type>))+">\n"
                              "<input type=hidden name=mode value=getmodify>\n"
                              + capitalize(type) + " "+
                              KEYS[type+"s"] + " to Modify: \n"
@@ -1847,7 +1909,8 @@ string return_to_admin_menu(object id){
                                      name=a[sizeof(a)-1];
                                      retval+="<td>\n";
                                      retval+=open_popup( name,
-                                 id->not_query, handler_name , (["id" : id->variables->id]) ,id);
+                                 id->not_query, handler_name ,
+(["type": type]) ,id);
                                      retval+="</td>\n";
                                  }
                                  if(sizeof(valid_handlers))

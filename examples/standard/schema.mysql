@@ -145,7 +145,7 @@ INSERT INTO status VALUES (10,'Error','An error has occurred during order proces
 INSERT INTO status VALUES (11,'Cancelled','Order has been cancelled.','orders')\g
 
 CREATE TABLE item_options (
-  product_id VARCHAR(16) NOT NULL,
+  product_id  VARCHAR(16) NOT NULL,
   option_type VARCHAR(6) NOT NULL,
   option_code VARCHAR(6) NOT NULL,
   description CHAR(36),

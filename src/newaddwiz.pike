@@ -392,6 +392,7 @@ privs=0;
 
 if(v->copyfiles=="Yes"){
 privs=Privs("iVend: Copying store files ");
+perror("copying store templates...\n");
 mixed result=Process.system("/bin/cp -rf " +
    id->misc->ivend->this_object->query("root") + "examples/" +
    v->style +"/* " + v->root + "/");
@@ -410,9 +411,10 @@ if(file_stat(v->root + "/schema.mysql") && v->populatedb=="Yes"){
     return "An error occurred while connecting to the store database" 
 	"as " + v->config + " with password " + v->dbpassword + "."
 	"<p>This is sometimes due to improper host table setup on "
-	"the database host."
-	+ s->error();
+	"the database host.<p><b>Error:</b> "
+	+ s->error() + "<p>";
     }
+perror("populating database...\n");
 ss=ss[0..sizeof(ss)-2];
   foreach(ss, string statement)
       if(catch(s->query(statement)))

@@ -5,6 +5,8 @@
 #define KEYS id->misc->ivend->keys
 #define CONFIG id->misc->ivend->config
 
+inherit "html.pike";
+
 class config {
 
 
@@ -117,13 +119,8 @@ m+=([name:desc]);
 
             case "string":
             default:
-                if(!stringp(config))
-                    retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
-                            ( config[vars[i]] ||
-                              config_setup[vars[i]]->default_value ||"")+"\">";
-                else
-                    retval+="<input type=\"text\" name=\""+(vars[i]||"")+"\" value=\""+
-                            (config_setup[vars[i]]->default_value ||"")+"\">";
+                    retval+=input(vars[i],  config[vars[i]] ||
+                              config_setup[vars[i]]->default_value ||"", 40);
                 break;
 
             }
@@ -573,9 +570,8 @@ o+=query("SELECT id,parent,name FROM groups");
                         +replace(r[i]->name,"_"," ")+
                         " <b>$</b></FONT></TD>\n"
                         "<TD>\n"
-                        "<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+
-                        " MAXLEN="+r[i]->length+" VALUE=\""
-                        + (record[r[i]->name] ||"") +"\">\n";
+			+ input(r[i]->name,  record[r[i]->name] ||"", 40)
+			+ "\n";
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
                                                       "SIZE=-1><I> "+ REQUIRED +"\n";
@@ -627,10 +623,9 @@ o+=query("SELECT id,parent,name FROM groups");
                     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
 
-                else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
-                        "\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+
-		(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
-		+ ">\n";
+                else retval+=input(lower_case(r[i]->name),
+record[r[i]->name] ||"", r[i]->length)
+                        + "\n"; 
 
                 if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial "
                                                       "SIZE=-1><I> "+REQUIRED+"\n";
@@ -652,10 +647,9 @@ o+=query("SELECT id,parent,name FROM groups");
                 else if(r[i]->flags["primary_key"] && record[r[i]->name])
                     retval+="<input type=hidden NAME=\"" + r[i]->name + "\" VALUE=\"" +
                             record[r[i]->name] + "\"> " + record[r[i]->name] + "\n";
-                else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="
-                                 +r[i]->length+" SIZE="+(r[i]->length)+
-		(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
-			+">\n";
+                else retval+= input(r[i]->name,  record[r[i]->name] ||"",
+				r[i]->length)
+                        + "\n"; 
             }
 
             else if(r[i]->type=="long" && r[i]->flags["not_null"]){
@@ -672,10 +666,8 @@ o+=query("SELECT id,parent,name FROM groups");
                         "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
                         +replace(r[i]->name,"_"," ")+
                         "</FONT></TD>\n<td><!-- long -->"  ;
-                retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+
-                        "\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" value=\""
-		+(record[r[i]->name]?" VALUE=\"" + record[r[i]->name] + "\"":"")
-		+">\n";
+			retval+= input(r[i]->name,  record[r[i]->name] 
+				||"", r[i]->length) + "\n"; 
 
             }
 
@@ -893,11 +885,9 @@ array(mapping(string:mixed)) r=list_fields(table);
                         "</FONT></TD>\n"
                         "<TD>\n";
 
-                retval+="<INPUT TYPE=TEXT NAME=\""+
-                        lower_case(r[i]->name)+"\" SIZE="
-                        +
-                        (r[i]->length)
-                        +"  VALUE=\""+ (record[r[i]->name]||"") + "\">\n";
+                retval+=input(lower_case(r[i]->name),  record[r[i]->name] 
+||"", r[i]->length)
+                        + "\n"; 
                 if(r[i]->flags->not_null)
                     retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I>"+REQUIRED+"\n";
             }
@@ -926,10 +916,9 @@ array(mapping(string:mixed)) r=list_fields(table);
                                                      record[r[i]->name]=="N")?"SELECTED":"")+
                             ">No\n</SELECT>\n";
                 else {
-                    retval+="<INPUT TYPE=TEXT VALUE=\"" + (record[r[i]->name]||"") +
-                            "\" NAME=\""+
-                            lower_case(r[i]->name)+"\" SIZE="+
-                            (r[i]->length)+">\n";
+                    retval+= input(lower_case(r[i]->name), 
+			record[r[i]->name] ||"", r[i]->length) + "\n"; 
+
                     if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> "+REQUIRED+"\n";
                 }
             }

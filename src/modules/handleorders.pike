@@ -102,7 +102,15 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
    string d="<table width=100% valign=top>";
    string type=row->type;
    m_delete(row, "type");
+array wx=DB->query("SELECT status FROM orders WHERE id='" +
+id->misc->ivend->orderid + "'");
+if(((int)(wx[0]->status) > 1)|| id->variables->print);
 
+else if(!id->variables->edit_data || id->variables->edit_data!=type)
+  retval+="<a href=\"./?orderid="
+        + id->misc->ivend->orderid + "&edit_data=" + type +
+        "\"><img src=\"" + T_O->query("mountpoint") +
+"ivend-image/edit.gif\" alt=\"Edit\" border=0></a>\n";
    if(id->variables->edit_data && id->variables->edit_data==type)
 	{
 	d+=DB->generate_form_from_db(table, ({}), id, ({}), row);

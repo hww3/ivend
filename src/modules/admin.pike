@@ -132,7 +132,7 @@ return retval;
 
 string action_dropdown(string mode, object id){
   string retval="";
-  if(id->variables->commit){
+   if(id->variables->commit){
    object privs=Privs("iVend: Copying store files ");
    rm(CONFIG->root + "/db/" + id->variables->edit);
    Stdio.write_file(CONFIG->root + "/db/" + id->variables->edit,
@@ -159,7 +159,7 @@ string action_dropdown(string mode, object id){
 	"<input type=hidden name=edit value=\"" + id->variables->edit 
 	+ "\">\n";
     string f=Stdio.read_file(CONFIG->root + "/db/" + id->variables->edit);
-    retval+="<textarea name=contents rows=50 cols=10>" + f +
+    retval+="<textarea name=contents rows=15 cols=80 wrap>" + f +
 	"</textarea>\n";
     retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
   }
@@ -168,35 +168,126 @@ string action_dropdown(string mode, object id){
 
 string action_template(string mode, object id){
   string retval="";
+  if(id->variables->delete){
+   object privs=Privs("iVend: Copying store files ");
+   if(id->variables->delete=="DEFAULT") {
+     mv(CONFIG->root + "/html/" + id->variables->type + "_template.html",
+	CONFIG->root + "/html/" + id->variables->type + "_template.html~");
+    } else {
+     mv(CONFIG->root + "/templates/" + id->variables->delete + ".html",
+	CONFIG->root + "/templates/" + id->variables->delete + ".html~");
+    }
+   array f=Stdio.read_file(CONFIG->root + "/db/groups.template")/"\n";
+   f-=({""});
+   f-=({id->variables->delete});
+//   f=Array.uniq(f);
+   rm(CONFIG->root + "/db/groups.template");
+   Stdio.write_file(CONFIG->root + "/db/groups.template", f*"\n");
+
+   array f=Stdio.read_file(CONFIG->root + "/db/products.template")/"\n";
+   f-=({""});
+   f-=({id->variables->delete});
+//   f=Array.uniq(f);
+   rm(CONFIG->root + "/db/products.template");
+   Stdio.write_file(CONFIG->root + "/db/products.template", f*"\n");
+   privs=0;
+  
+  }
   if(id->variables->commit){
    object privs=Privs("iVend: Copying store files ");
-   rm(CONFIG->root + "/templates/" + id->variables->edit);
-   Stdio.write_file(CONFIG->root + "/templates/" + id->variables->edit,
-	id->variables->contents);
+   if(id->variables->create){
+   array f=Stdio.read_file(CONFIG->root + "/db/" + id->variables->type + "s.template")/"\n";
+   f-=({""});
+   f-=({id->variables->edit});
+   f+=({id->variables->edit});
+//   f=Array.uniq(f);
+   rm(CONFIG->root + "/db/" + id->variables->type + "s.template");
+   Stdio.write_file(CONFIG->root + "/db/" + id->variables->type +
+    "s.template", f*"\n");
+    
+    }
+
+   if(id->variables->edit=="DEFAULT") {
+     mv(CONFIG->root + "/html/" + id->variables->type + "_template.html",
+	CONFIG->root + "/html/" + id->variables->type + "_template.html~");
+
+     Stdio.write_file(CONFIG->root + "/html/" + id->variables->type +
+	"_template.html", id->variables->contents);
+    } else {
+     mv(CONFIG->root + "/templates/" + id->variables->edit + ".html",
+	CONFIG->root + "/templates/" + id->variables->edit + ".html~");
+     Stdio.write_file(CONFIG->root + "/templates/" + id->variables->edit +
+	".html", id->variables->contents);
+    }
    privs=0;
    }
   if(!id->variables->edit){
-    array f=get_dir(CONFIG->root + "/templates");
+    array f=(Stdio.read_file(CONFIG->root +
+	"/db/groups.template")||"")/"\n";
+    f-=({""});
     if(sizeof(f)>0)
-      retval+="You have configured the following templates:<p><ul>";
+      retval+="You have configured the following group templates:<p><ul>";
     foreach(f, string file){
-     if(file!="CVS")
-      retval+="<li><a href=\"./?edit=" + file  + "\">" +
- 	(file-".val")+"</a>\n";
+     if(file!="CVS") {
+      retval+="<li><a href=\"./?edit=" + file  + "&type=group\">" +
+ 	file +"</a>";
+      if(file!="DEFAULT")
+       retval+="<font size=1>( <a href=\"./?delete="+ file +"&type=group" 
+	"\">Delete</a> )</font>\n";
+      }
     }
 
     if(sizeof(f)>0) retval+="</ul>";
-    else retval+="You have not configured any dropdowns yet.<p>";
+    else retval+="You have not configured any group templates yet.<p>";
+
+    array f=(Stdio.read_file(CONFIG->root +
+"/db/products.template")||"")/"\n";
+    f-=({""});
+    
+    if(sizeof(f)>0)
+      retval+="You have configured the following product templates:<p><ul>";
+    foreach(f, string file){
+     if(file!="CVS")
+      retval+="<li><a href=\"./?edit=" + file  + "&type=product\">" +
+ 	file +"</a>\n";
+      if(file!="DEFAULT")
+       retval+="<font size=1>( <a href=\"./?delete="+ file +"&type=product" 
+	"\">Delete</a> )</font>\n";
+    }
+
+    if(sizeof(f)>0) retval+="</ul>";
+    else retval+="You have not configured any product templates yet.<p>";
+   retval+="<p>Create a new template:<br>\n" 
+    "<form action=./>\n"
+    "<select name=type><option value=group>Group\n"
+    "<option value=product>Product\n</select>\n"
+    " <input type=text size=20 name=edit> \n"
+    " <input type=hidden value=1 name=create> \n"
+    "<input type=submit value=Create></form>\n";
   }
   else { 
-    retval+="Editing " + id->variables->edit + ":<p>";
+    retval+="Editing " + capitalize(id->variables->type) + " template " +
+	id->variables->edit + ":<p>";
     retval+="<form action=\"./\">\n"
 	"<input type=hidden name=edit value=\"" + id->variables->edit 
+	+ "\">\n"
+	"<input type=hidden name=type value=\"" + id->variables->type 
 	+ "\">\n";
-    string f=Stdio.read_file(CONFIG->root + "/templates/" + id->variables->edit);
-    retval+="<textarea name=contents rows=60 cols=10>" + f +
-	"</textarea>\n";
-    retval+="<input type=submit name=commit value=\"Commit\"></form>\n";
+  string fy="";
+    perror(CONFIG->root + "/html/" +
+	id->variables->type + "_template.html\n");
+  if(id->variables->edit=="DEFAULT")
+    fy=Stdio.read_file(CONFIG->root + "/html/" +
+	id->variables->type + "_template.html");
+   else
+    fy=Stdio.read_file(CONFIG->root + "/templates/" +
+	id->variables->edit + ".html");
+   if(id->variables->create)
+    retval+="<input type=hidden name=create value=1>\n";
+
+   retval+="<noparse><textarea name=contents rows=15 cols=80 wrap>" 
+	+ (fy||"<html>\n</html>") + "</textarea></noparse><br>\n"
+        "<input type=submit name=commit value=\"Commit\"></form>\n";
   }
   return retval;
 }

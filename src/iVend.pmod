@@ -38,7 +38,8 @@ string desc;
 string type;
 foreach(d,name){
 // perror("MODULE: "+name+"\n");
-  program p=compile_file(config->root+"/modules/"+name);
+if(catch(program p=compile_file(config->root+"/modules/"+name)))
+  continue;
   desc=p()->module_name;
   type=p()->module_type;
   

@@ -5,6 +5,8 @@
  *
  */
 
+inherit "roxenlib";
+
 constant module_name="Harris Checkout Module";
 constant module_type="checkout";
 
@@ -19,7 +21,6 @@ string retval="";
     id->misc->ivend->config->password
     );
 
-
 int page;
 if(id->variables->page) page=id->variables->page+1;
 else page=1;
@@ -27,6 +28,7 @@ if(!id->variables->page){
 
   retval+="<icart fields=\"qualifier\"></icart>";
   }
+
 else if(id->variables->page==2){
   retval+="<form action=.><table>\n";
   retval+=s->generate_form_from_db("customer_info", ({"id","updated"}));

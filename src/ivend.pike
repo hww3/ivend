@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.11 1998-01-27 16:38:58 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.12 1998-01-27 21:54:26 hww3 Exp $";
 
 /*
  *
@@ -585,7 +585,7 @@ mapping ivend_image(array(string) request, object id){
 mixed handle_checkout(object id){
 mixed retval;
 object c=clone(compile_file(id->misc->ivend->config->root+"/modules/"+
-	id->misc->ivend->config->checkout_module+".pike"));
+	id->misc->ivend->config->checkout_module));
 retval=c->checkout(id);
 if(retval==-1) return handle_page("index.ivml",id->misc->ivend->st,id);
 else return parse_rxml(retval, id);

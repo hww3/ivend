@@ -344,8 +344,12 @@ array(mapping(string:mixed)) r=s->list_fields(table);
 
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 
-if(lower_case(r[i]->name)
 
+
+if(search(exclude,lower_case(r[i]->name))!=-1) continue;
+
+if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
+  r[i]->length=25;
 	
 if(r[i]->type=="blob"){
 	retval+="<TR>\n"
@@ -364,7 +368,10 @@ else if(r[i]->type=="var string"){
 	"</FONT></TD>\n"
 	"<TD>\n";
 
-	retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+" MAXLEN="+r[i]->length+">\n";
+	retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="
+	  +
+	(r[i]->length)
+	+" >\n";
 	if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> Required\n";	
 	}
 
@@ -379,13 +386,17 @@ else if(r[i]->type=="string"){
 	retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"N\">No\n<OPTION VALUE=\"Y\">Yes\n</SELECT>\n";
 	else if(r[i]["default"]=="Y")
 	retval+="<SELECT NAME=\""+r[i]->name+"\"><OPTION VALUE=\"Y\">Yes\n<OPTION VALUE=\"N\">No\n</SELECT>\n";
-	else retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" MAXLEN="+r[i]->length+" SIZE="+(r[i]->length+20)+">\n";
+	else {
+	  retval+="<INPUT TYPE=TEXT NAME=\""+r[i]->name+"\" SIZE="+
+	(r[i]->length)+">\n";
+	  if(r[i]->flags->not_null) retval+="&nbsp;<FONT FACE=helvetica,arial SIZE=-1><I> Required\n";	
+	  }
 	}
 
 else if(r[i]->type=="long" && r[i]->flags["not_null"]){
 	retval+="<TR>\n"
 	"<TD VALIGN=TOP ALIGN=RIGHT>&nbsp;</TD>\n<TD>\n";
-	retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+"\" MAXLEN="+r[i]->length+" SIZE="+r[i]->length+" VALUE=NULL>\n";
+	retval+="<INPUT TYPE=HIDDEN NAME=\""+r[i]->name+"\" SIZE="+r[i]->length+" VALUE=NULL>\n";
 
 	}
 
@@ -402,10 +413,6 @@ retval+="</TD>\n"
 
 }
 
-retval+="</TABLE>\n"
-	"<INPUT TYPE=SUBMIT VALUE=SubmitForm>\n"
-	"<INPUT TYPE=HIDDEN VALUE=" + id->variables->return_page + ">\n"
-	"</FORM>\n";
 
 return retval; 
 

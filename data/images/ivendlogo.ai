@@ -1,0 +1,582 @@
+%!PS-Adobe-3.0 
+%%Creator: Adobe Illustrator(TM) 6.0x64
+%%For: (H) (Lyra)
+%%Title: (ivendlogo.ai)
+%%CreationDate: (8/2/97) (8:58 PM)
+%%BoundingBox: 57 570 567 777
+%%HiResBoundingBox: 57.0274 570.3742 566.9726 776.6259
+%%DocumentProcessColors: Cyan Magenta Yellow Black
+%%DocumentFonts: Helvetica-Bold
+%%DocumentNeededResources: procset Adobe_level2_AI5 1.0 0
+%%+ procset Adobe_screens_AI5 1.0 0
+%%+ procset Adobe_typography_AI5 1.0 0
+%%+ procset Adobe_Illustrator_AI5 1.0 0
+%AI5_FileFormat 2.0
+%AI3_ColorUsage: Color
+%%AI6_ColorSeparationSet: 1 1 (AI6 Default Color Separation Set)
+%%+ Options: 1 16 0 1 0 1 1 1 1 1 1 1 1 18 0 0 0 0 0 0 0 0 -1 -1
+%%+ PPD: 1 21 0 0 60 45 2 2 1 0 0 1 0 0 0 0 0 0 0 0 0 0 ()
+%AI3_TemplateBox: 306 396 306 396
+%AI3_TileBox: 14 22 598 782
+%AI3_DocumentPreview: None
+%AI5_ArtSize: 612 792
+%AI5_RulerUnits: 0
+%AI5_ArtFlags: 1 0 0 1 0 0 0 1 0
+%AI5_TargetResolution: 800
+%AI5_NumLayers: 1
+%AI5_OpenToView: -174 1068 1 1009 717 58 0 1 12 48
+%AI5_OpenViewLayers: 7
+%%EndComments
+%%BeginProlog
+%%IncludeResource: procset Adobe_level2_AI5 1.0 0
+%%IncludeResource: procset Adobe_screens_AI5 1.0 0
+%%IncludeResource: procset Adobe_typography_AI5 1.0 0
+%%IncludeResource: procset Adobe_Illustrator_AI5 1.0 0
+%%EndProlog
+%%BeginSetup
+%%IncludeFont: Helvetica-Bold
+Adobe_level2_AI5 /initialize get exec
+Adobe_screens_AI5 /initialize get exec
+Adobe_Illustrator_AI5_vars Adobe_Illustrator_AI5 Adobe_typography_AI5 /initialize get exec
+Adobe_Illustrator_AI5 /initialize get exec
+[
+39/quotesingle 96/grave 128/Adieresis/Aring/Ccedilla/Eacute/Ntilde/Odieresis
+/Udieresis/aacute/agrave/acircumflex/adieresis/atilde/aring/ccedilla/eacute
+/egrave/ecircumflex/edieresis/iacute/igrave/icircumflex/idieresis/ntilde
+/oacute/ograve/ocircumflex/odieresis/otilde/uacute/ugrave/ucircumflex
+/udieresis/dagger/degree/cent/sterling/section/bullet/paragraph/germandbls
+/registered/copyright/trademark/acute/dieresis/.notdef/AE/Oslash
+/.notdef/plusminus/.notdef/.notdef/yen/mu/.notdef/.notdef
+/.notdef/.notdef/.notdef/ordfeminine/ordmasculine/.notdef/ae/oslash
+/questiondown/exclamdown/logicalnot/.notdef/florin/.notdef/.notdef
+/guillemotleft/guillemotright/ellipsis/.notdef/Agrave/Atilde/Otilde/OE/oe
+/endash/emdash/quotedblleft/quotedblright/quoteleft/quoteright/divide
+/.notdef/ydieresis/Ydieresis/fraction/currency/guilsinglleft/guilsinglright
+/fi/fl/daggerdbl/periodcentered/quotesinglbase/quotedblbase/perthousand
+/Acircumflex/Ecircumflex/Aacute/Edieresis/Egrave/Iacute/Icircumflex
+/Idieresis/Igrave/Oacute/Ocircumflex/.notdef/Ograve/Uacute/Ucircumflex
+/Ugrave/dotlessi/circumflex/tilde/macron/breve/dotaccent/ring/cedilla
+/hungarumlaut/ogonek/caron
+TE
+%AI3_BeginEncoding: _Helvetica-Bold Helvetica-Bold
+[/_Helvetica-Bold/Helvetica-Bold 0 0 1 TZ
+%AI3_EndEncoding TrueType
+%AI5_Begin_NonPrinting
+Np
+%AI3_BeginPattern: (Arrow1.2.side)
+(Arrow1.2.side) 1 1 39.404 39.4039 [
+%AI3_Tile
+(0 O 0 R 0.75 0.75 0.375 0 (\245Arrow1.2.color1) 0 x 0.75 0.75 0.375 0 (\245Arrow1.2.color1) 0 X) @
+(
+%AI6_BeginPatternLayer
+800 Ar
+1 J 0 j 1 w 4 M []0 d
+%AI3_Note:
+0 D
+0 XR
+20.202 20.202 m
+39.404 20.202 l
+S
+33.904 15.6186 m
+39.4248 20.202 L
+39.4248 20.202 L
+33.887 24.6252 L
+S
+%AI6_EndPatternLayer
+) &
+] E
+%AI3_EndPattern
+%AI5_End_NonPrinting--
+%AI5_Begin_NonPrinting
+Np
+9 Bn
+%AI5_BeginGradient: (Black & White)
+(Black & White) 0 2 Bd
+[
+0 0 50 100 %_Bs
+1 0 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Green & Blue)
+(Green & Blue) 0 2 Bd
+[
+1 0.75 0 0 1 50 100 %_Bs
+0.6 0 1 0 1 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (ivend gradient)
+(ivend gradient) 0 2 Bd
+[
+0.883 0.719 0 0 1 50 100 %_Bs
+0.5 1 0.5 0 1 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Pink, Yellow, Green)
+(Pink, Yellow, Green) 0 3 Bd
+[
+0.05 0.7 0 0 1 50 100 %_Bs
+0 0.02 0.8 0 1 57 36 %_Bs
+0.45 0 0.75 0 1 37 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Purple, Red & Yellow)
+(Purple, Red & Yellow) 0 3 Bd
+[
+0 0.04 1 0 1 50 100 %_Bs
+0 1 0.8 0 1 50 50 %_Bs
+0.9 0.9 0 0 1 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Rainbow)
+(Rainbow) 0 6 Bd
+[
+0 1 0 0 1 50 100 %_Bs
+1 1 0 0 1 50 80 %_Bs
+1 0.0279 0 0 1 50 60 %_Bs
+1 0 1 0 1 50 40 %_Bs
+0 0 1 0 1 50 20 %_Bs
+0 1 1 0 1 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Steel Bar)
+(Steel Bar) 0 3 Bd
+[
+0 0 50 100 %_Bs
+1 0 50 70 %_Bs
+0 0 50 0 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Yellow & Orange Radial)
+(Yellow & Orange Radial) 1 2 Bd
+[
+0 0 1 0 1 52 19 %_Bs
+0 0.55 0.9 0 1 50 100 %_Bs
+BD
+%AI5_EndGradient
+%AI5_BeginGradient: (Yellow & Purple Radial)
+(Yellow & Purple Radial) 1 2 Bd
+[
+0 0.08 0.67 0 1 50 14 %_Bs
+1 1 0 0 1 50 100 %_Bs
+BD
+%AI5_EndGradient
+%AI5_End_NonPrinting--
+%AI5_BeginPalette
+0 1 Pb
+Pn
+Pc
+1 g
+Pc
+0 g
+Pc
+0 0 0 0 k
+Pc
+0.75 g
+Pc
+0.5 g
+Pc
+0.25 g
+Pc
+0 g
+Pc
+Bb
+2 (Black & White) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0.25 0 0 0 k
+Pc
+0.5 0 0 0 k
+Pc
+0.75 0 0 0 k
+Pc
+1 0 0 0 k
+Pc
+0.25 0.25 0 0 k
+Pc
+0.5 0.5 0 0 k
+Pc
+0.75 0.75 0 0 k
+Pc
+1 1 0 0 k
+Pc
+Bb
+2 (Pink, Yellow, Green) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0 0.25 0 0 k
+Pc
+0 0.5 0 0 k
+Pc
+0 0.75 0 0 k
+Pc
+0 1 0 0 k
+Pc
+0 0.25 0.25 0 k
+Pc
+0 0.5 0.5 0 k
+Pc
+0 0.75 0.75 0 k
+Pc
+0 1 1 0 k
+Pc
+Bb
+0 0 0 0 Bh
+2 (Yellow & Purple Radial) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0 0 0.25 0 k
+Pc
+0 0 0.5 0 k
+Pc
+0 0 0.75 0 k
+Pc
+0 0 1 0 k
+Pc
+0.25 0 0.25 0 k
+Pc
+0.5 0 0.5 0 k
+Pc
+0.75 0 0.75 0 k
+Pc
+1 0 1 0 k
+Pc
+Bb
+2 (Rainbow) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0.25 0.125 0 0 k
+Pc
+0.5 0.25 0 0 k
+Pc
+0.75 0.375 0 0 k
+Pc
+1 0.5 0 0 k
+Pc
+0.125 0.25 0 0 k
+Pc
+0.25 0.5 0 0 k
+Pc
+0.375 0.75 0 0 k
+Pc
+0.5 1 0 0 k
+Pc
+Bb
+2 (Steel Bar) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0 0.25 0.125 0 k
+Pc
+0 0.5 0.25 0 k
+Pc
+0 0.75 0.375 0 k
+Pc
+0 1 0.5 0 k
+Pc
+0 0.125 0.25 0 k
+Pc
+0 0.25 0.5 0 k
+Pc
+0 0.375 0.75 0 k
+Pc
+0 0.5 1 0 k
+Pc
+Bb
+2 (Purple, Red & Yellow) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0.125 0 0.25 0 k
+Pc
+0.25 0 0.5 0 k
+Pc
+0.375 0 0.75 0 k
+Pc
+0.5 0 1 0 k
+Pc
+0.25 0 0.125 0 k
+Pc
+0.5 0 0.25 0 k
+Pc
+0.75 0 0.375 0 k
+Pc
+1 0 0.5 0 k
+Pc
+Bb
+2 (Green & Blue) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0.25 0.125 0.125 0 k
+Pc
+0.5 0.25 0.25 0 k
+Pc
+0.75 0.375 0.375 0 k
+Pc
+1 0.5 0.5 0 k
+Pc
+0.25 0.25 0.125 0 k
+Pc
+0.5 0.5 0.25 0 k
+Pc
+0.75 0.75 0.375 0 k
+Pc
+1 1 0.5 0 k
+Pc
+Bb
+0 0 0 0 Bh
+2 (Yellow & Orange Radial) -4014 4716 0 0 1 0 0 1 0 0 Bg
+0 BB
+Pc
+0.125 0.25 0.125 0 k
+Pc
+0.25 0.5 0.25 0 k
+Pc
+0.375 0.75 0.375 0 k
+Pc
+0.5 1 0.5 0 k
+Pc
+0.125 0.25 0.25 0 k
+Pc
+0.25 0.5 0.5 0 k
+Pc
+0.375 0.75 0.75 0 k
+Pc
+0.5 1 1 0 k
+Pc
+0 0 0 0 k
+Pc
+0.125 0.125 0.25 0 k
+Pc
+0.25 0.25 0.5 0 k
+Pc
+0.375 0.375 0.75 0 k
+Pc
+0.5 0.5 1 0 k
+Pc
+0.25 0.125 0.25 0 k
+Pc
+0.5 0.25 0.5 0 k
+Pc
+0.75 0.375 0.75 0 k
+Pc
+1 0.5 1 0 k
+Pc
+0 0 0 0 k
+Pc
+Pc
+Pc
+Pc
+0.375 0.82 0.375 0 k
+Pc
+0 0 0 0 k
+Pc
+Pc
+Pc
+0.93 0.67 0 0 k
+Pc
+PB
+%AI5_EndPalette
+%%EndSetup
+%AI5_BeginLayer
+1 1 1 1 0 0 0 79 128 255 Lb
+(Layer 1) Ln
+0 A
+u
+1 Ap
+0 O
+1 g
+800 Ar
+0 J 0 j 1 w 4 M []0 d
+%AI3_Note:
+0 D
+0 XR
+566.9726 570.3742 m
+566.9726 776.6259 L
+57.0274 776.6259 L
+57.0274 570.3742 L
+566.9726 570.3742 L
+f
+0 Ap
+0.93 0.67 0 0 k
+220.2947 713.4311 m
+204.71 656.968 L
+188.7845 713.4311 L
+160.5012 713.4311 L
+161.1849 712.902 161.8675 712.3716 162.4427 711.7195 c
+165.495 708.2606 167.0225 704.0878 167.0225 699.2036 c
+167.0225 697.1668 166.8176 694.9964 166.4109 692.6927 c
+166.0043 690.3855 165.1223 688.0106 163.7653 685.5699 C
+163.327 684.6068 L
+184.5261 623.8396 L
+224.2975 623.8396 L
+254.6157 713.4311 L
+220.2947 713.4311 L
+f
+0.375 0.82 0.375 0 k
+160.5012 713.4311 m
+157.558 715.709 153.6633 716.9078 148.71 716.9078 c
+144.9095 716.9078 140.5346 715.5509 135.5824 712.8373 c
+130.6299 710.1237 126.3916 707.2081 122.8647 704.0878 c
+118.9305 700.6972 115.6765 697.4743 113.0995 694.422 c
+110.5226 691.37 109.2339 689.1655 109.2339 687.8085 c
+109.2339 687.4018 109.7743 686.4519 110.8609 684.9616 c
+111.9446 683.468 113.0283 682.7226 114.1149 682.7226 c
+115.0652 682.7226 118.0831 685.399 123.1687 690.7581 c
+128.2546 696.1173 131.6825 698.7969 133.4461 698.7969 c
+134.1231 698.7969 134.6661 698.5577 135.0731 698.0827 c
+135.4798 697.6077 135.6847 696.8284 135.6847 695.7446 c
+135.6847 694.658 135.4458 693.4034 134.9705 691.9817 c
+134.4955 690.5565 133.7162 688.6902 132.6327 686.3865 C
+113.3016 646.2991 L
+112.4879 644.2622 111.7397 642.2629 111.0627 640.2944 c
+110.3859 638.3258 110.0476 636.1895 110.0476 633.8858 c
+110.0476 630.222 111.3359 626.9336 113.9131 624.0183 c
+116.4902 621.1027 120.6258 619.6434 126.3265 619.6434 c
+134.5978 619.6434 143.8568 623.6457 154.0999 631.6469 c
+164.3398 639.6513 169.4629 644.7372 169.4629 646.9107 c
+169.4629 647.4508 168.9196 648.4354 167.8359 649.8604 c
+166.7493 651.2824 165.7339 651.9967 164.784 651.9967 c
+163.6971 651.9967 161.1544 649.8575 157.1519 645.5849 c
+153.1499 641.3126 149.6568 639.1763 146.6731 639.1763 c
+146.2661 639.1763 145.8594 639.2758 145.4528 639.4807 c
+145.0429 639.6857 144.8411 640.195 144.8411 641.0083 c
+144.8411 641.6853 145.1112 642.9085 145.6545 644.6721 c
+146.1978 646.4358 147.0798 648.7395 148.3001 651.59 C
+163.327 684.6068 L
+153.2714 713.4311 L
+160.5012 713.4311 L
+f
+166.6156 727.5746 m
+171.7698 727.5746 176.1415 729.4037 179.7371 733.0675 c
+183.3326 736.7311 185.1302 741.072 185.1302 746.0925 c
+185.1302 751.1098 183.3326 755.4507 179.7371 759.1143 c
+176.1415 762.7781 171.7698 764.6101 166.6156 764.6101 c
+161.595 764.6101 157.2545 762.7781 153.5907 759.1143 c
+149.927 755.4507 148.098 751.1098 148.098 746.0925 c
+148.098 741.072 149.927 736.7311 153.5907 733.0675 c
+157.2545 729.4037 161.595 727.5746 166.6156 727.5746 c
+f
+*u
+0.93 0.67 0 0 k
+278.113 685.8429 m
+280.3577 688.9745 283.6835 690.9541 288.0944 691.7773 c
+293.0051 692.6936 297.1684 692.041 300.588 689.8201 c
+304.0048 687.5989 306.2173 684.097 307.2251 679.3204 c
+275.4971 673.4002 l
+274.9942 678.5608 275.8662 682.7086 278.113 685.8429 c
+f
+1 D
+340.178 685.6426 m
+336.7421 692.9116 332.1099 698.9344 326.2807 703.7104 c
+320.4521 708.4839 313.8397 711.5681 306.4492 712.9611 c
+299.0555 714.3538 291.4255 714.316 283.5565 712.8477 c
+268.4877 710.0362 257.2106 703.2971 249.7312 692.6322 c
+242.2488 681.9666 239.8209 669.602 242.4453 655.5376 c
+244.9244 642.253 251.491 632.203 262.1489 625.3851 c
+272.805 618.5644 286.114 616.6458 302.0776 619.6246 c
+312.0659 621.4884 320.3709 624.8003 326.9926 629.558 c
+333.6122 634.3151 338.4373 639.7203 341.4664 645.773 c
+343.3166 649.4671 344.3221 653.5234 344.4799 657.9439 c
+310.9101 651.6798 L
+309.3495 646.4209 305.5562 643.2306 299.5285 642.1059 c
+293.9461 641.0644 289.3613 641.7248 285.7747 644.0876 c
+282.1853 646.4497 279.7903 650.2316 278.5888 655.4381 c
+345.4773 667.9193 l
+344.1997 675.0711 342.4338 680.9793 340.178 685.6426 c
+f
+*U
+*u
+0 D
+380.1557 621.6259 m
+344.3872 621.6259 L
+344.3872 711.4731 L
+377.2602 711.4731 L
+377.2602 697.5066 l
+381.5743 703.3535 386.1306 707.5557 390.9291 710.1105 c
+395.7248 712.6655 401.3616 713.943 407.8338 713.943 c
+418.8466 713.943 427.3789 710.8902 433.4253 704.7877 c
+439.472 698.6827 442.4952 689.6128 442.4952 677.5783 C
+442.4952 621.6259 L
+406.5566 621.6259 L
+406.5566 671.1058 l
+406.5566 676.3275 405.4333 680.1172 403.1923 682.4753 c
+400.9488 684.8304 397.7846 686.0095 393.6966 686.0095 c
+389.6648 686.0095 386.3995 684.6307 383.903 681.879 c
+381.404 679.1245 380.1557 674.7091 380.1557 668.6361 C
+380.1557 621.6259 l
+f
+*U
+*u
+503.7863 649.9426 m
+500.8055 646.5628 496.9307 644.8756 492.1616 644.8756 c
+487.8448 644.8756 484.3691 646.4512 481.729 649.6022 c
+479.0889 652.7531 477.7689 657.8471 477.7689 664.8891 c
+477.7689 672.4392 479.2006 677.9189 482.0697 681.3253 c
+484.9359 684.7318 488.6698 686.4353 493.2685 686.4353 c
+497.753 686.4353 501.3725 684.8011 504.1269 681.5383 c
+506.8787 678.2727 508.2574 673.0912 508.2574 665.996 c
+508.2574 658.6721 506.767 653.3202 503.7863 649.9426 c
+f
+1 D
+497.4417 710.5364 m
+492.9546 712.8064 487.789 713.943 481.9418 713.943 c
+474.9001 713.943 468.2439 712.0268 461.971 708.1943 c
+455.6957 704.3622 450.8415 698.6403 447.4084 691.034 c
+443.9724 683.4252 442.2559 674.7386 442.2559 664.974 c
+442.2559 650.6668 446.0724 639.4252 453.7102 631.2495 c
+461.3458 623.0739 471.097 618.9859 482.9639 618.9859 c
+489.4922 618.9859 494.8868 620.1783 499.1448 622.5628 c
+503.4031 624.9474 507.2353 628.6653 510.6419 633.7192 c
+510.6419 621.6259 L
+542.7484 621.6259 L
+542.7484 745.3681 L
+506.9798 745.3681 L
+506.9798 702.3608 l
+503.7997 706.1639 500.6192 708.8891 497.4417 710.5364 c
+f
+*U
+0 To
+1 0 0 1 99.2598 590.9656 0 Tp
+TP
+0 Tr
+0 g
+0 D
+/_Helvetica-Bold 34.8828 Tf
+0 Ts
+100 Tz
+-40 Tt
+1 TA
+%_ 0 XL
+104.6485 0 Xb
+XB
+0 0 5 TC
+100 100 200 TW
+0 0 0 Ti
+0 Ta
+0 0 2 2 3 Th
+0 Tq
+0 0 Tl
+-1.3951 Tc
+0 Tw
+(electronic commerce module) Tx
+(\r) TX 
+TO
+0 To
+0 1 -1 0 103.3157 620.4015 0 Tp
+TP
+0 Tr
+/_Helvetica-Bold 31.3945 Tf
+-25 Tt
+-0.7847 Tc
+(built with) Tx
+(\r) TX 
+TO
+U
+LB
+%AI5_EndLayer--
+%%PageTrailer
+gsave annotatepage grestore showpage
+%%Trailer
+Adobe_Illustrator_AI5 /terminate get exec
+Adobe_typography_AI5 /terminate get exec
+Adobe_screens_AI5 /terminate get exec
+Adobe_level2_AI5 /terminate get exec
+%%EOF

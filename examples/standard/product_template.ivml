@@ -1,0 +1,21 @@
+<title>iVend: #name#</title>
+<body bgcolor=white text=navy>
+<img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
+<gtext fg=maroon nfont=helvetica black>#name#</gtext><p>
+<font face=helvetica,arial size=+1>
+<p>
+<i>#description#</i>
+<p>
+<ivmg src="#id#">
+<p>
+Price: #price#<br>
+Shipping: #shipping#
+<p>
+<ul>
+<li><a add>Add to Shopping Cart.</ia>
+<li><a cart>Check Shopping Cart!</ia>
+<li><a href="./">Return to the top.</a>
+</ul>
+<hr>
+Please direct questions or comments to &lt; <a
+href=mailto:hww3@riverweb.com>hww3@riverweb.com</a> &gt;.

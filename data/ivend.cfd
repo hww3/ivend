@@ -1,0 +1,41 @@
+iVcd
+$varname=name
+$name=Store Name
+$type=string
+$description=Short Description of Store.
+
+$varname=config
+$name=Store ID
+$type=string
+$description=One word used to describe this store.
+
+$varname=user
+$name=DB User
+$type=string
+$description=Username with access permissions to Database.
+
+$varname=dbhost
+$name=DB Host
+$type=string
+$description=Hostname of SQL Database Server.
+
+$varname=checkout_module
+$name=Checkout Module
+$type=multiple
+$options=harris|default
+$description=Name of Checkout Module to Use.
+
+$varname=password
+$name=DB Password
+$type=password
+$description=Password for DB User
+
+$varname=db
+$name=DB Name
+$type=string
+$description=Name of the Database containing Store data.
+
+$varname=root
+$name=Store Root
+$type=string
+$description=Location (in real filesystem) of Store Datafiles.

@@ -1,0 +1,136 @@
+iVend version 1.0pa1 of 12 december 1997 
+coding by Bill Welliver <hww3@riverweb.com>
+
+What is iVend?
+
+iVend is a module for the Roxen Challenger web server which allows electronic
+commerce functions to be provided quickly and easily. iVend supports 
+multiple stores from a single installation, and provides direct support 
+for SQL databases to handle product and order tracking.
+
+iVend is currently in the very early stages of development, and as such 
+there will be bugs and missing features. Hopefully with the support of 
+alpha and beta testers iVend will grow up to be a mature, powerful and 
+useful tool.
+
+What do I need for iVend to work?
+
+* A system running Roxen Challenger version 1.2 or higher.
+* An SQL database server supported by Roxen Challenger.
+  (iVend was developed using mysql, however other dbms systems should 
+  work as well.) 
+* A working knowledge of HTML, SQL databases, and Unix.
+
+Installing iVend
+
+1. Untar the ivend distribution file. You should get a directory called 
+ivend. This directory contains the module, data files and example store.
+
+2. Add the ivend directory to your module search path using the Roxen 
+Administration interface.
+
+3. Choose 'Add Module' to a virtual server.
+
+4. Set the configuration username and password, as well as the module's root
+configuration directory. This is normally ivend/data.
+
+5. Save the settings and you're ready to go! iVend will be mounted by 
+default on /ivend/, and configuration is located at /ivend/config/.
+
+Adding a new store
+
+1. Create a directory where all store related files will be kept.
+
+2. Create a database where iVend will store all store related 
+transactions. mysql users can use the 'mysqladmin create dbname' command. 
+Other systems may vary. Provide select/insert/delete access to a user so 
+that iVend can connect and use this db.
+
+3. Create data tables in that database for iVend to use. A sample schema 
+file is located in the examples directory. These tables can contain as 
+many and varied fields as you like, but at least the following must be 
+present:
+
+products		groups			product_groups
+
+id string key		id string key		group string
+name string		name string		product string
+image string		image string
+price decimal(2)	price decimal(2)
+
+orders
+
+id string
+product string
+
+
+The above fields are considered 'special' by iVend, and are expected to 
+be present. The presence of additional fields is purely optional, however 
+fields such as shipping wights and costs, product descriptions or 
+inventory counts may also be useful.
+
+4. Modify the iVend templates using standard HTML, RXML and additional 
+IVML (ivend markup language) tags. A listing of IVML tags can be found in 
+the section labelled IVML. The minimum files required by ivend to operate 
+must be present in each store's data directory and are described below:
+
+index.ivml -- the default page displayed upon arrival at the store.
+groups.ivml -- this page is used to display all available store groups.
+group_template.ivml -- template used to generate group listings.
+product_template.ivml -- template used to generate individual product listings.
+cart.ivml -- handles shopping cart functions.
+
+examples of these files are located in the examples directory.
+
+5. Enter the iVend configuration interface by pointing your browser to
+http://virtualserver/ivend/config. You will pe prompted for the ivend config
+username and password.
+
+6. Click on 'New Store Configuration'. A form will be presented in which 
+you should provide the information requested. Note: some information may 
+not be nessecary ( such as database users and passwords, etc).
+
+7. After completing the information, click on the 'Add' button. You should be
+returned to the main configuration screen. Click on the 'Save Changes' 
+link to save the configuration.
+
+8. You should now be able to point your browser to
+http://virtualserver/ivend/storeid where storeid is the id name of the 
+store you just created. You should be able to move around the various 
+options, although there won't be any groups or products to choose from.
+
+9. Point your browser to http://virtualserver/ivend/storeid/admin. This 
+will bring up the iVend Store Administration Page, from which you can add 
+and delete products and groups. This is also the central point for 
+monitoring orders and store status.
+
+10. Create some new groups, giving each a unique group id. It should be 
+noted that currently, groups and products cannot share the same id. You 
+can use your browser to add a graphic associated with that particular 
+group. Also, that graphic must be in gif format currently.
+
+11. After adding groups, you can add products, placing them in as many 
+groups as desired. After addition, products and groups will become 
+instantly available in the store.
+
+IVML
+
+The following tags are additions or modifications of existing HTML and 
+RXML tags. They are only available within the iVend system.
+
+<a></a> has been modified to provide session tracking capabilities. 
+Additionally, the following attributes have been added:
+
+cart: generates a link to the store's shopping cart page.
+groups: generates a link to the store's group listing page.
+checkout: generates a link to the store's checkout page.
+
+<ivstatus> when used on product pages, this tag will display information about
+additions to a user's shopping cart, and possibly other information from 
+the iVend system.
+
+<ivmg> is used to insert an image from a product or group stored in ivend's
+database.
+
+<cart> displays the store shopping cart.
+

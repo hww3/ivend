@@ -1,0 +1,85 @@
+# mysql Dump
+#
+
+# Host: localhost    Database: ivtest
+#--------------------------------------------------------
+
+
+#
+# Table structure for table 'groups'
+#
+CREATE TABLE groups (
+  id varchar(12) NOT NULL,
+  name varchar(64) NOT NULL,
+  description blob,
+  image varchar(12),
+  PRIMARY KEY (id)
+);
+
+
+#
+# Dumping data for table 'groups'
+#
+
+INSERT INTO groups VALUES ('1000','Smoke Shifters','Standard devices for shifting smoke,',NULL);
+INSERT INTO groups VALUES ('2000','Round Tuits','Perfect for when you run out of things to do.',NULL);
+
+#
+# Table structure for table 'product_groups'
+#
+CREATE TABLE product_groups (
+  group_id char(12),
+  product_id char(12)
+);
+
+
+#
+# Dumping data for table 'product_groups'
+#
+
+INSERT INTO product_groups VALUES ('1000','2450E');
+INSERT INTO product_groups VALUES ('1000','2450C');
+
+#
+# Table structure for table 'products'
+#
+CREATE TABLE products (
+  id varchar(12) NOT NULL,
+  name varchar(64) NOT NULL,
+  description blob,
+  onhand int(11),
+  onhand_date datetime,
+  units varchar(24),
+  mfgr varchar(12),
+  shipping decimal(5,2),
+  cost decimal(6,2),
+  price decimal(7,2),
+  qualifiers varchar(24),
+  image varchar(12),
+  PRIMARY KEY (id)
+);
+
+
+#
+# Dumping data for table 'products'
+#
+
+INSERT INTO products VALUES ('2450E','Smoke Shifter, RH','For the person who has everything... A right handed smoke shifter',4,'1997-11-04 11:23:04','Single Unit','Wigetco',4.50,5.23,10.00,NULL,'2450e');
+INSERT INTO products VALUES ('2450C','Smoke Shifter, LH','For the person who has everything... A left handed smoke shifter',2,'1997-11-04 11:20:43','Single Unit','Wigetco',4.25,5.14,10.00,NULL,'2450c');
+
+#
+# Table structure for table 'sessions'
+#
+CREATE TABLE sessions (
+  sessionid int(11) NOT NULL DEFAULT '0',
+  id varchar(12) NOT NULL DEFAULT '0',
+  quantity int(11) NOT NULL DEFAULT '0',
+  series int(11) NOT NULL DEFAULT '0',
+  qualifier varchar(24)
+);
+
+
+#
+# Dumping data for table 'sessions'
+#
+

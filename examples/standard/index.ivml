@@ -1,0 +1,13 @@
+
+<title>Welcome to iVend!</title>
+<body bgcolor=white text=navy>
+<img src="/ivend/ivend-image/ivendlogo.gif"><p>
+<font face=helvetica,arial size=+1>
+<ul>
+<comment><li><a href="groups.ivml">Browse the product groups.</a>
+</comment>
+<li><a cart>Check your cart!</a>
+</ul>
+<hr>
+Please direct questions or comments to &lt; <a 
+href="mailto:hww3@riverweb.com">hww3@riverweb.com</a> &gt;. <dumpid>

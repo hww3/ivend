@@ -652,11 +652,24 @@ return retval;
 
 }
 
-mixed parse_page(string page, array(mapping(string:string)) r, array desc,
-object|void id){
+string container_itemoutput(string name, mapping args,
+                      string contents, object id) {
 
-string field;
-array fields=indices(r[0]);
+string type=(args->type || id->misc->ivend->type);
+string item=(args->item || id->misc->ivend->page);
+
+  string q="SELECT *" + (args->extrafields?"," +
+        args->extrafields:"") +" FROM " +
+	type + "s WHERE " +
+        keys[id->misc->ivend->st][type + "s"] 
+	+"='"+ item +"'";
+
+array r=  id->misc->ivend->db->query(q);
+
+  if(sizeof(r)==0)
+    return 0;
+
+array desc=id->misc->ivend->db->list_fields(type +"s");
 
 for(int i=0; i<sizeof(desc); i++){
 
@@ -692,7 +705,6 @@ if (sizeof(r)==1){
   id->misc->ivend->type="group";
   if(id->variables->template) template=id->variables->template;
   else template="group_template.html";
-  f=id->misc->ivend->db->list_fields("groups");
   }
 else {
   string q="SELECT *" + (id->misc->ivend->extrafields?"," +
@@ -700,20 +712,19 @@ else {
 	keys[id->misc->ivend->st]->products +"='"+page+"'";
 
   r=id->misc->ivend->db->query(q);
+  if (sizeof(r)!=1) 
+    return 0;
   id->misc->ivend->type="product";
   if(id->variables->template) template=id->variables->template;
   else template="product_template.html";
-  f=id->misc->ivend->db->list_fields("products");
 
   }
-if (sizeof(r)!=1) 
-return 0;
 
 retval=Stdio.read_bytes(id->misc->ivend->config->root+"/"+template);
 if (catch(sizeof(retval)))
   return 0;
 id->realfile=id->misc->ivend->config->root+"/"+template;
-return parse_page(retval, r, f, id);
+return (retval, id);
 }
 
 mixed additem(string item, object id){
@@ -1417,6 +1428,7 @@ if(args->extrafields)
 	"icart":container_icart, 
 	"ivindex":container_ivindex,
 	"category_output":container_category_output
+	"itemoutput":container_itemoutput
     ]);
 catch {
 if(id->misc->ivend->st){

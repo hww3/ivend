@@ -51,7 +51,7 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
    foreach(f, mapping field){
      if(field->name=="updated" || field->name=="type" || field->name=="orderid" || row[field->name]==ignore) continue;
      d+="<tr><td width=30%><font face=helvetica>"+replace(field->name, "_"," ")+"</td><td>\n";
-     if(Regexp(".@.*\.*")->match(row[field->name]))
+     if(Regexp(".@.*\.*")->match((string)row[field->name]))
        d+="<a href=\"mailto:"+row[field->name]+"\">"+
 	 row[field->name]+"</a></td></tr>\n";
      else d+=row[field->name]+"</td></tr>\n";

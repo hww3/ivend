@@ -12,3 +12,7 @@ add hooks for image processing (2/23/98)
 persistent database connections (3/15/98)
 
 support for threaded operation (3/15/98)
+
+add error handling for sendmail() (3/25/98)
+
+add configurable order handling functions ie fax, etc. (3/25/98)

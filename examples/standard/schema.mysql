@@ -28,6 +28,7 @@ CREATE TABLE customer_info (
 # Dumping data for table 'customer_info'
 #
 
+INSERT INTO customer_info VALUES (1,'Bill','Welliver','Harris Phlegmiconductor','125 Crestwood Rd.','','Mountaintop','PA','18707','717 474 6761','','','hww3@riverweb.com',19980329233049,0);
 
 #
 # Table structure for table 'groups'
@@ -45,6 +46,19 @@ CREATE TABLE groups (
 # Dumping data for table 'groups'
 #
 
+#
+# Table structure for table 'lineitems'
+#
+CREATE TABLE lineitems (
+  orderid char(12) DEFAULT '' NOT NULL,
+  lineitem char(12) DEFAULT '' NOT NULL,
+  value float(10,2) DEFAULT '0.00' NOT NULL
+);
+
+#
+# Dumping data for table 'lineitems'
+#
+
 
 #
 # Table structure for table 'orderdata'
@@ -56,7 +70,7 @@ CREATE TABLE orderdata (
   series int(11) DEFAULT '0' NOT NULL,
   qualifier varchar(24),
   status int(11) DEFAULT '0' NOT NULL,
-  cost decimal(6,2) DEFAULT '0.00' NOT NULL,
+  price decimal(6,2) DEFAULT '0.00' NOT NULL,
   taxable enum('Y','N') DEFAULT 'Y'
 );
 
@@ -191,6 +205,7 @@ CREATE TABLE taxrates (
 #
 
 INSERT INTO taxrates VALUES ('PA',0.06);
+
 
 #
 # Table structure for table 'type'

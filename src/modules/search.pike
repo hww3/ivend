@@ -66,7 +66,7 @@ if(id->variables->initialize) {
   }
 if(sizeof(DB->list_tables("searchwords"))!=1)
   return "You have not configured the search handler."
-	"<p><a href=./?initialize=1>Click here</a>"
+	"<p><a href=\"./?initialize=true\">Click here</a>"
 	" to do this now.";
 if(id->variables->build_database) {
 build_database(id);
@@ -129,7 +129,7 @@ string q="";
 string results="";
 if(!id->variables->q || !id->variables->stype)
 	return "<!-- Incorrectly configured search query or no query -->";
-if(id->variables->stype==DB->keys->products){
+if(id->variables->stype=="id"){
 if(idmappings[((id->variables->q)-" ")]) q=idmappings[((id->variables->q)-" ")];
 else q=(id->variables->q)-" ";
   // we're searching by catalog id.
@@ -196,14 +196,22 @@ else // we aren't requiring words to be present...
     if(row->type=="g") {
 	if(numgroups>4) continue;
 	numgroups++;
-	mapping grow=DB->query("SELECT name, description FROM groups WHERE " + DB->keys->groups + "='" + row->id + "'")[0];
+	mapping grow=DB->query("SELECT name "
+	", description FROM groups WHERE " + DB->keys->groups + "='" +
+row->id + "'")[0];
 	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" + grow->name + "</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><dd>" + grow->description + "</dd><p>";
 	}
     else {
 	if(numproducts>15) continue;
 	numproducts++;
-	mapping grow=DB->query("SELECT name, description FROM products WHERE " + DB->keys->products + "='" + row->id + "'")[0];
-	productresults+="<dt><a href=\"" + T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" + grow->name + "</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><p>";
+	mapping grow=DB->query("SELECT " +
+CONFIG_ROOT[module_name]->productnamefield + 
+	", description FROM products WHERE " + DB->keys->products + "='" +
+row->id + "'")[0];
+	productresults+="<dt><a href=\"" + T_O->query("mountpoint") +
+(id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" +
+grow[CONFIG_ROOT[module_name]->productnamefield] +
+"</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><p>";
 
       }
     }
@@ -231,8 +239,11 @@ string tag_searchform(string tag_name, mapping args,
 
    string retval="<form action=\"" + action + "\">\n";
 	retval+="<input type=text name=q size=" + size +" VALUE=\"" + upper_case((id->variables->q||"")) + "\">\n";
-	retval+="<input type=radio name=stype value=key " + (id->variables->stype=="key"|!id->variables->stype?"checked":"") + "> Keywords "
-		"<input type=radio name=stype value=id " + (id->variables->stype=="id"?"checked":"") + "> " + 
+	retval+="<input type=radio name=stype value=key " +
+(id->variables->stype=="key"|!id->variables->stype?"checked":"") +
+">&nbsp;Keywords "
+		"<input type=radio name=stype value=id " +
+(id->variables->stype=="id"?"checked":"") + ">&nbsp;" + 
 		replace(DB->keys->products, "_", " ");
 	retval+=" <input type=submit value=\"Search\">\n";
 	retval+="</form>\n";
@@ -375,6 +386,13 @@ array query_preferences(void|object id) {
 	VARIABLE_MULTIPLE,
 	"name",
 	groupsearchfields
+	}) ,
+
+	({"productnamefield", "Product Name Field", 
+	"Fields to be displayed when viewing a product name.",
+	VARIABLE_SELECT,
+	"name",
+	productsearchfields
 	}) ,
 
 	({"productsearchfields", "Product Search Fields", 

@@ -168,7 +168,7 @@ CONFIG_ROOT[module_name]->manifestfields;
 	+ manifestfields +" FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
-	   " AND products." + id->misc->ivend->keys->products +
+	   " AND products." + DB->keys->products +
 	"=orderdata.id");
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
@@ -184,8 +184,8 @@ retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
-perror(sprintf("%O", id->misc->ivend->keys));
-perror(sprintf("%O", row));
+// perror(sprintf("%O", id->misc->ivend->keys));
+// perror(sprintf("%O", row));
 
     retval+="<tr><td>" + (row->status=="Shipped"?"(S)" : 
 	"<input type=checkbox value=ship name=\"" + 
@@ -567,7 +567,7 @@ if(cn && stringp(cn)) {
   array cn2=cn/"";
   int j=sizeof(cn2);
   for(int l=0; l<(j-4); l++)
-   cn2[l]="X";
+   if(cn2[l]!=" ") cn2[l]="X";
   cn=cn2*"";
   }
    array r=DB->query(
@@ -636,7 +636,8 @@ else {
    array r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
    DB->query("UPDATE payment_info SET status=" + 
-       r[0]->status + " WHERE orderid='" + id->variables->orderid+"'");
+       r[0]->status + ", " + CONFIG_ROOT[module_name]->card_number_field + "=''"
+	+ " WHERE orderid='" + id->variables->orderid+"'");
    array r=DB->query(
        "SELECT status FROM status WHERE name='Cancelled'");
         T_O->report_status("Changed order status to 'Cancelled.'",
@@ -719,7 +720,7 @@ else {
     array r=DB->query("SELECT orderdata.*, status.name as status FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
-	   " AND products." + id->misc->ivend->keys->products +
+	   " AND products." + DB->keys->products +
 	"=orderdata.id and status.name!='Shipped'");
 
      DB->query("UPDATE orderdata SET status=" + status

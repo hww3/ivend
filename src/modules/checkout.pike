@@ -546,11 +546,18 @@ if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
     throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad card number -->";
   }
-else if(Commerce.CreditCard.expdate_verify(exp_date)!=0)
+else if(Commerce.CreditCard.expdate_verify(exp_date)!=1)
  {
    throw_error(INVALID_CREDIT_CARD, id);
   return "<!-- bad date -->";
  }
+card_number-=" ";
+array cnd=card_number/4;
+cnd+=({card_number%4});
+cnd-=({""});
+card_number=cnd*" ";
+if(args->card_number) id->variables[args->card_number]=card_number;
+else id->variables->card_number=card_number;
 return "<!-- successful card check -->";
 
 }
@@ -663,7 +670,7 @@ string query="SELECT sessions.quantity, "
   "sessions.quantity*sessions.price AS linetotal, "
   "sessions.taxable " + extrafields +
   " FROM sessions,products WHERE products." +
-id->misc->ivend->keys->products + "=sessions.id AND "
+DB->keys->products + "=sessions.id AND "
   "sessions.sessionid='" + (args->orderid ||
 id->misc->ivend->orderid || id->misc->ivend->SESSIONID) + "'";
 

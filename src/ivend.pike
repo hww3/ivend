@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.101 1998-08-19 12:29:05 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.102 1998-08-20 18:36:23 hww3 Exp $";
 
 array register_module(){
 
@@ -1457,14 +1457,18 @@ return http_string_answer(data,
 void handle_sessionid(object id) {
 
 
-  if(!id->variables->SESSIONID) 
+  if(!id->variables->SESSIONID) {
+
     id->misc->ivend->SESSIONID=
-      "S"+(string)hash((string)time(1)+(string)random(32201))+num;	
+      "S" + (string)hash((string)time(1))+num;	
+      num+=1;
+
+      }
+
     else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
 
   m_delete(id->variables,"SESSIONID");
 
-  num+=1;
 }
 
 mixed return_data(mixed retval, object id){

@@ -293,9 +293,7 @@ array r=DB->query("SELECT * FROM shipping_types WHERE type=" + type);
 if(!r){ perror("error getting shipping type " + type + "\n"); return ""; }
 
 else charge=handlers[r[0]->module]->calculate_shippingcost(type, id); 
-if(charge>=0.0)
   return sprintf("%.2f", charge);
-else return "Error";
 
 }
 
@@ -358,10 +356,16 @@ array r;
 r=id->misc->ivend->db->query("SELECT * from shipping_types order by type");
 int t=0;
 foreach(r, mapping row){
+args->type=row->type;
+string price=tag_shippingcalc ("shippingcalc", args,
+                    id, defines);
+                     
+if((float)price!=-1.00){                           
 retval+="<dt><input type=radio name=type " +((t==0)?("CHECKED"):("")) 
   +" value=\"" + row->type + "\"> <b>"+ row->name + 
-  ": $<shippingcalc type=" + row->type + 
-  "></b><dd>" + row->description;
+  ": $ " + price +
+  "</b><dd>" + row->description;
+}
   t=1;
 }
 return retval;

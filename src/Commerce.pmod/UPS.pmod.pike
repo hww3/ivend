@@ -4,17 +4,23 @@ private mapping(string:mixed) zonedata=([]);
 private mapping(string:mixed) ratedata=([]);
 
 int load_zonefile(string zonefile){
-
 if (zonefile=="") return 0;
-int loc=search(zonefile,"\"ZONES\"\n");
-zonefile=zonefile[(loc+8)..];
-array z=zonefile/"\n";
+int loc=search(zonefile,"Dest. ZIP,");
+string zn=zonefile[loc..];
+// perror("zonefile: "  + zn + "\n");
+array z=((replace(zn,({"\r\n"}),({"\n"})))/"\n");
+//perror(sizeof(z) + "\n");
+// perror(z[0]+"\n");
 array t=z[0]/","; // shipping types
+// perror(sizeof(t) + "\n");
 for(int i=2; i<sizeof(z);i++){
   array a=z[i]/",";
   mapping line=([]);
-  if(sizeof(a)!=sizeof(t))
+// perror(sizeof(a)+"\n");
+  if(sizeof(a)!=sizeof(t)) {
+    perror("mismatched line!\n");
     continue;
+    }
   if(a[0]=="")
     continue;
   for(int j=1;j<sizeof(a);j++){
@@ -30,6 +36,7 @@ return 1;
 }
 
 int load_ratefile(string ratefile){
+ratefile=replace(ratefile, "\r", "\n");
 if (ratefile=="") return 0;
 string type=ratefile[4..(search(ratefile,",")-1)];
 int loc=search(ratefile,"\nWeight");
@@ -79,6 +86,7 @@ return 1;
 }
 
 string findzip(string zipcode){
+perror(sprintf("%O", zonedata) +"\n");
 zipcode=zipcode[0..2];
 array z=indices(zonedata);
 z=sort(z);
@@ -102,8 +110,10 @@ float|mapping(string:float) findrate(string zipcode,
 if (zipcode=="") return 0.00;
 else if (weight=="letter") weight="Letter";
 string zip=findzip(zipcode);
-string zone=zonedata[zip][type];
-if(!type){
+perror("ZIP: " + zipcode + " " + zip + "\n");
+if(type)
+  string zone=zonedata[zip][type];
+else {
    mapping(string:float) retval=([]);
    array t=indices(ratedata);
    for(int i=0; i<sizeof(t); i++){

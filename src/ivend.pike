@@ -360,13 +360,16 @@ void start_store(string c){
 
 
 void stop_store(string c){
-  foreach(indices(modules[c]), string m) {
-    if(modules[c][m]->stop && functionp(modules[c][m]->stop))
-	modules[c][m]->stop();
-	destruct(modules[c][m]);
-  }  
-  destruct(db[c]);
 
+  foreach(indices(modules[c]), string m) {
+    if(modules[c][m]->stop && functionp(modules[c][m]->stop)) 
+	modules[c][m]->stop();
+    if(modules[c][m])
+	destruct(modules[c][m]);
+
+  }  
+  if(db[c])
+    destruct(db[c]);
 }
 
 void stop(){

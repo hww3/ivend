@@ -1,23 +1,23 @@
 int readcode(object f){
 
-perror("readcode() \n");
+// perror("readcode() \n");
 
 int code;
 int space;
 string r;
 
 do {
-werror("Loop...\n");
+// werror("Loop...\n");
 space=' ';
-werror("getting line...\n");
+// werror("getting line...\n");
 r=f->gets();
-werror("got line...\n");
+// werror("got line...\n");
 if(!r) return 0;
 sscanf(r, "%d%c%*s", code, space);
-perror("space: " + (string)space + "\n");
+// perror("space: " + (string)space + "\n");
 }
 while (space=='-');
-perror("returning code " + code + "\n");
+// perror("returning code " + code + "\n");
 return code;
 }
 
@@ -44,7 +44,7 @@ if(!f->connect(mailhost, 25)) {
   return 0;
   }
 
- werror("Contacted " + mxhost + "\n");
+// werror("Contacted " + mxhost + "\n");
 
 int r;
 if(r=readcode(f)/100 !=2) {
@@ -53,17 +53,17 @@ if(r=readcode(f)/100 !=2) {
     return 0;
     }
 
- werror("Got welcome message from " + mxhost + "\n");
+// werror("Got welcome message from " + mxhost + "\n");
 
 f->write("HELO " + gethostname() + "\r\n");
-werror("wrote HELO " + gethostname() + "\n");
+// werror("wrote HELO " + gethostname() + "\n");
 if(r=readcode(f)/100 !=2){
   f->close();
   werror("NO GREETING FROM MAIL SERVER: " + r + "!\n");
   return 0;
   }
 
- werror("Sent HELO to " + mxhost + "\n");
+// werror("Sent HELO to " + mxhost + "\n");
 
 f->write("MAIL FROM: <" + address + ">\r\n");
 if(r=readcode(f)/100 !=2) {
@@ -73,7 +73,7 @@ f->write("RCPT TO: <" + address + ">\r\n");
 if(r=readcode(f)/100 !=2) {
   return 0; // bad address!
 } else {
-  perror("The VRFY TEST has passed\n");
+//  perror("The VRFY TEST has passed\n");
   f->write("QUIT\n");
   f->close();
 

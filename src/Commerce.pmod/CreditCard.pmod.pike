@@ -40,8 +40,8 @@ if (validnumbers != "") {
 }
 
 //verify card number length and exit with 1 if bad
-perror("size of number: " + sizeof(number) + "\n");
-perror("size to match: " + card_digits[card_type] + "\n");
+// perror("size of number: " + sizeof(number) + "\n");
+// perror("size to match: " + card_digits[card_type] + "\n");
 if (sizeof(number)!= card_digits[card_type]) {
  perror("wrong number of digits in card number\n");
  return(1);

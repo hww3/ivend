@@ -268,9 +268,9 @@ if(error)
 // get the order from sessions
 
   array r=DB->query(
-	"SELECT sessions.*,sessions.price, products.taxable from sessions,products  WHERE sessionid='"
-	+id->misc->ivend->SESSIONID+ "' and products." +
-	id->misc->ivend->keys->products + "=sessions.id");
+	"SELECT sessions.* from "
+	" sessions WHERE sessionid='"
+	+id->misc->ivend->SESSIONID+ "'");
 
 // replace sessionid with orderid
 string query;
@@ -406,94 +406,14 @@ return sprintf("%.2f", tdiscount + ntdiscount);
 }
 
 
-/*
-
-  calculate tax
-
-*/
-
 string tag_salestax(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
   return "<!-- skipping salestax because of errors.-->";
 
-array r;		// result from query
-string query;		// the query
-float totaltax;		// totaltax
-string locality;	// fieldname of locality
-float taxrate=0.00;
-mapping lookup=([]);
 
-query="SELECT field_name FROM taxrates GROUP BY field_name";
-
-r=DB->query(query);
-
-if(sizeof(r)==0)
-  return "0.00";
-
-array fields=({});
-mapping tables=([]);
-
-foreach(r, mapping row)
-  fields += ({row->field_name});
-foreach(fields, string f)
-  if(!tables[(f/".")[0]]) {
-    tables += ([(f/".")[0]:({})]);
-    tables[(f/".")[0]] += ({f});
-    }
-  else tables[(f/".")[0]] +=({f});
-
-foreach(indices(tables), string tname){
-
- query="SELECT " + (tables[tname]*", ") + " FROM " + tname + 
-  " WHERE " + tname + ".orderid='" + id->misc->ivend->SESSIONID + "'"; 
-
-// perror(query + "\n");
-
- r=DB->query(query);
-
- if(sizeof(r)!=0)
-  foreach(indices(r[0]), string fname) 
-    lookup+=([tname + "." + fname: r[0][fname]]);
- } 
-
-if(sizeof(lookup)==0) {
-  perror("iVend: Unable to find order info for tax calculation!\n");
-  return "0.00";
-  }
-
-
-else { 		// calculate the tax rate as sum of all matches.
-
-  foreach(indices(lookup), string fname) {
-    query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
-      "value='" + lookup[fname] + "'";
-
-//    perror(query + "\n");
-    r=DB->query(query);
-
-    if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
-  
-    } 
-
-  r=DB->query(query);
-  if(sizeof(r)==1) {
-    if(CONFIG_ROOT[module_name]->shipping_taxable=="Yes")
-      totaltax=(float)taxrate *
-        (float)((id->misc->ivend->lineitems->taxable +
-         id->misc->ivend->lineitems->shipping) || 0.00);
-    else totaltax=(float)taxrate *
-	(float)(id->misc->ivend->lineitems->taxable || 0.00);
-	totaltax=(float)sprintf("%.2f", (float)totaltax);
-    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
-      return sprintf("%.2f",totaltax);
-    }
-
-  else return ("0.00");
-  }
-
-id->misc->ivend->lineitems+=(["salestax":0.00]);
-return ("ERROR");
+return (string)(sprintf("%.2f",T_O->get_tax(id, (args->orderid ||
+id->misc->ivend->SESSIONID))));
 
 }
 
@@ -542,7 +462,14 @@ string tag_addentry(string tag_name, mapping args,
 if(id->variables["_backup"] || id->misc->ivend->skip_page)
    return "<!-- addentry skipped. -->\n";
 if(stop_error(id)) return "<!-- Not adding data because of errors.-->";
-if((int)id->variables->shipsame==1) return "";
+if((int)id->variables->shipsame==1) {
+ array q=DB->query("SELECT * FROM customer_info WHERE orderid='" +
+   id->misc->ivend->SESSIONID + "' AND type=0");
+ if(q && sizeof(q)) 
+   foreach(indices(q[0]), string f)
+     id->variables[lower_case(f)]=q[0][f];
+   id->variables->type=1;
+ }
 if(!args->noflush)
   id->misc->ivend->clear_oldrecord=1;
 
@@ -661,19 +588,16 @@ else
 
 }
 
-
 string tag_subtotal(string tag_name, mapping args,
 		     object id, mapping defines) {
 if(stop_error(id)) 
   return "<!-- skipping subtotal because of errors.-->";
 
-float subtotal;
-
-subtotal=(float)id->misc->ivend->lineitems->taxable + 
-	(float)id->misc->ivend->lineitems->nontaxable;
 
 
-return sprintf("%.2f", subtotal);
+return sprintf("%.2f", T_O->get_subtotal(id, args->orderid ||
+id->misc->ivend->orderid ||
+id->misc->ivend->SESSIONID));
 
 
 
@@ -685,23 +609,11 @@ string tag_grandtotal(string tag_name, mapping args,
 if(stop_error(id)) 
   return "<!-- skipping grandtotal because of errors.-->";
 
-float grandtotal=0.00;
-string item;
- foreach(indices(id->misc->ivend->lineitems), item) {
-   float i= id->misc->ivend->lineitems[item];
-   grandtotal+=i;
-   if(item=="shipping");
-   else {
-     DB->query("DELETE FROM lineitems WHERE orderid='"
-				+id->variables->orderid+"' AND lineitem='"
-				+item +"'");
-     DB->query("REPLACE INTO lineitems VALUES('"+ 
-			   id->variables->orderid + 
-			   "','" + item + "',"+ i + ",NULL)");
-   }
- }
+float gt=T_O->get_grandtotal(id, args->orderid || id->misc->ivend->orderid
+|| id->misc->ivend->SESSIONID);
+// perror(gt + "\n");
+return sprintf("%.2f", (float)(gt));
 
- return sprintf("%.2f",(float)grandtotal);
 
 }
 
@@ -749,8 +661,8 @@ array en=({});
 
 string query="SELECT sessions.quantity, "
   "sessions.price, " 
-  "sessions.quantity*sessions.price AS linetotal, taxable " + extrafields
-+
+  "sessions.quantity*sessions.price AS linetotal, "
+  "sessions.taxable " + extrafields +
   " FROM sessions,products WHERE products." +
 id->misc->ivend->keys->products + "=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
@@ -901,10 +813,6 @@ mapping query_tag_callers2() {
 return (["showorder" : tag_showorder,
       "confirmorder" : tag_confirmorder,
       "confirmemail" : tag_confirmemail,
-	  "shipping" : tag_shipping,
-	"grandtotal" : tag_grandtotal,
-  	  "subtotal" : tag_subtotal,
-	  "salestax" : tag_salestax, 
 	  "discount" : tag_discount, 
 	 "cardcheck" : tag_cardcheck,
 	  "addentry" : tag_addentry,
@@ -923,7 +831,12 @@ mapping query_container_callers2(){
 
 mapping query_tag_callers(){
 
-  return ([]);
+  return ([
+	"grandtotal" : tag_grandtotal,
+  	  "subtotal" : tag_subtotal,
+	  "salestax" : tag_salestax
+
+]);
 
 }
 

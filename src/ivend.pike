@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.253 1999-12-06 21:51:57 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.254 1999-12-20 18:55:36 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -97,6 +97,163 @@ void report_warning(string error, string|void orderid, string subsys, object id)
 	DB->quote(error) + "')");  
 
     return;
+
+}
+
+/*
+
+  calculate tax
+
+*/
+
+float get_tax(object id, string orderid){
+
+array r;                // result from query
+string query;           // the query
+float totaltax;         // totaltax
+string locality;        // fieldname of locality
+float taxrate=0.00;
+mapping lookup=([]);
+
+query="SELECT field_name FROM taxrates GROUP BY field_name"; 
+r=DB->query(query);
+
+if(sizeof(r)==0)
+  return 0.00;
+
+array fields=({});
+mapping tables=([]);
+
+foreach(r, mapping row)  fields += ({row->field_name});
+foreach(fields, string f)
+  if(!tables[(f/".")[0]]) {
+    tables += ([(f/".")[0]:({})]);
+    tables[(f/".")[0]] += ({f});
+    }
+  else tables[(f/".")[0]] +=({f});
+
+foreach(indices(tables), string tname){
+                                         
+query="SELECT " + (tables[tname]*", ") + " FROM " + tname +
+  " WHERE " + tname + ".orderid='" + orderid + "'";
+
+// perror(query + "\n");
+
+ r=DB->query(query);
+
+ if(sizeof(r)!=0)
+  foreach(indices(r[0]), string fname)
+    lookup+=([tname + "." + fname: r[0][fname]]);
+ }
+
+if(sizeof(lookup)==0) {
+  perror("iVend: Unable to find order info for tax calculation!\n");
+  return -1.00;
+  }
+
+
+else {          // calculate the tax rate as sum of all matches.
+ 
+  foreach(indices(lookup), string fname) {
+    query="SELECT * FROM taxrates WHERE field_name='" + fname + "' AND "
+      "value='" + lookup[fname] + "'";
+
+//    perror(query + "\n");
+    r=DB->query(query);
+
+    if(sizeof(r)!=0) taxrate+=(float)r[0]->taxrate;
+
+    }
+     
+  r=DB->query(query);
+  if(sizeof(r)==1) {
+     r=DB->query("SELECT SUM(value)*" + taxrate + " as totaltax "
+        " FROM lineitems WHERE orderid='" + orderid + "' AND "
+        "taxable='Y'");
+
+        totaltax=(float)sprintf("%.2f", (float)r[0]->totaltax);
+//    id->misc->ivend->lineitems+=(["salestax":(float)totaltax]);
+return (float)(sprintf("%.2f",totaltax));
+    }
+
+  else return (0.00);
+  }
+
+// id->misc->ivend->lineitems+=(["salestax":0.00]);
+return (-1.00);
+
+} 
+
+string is_lineitem_taxable(object id, string item, string orderid){
+// perror("is lineitem " +item + " taxable?\n");
+  if(item=="taxable") return "Y";
+  if(item=="shipping" &&
+CONFIG_ROOT["Default Checkout Module"]->shipping_taxable=="Yes") return
+	"Y";
+  else {
+  perror(CONFIG_ROOT["Default Checkout Module"]->shipping_taxable+"\n");
+  perror("N!\n");
+ return "N";
+  } 
+}
+
+
+float get_subtotal(object id, string orderid){
+
+float subtotal;
+
+if(id->misc->ivend->lineitems)
+ foreach(indices(id->misc->ivend->lineitems), string item) {
+   if(item=="shipping");
+   else {
+     DB->query("DELETE FROM lineitems WHERE orderid='"
+				+orderid+"' AND lineitem='"
+				+item +"'");
+     DB->query("REPLACE INTO lineitems VALUES('"+ 
+			   orderid + 
+			   "','" + item + "',"+
+id->misc->ivend->lineitems[item] + ",NULL, '" + 
+				is_lineitem_taxable(id, item,
+orderid) +
+"')");
+   }
+ }
+
+array r=DB->query("SELECT SUM(value) as st FROM lineitems "
+	"WHERE orderid='" + orderid + "' and lineitem like '%taxable'");
+
+if(r && sizeof(r)==1) subtotal=(float)(r[0]->st);
+else throw(({"Unable to find order lineitems.", backtrace()}));
+
+// subtotal=(float)id->misc->ivend->lineitems->taxable +
+//        (float)id->misc->ivend->lineitems->nontaxable;
+
+return subtotal;
+
+}  
+
+
+float get_grandtotal(object id, string orderid){
+
+// perror("get grand total " + orderid + "\n");
+float grandtotal=0.00;
+
+
+array r=DB->query("SELECT SUM(value) as gt FROM lineitems "
+	"WHERE orderid='" + orderid + "'");
+
+if(r && sizeof(r)==1) grandtotal=(float)(r[0]->gt);
+else throw(({"Unable to find order lineitems.", backtrace()}));
+
+
+float salestax=T_O->get_tax(id, orderid);
+
+if(((float)salestax)) {
+  grandtotal+= (float)salestax;
+  }
+
+  return (float)grandtotal;
+
 
 }
 
@@ -691,6 +848,20 @@ if(optstr)
 }
 
 
+string is_item_taxable(object id, string item){
+
+if(!item) return "Y";
+
+array r=DB->query("SELECT taxable FROM products where " + KEYS->products +
+"='" + item + "'");
+
+if(r && sizeof(r)==1)
+  return r[0]->taxable;
+else
+  return "Y";
+
+}
+
 int do_low_additem(object id, mixed item, mixed quantity, mixed
                    price, mapping|void args){
     if(HAVE_ERRORS) { 
@@ -705,7 +876,8 @@ int do_low_additem(object id, mixed item, mixed quantity, mixed
                  id->misc->ivend->SESSIONID+
                  "','"+item+"',"+ quantity +","+(max+1)+",'" +
 		(args->options||"") + "'," + price +
-                 "," + (args->autoadd||0) +"," + (args->lock||0) +")";
+                 "," + (args->autoadd||0) +"," + (args->lock||0) + 
+		 ",'" + is_item_taxable(id, item) + "')";
 
     if(catch(
 DB->query(query)
@@ -1399,6 +1571,7 @@ string container_itemoutput(string name, mapping args,
 string get_type(string page, object id){
 
     array r;
+perror(page+"\n");
     catch(r=DB->query("SELECT * FROM groups WHERE " +
                 KEYS->groups +
                 "='"+page+"'"));
@@ -2994,10 +3167,16 @@ Config.write_section(query("configdir")+
 
                              catch(object s=db[c->config]->handle());
                              if(s) {
-                                 if(sizeof(s->list_fields("sessions","autoadd"))!=1)
-                                     s->query("alter table sessions add autoadd integer");
+if(sizeof(s->list_fields("sessions","autoadd"))!=1)
+  s->query("alter table sessions add autoadd integer");
+if(sizeof(s->list_fields("sessions","taxable"))!=1)
+  s->query("alter table sessions add taxable char(1) default 'Y'");
+if(sizeof(s->list_fields("lineitems","taxable"))!=1) {
+  perror("ADDING TAXABLE FIELD TO LINEITEMS\n");
+  s->query("alter table lineitems add taxable char(1) default 'Y'");
+  }
 if(sizeof(s->list_fields("payment_info","Authorization"))!=1)
-         s->query("alter table payment_info add Authorization char(24)");
+  s->query("alter table payment_info add Authorization char(24)");
 
 if(sizeof(s->list_tables("comments"))!=1) {
   perror("adding comments table...\n");

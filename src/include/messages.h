@@ -64,3 +64,7 @@
 #define SEARCH_RESULTS "Your search returned:"
 #define TEXT_AND "and"
 #define TEXT_OR "or"
+
+//shipping
+
+#define ACTUAL_CHARGES "Actual Charges"

@@ -148,6 +148,7 @@ CONFIG_ROOT[module_name]->manifestfields;
 foreach(mf,string f)
   retval+="<td align=left><font face=helvetica size=-1>" + 
     replace(f,"_"," ") +"</font></td>\n";
+retval+="<td align=left><font face=helvetica size=-1>Options</font></td>\n";
 retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
@@ -159,6 +160,18 @@ retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
       "<td>" + row->quantity + "</td><td>" + row->id 
       + "</td>";
      foreach(mf, string f) retval+="<td>" + row[f] + "</td>";
+retval+="<td>\n";
+array o=row->options/"\n";
+
+  array eq=({});
+foreach(o, string opt){
+  array o_=opt/":";
+catch(  eq+=({DB->query("SELECT description FROM item_options WHERE "
+   "product_id='" + row->id + "' AND option_type='" +
+   o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description}));
+}
+        retval+=(eq*"<br>") +  "</td>\n";
+
 retval+=	"<td align=right>" + row->price +
 	"</td><td align=right>"
       + sprintf("%.2f", (float)row->price * (float)row->quantity) 
@@ -172,27 +185,27 @@ id->variables->orderid + "'");
 
    foreach(r, mapping row) {
 
-  retval+="<tr>\n<td></td><td></td>";
-  foreach(mf, string f)
-    retval+="<td></td>\n";
-  retval+="\n<td align=right><font "
+  retval+="<tr>\n"
+	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica>" +
- capitalize(row->lineitem) + " "
-        + (row->extension||"")
-	+"</td>\n<td> &nbsp; </td><td align=right>" 
+ capitalize((row->extension || row->lineitem)) 
+	+"</td>\n<td align=right>" 
 	+ row->value + "</td></tr>\n";
   
   }
 
-r=DB->query("SELECT SUM(value) as grandtotal FROM lineitems WHERE "
-	"orderid='"+ id->variables->orderid + "'");
+float tax=T_O->get_tax(id, id->variables->orderid);
 
-  retval+="<tr><td></td><td></td>";
-foreach(mf, string f)
-    retval+="<td></td>\n";   
-  retval+="<td align=right>"
-	"<font face=helvetica><b>Grand Total</b></td><td></td>"
-	"<td align=right><b>" + r[0]->grandtotal + "</b></td></tr>\n";
+  retval+="<tr>\n"
+	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
+	"face=helvetica>Sales Tax</td>"
+	"<td align=right>" + sprintf("%.2f", tax) + "</td></tr>\n";
+
+float gt=T_O->get_grandtotal(id, id->variables->orderid);
+  retval+="<tr>\n"
+	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
+	"face=helvetica><b>Grand Total</b></td>"
+	"<td align=right><b>" + sprintf("%.2f", gt) + "</b></td></tr>\n";
 
   retval+="</table>\n";
   return create_panel("Order Manifest", "darkgreen", retval);
@@ -255,7 +268,7 @@ orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
 "'");
 foreach(orders_to_archive, mapping or){
  array tables=({"orderdata", "shipments", "customer_info",
-	"payment_info", "lineitems", "activity_log"});
+	"payment_info", "comments", "lineitems", "activity_log"});
  foreach(tables, string t){
 
   catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id +
@@ -280,7 +293,7 @@ retval+="<order id=\"" + or->id + "\">\n"
 	"<status>" + or->status + "</status>\n"
 	"<notes>" + (or->notes||"") + "</notes>\n";
     array tables=({"orderdata", "shipments", "customer_info",
-	"payment_info", "lineitems", "activity_log"});
+	"payment_info", "lineitems", "activity_log", "comments"});
     foreach(tables, t){
       array fields=DB->list_fields(t);
       array r=DB->query("SELECT * FROM " + t + " WHERE orderid='" +
@@ -297,9 +310,8 @@ retval+="<order id=\"" + or->id + "\">\n"
       
         }
     retval+="</order>\n";
-//catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
-//catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
-perror("archived order " + or->id + "\n");
+
+perror("export/archived order " + or->id + "\n");
      } 
 
 return retval;
@@ -472,7 +484,7 @@ if(id->variables->orderid) status=DB->query(
       )[0]->status;
 
  if(id->variables->valpay && id->variables->orderid){
-perror("validating Payment\n");
+// perror("validating Payment\n");
 if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
   string cn;
 string key="";
@@ -528,6 +540,9 @@ else {
 	 r1[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
 	}
+	T_O->report_status("Validated Payment with authorization "
+		+ (string)(id->variables->authorization_id) + ".", 
+		id->variables->orderid || "NA", "handleorders", id);
 
  } 
 
@@ -710,7 +725,13 @@ else if(id->variables->orderid) {
 if(id->variables->print)
   ADMIN_FLAGS=NO_BORDER;
 
-
+if(id->variables->export) {
+  ADMIN_FLAGS=NO_BORDER;
+  T_O->add_header(id, "Content-Disposition",
+    "inline; filename=" + "order" + id->variables->orderid + ".xml");
+  T_O->add_header(id, "Content-Type", "application/x-ivend");
+    return archive_order(id->variables->orderid, id);
+ }
 
 if(!id->variables->print)
   retval+="<form action=\"./orders\" method=post>\n"
@@ -736,7 +757,8 @@ retval+="<input type=submit name=doship value=\"Ship All\"> &nbsp; "
     "<input type=submit name=doship value=\"Ship Selected\"> &nbsp; "
     "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; "
     "Tracking ID: <input type=text size=20 name=\"tracking_id\"> &nbsp; ";
-retval+="<input type=submit name=print value=\"Format for Printing\"><br>"
+retval+= "<input type=submit name=export value=\"Export Order\"><br>"
+	"<input type=submit name=print value=\"Format for Printing\"><br>"
     "</form>";
 retval+=T_O->open_popup( "View Activity Log",
                                  id->not_query, "View_Activity_Log" ,

@@ -359,8 +359,8 @@ if(v->create_db=="Yes"){
   if(functionp(s->server_info))
   catch(vsr=s->server_info());
 
-  s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE on " +
-  	v->config + ".* TO " + v->config +
+  s->query("GRANT SELECT, INSERT, UPDATE, DELETE, DROP, ALTER, CREATE on "
+     + v->config + ".* TO " + v->config +
 	(v->secureperms=="Yes"&&vsr[0..4]=="mysql"?("@" + host):"")
      + " IDENTIFIED BY '" + v->dbpassword + "'"); 
 

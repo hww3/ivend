@@ -466,7 +466,7 @@ else if(r[i]->type=="decimal" || r[i]->type=="float"){
       "SIZE=-1><I> "+ REQUIRED +"\n";
         }
 
-else if(stat_file(id->misc->ivend->config->root + "/db/" +
+else if(file_stat(id->misc->ivend->config->root + "/db/" +
 	lower_case(table) + 
 	"_" + lower_case(r[i]->name) + ".val"))
 

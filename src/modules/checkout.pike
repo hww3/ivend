@@ -417,17 +417,33 @@ string retval="";
     id->misc->ivend->config->dbpassword
     );
 
+string extrafields="";
+array ef=({});
+array en=({});
+
+ if(args->fields){
+   ef=args->fields/",";
+   if(args->names)
+   en=args->names/",";
+   else en=({});
+   for(int i=0; i<sizeof(ef); i++) {
+     if(catch(en[i]) || !en[i])  en+=({ef[i]});
+     extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'";
+   }
+ }     
+
 string query="SELECT sessions.quantity, "
   "products.name, products.price, "
-  "sessions.quantity*products.price AS linetotal, taxable FROM "
-  "sessions,products WHERE products.id=sessions.id AND "
+  "sessions.quantity*products.price AS linetotal, taxable " + extrafields +
+  " FROM sessions,products WHERE products.id=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
 
 array r=id->misc->ivend->db->query(query);
  for(int i=0; i < sizeof(r); i++) {
-   retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n"
-     "<td>"+ r[i]->name + "</td>\n"
-     "<td align=right>";
+   retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n";
+   foreach(en, string name)
+     retval+="<td>" + r[i][name] + </td>\n";
+   retval+="<td align=right>";
 
 retval+=r[i]->price;
    retval+= "</td>\n"

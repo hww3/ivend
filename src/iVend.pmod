@@ -188,23 +188,24 @@ mixed insert_id(){
 
 }
 
-mixed showmatches(string type, string id) {
+mixed showmatches(string type, string id, string field) {
 
 string retval;
 
-string q="SELECT id,name FROM " + type + "s WHERE name like '%" 
-  + id + "%' or id like '%" + id + "%' group by id";
+string q="SELECT " + field + ",name FROM " + type + "s WHERE name like '%" 
+  + id + "%' or " + field +" like '%" + id + "%' group by "+ field;
 
 array r=query(q);
 
 if(sizeof(r)==0) return 0; 
 
 retval="<input type=hidden name=type value=" + type +">\n"
-  "<table><tr><td>Delete?</td><td>ID</td><td>Name</td></tr>";
+  "<table><tr><td>Delete?</td><td>" + field +"</td><td>Name</td></tr>";
 
 foreach(r, mapping row)
-  retval+="<tr><td><input type=checkbox name=id value=\"" + row->id + 
-    "\"></td><td> " + row->id + "</td><td>" + row->name + "</td></tr>\n";
+  retval+="<tr><td><input type=checkbox name=" + field +" value=\"" +
+	row[field] + 
+    "\"></td><td> " + row[field] + "</td><td>" + row->name + "</td></tr>\n";
 
 retval+="</table>";
 
@@ -351,7 +352,10 @@ else perror("ARGH! Can't get image's original filename from browser!\n");
   else q+=r[i]->name+"="+(id->variables[r[i]->name]||"NULL")+",";
 
   }
-q=q[0..sizeof(q)-2]+" WHERE id='" + id->variables->id + "'";
+q=q[0..sizeof(q)-2]+" WHERE " + 
+	id->misc->ivend->keys[id->variables->table] 
++"='" + id->variables[id->misc->ivend->keys[id->variables->table]] +
+	"'";
 if (sizeof(errors)>0) return errors;
 query(q);
  if(id->variables->jointable) {
@@ -545,14 +549,16 @@ return retval;
 
 }
 
-string|int showdepends(string type, string id){
+string|int showdepends(string type, string id, string field, string|void 
+field2){
 string q="";
 if(type=="" || id=="")
 return DELETE_UNSUCCESSFUL +"\n";
 string retval="";
 
 if(type=="group"){
-  q="SELECT * FROM groups WHERE id='"+id+"'";
+  q="SELECT * FROM groups WHERE "+ field
+	+"='"+id+"'";
   array j=query(q);
   if(sizeof(j)!=1) return 0;
   else {
@@ -560,7 +566,8 @@ if(type=="group"){
       PRODUCTS +":<p>";
     q="SELECT product_groups.product_id,products.name FROM "
 	"products,product_groups WHERE product_groups.group_id='"
-        +id+"' AND products.id=product_groups.product_id";
+        +id+"' AND products." + field2  +
+	"=product_groups.product_id";
     j=query(q);
     if(sizeof(j)==0) retval+="<blockquote>"+ NO_PRODUCTS +"</blockquote>";
     else {
@@ -572,30 +579,36 @@ if(type=="group"){
   }
 
 else if(type=="product") {
-  q="SELECT id,name FROM products WHERE id='"+id+"'";
+  q="SELECT " + field +  
+	",name FROM products WHERE " + field + "='"+id+"'";
   array j=query(q);
   if(sizeof(j)!=1) return 0;
-  else retval+="<blockquote>"+j[0]->id+" ( "+j[0]->name+" )<br>\n";
+  else retval+="<blockquote>"+j[0][ field ] +" "
+	"( "+j[0]->name+" )<br>\n";
   }
 
 retval+="</blockquote>\n";
 return retval; 
 }
-string dodelete(string type, string id){
+
+
+string dodelete(string type, string id, string field){
 string q="";
 
 if(type=="" || id=="")
 return DELETE_UNSUCCESSFUL+"\n";
 
 if(type=="group") {
-  q="DELETE FROM groups WHERE id='"+id+"'";
+  q="DELETE FROM groups WHERE " + field +
+	"='"+id+"'";
   query(q);
   q="DELETE FROM product_groups WHERE group_id='"+id+"'";
   query(q);
   }
 
 else if(type="product") {
-  q="DELETE FROM products WHERE id='"+id+"'";
+  q="DELETE FROM products WHERE " + field +
+	"='"+id+"'";
   query(q);
   q="DELETE FROM product_groups WHERE product_id='"+id+"'";
   query(q);
@@ -663,7 +676,20 @@ perror("doing the pulldown thing...\n");
     retval+="</select></td></tr>";
     
     }
-	
+
+else if(r[i]->name == id->misc->ivend->keys[table]) {
+	retval+="<tr>\n"
+	"<td valign=top align=right><font face=helvetica,arial size=-1>\n"
+	+ replace(r[i]->name, "_", " ")+
+	"</font></td>\n"
+	"<td><font face=helvetica,arial size=-1>" + (record[r[i]->name]
+		|| ("<INPUT TYPE=TEXT NAME=\""+
+        lower_case(r[i]->name)+"\" SIZE="
+          +
+        (r[i]->length)
+        +"  VALUE=\""+  record[r[i]->name]||"" + "\">\n")) +
+	"</td></tr>\n" ;
+	}
 else if(r[i]->type=="blob"){
 	retval+="<TR>\n"
 	"<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"

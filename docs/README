@@ -5,37 +5,42 @@ probably a good idea to start with the example schema and work from
 there. These tables can contain as  many and varied fields as you like,
 but at least the following must be  present:
 
-products		groups			product_groups
+product_groups
+group string		
+product string
 
-id string key		id string key		group string
-name string		name string		product string
-image* string		image* string
-price decimal(2)	price decimal(2)
+products and groups tables
+image* char
+price float
 
 The above fields are considered 'special' by iVend, and are expected to 
 be present. The presence of additional fields is purely optional, however 
 fields such as shipping wights and costs, product descriptions or 
-inventory counts may also be useful. 
-
-There are a number of tables that are required by iVend to operate. These
-tables are:
-
-customer_info
-payment_info
-orders
-orderdata
-sessions
-taxrates
-status 
-type
-shipping_*
+inventory counts may also be useful. The tables "products" and "groups"
+must each have a primary key in order for iVend to operate. By default,
+this field is called "id" but you may change it to anything that suits
+you, such as "sku" or "partnumber". iVend will automatically detect the
+correct field to use at startup.
 
 * field names that begin with image are considered special by iVend. They
 indicate images to be stored with groups and products. You can have as 
 many image fields as you like, such as thumbnails and fullsize images.
 
+Additionally, there are a number of tables that are required by iVend to
+operate. These tables are:
+
+customer_info: contains customer address and contact information.
+payment_info: contains credit card payment information.
+orders: master list of orders.
+orderdata: list of products associated with each order.
+sessions: current shopping cart sessions.
+taxrates: tax rate calculation table.
+status: master list of order and status codes. 
+shipments: as orders are shipped, their status is stored in this table.
+shipping_*
+
 4. Modify the iVend templates using standard HTML, RXML and additional 
-IVML (ivend markup language) tags. A listing of IVML tags can be found in 
+IVML (iVend markup language) tags. A listing of IVML tags can be found in 
 the section labelled IVML. The minimum files required by ivend to operate 
 must be present in each store's data directory and are described below:
 

@@ -90,7 +90,8 @@ string|int listorder(object id, object s){
   array r=s->query("SELECT orderdata.*, products.name,status.name as status FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
-	   " AND products.id=orderdata.id");
+	   " AND products." + id->misc->ivend->keys->products +
+	"=orderdata.id");
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
 			"Unable to find data for this order.");
@@ -102,7 +103,8 @@ string|int listorder(object id, object s){
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
-    retval+="<tr><td><input type=checkbox value=ship name=\"" + row->id +
+    retval+="<tr><td><input type=checkbox value=ship name=\"" + 
+	row[id->misc->ivend->keys->products ]+
       "." + row->series + "\"></td>"
       "<td>" + row->quantity + (row->status=="Shipped" ?" (S)":"")+"</td><td>" + row->id 
       + "</td><td>" + row->name + "</td><td align=right>" + row->price +

@@ -38,7 +38,7 @@ object c;                       // configuration object
 object g;                       // global object   
 
 mapping db=([]);		// db cache
-
+mapping keys=([]);		// db keys cache
 int num;
 
 mapping(string:object) modules=([]);                    // module cache
@@ -149,6 +149,11 @@ if(catch(perror(query("datadir")))) return;
 
   foreach(indices(config), string c)
     start_db(config[c]);
+
+  foreach(indices(config), string c)
+    get_dbkeys(config[c]);
+
+  perror(sprintf("%O", keys));
 
   call_out(background_session_cleaner, 900);
 
@@ -297,10 +302,13 @@ if(id->variables->update) {
 
 //    if(!args->fields) return "Incomplete cart configuration!";
     array r= id->misc->ivend->db->query(
-      "SELECT sessions.id,series,quantity,sessions.price "+ 
+      "SELECT sessions." + keys[id->misc->ivend->st]->products +
+	",series,quantity,sessions.price "+ 
 	extrafields+" FROM sessions,products "
-      "WHERE sessions.SESSIONID='"
-	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
+      	"WHERE sessions.SESSIONID='"
+	+id->misc->ivend->SESSIONID+"' AND sessions."+
+	keys[id->misc->ivend->st]->products+"=products." +
+	keys[id->misc->ivend->st]->products);
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
 //	error(YOUR_CART_IS_EMPTY, id);
@@ -319,8 +327,9 @@ if(id->variables->update) {
 	+ TOTAL + " &nbsp;</th></tr>\n";
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
-	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+">&nbsp; \n"
-        +r[i]->id+" &nbsp;</TD>\n";
+	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][
+	keys[id->misc->ivend->st]->products]+">&nbsp; \n"
+        +r[i][ keys[id->misc->ivend->st]->products]+" &nbsp;</TD>\n";
 
 	foreach(en, field){
 //		perror(field +"\n");
@@ -344,7 +353,8 @@ return retval;
 
 string tag_additem(string tag_name, mapping args,
                     object id, mapping defines) {
-if(!args->item) return "<!-- you must specify an item id. -->\n";
+if(!args->item) return "<!-- you must specify an item " +
+	keys[id->misc->ivend->st]->products +". -->\n";
 string retval="<form action=" + id->not_query + ">";
 retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity ||
 "1") + " name=quantity> ";
@@ -447,14 +457,16 @@ array en=({});
 
 array r;
 if(args->type=="groups") {
-  query="SELECT id AS pid " + extrafields+ " FROM groups";
+  query="SELECT " + keys[id->misc->ivend->st]->groups + " AS pid " +
+	extrafields+ " FROM groups";
    r=id->misc->ivend->db->query(query);
   }
 else {
   query="SELECT product_id AS pid "+ extrafields+
 	" FROM product_groups,products where group_id='"+
 	     id->misc->ivend->page+"'"
-	" AND products.id=product_id";
+	" AND products." +  keys[id->misc->ivend->st]->products +
+	"=product_id";
   r=id->misc->ivend->db->query(query);
 }
 
@@ -509,7 +521,8 @@ array r;
 if(args->field!=""){
   r=id->misc->ivend->db->query("SELECT "+args->field+ " FROM "+ 
     id->misc->ivend->type+"s WHERE "
-	" id='"+id->misc->ivend->id+"'");
+	" " +  keys[id->misc->ivend->st]->products  +"='" 
+	+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else filename=config[id->misc->ivend->st]->root+"/images/"+
     id->misc->ivend->type+"s/"+r[0][args->field];
@@ -606,7 +619,9 @@ id->misc->ivend->id=page;
 string template;
 array(mapping(string:string)) r;
 array f;
-r=id->misc->ivend->db->query("SELECT * FROM groups WHERE id='"+page+"'");
+r=id->misc->ivend->db->query("SELECT * FROM groups WHERE " +
+	keys[id->misc->ivend->st]->groups + 
+	"='"+page+"'");
 if (sizeof(r)==1){
   id->misc->ivend->type="group";
   if(id->variables->template) template=id->variables->template;
@@ -614,7 +629,8 @@ if (sizeof(r)==1){
   f=id->misc->ivend->db->list_fields("groups");
   }
 else {
-  r=id->misc->ivend->db->query("SELECT * FROM products WHERE id='"+page+"'");
+  r=id->misc->ivend->db->query("SELECT * FROM products WHERE " +
+	keys[id->misc->ivend->st]->products +"='"+page+"'");
   id->misc->ivend->type="product";
   if(id->variables->template) template=id->variables->template;
   else template="product_template.html";
@@ -639,8 +655,8 @@ mixed additem(string item, object id){
     return 0;
     }
   
-  float price=id->misc->ivend->db->query("SELECT price FROM products WHERE id='" 
-  + item + "'")[0]->price;
+  float price=id->misc->ivend->db->query("SELECT price FROM products WHERE " 
+	+ keys[id->misc->ivend->st]->products +  "='" + item + "'")[0]->price;
 
   price=convert((float)price,id);
 
@@ -900,9 +916,10 @@ mixed getmodify(string type, string pid, object id){
 string retval="";
 multiset gid=(<>);
 array record=id->misc->ivend->db->query("SELECT * FROM " + type + "s WHERE "
- "id='" + pid +"'");
++  keys[id->misc->ivend->st][type +"s"]  + "='" + pid +"'");
 if (sizeof(record)!=1)
-  return "Error Finding " + capitalize(type) + " ID " + pid + ".<p>";
+  return "Error Finding " + capitalize(type) + " " +
+	keys[id->misc->ivend->st][type +"s"] + " " + pid + ".<p>";
 
 if(type=="product") {
   array groups=id->misc->ivend->db->query("SELECT group_id from "
@@ -988,31 +1005,36 @@ switch(id->variables->mode){
     if(id->variables->id==0 || id->variables->id=="") 
       retval+="You must select an ID to act upon!<br>";
     else retval+=id->misc->ivend->db->dodelete(id->variables->type,
-id->variables->id); }
+id->variables[ keys[id->misc->ivend->st][id->variables->type +"s"]],
+id->misc->ivend->keys[id->variables->type +"s"]); }
   else {
     if(id->variables->match) {
     mixed n=id->misc->ivend->db->showmatches(id->variables->type,
-      id->variables->id);
+      id->variables->id, id->misc->ivend->keys[id->variables->type+"s"]);
     if(n)
       retval+="<form action=./admin>\n"
         + n +
         "<input type=hidden name=mode value=dodelete>\n"
         "<input type=submit value=Delete>\n</form>";
-    else retval+="No " + capitalize(id->variables->type) + " found.";
+    else retval+="No " + capitalize(id->variables->type +"s") + " found.";
     }
     else {
       mixed n=id->misc->ivend->db->showdepends(id->variables->type,
-        id->variables->id);
+        id->variables[  keys[id->misc->ivend->st][id->variables->type+"s"]
+], keys[id->misc->ivend->st][id->variables->type+"s"],
+(id->variables->type=="group"?keys[id->misc->ivend->st]->products:0));
       if(n){ 
         retval+="<form action=./admin>\n"
           "<input type=hidden name=mode value=dodelete>\n"
           "<input type=hidden name=type value="+id->variables->type+">\n"
-          "<input type=hidden name=id value="+id->variables->id+">\n"
+          "<input type=hidden name=id value="+id->variables[
+		keys[id->misc->ivend->st][id->variables->type+"s"] ]+">\n"
           "Are you sure you want to delete the following?<p>";
           retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
         }
       else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-        +id->variables->id+".<p>";
+        +id->variables[ keys[id->misc->ivend->st][ 
+	id->variables->type+"s"]]+".<p>";
       }
 
     }
@@ -1020,10 +1042,13 @@ id->variables->id); }
     case "delete":
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
-      +capitalize(id->variables->type) + " ID to Delete: \n"
-      "<input type=text size=10 name=id>\n"
+      +capitalize(id->variables->type) + " "+
+	keys[id->misc->ivend->st][id->variables->type +"s"] + " to Delete:\n"
+      "<input type=text size=10 name=\"" +
+	keys[id->misc->ivend->st][id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value=" + id->variables->type + ">\n"
-      "<br><font size=2>If using FindMatches, you may type any part of an ID"
+      "<br><font size=2>If using FindMatches, you may type any part of an "
+	+ keys[id->misc->ivend->st][id->variables->type+"s"] +
       " or Name to search for.<br></font>"
       "<input type=submit name=match value=FindMatches> &nbsp; \n"
       "<input type=submit value=Delete>\n</form>";
@@ -1037,7 +1062,9 @@ id->variables->id); }
 
   case "getmodify":
 
-  retval+=getmodify(id->variables->type, id->variables->id, id);
+  retval+=getmodify(id->variables->type,
+	id->variables[keys[ 
+	id->misc->ivend->st][id->variables->type+"s"]], id);
 
   break;
 
@@ -1050,8 +1077,9 @@ id->variables->id); }
       "<table><tr><td><input type=submit value=Show></td><td>\n";
       retval+="<td><b>Show fields:</b> ";
     array f=id->misc->ivend->db->list_fields(id->variables->type+"s");
-    array k=id->misc->ivend->db->query("SHOW INDEX FROM " + 
-	id->variables->type + "s");
+array k;
+catch(k=id->misc->ivend->db->query("SHOW INDEX FROM " + 
+	id->variables->type + "s"));
 
     string primary_key;
 
@@ -1116,8 +1144,10 @@ id->variables->id); }
 	+"</b><br>\n";
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=getmodify>\n"
-      + capitalize(id->variables->type) + " ID to Modify: \n"
-      "<input type=text size=10 name=id>\n"
+      + capitalize(id->variables->type) + " "+
+keys[id->misc->ivend->st][id->variables->type+"s"] + " to Modify: \n"
+      "<input type=text size=10 name=\"" +
+	keys[id->misc->ivend->st][id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=submit value=Modify>\n</form>";
   break;
@@ -1226,7 +1256,7 @@ if(config[id->misc->ivend->st]->error)
     }
 // load id->misc->ivend with the good stuff...
   id->misc->ivend->config=config[id->misc->ivend->st];	
-
+  id->misc->ivend->keys=keys[id->misc->ivend->st];
 mixed err;
 
   switch(request[0]) {
@@ -1442,6 +1472,7 @@ return replace(retval,"<error>","<ul><li>"+(id->misc->ivend->error * "\n<li>")
 
 
 mixed get_image(string filename, object id){
+
 //perror("** "+id->misc->ivend->config[id->misc->ivend->st]->root+filename+"\n\n");
 
 string data=Stdio.read_bytes(
@@ -1584,6 +1615,34 @@ return 0;
 
 }
 
+
+void get_dbkeys(mapping c){
+
+perror("iVend: Getting DB Keys for " + c->config + "\n");
+
+object s=db[c->config]->handle();
+
+keys[c->config]=([]); // make the entry.
+
+foreach(({"products", "groups"}), string t) {
+array r;
+r=s->query("SHOW INDEX FROM " + t );  // MySQL dependent?
+  if(sizeof(r)==0)
+    keys[c->config][t]="id";
+  else {
+    string primary_key;
+    foreach(r, mapping key){
+        if(key->Key_name=="PRIMARY")
+        primary_key=key->Column_name;
+      }
+    keys[c->config][t]=primary_key; 
+    }  
+
+  }
+
+return;
+
+}
 
 void start_db(mapping c){
 

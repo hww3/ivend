@@ -25,6 +25,8 @@ What do I need for iVend to work?
 
 * A system running Roxen Challenger version 1.2 or higher **with Crypto
   enabled**. See the section "A Note About Compatibility" below.
+  iVend will not run without Crypto (you shouldn't even think about doing
+  electronic commerce without crypto anyhow.)
 * A copy of Pike in your PATH for running the setup scripts.
 * An SQL database server supported by Pike and Roxen Challenger.
   (iVend was developed using mysql, however other dbms systems should 
@@ -46,17 +48,18 @@ server/lib/pike/modules/Standards.pmod/PKCS.pmod with a copy of RSA.pmod
 available from the patches directory at the same location you downloaded
 iVend. 
 
-You will also need to upgrade the same file in any instalations of 
-Pike. 
+You will also need to upgrade the same file in any other installations of 
+Pike on your system. 
 
 Releases 1.3.30 and higher do not require any patches to the Roxen base
 release. 
 
   download site: http://hww3.riverweb.com/dist/patches
 
-iVend was written to work with the mySQL database system. There is very
-little reason that another RDBMS would not work with minor modifications. 
-Your mileage may vary.
+iVend was written tested to work with the mySQL database system. There is
+very little reason that another RDBMS would not work with minor
+modifications. Your mileage may vary. If you do try another RDBMS, please
+let me know of your results.
 
 
 Installation Instructions
@@ -88,7 +91,8 @@ iVend will not work properly:
   b. iVend Config Directory: This is usually ivend/configurations.
   c. iVend Data Directory: This is usually ivend/data.
   d. Mount Path: this is where iVend will be located within your server's
-     virtual filesystem. The default is /ivend/.
+     virtual filesystem. The default is /ivend/. You can change this to
+     anything you'd like.
 
 5. Assign values for any other configuration variables such as config user
 and password.
@@ -118,23 +122,32 @@ before you start.
   command, where dbname is the name of the database you're creating.
   Normally, you'll want to select a name that correlates with 
   your store's actual name. Other systems may vary in the commands and
-  procedures required to do this. Provide select/insert/delete access to a
-  user so that iVend can connect and use this db.
+  procedures required to do this. 
+
+  Provide select/insert/delete access to a user so that iVend can connect
+  and use this db. Helpful tips for new MySQL users are located in
+  Appendix C: MySQL tips.
 
 *IMPORTANT NOTE* Please note that iVend uses database access permissions
   to determine who has permission to administer your iVend store. Because
   of this, make sure that you don't grant access permission to this
-  database to anyone that you would not allow store admin priveledges.
-  This feature also allows multiple logins with access to a store, as well
-  as read-only access to store admin features. 
+  database to anyone that you would not allow store admin priveledges. By
+  default, MySQL installs global permissions to a passwordless user called
+  root. This means that unless you change the default access configuration
+  by adding a password for root, anyone can access any database (and
+  therefore store administration area just by logging in as "root" without
+  a password.  This feature also allows multiple logins with access to a
+  store, as well as read-only access to store admin features. While this
+  may seem more complex at first, it allows much more flexible setup of
+  store administrators. 
 
 2. Use the script create_store.sh to add a new store configuration. To do
   this, change directories to ivend/scripts and execute this command:
 
   sh create_store.sh
 
-The script will step you through various questions that are required for
-creating a new store, including setting up database tables.
+  The script will step you through various questions that are required for
+  creating a new store, including setting up database tables.
 
 >> INSERT MORE DETAILED INSTRUCTIONS HERE <<
 

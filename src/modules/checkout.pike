@@ -120,7 +120,8 @@ else type=typer[0]->type;
 
   array r=id->misc->ivend->db->query(
 	"SELECT sessions.*,sessions.price, products.taxable from sessions,products  WHERE sessionid='"
-	+id->misc->ivend->SESSIONID+ "' and products.id=sessions.id");
+	+id->misc->ivend->SESSIONID+ "' and products." +
+	id->misc->ivend->keys->products + "=sessions.id");
 
 // replace sessionid with orderid
 string query;
@@ -434,14 +435,14 @@ string tag_showorder(string tag_name, mapping args,
 float taxable=0.00;
 float nontaxable=0.00;
 string retval="";
-
+/*
  object s=Sql.sql(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
     id->misc->ivend->config->dblogin,
     id->misc->ivend->config->dbpassword
     );
-
+*/
 string extrafields="";
 array ef=({});
 array en=({});
@@ -460,7 +461,8 @@ array en=({});
 string query="SELECT sessions.quantity, "
   "products.name, products.price, "
   "sessions.quantity*products.price AS linetotal, taxable " + extrafields +
-  " FROM sessions,products WHERE products.id=sessions.id AND "
+  " FROM sessions,products WHERE products." +
+id->misc->ivend->keys->products + "=sessions.id AND "
   "sessions.sessionid='" + id->misc->ivend->SESSIONID + "'";
 
 array r=id->misc->ivend->db->query(query);

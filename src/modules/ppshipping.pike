@@ -197,7 +197,9 @@ if(sizeof(r)<1) return -1.00;
 string query="SELECT SUM(sessions.quantity*products." +
 	r[0]->fieldname + ") AS shipping FROM "
 	" products,sessions WHERE sessionid='" +
-	id->misc->ivend->SESSIONID + "' and products.id=sessions.id";
+	id->misc->ivend->SESSIONID + "' and products." +
+	id->misc->ivend->keys->products + "=sessions.id";
+
 perror(query);
 r=id->misc->ivend->db->query(query);
 

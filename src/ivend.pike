@@ -1735,11 +1735,13 @@ foreach(valid_handlers, string hn){
 	else { m=(m/".")[0]; cats+=({m}); }	
   }
 cats=uniq(cats);
+sort(cats);
 foreach(cats, string category){
     retval+="<obox title=\"<font face=helvetica,arial>"+ replace(category,
 "_", " ") +
 	"</font>\">\n<font "
       "face=helvetica,arial><ul>\n";
+sort(valid_handlers);
   foreach(valid_handlers, string hn)
     if(search(hn, category)!=-1)
       retval+="<li><a href=" + add_pre_state(id->not_query,

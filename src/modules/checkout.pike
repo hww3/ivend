@@ -542,6 +542,13 @@ return contents;
 }
 
 
+string tax_setup(string mode, object id){
+
+string retval="";
+
+return retval;
+
+}
 
 
 mapping query_tag_callers2() {
@@ -585,23 +592,25 @@ return ([ "checkout" : checkout ]);
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
+mapping register_admin(){
+        
+return ([
+       
+        "menu.main.Store_Administration.Sales_Tax_Setup" : tax_setup
+        
+        ]); 
+}
 
 array query_preferences(object id){
 
-return ({"shipping_taxable", "Tax Shipping?", "Some governments require "
+return ({
+  ({
+  "shipping_taxable", "Tax Shipping?", "Some governments require "
   "that shipping charges be included in sales tax calculations. If your "
   "government requires this, this should be set to 'Yes.'", 
-  VARIABLE_SELECT, "No", ({"Yes", "No"})});
+  VARIABLE_SELECT, "No", ({"Yes", "No"})
+  })
+});
 
 }
+

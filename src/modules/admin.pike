@@ -88,11 +88,13 @@ else {
 //  5: a string or array containing valid values (optional)
 
 array  p=MODULES[id->variables->_module]->query_preferences(id);
-
+if(sizeof(p)==0) return "";
 mapping pton=([]);
-foreach(p, array pref)
+foreach(p, array pref){
   pton+=([pref[0]: pref]);
-
+}
+if(!CONFIG_ROOT[id->variables->_module])
+  CONFIG_ROOT[id->variables->_module]=([]);
 if(!id->variables->_varname) {
 
   retval+="<obox title=\"<font face=helvetica,arial>" +
@@ -101,10 +103,10 @@ if(!id->variables->_varname) {
 
       retval+="<a href=\"./?_module=" + id->variables->_module +
 		"&_varname=" + pref[0] + "\">" + pref[1] + "</a>: "
-	+
+	+ (CONFIG_ROOT[id->variables->_module]?
 (arrayp(CONFIG_ROOT[id->variables->_module][pref[0]])? 
 (CONFIG_ROOT[id->variables->_module][pref[0]]*", ")
-: CONFIG_ROOT[id->variables->_module][pref[0]]) + 
+: CONFIG_ROOT[id->variables->_module][pref[0]]):"") + 
 	"<br>";
 
     }
@@ -229,12 +231,12 @@ CONFIG_ROOT[id->variables->_module][id->variables->_varname]=id->variables[id->v
       case VARIABLE_SELECT:
 
 	retval+="<input type=hidden name=\"_" + id->variables->_varname
-	  + "\" value=\"" + 
-	  (
+	  + "\" value=\"" + ( CONFIG_ROOT[id->variables->_module] && 
+CONFIG_ROOT[id->variables->_module][id->variables->_varname]?
 (arrayp(CONFIG_ROOT[id->variables->_module][id->variables->_varname])?
 	(CONFIG_ROOT[id->variables->_module][id->variables->_varname] *
 "\000"):CONFIG_ROOT[id->variables->_module][id->variables->_varname])
-                || "~BLANK_VALUE~" ) + "\">\n";
+               :"~BLANK_VALUE~") + "\">\n";
 
 	retval+="<SELECT " + 
 	  (pton[id->variables->_varname][3]==VARIABLE_MULTIPLE? 

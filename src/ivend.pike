@@ -26,7 +26,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.68 1998-05-25 02:11:44 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.69 1998-05-27 13:09:45 hww3 Exp $";
 
 array register_module(){
 
@@ -245,6 +245,21 @@ string st;
 
 st=id->misc->ivend->st;
 
+string extrafields="";
+array ef=({});
+array en=({});
+
+ if(args->fields){
+   ef=args->fields/",";
+   if(args->names)
+   en=args->names/",";
+   else en=({});
+   for(int i=0; i<sizeof(ef); i++) {
+     if(catch(en[i]) || !en[i])  en+=({ef[i]});
+     extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
+   }
+ }
+
 if(id->variables->update) {
 
 
@@ -273,8 +288,8 @@ if(id->variables->update) {
 
     if(!args->fields) return "Incomplete cart configuration!";
     array r= id->misc->ivend->db->query(
-      "SELECT sessions.id,series,quantity,name,sessions.price,"+ 
-	args->fields+" FROM sessions,products "
+      "SELECT sessions.id,series,quantity,name,sessions.price "+ 
+	extrafields+" FROM sessions,products "
       "WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions.id=products.id");
     if (sizeof(r)==0) {
@@ -285,7 +300,7 @@ if(id->variables->update) {
     retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n"
 	"<th bgcolor=maroon><font color=white>"+ PRODUCT +"</th>\n";
 	
-    foreach(args->fields / ",",field){
+    foreach(en, field){
 	retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
 	}
     retval+="<th bgcolor=maroon><font color=white>&nbsp; "+ PRICE +" &nbsp;</th>\n"
@@ -297,7 +312,7 @@ if(id->variables->update) {
         +r[i]->id+" &nbsp;</TD>\n"
 	  "<td>"+r[i]["name"]+"</td>\n";
 
-	foreach(args->fields / ",",field){
+	foreach(en, field){
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 
@@ -754,10 +769,10 @@ string query="INSERT INTO sessions VALUES('"+ id->misc->ivend->SESSIONID+
   (int)id->misc->ivend->config->session_timeout)+"'," + price +")";
 
 if(catch(id->misc->ivend->db->query(query) ))
-	id->misc["ivendstatus"]+=("Error adding item "+item+ ".\n"); 
+	id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n"); 
 else 
-  id->misc["ivendstatus"]+=((id->variables->quantity || "1")+ " item "
-	+ item + " " + ADDED_SUCCESSFULLY +"\n"); 
+  id->misc["ivendstatus"]+=((id->variables->quantity || "1")+" " + ITEM
+	+ " " + item + " " + ADDED_SUCCESSFULLY +"\n"); 
 return 0;
 }
 

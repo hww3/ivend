@@ -46,3 +46,6 @@
 #define UNABLE_TO_CONFIRM "We were unable to move your order to confirmed status. " \
         " Please contact the administrator of this store for assistance."   
 #define INVALID_CREDIT_CARD "You have provided incorrect Credit Card information."
+
+#define ITEM " item "
+#define ERROR_ADDING_ITEM "Error adding item"

@@ -22,7 +22,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.59 1998-04-29 03:35:38 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.60 1998-04-29 03:42:29 hww3 Exp $";
 
 array register_module(){
 
@@ -803,6 +803,8 @@ config_file+="end\n";
 mv(query("datadir")+"ivend.cfg",query("datadir")+"ivend.cfg.back");
 write_file(query("datadir")+"ivend.cfg", config_file);
 save_status=1;	// We've saved.
+perror("iVend: reloading all modules...\n");
+start();	// Reload all of the modules and crap.
 return http_redirect(query("mountpoint")+"config", id);
 
 }

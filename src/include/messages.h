@@ -17,7 +17,6 @@
 #define NO_OPTIONS_AVAILABLE "No Options Available"
 
 // iVend Cart Functions
-
 #define YOUR_CART_IS_EMPTY	"Your cart is empty."	
 #define CODE		"Code"
 #define PRODUCT 	"Product"
@@ -26,9 +25,11 @@
 #define TOTAL	 	"Total"
 #define UPDATE_CART	"Update Cart"
 #define ADD_TO_CART 	"Add to Cart"
+#define DELETE          "Delete"
+#define CHECK_OUT       "Check out"
+
 
 // category_output
-
 #define YOU_MUST_SUPPLY_A_CATEGORY_TYPE "You must supply a category type."
 #define NO_PRODUCTS_AVAILABLE "Sorry, there are no products available."
 #define ERROR_QUANTITY_ZERO "Error: You must select a quantity greater than zero."
@@ -54,3 +55,11 @@
 
 // shipping module
 #define MUST_SELECT_SHIPPING_TYPE "You must select a shipping type."
+
+// search tag
+#define CONTAINS "contains"
+#define CLICK_TO_FIND "Find..."
+#define NO_MATCHES "No matches were found.";
+#define SEARCH_RESULTS "Your search returned:"
+#define TEXT_AND "and"
+#define TEXT_OR "or"

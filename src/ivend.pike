@@ -478,139 +478,122 @@ void|string container_form(string name, mapping args,
 
 }
 
-mixed container_icart(string name, mapping args,
-                      string contents, object id)
-{
-   string retval="";
-
-
-   string extrafields="";
-   array ef=({});
-   array en=({});
-
-   if(args->fields){
-      ef=args->fields/",";
-      if(args->names)
-         en=args->names/",";
-      else en=({});
-      for(int i=0; i<sizeof(ef); i++) {
-         if(catch(en[i]) || !en[i])  en+=({ef[i]});
-         extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
-      }
-   }
-
-   foreach(indices(id->variables), string v) {
-
-      if(id->variables[v]=="Delete")
-      {
-         string p=(v/"/")[0];
-         string s=(v/"/")[1];
-         DB->query("DELETE FROM sessions WHERE SESSIONID='"
-                   +id->misc->ivend->SESSIONID+
-                   "' AND id='"+ p +"' AND series=" +s );
-	trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
-      }
-   }
-
-
-
-   if(id->variables->update) {
-
-      for(int i=0; i< (int)id->variables->s; i++){
-         
-         if((int)id->variables["q"+(string)i]==0) {
-            DB->query("DELETE FROM sessions WHERE SESSIONID='"
-                      +id->misc->ivend->SESSIONID+
-                      "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
-                      id->variables["s"+(string)i] );
+mixed container_icart(string name, mapping args, string contents, object id) {
+  string retval="";
+  string extrafields="";
+  array ef=({});
+  array en=({});
+  
+  if(args->fields){
+    ef=args->fields/",";
+    if(args->names)
+      en=args->names/",";
+    else en=({});
+    for(int i=0; i<sizeof(ef); i++) {
+      if(catch(en[i]) || !en[i])  en+=({ef[i]});
+      extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
+    }
+  }
+  
+  foreach(indices(id->variables), string v) {
+    if(id->variables[v]==DELETE) {
+      string p=(v/"/")[0];
+      string s=(v/"/")[1];
+      DB->query("DELETE FROM sessions WHERE SESSIONID='"
+		+id->misc->ivend->SESSIONID+
+		"' AND id='"+ p +"' AND series=" +s );
+      trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
+    }
+  }
+  
+  
+  
+  if(id->variables->update) {
+    for(int i=0; i< (int)id->variables->s; i++){
+      if((int)id->variables["q"+(string)i]==0) {
+	DB->query("DELETE FROM sessions WHERE SESSIONID='"
+		  +id->misc->ivend->SESSIONID+
+		  "' AND id='"+id->variables["p"+(string)i]+"' AND series="+
+		  id->variables["s"+(string)i] );
 	trigger_event("deleteitem", id, (["item" : id->variables["p" + (string)i] , "series" : id->variables["s" + (string)i]]) );
-
-	}
-         else
-            DB->query("UPDATE sessions SET "
-                      "quantity="+(int)(id->variables["q"+(string)i])+
-                      " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
-                      id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
-
+      } else {
+	DB->query("UPDATE sessions SET "
+		  "quantity="+(int)(id->variables["q"+(string)i])+
+		  " WHERE SESSIONID='"+id->misc->ivend->SESSIONID+"' AND id='"+
+		  id->variables["p"+(string)i]+ "' AND series="+ id->variables["s"+(string)i] );
       }
+    }
+  }
 
-   }
-
-   string field;
-
-
-   retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n"
-           "<input type=hidden name=referer value=\"" +
-           id->variables->referer + "\">\n";
-   //    if(!args->fields) return "Incomplete cart configuration!";
-
-   array r= DB->query(
-              "SELECT sessions." + KEYS->products +
-              ",series,quantity,sessions.price "+ 
-              extrafields+" FROM sessions,products "
-              "WHERE sessions.SESSIONID='"
-              +id->misc->ivend->SESSIONID+"' AND sessions."+
-              KEYS->products+"=products." +
-              KEYS->products);
-   if (sizeof(r)==0) {
-      if(id->misc->ivend->error) 
-         //error(YOUR_CART_IS_EMPTY, id);
-         return YOUR_CART_IS_EMPTY +"\n<false>\n";
-   }
-   retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
-   
-   foreach(en, field){
-      retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
-   }
-   retval+="<th bgcolor=maroon><font color=white>&nbsp; "
-           + PRICE +" &nbsp;</th>\n"
-           "<th bgcolor=maroon><font color=white>&nbsp; "
-           + QUANTITY +" &nbsp;</th>\n"
-           "<th bgcolor=maroon><font color=white>&nbsp; "
-           + TOTAL + " &nbsp;</th><th></th></tr>\n";
-   for (int i=0; i< sizeof(r); i++){
-      retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
-              "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][
-                KEYS->products]+">&nbsp; \n<A HREF=\"/" + r[i][ KEYS->products ] +
-              ".html\">"
-              +r[i][ KEYS->products]+"</A> &nbsp;</TD>\n";
-
-      foreach(en, field){
-         //perror(field +"\n");
-         retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
-      }
-
-      r[i]->price=convert((float)r[i]->price,id);
-
-      retval+="<td align=right>" + MONETARY_UNIT +
-              sprintf("%.2f",(float)r[i]->price)+"</td>\n"
-              "<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
-              r[i]->quantity+"></td><td align=right>" + MONETARY_UNIT 
-              +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td>"
-              "<td><input type=submit value=\"Delete\" NAME=\"" + r[i][KEYS->products] +
-              "/" + r[i]->series + "\">"
-              "</tr>\n";
-   }
-   retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
-           "<table><tr><Td><input name=update type=submit value=\"" 
-           + UPDATE_CART + "\"></form></td>\n";
-   if(!id->misc->ivend->checkout){
-	if(args->checkout_url)
-
-      retval+="<td> <form action=\""+ args->checkout_url + "?SESSIONID=" +
-              id->misc->ivend->SESSIONID
-              + "\">";
-     else retval+="<td> <form action=\""+ query("mountpoint") +
-              (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
-                 ?"": STORE+"/")+"checkout/?SESSIONID=" +
-              id->misc->ivend->SESSIONID
-              + "\">";
-      retval+="<input name=update type=submit value=\" Check Out \"></form></td>";
-   }
-   retval+="</tr></table>\n<true>\n"+contents;
-   return retval;
+  string field;
+  
+  retval+="<form action=\""+id->not_query+"\" method=post>\n<table>\n"
+    "<input type=hidden name=referer value=\"" +
+      id->variables->referer + "\">\n";
+  // if(!args->fields) return "Incomplete cart configuration!";
+  array r= DB->query(
+		     "SELECT sessions." + KEYS->products +
+		     ",series,quantity,sessions.price "+ 
+		     extrafields+" FROM sessions,products "
+		     "WHERE sessions.SESSIONID='"
+		     +id->misc->ivend->SESSIONID+"' AND sessions."+
+		     KEYS->products+"=products." +
+		     KEYS->products
+		     );
+  if (sizeof(r)==0) {
+    if(id->misc->ivend->error) 
+      return YOUR_CART_IS_EMPTY +"\n<false>\n";
+  }
+  retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
+  
+  foreach(en, field){
+    retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
+  }
+  retval+="<th bgcolor=maroon><font color=white>&nbsp; "
+    + PRICE +" &nbsp;</th>\n"
+      "<th bgcolor=maroon><font color=white>&nbsp; "
+	+ QUANTITY +" &nbsp;</th>\n"
+	  "<th bgcolor=maroon><font color=white>&nbsp; "
+	    + TOTAL + " &nbsp;</th><th></th></tr>\n";
+  for (int i=0; i< sizeof(r); i++){
+    retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
+      "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][KEYS->products]+
+	">&nbsp; \n<A HREF=\"/" + r[i][ KEYS->products ] +
+	  ".html\">"
+	    +r[i][ KEYS->products]+"</A> &nbsp;</TD>\n";
     
+    foreach(en, field){
+      //perror(field +"\n");
+      retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
+    }
+
+    r[i]->price=convert((float)r[i]->price,id);
+    
+    retval+="<td align=right>" + MONETARY_UNIT +
+      sprintf("%.2f",(float)r[i]->price)+"</td>\n"
+	"<TD><INPUT TYPE=TEXT SIZE=3 NAME=q"+i+" VALUE="+
+	  r[i]->quantity+"></td><td align=right>" + MONETARY_UNIT 
+	    +sprintf("%.2f",(float)r[i]->quantity*(float)r[i]->price)+"</td>"
+              "<td><input type=submit value=\"" + DELETE + "\" NAME=\"" + r[i][KEYS->products] +
+		"/" + r[i]->series + "\">"
+		  "</tr>\n";
+  }
+  retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
+    "<table><tr><Td><input name=update type=submit value=\"" 
+      + UPDATE_CART + "\"></form></td>\n";
+  if(!id->misc->ivend->checkout){
+    retval+="<td> <form action=\""+ query("mountpoint") +
+      (  (sizeof(config)==1 && getglobalvar("move_onestore")=="Yes")
+       ?"": STORE+"/")+"checkout/?SESSIONID=" +
+	 id->misc->ivend->SESSIONID
+	   + "\">";
+    retval+="<input name=update type=submit value=\"" + CHECK_OUT + "\"></form></td>";
+  }
+  retval+="</tr></table>\n<true>\n"+contents;
+  return retval;
 }
+
+
 
 string tag_upsell(string tag_name, mapping args,
                   object id, mapping defines) {

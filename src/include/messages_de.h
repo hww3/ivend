@@ -18,26 +18,24 @@
 #define NO_OPTIONS_AVAILABLE "Keine Optionen verfügbar"
 
 // iVend Cart Functions
-
 #define YOUR_CART_IS_EMPTY	"Ihr Einkaufskorb ist leer."	
 #define CODE		"Code"
 #define PRODUCT 	"Produkt"
 #define PRICE 		"Preis"
 #define QUANTITY 	"Anzahl"
 #define TOTAL	 	"Summe"
-#define UPDATE_CART	"Einkaufskorb updaten"
+#define UPDATE_CART	"Übernehmen"
 #define ADD_TO_CART 	"In Einkaufskorb legen"
+#define DELETE		"Entfernen"
+#define CHECK_OUT	"Bestellen"
 
 // category_output
-
 #define YOU_MUST_SUPPLY_A_CATEGORY_TYPE "Kein Kategorie-Typ angegeben!"
 #define NO_PRODUCTS_AVAILABLE "Keine Produkte verfügbar."
 #define ERROR_QUANTITY_ZERO "Fehler: Die Anzahl muss mindestens 1 sein."
 
 // add_item
-
 #define ADDED_SUCCESSFULLY "erfolgreich hinzugefügt."
-
 #define UNABLE_TO_FIND_PRODUCT "Produkt oder Seite nicht gefunden" 
 
 
@@ -56,3 +54,11 @@
 
 // shipping module
 #define MUST_SELECT_SHIPPING_TYPE "Wählen Sie eine Versandart aus."
+
+// search tag
+#define CONTAINS "enthält" 
+#define CLICK_TO_FIND "Suchen..."
+#define NO_MATCHES "Kein entsprechender Artikel gefunden";
+#define SEARCH_RESULTS "Die Suche ergab:"
+#define TEXT_AND "und"
+#define TEXT_OR "oder"

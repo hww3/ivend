@@ -327,10 +327,22 @@ The following attributes affect this tag:
 	Displays the following sting as a headline for the
 	following item table in <H2> font.
 
+  modulo:
+	If this numeric argument is supplied, then a fancy color banded
+table will be generated with bands appearing in groups of this argument.
+
   tcolors:
 	a comma seperated list of four HTML-color values:
 	tcolors="table-head-back, table-head-font, list-back, list-font"
 	where the table-head-* is the first line of the table.
+
+  headlinebgcolor
+  headlinefontcolor
+  listbgcolor
+  listbgcolor2
+  listfontcolor
+	if specified, these arguments will override the default values for
+colors in the listitems object.
 
 <category_output></category_output> will repeat the contents the container
 once for each record found, replacing values of each field where instances

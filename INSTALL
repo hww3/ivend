@@ -2,16 +2,35 @@ INSTALL
 
 very preliminary installation instructions:
 
-1. make symbolic links for the following files:
+1. Unpack the iVend distribution using this command:
 
-iVend.pmod -> roxen/server/lib/pike/modules/iVend.pmod
-Commerce.pmod -> roxen/server/lib/pike/modules/Commerce.pmod
+    tar xzvf ivend-1.0.XX.tar.gz (XX is the build number)
 
-2. make sure that the iVend distribution directory is in Roxen's module
+This should give you a directory called ivend/. Do not move or rename
+files in this directory.
+
+2. Make sure that the iVend distribution directory is in Roxen's module
 search path. 
 
-3. create an RSA keypair using the scripts/make_keys.pike script.
+For each store you set up you'll need to do the following:
+
+1. Create a directory and fill it with the proper html files. You can
+duplicate the examples/ directory as a starting point.
+
+2. Create a database with the sql server of your choice and generate the
+nessecary tables. Again, you can use the sample database schema located in
+the examples/ directory.
+
+3. Create an RSA keypair using the scripts/make_keys.pike script. The
+keypath is the full path of the keypair files, minus the extensions (.pub
+and .priv).
+
+4. Using the administration interface, provide the required information
+to activate the new store.
+
+5. Add groups and products using the store's administration interface.
+
 
 for more information, see doc/README.
 
-24 march 1998
+29 april 1998

@@ -122,12 +122,12 @@ string show_type(string type, object id){
 mixed shipping_admin(object id){
 string retval="";     
 
-if(!initialized && id->variables->initialize) {
+if(initialized==0 && id->variables->initialize) {
   initialize_db(id);
   start(id->misc->ivend->config);
   }
-if(!initialized)
-  retval+="This module has not been initialized yet.<br>"
+if(initialized==0)
+  return "This module has not been initialized yet.<br>"
     "Click <a href=shipping?initialize=goodtogo>Here</a> to do this.<p>\n";
 else {
 

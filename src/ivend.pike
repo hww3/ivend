@@ -147,7 +147,7 @@ void create(){
           TYPE_FILE,
           "This is a file containing words that will be used to generate "
 	  "config passwords. On Solaris and Linux, this is usually "
-	  "/usr/dict/words, and on FreeBSD /usr/share/dict/words."
+	  "/usr/dict/words, and on FreeBSD /usr/share/dict/words.");
 
 }
 
@@ -2056,7 +2056,7 @@ array|int size_of_image(string filename){
 mixed stat_file( mixed f, mixed id )  {
 
 
-   if(!CONFIG)
+   if(catch(CONFIG) || !CONFIG)
       return ({ 33204,0,time(),time(),time(),0,0 });
    //  perror("iVend: statting "+ CONFIG->root+"/html/"+f+"\n");
 

@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.28 1998-02-25 03:38:36 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.29 1998-03-02 20:58:22 hww3 Exp $";
 
 /*
  *
@@ -174,7 +174,7 @@ else if(args->href){
     + "\">"+contents+"</a>";  
 
   }
-else return "HAHAHAHA";
+else return "<!-- Error Parsing 'A' tag -->";
 }
 
 void|string container_form(string name, mapping args,
@@ -273,6 +273,14 @@ return retval;
  
     }
   
+}
+
+string tag_ivendlogo(string tag_name, mapping args,
+                    object id, mapping defines) {
+
+return "<a href=\"http://hww3.riverweb.com/ivend\"><img src=\""+
+	query("mountpoint")+"ivend-image/ivendbutton.gif\" border=0></a>";
+
 }
 
 string tag_sessionid(string tag_name, mapping args,
@@ -1088,7 +1096,7 @@ return http_string_answer(data, "image/gif");
 
 string create_index(object id){
 string retval="";
-string file=Stdio.read_bytes(query("datadir")+"index.ivml");
+retval=Stdio.read_bytes(query("datadir")+"/index.ivml");
 // retval=parse_rxml(file,id);
 return retval;
 }
@@ -1102,17 +1110,23 @@ mixed find_file(string file_name, object id){
 
 
 if(file_name==""){
+
+	if(!id->variables->SESSIONID) 
+	  id->misc->ivend->SESSIONID=
+        	(hash((string)time(1)+(string)random(32201)));	
+	else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
+
+
 	  if(!catch(config->global->create_index) 
 		&& config->global->create_index=="yes")
 	    retval=create_index(id);
 	  else 
-retval="You must enter through a store!\n";
+		retval="You must enter through a store!\n";
 
-}
-
+	}
 
 else {
-  
+
 	switch(request[0]){
 	
 		case "config":
@@ -1128,7 +1142,6 @@ else {
 	
 	}
 	
- 
 	if(!id->variables->SESSIONID) 
 	  id->misc->ivend->SESSIONID=
 		"S"+(string)hash((string)time(1)+(string)random(32201));	
@@ -1180,9 +1193,8 @@ else {
 		  retval=(handle_page(request[1], id));
 
 	    }
-	  }
 	}
-	
+}
 	//
 	// send it all out the door: 
 	//
@@ -1216,6 +1228,8 @@ if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
 	"ivindex":container_ivindex	
     ]);
 
+if(id->misc->ivend->st){
+
 if(! objectp(modules[id->misc->ivend->config->checkout_module])) 
 	load_ivmodule(id);
 
@@ -1226,7 +1240,7 @@ containers+=
 if(functionp(modules[id->misc->ivend->config->checkout_module]->query_tag_callers))
 tags+= 
   modules[id->misc->ivend->config->checkout_module]->query_tag_callers();
-
+}
 
  return "<html>"+parse_html(contents,
        tags,containers,id) +"</html>";
@@ -1239,7 +1253,8 @@ mapping query_container_callers()
 
 mapping query_tag_callers()
 {
-  return ([ "sessionid" : tag_sessionid ]); }
+  return ([ "ivendlogo" : tag_ivendlogo,
+	"sessionid" : tag_sessionid ]); }
 
 /*
 mapping query_container_callers()

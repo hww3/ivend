@@ -953,9 +953,9 @@ string tag_listitems(string tag_name, mapping args, object id, mapping defines) 
 		      tcolors[1], (string)en[cnt]);
   }
   retval+="</tr>\n";
-  retval +="<tr bgcolor=" + tcolors[2] +">\n";
 
   foreach(indices(rows), cnt) {
+  retval +="<tr bgcolor=" + tcolors[2] +">\n";
     foreach(indices(rows[cnt]), cnt2) {
       retval += sprintf("<td nowrap><font color=%s>%s&nbsp;&nbsp;</td>\n",
 			tcolors[3], (string)rows[cnt][cnt2]);

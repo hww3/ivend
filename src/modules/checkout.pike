@@ -340,6 +340,9 @@ if(note) {
   if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
  T_O->report_error("Unable to send confirmation note to " + recipient +
 "." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
+else
+ T_O->report_status("Order confirmation sent to " + recipient + "." ,
+   id->misc->ivend->orderid ||"NA", "checkout", id);
 
 }
 
@@ -364,9 +367,10 @@ if(note) {
 				     ]));
 
 
-  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
+  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message)) {
  T_O->report_error("Unable to send order notification to " + recipient +
-"." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
+      "." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
+  }
 
 }
 
@@ -894,7 +898,11 @@ return ({
   "that shipping charges be included in sales tax calculations. If your "
   "government requires this, this should be set to 'Yes.'", 
   VARIABLE_SELECT, "No", ({"Yes", "No"})
-  })
+  }) ,
+
+  ({"checkouturl", "Checkout URL", "Your checkout might be located "
+  "in a different instance of iVend. Enter the url of the checkout "
+  "step here.", VARIABLE_STRING, ""})
 });
 
 }

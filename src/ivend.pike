@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.284 2002-01-13 05:21:39 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.285 2002-11-12 06:06:40 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -237,7 +237,7 @@ return (-1.00);
 string is_lineitem_taxable(object id, string item, string orderid){
   if(item=="taxable") return "Y";
   if(item=="shipping" &&
-CONFIG_ROOT["Default Checkout Module"]->shipping_taxable=="Yes") return
+CONFIG_ROOT["Checkout"]->shipping_taxable=="Yes") return
 	"Y";
   else {
  return "N";
@@ -751,7 +751,7 @@ void|string container_ia(string name, mapping args,
                           (((id->referer*"") - "ADDITEM=1") ||"");
     else if(args->checkout)
 
-arguments["href"]=((id->misc->ivend->config["Default Checkout Module"]->checkouturl) || (query("mountpoint")+
+arguments["href"]=((id->misc->ivend->config["Checkout"]->checkouturl) || (query("mountpoint")+
                           (id->misc->ivend->moveup?"": STORE + "/")
                           +"checkout/")) +"?SESSIONID="+id->misc->ivend->SESSIONID;
     else if(args->href){

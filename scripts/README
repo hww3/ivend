@@ -11,3 +11,7 @@ encryption and decryption.
 
 clean_db.sh: cleans all sessions from your store. good to run following a
 heavy testing session.
+
+loadtable.pike: takes a tab delimited file with fields as first row, and
+generates sql insert statements. good for loading product data from a
+spreadsheet.

@@ -187,8 +187,9 @@ contain as  many and varied fields as you like, but at least the following
 must be  present:
 
 products and groups tables
-image* char
-price float
+1. image* char
+2. price float (products only)
+3. primary key
 
 The above fields are considered 'special' by iVend, and are expected to
 be present. The presence of additional fields is purely optional, however
@@ -292,6 +293,10 @@ Additionally, the following attributes have been added:
   cart: generates a link to the store's shopping cart page.
   groups: generates a link to the store's group listing page.
   checkout: generates a link to the store's checkout page.
+  template: optional attribute to specify a nonstandard template to use.
+
+  all other attributes such as target will be passed through to the
+  browser.
 
 <ivstatus> when used on product pages, this tag will display information about
 additions to a user's shopping cart, and possibly other information from 
@@ -315,6 +320,7 @@ group. The following attributes affect this tag:
   fields: a comma separated list of fields to include in the table.
   names: a comma separated list of alternate names for fields included in
      the table.
+  template: specify an alternate template to generate subpages from.
 
 <category_output></category_output> will repeat the contents the container
 once for each record found, replacing values of each field where instances
@@ -379,9 +385,8 @@ Other Stuff
 
 The database schema to use currently is located in examples/schema.mysql
 
-If the form generator finds an enum type (must be using patched mysql for
-this), it will look for values in a file called 
-	storeroot/db/tablename_fieldname.val ...
+The form generator will look for sets of values in a file called 
+	storeroot/db/tablename_fieldname.val ... to create dropdowns.
 
 
 Appendix C
@@ -398,6 +403,12 @@ group_template.html -- template used to generate group listings.
 product_template.html -- template used to generate individual product listings.
 cart.ivml -- handles shopping cart functions.
 error.html -- custom error message for iVend errors (optional).
+
+checkout/* these are the checkout steps. They are loaded sequentially as
+the user steps through the checkout process. As an example, if you
+generate a form on page 2, when the user clicks the continue button, page
+3 will be parsed. On page 3 then, you should place a tag to handle the
+data from the form on the page before.
 
 examples of these files are located in the examples directory.
 

@@ -85,7 +85,7 @@ while(quantity){ // loop through the offers until we have enough
 //  perror(o->surcharge + "\n");
 //  if(o->surcharge) price=(float)price +(float)(o->surcharge);
       int result=T_O->do_low_additem(id, o->bonus_product_id,
-       o->quantity_to_get, o->price, (["lock":1, "autoadd":1])+op);
+       o->quantity_to_get, o->price, ([ "lock":1 ])+op);
       if(!result) perror("an error occurred while adding item " + item
         +".\n");
       offers_we_took++;

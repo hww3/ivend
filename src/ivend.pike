@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.35 1998-03-10 05:04:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.36 1998-03-10 20:54:48 hww3 Exp $";
 
 array register_module(){
 
@@ -465,15 +465,17 @@ void start(){
 
 }
 
-
 mixed stat_file( mixed f, mixed id )  {
+if(! id->misc->ivend) 
+	return ({ 33204,0,time(),time(),time(),0,0 });
 array fs;
 #ifdef MODULE_DEBUG
-perror("statting "+id->misc->ivend->root+"/"+f+"\n");
+ perror("statting "+id->misc->ivend->root+"/"+f+"\n");
 #endif
 fs=file_stat(id->misc->ivend->root+"/"+f);
 return fs;
 }
+
 
 mixed handle_error(string error, object id){
 string retval;

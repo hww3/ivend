@@ -330,6 +330,9 @@ if(id->variables->orderid) status=DB->query(
 	 +"','" + l->id + "'," + l->series + "," + l->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
 	 DB->query(query);
+	id->misc->ivend->this_object->trigger_event("ship",id,
+		(["orderid": id->variables->orderid, "product_id" :
+		l->id, "series": l->series, "quantity": l->quantity]));
        }
      }
     break;
@@ -373,7 +376,7 @@ if(id->variables->orderid) status=DB->query(
        DB->query("UPDATE orders SET status=" + 
 	 status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
-	id->misc->ivend->this_object->trigger_event("shipall",id,
+		id->misc->ivend->this_object->trigger_event("shipall",id,
 		(["orderid": id->variables->orderid]));
        }
 
@@ -384,7 +387,7 @@ if(id->variables->orderid) status=DB->query(
        DB->query("UPDATE orders SET status=" + 
 	 r[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
-	id->misc->ivend->this_object->trigger_event("ship",id,
+	id->misc->ivend->this_object->trigger_event("pship",id,
 		(["orderid": id->variables->orderid]));
      }
 

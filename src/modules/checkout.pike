@@ -442,7 +442,7 @@ array r=id->misc->ivend->db->query(query);
  for(int i=0; i < sizeof(r); i++) {
    retval+="<tr><td align=right>" + r[i]->quantity + "</td>\n";
    foreach(en, string name)
-     retval+="<td>" + r[i][name] + </td>\n";
+     retval+="<td>" + r[i][name] + "</td>\n";
    retval+="<td align=right>";
 
 retval+=r[i]->price;

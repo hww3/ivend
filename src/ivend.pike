@@ -20,6 +20,7 @@ import ".";
 #if __VERSION__ < 0.6
 int read_conf();          // Read the config data.
 void load_modules(string c);
+void background_session_cleaner();
 float convert(float value, object id);
 array|int size_of_image(string filename);
 void error(mixed error, object id);
@@ -43,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.87 1998-08-03 03:47:18 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.88 1998-08-03 23:14:45 hww3 Exp $";
 
 array register_module(){
 
@@ -299,9 +300,12 @@ if(id->variables->update) {
     foreach(en, field){
 	retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
 	}
-    retval+="<th bgcolor=maroon><font color=white>&nbsp; "+ PRICE +" &nbsp;</th>\n"
-    	"<th bgcolor=maroon><font color=white>&nbsp; "+ QUANTITY +" &nbsp;</th>\n"
-	"<th bgcolor=maroon><font color=white>&nbsp; "+ TOTAL + " &nbsp;</th></tr>\n";
+    retval+="<th bgcolor=maroon><font color=white>&nbsp; "
+	+ PRICE +" &nbsp;</th>\n"
+    	"<th bgcolor=maroon><font color=white>&nbsp; "
+	+ QUANTITY +" &nbsp;</th>\n"
+	"<th bgcolor=maroon><font color=white>&nbsp; "
+	+ TOTAL + " &nbsp;</th></tr>\n";
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
 	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+">&nbsp; \n"
@@ -309,6 +313,7 @@ if(id->variables->update) {
 	  "<td>"+r[i]["name"]+"</td>\n";
 
 	foreach(en, field){
+		perror(field + "\n");
 	    retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
 	    }
 

@@ -309,13 +309,13 @@ if(id->variables->update) {
 
 //    if(!args->fields) return "Incomplete cart configuration!";
     array r= DB->query(
-      "SELECT sessions." + KEYS[STORE]->products +
+      "SELECT sessions." + KEYS->products +
 	",series,quantity,sessions.price "+ 
 	extrafields+" FROM sessions,products "
       	"WHERE sessions.SESSIONID='"
 	+id->misc->ivend->SESSIONID+"' AND sessions."+
-	KEYS[STORE]->products+"=products." +
-	KEYS[STORE]->products);
+	KEYS->products+"=products." +
+	KEYS->products);
     if (sizeof(r)==0) {
       if(id->misc->ivend->error) 
 //	error(YOUR_CART_IS_EMPTY, id);
@@ -335,8 +335,8 @@ if(id->variables->update) {
     for (int i=0; i< sizeof(r); i++){
       retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
 	  "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][
-	KEYS[STORE]->products]+">&nbsp; \n"
-        +r[i][ KEYS[STORE]->products]+" &nbsp;</TD>\n";
+	KEYS->products]+">&nbsp; \n"
+        +r[i][ KEYS->products]+" &nbsp;</TD>\n";
 
 	foreach(en, field){
 //		perror(field +"\n");
@@ -370,7 +370,7 @@ return retval;
 string tag_additem(string tag_name, mapping args,
                     object id, mapping defines) {
 if(!args->item) return "<!-- you must specify an item " +
-	KEYS[STORE]->products +". -->\n";
+	KEYS->products +". -->\n";
 string retval="<form action=" + id->not_query + ">";
 retval+=QUANTITY +": <input type=text size=2 value=" + (args->quantity ||
 "1") + " name=quantity> ";
@@ -463,7 +463,7 @@ string tag_generateviews(string tag_name, mapping args,
   string retval="";
   array r = DB->query("SELECT " + args->field + " FROM "
 	+ args->type + ", product_groups WHERE product_groups.product_id="
-	+ args->type + "." +  KEYS[STORE][args->type] +
+	+ args->type + "." +  KEYS[args->type] +
 	" AND product_groups.group_id= '" + id->misc->ivend->page + "' " 
 	" GROUP BY " + args->field);
 
@@ -507,7 +507,7 @@ array en=({});
 
 array r;
 if(args->type=="groups") {
-  query="SELECT " + KEYS[STORE]->groups + " AS pid " +
+  query="SELECT " + KEYS->groups + " AS pid " +
 	extrafields+ " FROM groups";
   if(!args->show)
     query+=" WHERE status='A' ";
@@ -523,7 +523,7 @@ else {
   if(args->limit)
     query+=" AND " + args->limit;
  
-  query+=" AND products." + KEYS[STORE]->products +
+  query+=" AND products." + KEYS->products +
 	"=product_id";
 
 }
@@ -586,7 +586,7 @@ array r;
 if(args->field!=""){
   r=DB->query("SELECT "+args->field+ " FROM "+ 
     id->misc->ivend->type+"s WHERE "
-	" " +  KEYS[STORE][id->misc->ivend->type+"s"]  +"='" 
+	" " +  KEYS[id->misc->ivend->type+"s"]  +"='" 
 	+id->misc->ivend->id+"'");
   if (sizeof(r)!=1) return "";
   else if ((r[0][args->field]==0))
@@ -665,7 +665,7 @@ string item=(args->item || id->misc->ivend->page);
   string q="SELECT *" + (args->extrafields?"," +
         args->extrafields:"") +" FROM " +
 	type + "s WHERE " +
-        KEYS[STORE][type + "s"] 
+        KEYS[type + "s"] 
 	+"='"+ item +"'";
 
 array r=  DB->query(q);
@@ -695,12 +695,12 @@ string get_type(string page, object id){
 
 array r;
 r=DB->query("SELECT * FROM groups WHERE " +
-        KEYS[STORE]->groups +
+        KEYS->groups +
         "='"+page+"'");
 if (sizeof(r)==1) return "group";
 
 r=DB->query("SELECT * FROM products WHERE " +
-KEYS[STORE]->products + "='" + page + "'");
+KEYS->products + "='" + page + "'");
 
 if(sizeof(r)==1) return "product";
 else return "";
@@ -748,7 +748,7 @@ mixed additem(string item, object id){
     }
   
   float price=DB->query("SELECT price FROM products WHERE " 
-	+ KEYS[STORE]->products +  "='" + item + "'")[0]->price;
+	+ KEYS->products +  "='" + item + "'")[0]->price;
 
   price=convert((float)price,id);
 
@@ -833,8 +833,9 @@ mapping ivend_image(array(string) request, object id){
 mixed handle_checkout(object id){
 mixed retval;
 
-
-retval=MODULES->checkout->handle(id);
+perror(sprintf("%O\n", MODULES));
+if(objectp(MODULES->checkout) && functionp(MODULES->checkout->checkout))
+retval=MODULES->checkout->checkout(id);
 
 if(retval==-1) 
   return handle_page("index.html",id);
@@ -1003,10 +1004,10 @@ mixed getmodify(string type, string pid, object id){
 string retval="";
 multiset gid=(<>);
 array record=DB->query("SELECT * FROM " + type + "s WHERE "
-+  KEYS[STORE][type +"s"]  + "='" + pid +"'");
++  KEYS[type +"s"]  + "='" + pid +"'");
 if (sizeof(record)!=1)
   return "Error Finding " + capitalize(type) + " " +
-	KEYS[STORE][type +"s"] + " " + pid + ".<p>";
+	KEYS[type +"s"] + " " + pid + ".<p>";
 
 if(type=="product") {
   array groups=DB->query("SELECT group_id from "
@@ -1092,7 +1093,7 @@ switch(id->variables->mode){
     if(id->variables->id==0 || id->variables->id=="") 
       retval+="You must select an ID to act upon!<br>";
     else retval+=DB->dodelete(id->variables->type,
-id->variables[ keys[STORE][id->variables->type +"s"]],
+id->variables[ keys[id->variables->type +"s"]],
 KEYS[id->variables->type +"s"]); }
   else {
     if(id->variables->match) {
@@ -1107,20 +1108,20 @@ KEYS[id->variables->type +"s"]); }
     }
     else {
       mixed n= DB->showdepends(id->variables->type,
-        id->variables[KEYS[STORE]][id->variables->type+"s"]
-], KEYS[STORE][id->variables->type+"s"],
-(id->variables->type=="group"?KEYS[STORE]->products:0));
+        id->variables[KEYS][id->variables->type+"s"]
+	, KEYS[id->variables->type+"s"],
+(id->variables->type=="group"?KEYS->products:0));
       if(n){ 
         retval+="<form action=./admin>\n"
           "<input type=hidden name=mode value=dodelete>\n"
           "<input type=hidden name=type value="+id->variables->type+">\n"
           "<input type=hidden name=id value="+id->variables[
-		KEYS[STORE][id->variables->type+"s"] ]+">\n"
+		KEYS[id->variables->type+"s"] ]+">\n"
           "Are you sure you want to delete the following?<p>";
           retval+=n+"<input type=submit name=confirm value=\"Really Delete\"></form><hr>";
         }
       else retval+="Couldn't find "+capitalize(id->variables->type) +" "
-        +id->variables[ KEYS[STORE][ 
+        +id->variables[ KEYS[ 
 	id->variables->type+"s"]]+".<p>";
       }
 
@@ -1130,12 +1131,12 @@ KEYS[id->variables->type +"s"]); }
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=dodelete>\n"
       +capitalize(id->variables->type) + " "+
-	KEYS[STORE][id->variables->type +"s"] + " to Delete:\n"
+	KEYS[id->variables->type +"s"] + " to Delete:\n"
       "<input type=text size=10 name=\"" +
-	KEYS[STORE][id->variables->type+"s"] + "\">\n"
+	KEYS[id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value=" + id->variables->type + ">\n"
       "<br><font size=2>If using FindMatches, you may type any part of an "
-	+ KEYS[STORE][id->variables->type+"s"] +
+	+ KEYS[id->variables->type+"s"] +
       " or Name to search for.<br></font>"
       "<input type=submit name=match value=FindMatches> &nbsp; \n"
       "<input type=submit value=Delete>\n</form>";
@@ -1150,7 +1151,7 @@ KEYS[id->variables->type +"s"]); }
   case "getmodify":
 
   retval+=getmodify(id->variables->type,
-	id->variables[KEYS[STORE]][id->variables->type+"s"]], id);
+	id->variables[KEYS[id->variables->type+"s"]], id);
 
   break;
 
@@ -1231,9 +1232,9 @@ catch(k=DB->query("SHOW INDEX FROM " +
     retval+="<form action=./admin>\n"
       "<input type=hidden name=mode value=getmodify>\n"
       + capitalize(id->variables->type) + " "+
-	KEYS[STORE][id->variables->type+"s"] + " to Modify: \n"
+	KEYS[id->variables->type+"s"] + " to Modify: \n"
       "<input type=text size=10 name=\"" +
-	KEYS[STORE][id->variables->type+"s"] + "\">\n"
+	KEYS[id->variables->type+"s"] + "\">\n"
       "<input type=hidden name=type value="+id->variables->type+">\n"
       "<input type=submit value=Modify>\n</form>";
   break;
@@ -1468,7 +1469,8 @@ mapping query_tag_callers()
 
 float convert(float value, object id){
 
-if(functionp(MODULES->currency->currency_convert))
+if(objectp(MODULES->currency) 
+&& functionp(MODULES->currency->currency_convert))
 	  value=MODULES->currency->currency_convert(value,id);
 
 else ;
@@ -1691,7 +1693,7 @@ mixed load_ivmodule(string c, string name){
 mixed err;
 mixed m;
 
-modules[c]=([]);
+if(!modules[c]) modules[c]=([]);
 
     err=catch(m=(object)clone(compile_file(query("root")+"/src/modules/"+
     name)));

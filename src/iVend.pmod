@@ -223,7 +223,7 @@ if(id->misc->ivend->clear_oldrecord){	// get rid of existing record.
 array index=query("SHOW INDEX FROM " + id->variables->table );
 
 if(sizeof(index)==1 && index[0]->Non_unique=="0") {
-  perror("UNIQUE KEY ON " + id->variables->table + "\n");
+//  perror("UNIQUE KEY ON " + id->variables->table + "\n");
   query("DELETE FROM " + id->variables->table + " WHERE " +
 	index[0]->Column_name + "='" +
 	id->variables[lower_case(index[0]->Column_name)] + "'");
@@ -231,7 +231,7 @@ if(sizeof(index)==1 && index[0]->Non_unique=="0") {
 
 else if(sizeof(index)>1)	// we've got keys in this table!
   {
-  perror("MULTIPLE KEY ON " + id->variables->table + "\n");
+//  perror("MULTIPLE KEY ON " + id->variables->table + "\n");
 
   string q="DELETE FROM " + id->variables->table + " WHERE " + 
 	index[0]->Column_name + "='" +
@@ -332,10 +332,9 @@ filename );
 
 Stdio.write_file(id->misc->ivend->config->root+"/images/"+
 	id->variables->table+"/"+filename,id->variables[r[i]->name]);
- perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
-id->misc->ivend->config->root + "/images/" + id->variables->table + "/" +
-filename + 
-".\n");
+ // perror("Wrote " + sizeof ( id->variables[r[i]->name] ) + " to " +
+// id->misc->ivend->config->root + "/images/" + id->variables->table + "/"
+// + filename +  ".\n");
     q+=r[i]->name+"='"+filename+"',";
 }
 else perror("ARGH! Can't get image's original filename from browser!\n");
@@ -359,12 +358,12 @@ q=q[0..sizeof(q)-2]+" WHERE " +
 +"='" + id->variables[id->misc->ivend->keys[id->variables->table]] +
 	"'";
 // if (sizeof(errors)>0) return errors;
-perror("running query\n" + q);
+// perror("running query\n" + q);
 query(q);
  if(id->variables->jointable) {
  array jointable;
 catch(jointable=id->variables[id->variables->jointable]/"\000");
-perror(id->variables[id->variables->jointable]+"\n\n");
+// perror(id->variables[id->variables->jointable]+"\n\n");
  query("DELETE FROM " + id->variables->joindest + " WHERE " +
 (id->variables->table-"s") +"_id='" + id->variables->id
 + "'");
@@ -422,12 +421,11 @@ retval+="<FORM ACTION=\""+return_page+"\" "
         "<TABLE>\n";
 
 if(!record) record=([]);
-perror(sprintf("%O",record));
+// perror(sprintf("%O",record));
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
 if(record[r[i]->name]) record[lower_case(r[i]->name)]=record[r[i]->name];
 r[i]->name=lower_case(r[i]->name);
-perror("existing data for " + r[i]->name +": " + record[r[i]->name] +
-"\n");
+// perror("existing data for " + r[i]->name +": " + record[r[i]->name] + "\n");
 if(r[i]->name[0..4]=="image"){
     retval+="<TR>\n"
     "<TD VALIGN=TOP ALIGN=RIGHT><FONT FACE=helvetica,arial SIZE=-1>\n"
@@ -677,11 +675,11 @@ return capitalize(type)+" "+id+ DELETED_SUCCESSFULLY +"\n";
 string generate_form_from_db(string table, array|void exclude,
 object|void id, array|void pulldown, mapping|void record){
 
-perror(sprintf("table: %O\n\n", table));
-perror(sprintf("exclude: %O\n\n", exclude));
-perror(sprintf("id: %O\n\n", id));
-perror(sprintf("pulldown: %O\n\n", pulldown));
-perror(sprintf("record: %O\n\n", record));
+// perror(sprintf("table: %O\n\n", table));
+// perror(sprintf("exclude: %O\n\n", exclude));
+// perror(sprintf("id: %O\n\n", id));
+// perror(sprintf("pulldown: %O\n\n", pulldown));
+// perror(sprintf("record: %O\n\n", record));
 
 string retval="";
 
@@ -701,7 +699,7 @@ else exclude=({""});
 if(pulldown) {
 for(int i=0; i<sizeof(pulldown); i++)
   pulldown[i]=lower_case(pulldown[i]-" ");
-  perror("pulldown!\n");
+  // perror("pulldown!\n");
 }
 else pulldown=({""});
 // perror(sprintf("%O", pulldown)+"\n");

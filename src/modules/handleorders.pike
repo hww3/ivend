@@ -404,8 +404,13 @@ if(!id->variables->print)
 
   retval+=show_orderdetails(id->variables->orderid, DB, id);
 if(!id->variables->print)
-  retval+="<obox title=\"<font face=helvetica,arial>Order Actions</font>\">"
-    "<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
+  retval+="<obox title=\"<font face=helvetica,arial>Order Actions</font>\">";
+   array r=DB->query(
+      "SELECT status.name,payment_info.orderid from status,payment_info "
+      "WHERE payment_info.orderid='" + id->variables->orderid + "' AND "
+      "status.status=payment_info.status");
+if(r[0]->name=="Validated")
+   retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n";
 if(sizeof(DB->query(
 	"SELECT id FROM orderdata WHERE orderid='" +    

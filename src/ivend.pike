@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.263 2000-06-05 20:18:15 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.264 2000-06-06 20:03:17 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -390,6 +390,7 @@ void get_dbinfo(mapping c){
     else
         perror("We're doing regular (simple) pricing.\n");
 */
+	
     db_info_loaded=1;
     return;
 
@@ -711,10 +712,9 @@ string query_name()
 
 void|string container_ia(string name, mapping args,
                          string contents, object id) {
+    if (catch(id->misc->ivend->SESSIONID)) return;
 
-    if (catch(id->misc->ivend->SESSIONID)) return contents;
-
-    if (args["_parsed"]) return contents;
+    if (args["_parsed"]) return;
 
     mapping arguments=([]);
 
@@ -761,6 +761,8 @@ arguments["href"]=((id->misc->ivend->config["Default Checkout Module"]->checkout
     m_delete(args, "template");
 
     arguments+=args;
+
+
     return make_container("A", arguments, contents);
 
 }
@@ -768,7 +770,7 @@ arguments["href"]=((id->misc->ivend->config["Default Checkout Module"]->checkout
 void|string container_form(string name, mapping args,
                            string contents, object id)
 {
-    if(args["_parsed"]) return contents;
+    if(args["_parsed"]) return;
     contents="<!-- form container --><input type=hidden name=SESSIONID value="+
              id->misc->ivend->SESSIONID+">"+contents;
     args["_parsed"]="1";
@@ -2683,6 +2685,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                  // load id->misc->ivend with the good stuff...
                  id->misc->ivend->config=config[STORE];
                  id->misc->ivend->config->global=global;
+		 id->misc->ivend->local_settings=local_settings[STORE];
                  if(!db_info_loaded) {
                      start_store(STORE);
 			if(!db_info_loaded)
@@ -2762,9 +2765,8 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
                                         string contents, object id)
              {
 		mixed err;
-                 if(args->_parsed) return contents;
+                 if(args->_parsed) return;
                  if(!id->misc->ivend) return "<!-- not in iVend! -->\n\n"+contents;
-
                  if(args->extrafields)
                      id->misc->ivend->extrafields=args->extrafields;
 
@@ -2800,15 +2802,18 @@ if(STORE){
                              library[STORE]->container), string n)
                  c[n]=generic_container_handler;
 }
+
                  contents= (!args->quiet?"<html _parsed=\"1\">":"")+parse_html(contents,
                            t + tags,
                            c + containers, id)
                            +(!args->quiet?"</html>":"");
+
 if(STORE)
                  MODULES=modules[STORE];
                  contents=parse_rxml(contents,id);
                  if(STORE && objectp(DB))
                      db[STORE]->handle(DB);
+
                  return contents;
 
              }

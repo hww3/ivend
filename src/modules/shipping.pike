@@ -132,7 +132,7 @@ return 0;
 float calculate_handlingcharge(string type, string orderid, object id){
 float handling_charge=0.00;
 
-  trigger_event("calculateHandlingCharge",id,(["type": type,
+  T_O->trigger_event("calculateHandlingCharge",id,(["type": type,
 	"orderid": orderid]));   
 
   if(id->misc->ivend->handling_charge)
@@ -424,9 +424,9 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
 {
   float charge=0.00;
 
-  if(local_settings[c->config]->handling_charge==PER_ITEM) {
-	array r=DB->query("SELECT sum(products.handling_charge) as hc, "
-	  "sessions.id from products,sessions where sessions.sessionid='" 
+  if(id->misc->ivend->local_settings->handling_charge==PER_ITEM) {
+	array r=DB->query("SELECT sum(products.handling_charge*sessions.quantity) as hc "
+	  "from products,sessions where sessions.sessionid='" 
 	  + args->orderid + "' and products." +
 	id->misc->ivend->keys->products + "=sessions.id");
 
@@ -434,6 +434,7 @@ void event_calculateHandlingCharge(string event, object id, mapping args)
    }
 
   id->misc->ivend->handling_charge=charge;
+perror("Handling Charge: " + charge + "\n");
   return;
 }
 

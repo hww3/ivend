@@ -498,7 +498,7 @@ else {
       "WHERE payment_info.orderid='" + id->variables->orderid + "' AND "
       "status.status=payment_info.status");
 
-   if(r[0]->name !="Validated") 
+   if(r && (sizeof(r)>0) && r[0]->name !="Validated") 
      return "Payment information has not been validated.\n" 
        "Cannot Ship order without validation.<p>";
 

@@ -5,7 +5,7 @@
  *
  */
 
-#include <messages.h>
+#include "include/messages.h"
 #include <module.h>
 #include <stdio.h>
 #include <simulate.h>
@@ -20,7 +20,7 @@ mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 int loaded;
 
-string cvs_version = "$Id: ivend.pike,v 1.42 1998-04-10 05:22:10 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.43 1998-04-10 20:34:45 hww3 Exp $";
 
 array register_module(){
 
@@ -430,7 +430,7 @@ else
    perror("iVend: LOADED CONFIGURATION DEFINITION!\n");
 catch(array(string) config_file= read_file(query("datadir")+"ivend.cfg")/"\n");
 if(!config_file) {
-   perror("iVend: ERROR- NONEXISTANT ivend.cfg!\n");
+   perror("iVend: ERROR NONEXISTANT ivend.cfg!\n");
    return 0;
 
    }
@@ -465,11 +465,19 @@ for (int i=0; i<sizeof(config_file);i++){
 
 void start(){
 
-	loaded=1;
+  loaded=1;
 
-   	if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
-   	else  read_conf();   // Read the config data.
-   	return;	
+  if(file_stat(query("datadir")+"ivend.cfg")==0) return; 
+    else  read_conf();   // Read the config data.
+  add_include_path(query("root") + "include");
+  add_module_path(query("root"));
+  add_program_path(query("root")[0..sizeof(query("root"))-2]);
+  perror("added module and program paths: "+ 
+    query("root")[0..sizeof(query("root"))-2] + "\n");
+perror(sprintf("%O", mkmapping(indices(roxen), values(roxen))));
+
+  return;	
+
 
 }
 
@@ -1164,7 +1172,7 @@ return http_string_answer(data,
 
 string create_index(object id){
 string retval="";
-retval=Stdio.read_bytes(query("datadir")+"/index.html");
+retval=Stdio.read_bytes(query("datadir")+"index.html");
 // retval=parse_rxml(file,id);
 return retval;
 }

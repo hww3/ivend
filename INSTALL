@@ -6,7 +6,6 @@ very preliminary installation instructions:
 
 iVend.pmod -> roxen/server/lib/pike/modules/iVend.pmod
 Commerce.pmod -> roxen/server/lib/pike/modules/Commerce.pmod
-messages.h -> roxen/server/lib/pike/include/messages.h
 
 2. make sure that the iVend distribution directory is in Roxen's module
 search path. 

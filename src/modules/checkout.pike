@@ -7,7 +7,7 @@
  *
  */
 
-inherit "roxenlib";
+inherit "caudiumlib";
 inherit iVend.error;
 
 #include <ivend.h>
@@ -45,8 +45,7 @@ void load_lineitems(object id){
 id->misc->ivend->lineitems=([]);
 
   array r=DB->query("SELECT lineitem,value from lineitems "
-    "WHERE orderid='" + (id->misc->ivend->orderid ||
-	id->misc->session_id) + "'");
+    "WHERE orderid='" + (id->misc->session_variables->orderid) + "'");
 
   foreach(r, mapping row)
    id->misc->ivend->lineitems+=([ row->lineitem : (float) row->value ]);
@@ -56,7 +55,7 @@ id->misc->ivend->lineitems=([]);
 }
 
 
-int initialize_db(object db, mapping config) {
+int initialize_db(object db) {
 
   perror("initializing sales tax module!\n");
 catch(db->query("drop table taxrates"));
@@ -76,12 +75,12 @@ return 0;
 
 }
 
-void start(mapping config, object db){
+void start(object m, object db){
 
 if((sizeof(db->list_tables("taxrates")))==1)
  initialized=1;
 else
-  initialize_db(db, config);
+  initialize_db(db);
 
 return;
 
@@ -116,7 +115,7 @@ string tag_shipping(string tag_name, mapping args,
 if(stop_error(id)) 
   return "<!-- skipping shipping because of errors.-->";
 if(id->variables["_backup"] || id->misc->ivend->skip_page )
-  return "<!-- skipping cardcheck because of page jump. -->";
+  return "<!-- skipping shipping because of page jump. -->";
 
 string retval;
  if(!id->misc->ivend->lineitems) 
@@ -125,132 +124,60 @@ string retval;
 return retval;
 }
 
-
-string tag_confirmemail(string tag_name, mapping args,
-		     object id, mapping defines) {
-if(id->variables["_backup"] || id->misc->ivend->skip_page)
-  {
-   return "<!-- confirmemail skipped. -->\n";
-  }
-if(error_happened(id) || stop_error(id)) 
-  {
-   return "<!-- skipping email confirmation because of errors.-->";
-  }
-int good_email;
-
-if(!args->field && !args->email) 
-  return "";
-mixed err;
-
-if(args->field && id->variables[lower_case(args->field)] &&
-id->variables[lower_case(args->field)]=="")
-  throw_error(INVALID_EMAIL_ADDRESS, id);
-
-else if(args->email && args->email=="")
-  throw_error(INVALID_EMAIL_ADDRESS, id);
-
- err=catch(good_email=Commerce.Sendmail.check_address(
-(args->email || id->variables[lower_case(args->field)])));
-if(err) {
- T_O->ivend_report_error("Error Running Check Address" + (err*"\n"),
-id->misc->ivend->orderid ||"NA",
-        "checkout", id); {
-  return "<!-- An error occurred while checking the email address.-->";
-  }
-}
-else if(good_email){
- // perror("done\n");
-  return "";
-  }
- else 
-	throw_error(INVALID_EMAIL_ADDRESS, id);
-// perror("done\n");
-
-return "";
-
-}
-
 mixed getorderid(object id){
-int orderid;
- perror("doing getorderid.\n");
-if(sizeof(DB->list_tables("orderid_list"))!=1) {
-  perror("adding table orderid_list...\n");
-  if(catch(DB->query("CREATE TABLE orderid_list ("
-    "orderid CHAR(64) NOT NULL PRIMARY KEY, "
-    "timestmp timestamp )"))) {
-      throw_error(ERROR_RESERVING_ORDERID, id);
-      T_O->ivend_report_critical_error(ERROR_RESERVING_ORDERID,id);
-      return -1;
-    }
-  }
-if(catch(DB->query("LOCK TABLES orderid_list WRITE")))
-  perror("Our DB doesn't support LOCK TABLES...\n");
-array r=DB->query("SELECT MAX(orderid +1) AS max FROM orderid_list");
-if(r && sizeof(r)>0)
-  orderid=(int)(r[0]->max);
-else orderid=1;
-// perror(orderid + "\n");
-DB->query("INSERT INTO orderid_list VALUES('" + orderid + "',NOW())");
-catch(DB->query("UNLOCK TABLES"));
 
-
-return orderid;
+  return DB->reserve_orderid();
 
 }
 
 string tag_confirmorder(string tag_name, mapping args,
 		     object id, mapping defines) {
 
+array typer;
+string type;
+
 if(id->variables["_backup"] || id->misc->ivend->skip_page )
    return "<!-- ConfirmOrder skipped.-->\n";
 
   string retval="";
-
-
-// reserve the next order for me please...
-array typer;
-string type;
-array s;
-
 
 if(sizeof(id->misc->session_variables->cart)==0) {
  throw_error(ERROR_ORDERID_ALREADY_EXISTS, id);
  return "";
   }
 
-id->misc->ivend->orderid=getorderid(id);
 if(stop_error(id))
  {
- T_O->ivend_report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error((string)stop_error(id), id->misc->session_variables->orderid ||"NA",
 	"checkout", id);
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
 
 id->misc->ivend->this_object->trigger_event("preconfirmorder", id,
-  (["orderid": id->misc->ivend->orderid]));
+  (["orderid": id->misc->session_variables->orderid]));
 
 if(stop_error(id))
  {
- T_O->ivend_report_error((string)stop_error(id), id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error((string)stop_error(id), id->misc->session_variables->orderid ||"NA",
 	"checkout", id);
  return "<false><!-- " + stop_error(id) + " -->\n";
 }
 
 catch(typer=DB->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
-"lineitems.orderid='" + id->misc->session_id + "' AND "
+"lineitems.orderid='" + id->misc->session_variables->orderid + "' AND "
 "lineitems.lineitem='shipping' "
 "and shipping_types.name=lineitems.extension"));
 
 if(!typer || sizeof(typer)<1) type="0";
 else type=typer[0]->type;
 mixed error=catch(DB->query("INSERT INTO orders VALUES(" +
-    id->misc->ivend->orderid + ",0," +
+    id->misc->session_variables->orderid + ",0," +
     type + ",NOW()," + (id->variables->ordernotes?"'" +
 DB->make_safe(id->variables->ordernotes) + "'":"NULL") + ",NOW())"));
 if(error)
 {
- T_O->ivend_report_error(error*"\n", id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error(error*"\n", id->misc->session_variables->orderid ||"NA",
 	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
@@ -260,16 +187,15 @@ if(error)
 // get the order from sessions
 
   array r=copy_value(id->misc->session_variables->cart);
-
-  // replace sessionid with orderid
+  werror("cart: %O\n", r);
   string query;
   error= catch {  
   for(int i=0; i<sizeof(r); i++){
-    r[i]->orderid=id->misc->ivend->orderid;
+    r[i]->orderid=id->misc->session_variables->orderid;
+    r[i]->id = r[i]->item;
     r[i]->status=0;
-    m_delete(r[i], "sessionid");    
-    m_delete(r[i], "timeout");
     query=DB->generate_query(r[i], "orderdata", DB);
+werror("query: %s\n", query);
     DB->query(query);
  }
 };
@@ -278,25 +204,18 @@ if(!error)
   id->misc->session_variables->cart=({});
 
 else {
- T_O->ivend_report_error(error*"\n", id->misc->ivend->orderid ||"NA",
+ T_O->ivend_report_error(error*"\n", id->misc->session_variables->orderid ||"NA",
 	"checkout", id);
   throw_error( UNABLE_TO_CONFIRM + "<br>" 
 	+ (error*"<br>"), id);
   return "An error occurred while moving your order to confirmed status.\n";
 }
 
-// update customer info and payment info with new orderid
-
-foreach(({"customer_info","payment_info","lineitems", "comments"}), string t)
-  DB->query("UPDATE " + t + " SET orderid='"+
-	id->misc->ivend->orderid+"' WHERE orderid='"
-	+id->misc->session_id +"'");
-
 id->misc->ivend->this_object->trigger_event("confirmorder", id,
-(["orderid": id->misc->ivend->orderid]));
+(["orderid": id->misc->session_variables->orderid]));
 
 // do we send a confirmation note? if so, do it.
-
+mixed er;
 string note;
 note=Stdio.read_file(T_O->query("storeroot")+"/notes/confirm.txt");
 if(note) {
@@ -308,26 +227,26 @@ if(note) {
   subject=parse_rxml(subject, id);
   note=parse_rxml(note, id);
   array r=DB->query("SELECT " + recipient + " from customer_info WHERE "
-		   "orderid='"+id->misc->ivend->orderid+"' AND "
+		   "orderid='"+id->misc->session_variables->orderid+"' AND "
 		   "type=0");
   recipient=r[0][recipient];
-  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
+  note=replace(note,"#orderid#",(string)id->misc->session_variables->orderid);
   
   object message=MIME.Message(note,
 				   (["MIME-Version":"1.0",
 				     "To":recipient,
-				     "X-Mailer":"iVend 1.0 for Roxen",
+				     "X-Mailer":"iVend 1.2 for Caudium",
 				     "Subject":subject
 				     ]));
 
-  perror("Sending confirmation note for " + id->misc->ivend->st + ".\n");
 
-  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
+ er=catch(T_O->ivend_send_mail(({recipient}), (string)message));
+ if(er)
  T_O->ivend_report_error("Unable to send confirmation note to " + recipient +
-"." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
+"." , (string)id->misc->session_variables->orderid ||"NA", "checkout", id);
 else
  T_O->ivend_report_status("Order confirmation sent to " + recipient + "." ,
-   id->misc->ivend->orderid ||"NA", "checkout", id);
+   id->misc->session_variables->orderid ||"NA", "checkout", id);
 
 }
 
@@ -342,28 +261,31 @@ if(note) {
   recipient=parse_rxml(recipient, id);
   subject=parse_rxml(subject, id);
   note=parse_rxml(note, id);
-  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
+  note=replace(note,"#orderid#",(string)id->misc->session_variables->orderid);
   
   object message=MIME.Message(note,
 				   (["MIME-Version":"1.0",
 				     "To":recipient,
-				     "X-Mailer":"iVend 1.0 for Roxen",
+				     "X-Mailer":"iVend 1.2 for Caudium",
 				     "Subject":subject
 				     ]));
-
-
-  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message)) {
- T_O->ivend_report_error("Unable to send order notification to " + recipient +
-      "." , (string)id->misc->ivend->orderid ||"NA", "checkout", id);
-  }
+ er=catch(T_O->ivend_send_mail(({recipient}), (string)message));
+ if(er)
+   T_O->ivend_report_error("Unable to send confirmation note to " + recipient +
+     "." , (string)id->misc->session_variables->orderid ||"NA", "checkout", id);
+ else
+ T_O->ivend_report_status("Order confirmation sent to " + recipient + "." ,
+   id->misc->session_variables->orderid ||"NA", "checkout", id);
 
 }
 
  T_O->ivend_report_status("Order confirmed successfully." ,
-   id->misc->ivend->orderid ||"NA", "checkout", id);
+   id->misc->session_variables->orderid ||"NA", "checkout", id);
 
  id->misc->ivend->this_object->trigger_event("postconfirmorder", id,
- (["orderid": id->misc->ivend->orderid]));
+ (["orderid": id->misc->session_variables->orderid]));
+
+ m_delete(id->misc->session_variables, "orderid");
 
  return "<TRUE>" + retval;
 }
@@ -407,7 +329,7 @@ if(stop_error(id))
 
 
 return (string)(sprintf("%.2f",T_O->get_tax(id, (args->orderid ||
-id->misc->ivend->orderid || id->misc->session_id))));
+id->misc->session_variables->orderid))));
 
 }
 
@@ -422,9 +344,8 @@ if(!args->table) return "";
 if(args->autofill) {
  array r;
  r=DB->query("SELECT * FROM " + lower_case(args->table) + " WHERE "
-	"orderid='" + (args->orderid || id->misc->ivend->orderid || 
-	id->misc->session_id) + "'" + (args->type?" AND type='"+
-	args->type + "'":"") ) ;
+	"orderid='" + (args->orderid || id->misc->session_variables->orderid) 
+        + "'" + (args->type?" AND type='" + args->type + "'":"") ) ;
 
  if(r && sizeof(r)==1){
   record=r[0];
@@ -446,8 +367,8 @@ if(args->autofill) {
       ((args->hide||" ")-" ") /",")
       ||({})) 
      ),id,(( ((args->pulldown||" ")-" ")/",")||({})), record)+
-        "<input type=hidden name=table value=\""+args->table+"\">";
-retval+="<input type=hidden name=aeexclude value=\""+((args->exclude||" ")-" ")
+        "<input type=\"hidden\" name=\"table\" value=\""+args->table+"\">";
+retval+="<input type=\"hidden\" name=\"aeexclude\" value=\""+((args->exclude||" ")-" ")
   + "\">\n";
 return retval;
 }
@@ -459,7 +380,7 @@ if(id->variables["_backup"] || id->misc->ivend->skip_page)
 if(stop_error(id)) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) {
  array q=DB->query("SELECT * FROM customer_info WHERE orderid='" +
-   id->misc->ivend->session_id + "' AND type=0");
+   id->misc->session_variables->orderid + "' AND type=0");
  if(q && sizeof(q)) 
    foreach(indices(q[0]), string f)
      id->variables[lower_case(f)]=q[0][f];
@@ -471,10 +392,18 @@ if(!args->noflush)
 // handle encrypting of records...
   mixed toencrypt=CONFIG_ROOT[module_name]->encryptfields;
   if(!arrayp(toencrypt)) toencrypt=({toencrypt});
-  string key;
-object privs=Privs("Reading public Key");
-  catch(key=Stdio.read_file(id->misc->ivend->config->general->publickey));
-privs=0;
+
+string key="";
+string keyloc="";
+
+keyloc = T_O->query("storeroot");
+if(keyloc && file_stat(combine_path(keyloc, "private/key.pub")))
+{
+  object privs=Privs("Reading Key File");
+  key=Stdio.read_file(combine_path(keyloc, "private/key.pub"));
+  privs=0;
+}
+
   if(key && toencrypt)
   foreach(toencrypt, string encrypt){
     encrypt=lower_case(encrypt);
@@ -486,7 +415,7 @@ privs=0;
   else perror("Can't load public key.\n");
 
 mixed j;
-
+id->variables->orderid = id->misc->session_variables->orderid;
  if(id->variables->aeexclude){
    array aeexclude=(lower_case(id->variables->aeexclude)-" ") /",";
    string exclude;
@@ -531,30 +460,11 @@ card_type=id->variables[args->cardtype] || id->variables->payment_method;
 //perror("card_type: " + card_type + "\ncard_number: "+ card_number +
 //"\nexp_date: " + exp_date + "\n");
 
-if(Commerce.CreditCard.cc_verify(card_number, card_type)!=0)
-  {
-    throw_error(INVALID_CREDIT_CARD, id);
-  return "<!-- bad card number -->";
-  }
-else if(Commerce.CreditCard.expdate_verify(exp_date)!=0)
- {
-   throw_error(INVALID_CREDIT_CARD, id);
-  return "<!-- bad date -->";
- }
-card_number-=" ";
-array cnd=card_number/4;
-cnd+=({card_number%4});
-cnd-=({""});
-card_number=cnd*" ";
-if(args->card_number) id->variables[args->card_number]=card_number;
-else id->variables->card_number=card_number;
 return "<!-- successful card check -->";
 
 }
 
 mixed checkout(string p, object id){
-// if(p!="") return;
-// perror("checkout: "+ p + "\n");
 
 id->misc->ivend->checkout=1;
 if(id->variables->_backup  && id->variables->_page)
@@ -570,7 +480,7 @@ if(!retval) return "error loading " +
   "/html/checkout/checkout_"+ (id->variables["_page"] || "1") + 
   ".html" ;    
 
-retval=parse_rxml(retval,id,0,id->misc->defines);
+catch(retval=parse_rxml(retval,id,0,id->misc->defines));
 
 if(stop_error(id)){
 if(id->variables->_backup  && id->variables->_page)
@@ -599,8 +509,7 @@ if(stop_error(id))
 
 
 return sprintf("%.2f", T_O->get_subtotal(id, args->orderid ||
-id->misc->ivend->orderid ||
-id->misc->session_id));
+id->misc->session_variables->orderid));
 
 
 
@@ -612,8 +521,7 @@ string tag_grandtotal(string tag_name, mapping args,
 if(stop_error(id)) 
   return "<!-- skipping grandtotal because of errors.-->";
 
-float gt=T_O->get_grandtotal(id, args->orderid || id->misc->ivend->orderid
-|| id->misc->session_id);
+float gt=T_O->get_grandtotal(id, args->orderid || id->misc->session_variables->orderid);
 
 return sprintf("%.2f", (float)(gt));
 
@@ -646,28 +554,32 @@ array en=({});
 
  if(args->fields){
    ef=args->fields/",";
-   if(args->names)
+ if(args->names)
    en=args->names/",";
-   else en=({});
-   for(int i=0; i<sizeof(ef); i++) {
-     if(catch(en[i]) || !en[i])  en+=({ef[i]});
-     extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'";
-   }
- }     
+ else en=ef;
+
+ array x1=({});
+ foreach(ef; int i; string fn)
+     x1+=({ fn + " AS " + "'" + en[i] + "'"});
+
+ extrafields = (x1*", ");
+
+ }
 
  foreach(id->misc->session_variables->cart, mapping row)
  {
 
-   array rx=DB->query("SELECT " + extrafields + " FROM products WHERE " + DB->keys->product + "='" + row->item);
-
-   retval+="<tr><td align=right>" + row->quantity + "</td>\n";
+   string q = "SELECT " + extrafields + 
+     " FROM products WHERE " + DB->keys->products + "='" + row->item + "'";
+   array rx=DB->query(q);
+   retval+="<tr><td align=\"right\">" + row->quantity + "</td>\n";
    foreach(en, string name)
      retval+="<td>" + rx[0][name] + "</td>\n";
-   retval+="<td align=right>";
+   retval+="<td align=\"right\">";
 
-   retval+=row->price;
+   retval+=sprintf("%.2f", (float)(row->price));
    retval+= "</td>\n"
-     "<td align=right>";
+     "<td align=\"right\">";
    float linetotal = ((float)(row->quantity) * (float)(row->price));
    retval+=sprintf("%.2f", linetotal);
    if(row->taxable=="N") nontaxable+=linetotal;
@@ -676,11 +588,9 @@ array en=({});
  }
 
 
-
  if(!id->misc->ivend->lineitems) id->misc->ivend+=(["lineitems":([])]);
  id->misc->ivend->lineitems+=(["taxable":(float)taxable]);
  id->misc->ivend->lineitems+=(["nontaxable":(float)nontaxable]);
-
 return retval;
 
 }
@@ -690,12 +600,17 @@ string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
 // perror("doing container_checkout.\n");
+werror("checkout request: %O\n\n", id->raw);
 if(stop_error(id)) {
   perror("<!-- skipping checkout because of errors -->\n");
   return "<!-- skipping checkout because of errors -->";
   }
+if(!id->misc->session_variables->orderid)
+  id->misc->session_variables->orderid=getorderid(id);
+
 if(args->orderid)
-  id->misc->ivend->orderid=args->orderid;
+  id->misc->session_variables->orderid=args->orderid;
+
 mapping tags,containers;
 if(functionp(query_tag_callers2))
  tags=query_tag_callers2();
@@ -708,14 +623,12 @@ string h;
 if(id->variables["_page"])
     id->misc->ivend->next_page= (int)id->variables["_page"]+1;
 if(!args->quiet)
-contents="<form name=checkoutform method=post action=\"" + id->not_query +
-"\">\n<input type=hidden name=_page "
-  "value=" + (id->misc->ivend->next_page || "2") + ">\n"
+contents="<form name=\"checkoutform\" method=\"post\" action=\"" + id->not_query +"\">\n<input type=\"hidden\" name=\"_page\" "
+  "value=\"" + (id->misc->ivend->next_page || "2") + "\">\n"
   +contents+ "</form>\n";
 
 load_lineitems(id);
-// perror(contents);
-contents=parse_html(contents,
+contents=Caudium.parse_html(contents,
 		  tags,
 		  containers,
 		  id);
@@ -734,7 +647,7 @@ if(id->variables->addrule)
   ",'C','" + id->variables->field_name +
   "','" + upper_case(id->variables->value) + "',NULL)");
  
-string retval="<font size=+1><b>Sales Tax Setup</b></font><p>";
+string retval="<font size=\"+1\"><b>Sales Tax Setup</b></font><p>";
 array r=DB->query("SELECT * FROM taxrates");
 if(sizeof(r)==0){
   retval+="You have not set any tax rules yet.<p>";
@@ -743,27 +656,27 @@ if(sizeof(r)==0){
 else {
   retval+="<b>Current Tax Rules:</b><p>"
     "<table>\n"
-    "<tr><th><font face=helvetica,arial>Table.Field Name</font></th>"
-    "<th><font face=helvetica,arial>Match Value</th>"
-    "<th><font face=helvetica,arial>Tax Rate</th><th>&nbsp;</th></tr>\n";
+    "<tr><th><font face=\"helvetica,arial\">Table.Field Name</font></th>"
+    "<th><font face=\"helvetica,arial\">Match Value</th>"
+    "<th><font face=\"helvetica,arial\">Tax Rate</th><th>&nbsp;</th></tr>\n";
   
   foreach(r, mapping row){
-    retval+="<tr><td><font face=helvetica,arial>" + 
-	row->field_name + "</font></td><td><font face=helvetica,arial>" + 
-	row->value + "</font></td><td><font face=helvetica,arial>" + 
+    retval+="<tr><td><font face=\"helvetica,arial\">" + 
+	row->field_name + "</font></td><td><font face=\"helvetica,arial\">" + 
+	row->value + "</font></td><td><font face=\"helvetica,arial\">" + 
         sprintf("%.2f",(((float)row->taxrate)*100)) + 
-      "%</font></td><td><font face=helvetica,arial>"
+      "%</font></td><td><font face=\"helvetica,arial\">"
       " &nbsp; <a href=\"./?deleterule=" +
       row->id  + "\">DeleteRule</a></font></td></tr>\n";
     }
   retval+="</table>";
   }
 retval+="<p>\n";
-retval+="<form action=\"./\" method=post>"
+retval+="<form action=\"./\" method=\"post\">"
   "<table>"
-  "<tr><th><font face=helvetica,arial>Table.Field</font></th>"
-  "<th><font face=helvetica,arial>Match Value</font></th>"
-  "<th><font face=helvetica,arial>Tax Rate (%)</font></th></tr>";
+  "<tr><th><font face=\"helvetica,arial\">Table.Field</font></th>"
+  "<th><font face=\"helvetica,arial\">Match Value</font></th>"
+  "<th><font face=\"helvetica,arial\">Tax Rate (%)</font></th></tr>";
 
 retval+="<tr><td><select name=\"field_name\">";
 
@@ -795,7 +708,6 @@ mapping query_tag_callers2() {
 
 return (["showorder" : tag_showorder,
       "confirmorder" : tag_confirmorder,
-      "confirmemail" : tag_confirmemail,
 	  "discount" : tag_discount, 
 	 "cardcheck" : tag_cardcheck,
 	  "addentry" : tag_addentry,

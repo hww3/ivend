@@ -34,11 +34,15 @@ color +">\n";
 string|int genpayment(object id, object s){
 string retval="";
 string key="";
-object privs=Privs("Reading Key File");
-if(id->misc->ivend->config->general->privatekey)
-  key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
-privs=0;
-// perror(key);
+string keyloc="";
+
+keyloc = T_O->query("storeroot");
+if(keyloc && file_stat(combine_path(keyloc, "private/key.priv")))
+{
+  object privs=Privs("Reading Key File");
+  key=Stdio.read_file(combine_path(keyloc, "private/key.priv"));
+  privs=0;
+}
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -53,11 +57,27 @@ retval="<table valign=top width=100%>";
  foreach(f, mapping field){
      if(field->name=="updated" || field->name=="type" || field->name=="orderid") continue;
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
-     +"</font>\n</td>\n<td>"+
-  ((r[0][field->name] && r[0][field->name][0..3]=="iVEn")?
+     +"</font>\n</td>\n<td>";
+  string fv = r[0][field->name];
+  int crypted = 0;
 
-(Commerce.Security.decrypt(r[0][field->name],key)+"*"):(string)(r[0][field->name]))
-  	+"</td></tr>\n";
+  // are we working with a crypted value? if so, decrypt it.
+  if(fv[0..3] == "iVEn")
+  {
+    fv = Commerce.Security.decrypt(fv, key);
+    crypted=1;
+  }
+
+  // if we're working with the credit card number, split the number
+  // into groups of digits for easier reading.
+  if(field->name == CONFIG_ROOT[module_name]->card_number_field)
+  {
+    if(sizeof(fv)%4 == 0) fv = (fv/4) * " ";
+    else if (sizeof(fv)%5 == 0) fv = (fv/5) * " ";
+  }
+
+  
+  retval+= (string)(fv) + (crypted?"*":"") + "</td></tr>\n";
  
    }
 
@@ -104,13 +124,13 @@ if(sizeof(r)==0) return "<p><b><i>Unable to find "+table+" for Order ID " +
    string type=row->type;
    m_delete(row, "type");
 array wx=DB->query("SELECT status FROM orders WHERE id='" +
-id->misc->ivend->orderid + "'");
+id->variables->orderid + "'");
 perror("generating table for " + table + "\n");
 
 if(((int)(wx[0]->status) > 1)|| id->variables->print);
 else if(!id->variables->edit_data || id->variables->edit_data!=type)
   d+="<a href=\"./?orderid="
-        + id->misc->ivend->orderid + "&edit_data=" + type +
+        + id->variables->orderid + "&edit_data=" + type +
         "\"><img src=\"" + T_O->query("mountpoint") +
 "ivend-image/edit.gif\" alt=\"Edit\" border=0></a>\n";
  else  {
@@ -168,12 +188,14 @@ CONFIG_ROOT[module_name]->manifestfields;
   }
   string retval="<table valign=top width=100%>\n";
 
-  array r=DB->query("SELECT orderdata.*, status.name as status " 
+  string qry = "SELECT orderdata.*, status.name as status " 
 	+ manifestfields +" FROM "
 	   "products,orderdata,status WHERE orderdata.orderid=" + 
 	   id->variables->orderid + " AND status.status=orderdata.status " 
 	   " AND products." + DB->keys->products +
-	"=orderdata.id ORDER BY " + DB->keys->products);
+	"=orderdata.id ORDER BY " + DB->keys->products;
+werror("qry: %s\n", qry);
+  array r=DB->query(qry);
   if(sizeof(r)==0)
     return create_panel("Order Manifest", "darkgreen", 
 			"Unable to find data for this order.", id);
@@ -188,8 +210,6 @@ retval+="<td align=right><font face=helvetica size=-1>Unit Price</font></td>\n"
     "<td align=right><font face=helvetica size=-1>Item Total</font></td>\n";
 
   foreach(r, mapping row) {
-// perror(sprintf("%O", id->misc->ivend->keys));
-// perror(sprintf("%O", row));
 
     retval+="<tr><td>" + (row->status=="Shipped"?"(S)" : 
 	"<input type=checkbox value=ship name=\"" + 
@@ -263,14 +283,14 @@ else if(!id->variables->editli || id->variables->editli!=row->lineitem)
   } 
  }
 
-float tax=T_O->get_tax(id, id->misc->ivend->orderid);
-perror("orderid: " + id->misc->ivend->orderid + " tax: " + tax + "\n");
+float tax=T_O->get_tax(id, id->variables->orderid);
+perror("orderid: " + id->variables->orderid + " tax: " + tax + "\n");
   retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica>Sales Tax</td>"
 	"<td align=right>" + sprintf("%.2f", tax) + "</td></tr>\n";
 
-float gt=T_O->get_grandtotal(id, id->misc->ivend->orderid);
+float gt=T_O->get_grandtotal(id, id->variables->orderid);
   retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica><b>Grand Total</b></td>"
@@ -300,7 +320,7 @@ void send_notification(object id, string orderid, string type){
 if(!type) return;
 
 string note;
-note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/" +
+note=Stdio.read_file(T_O->query("root")+"/notes/" +
 type +".txt");
 if(note) {
 
@@ -319,9 +339,8 @@ if(note) {
                                      ]));
 
 
-  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
-   perror("Error sending " + type  + " note for " +
-        id->misc->ivend->st + "!\n");
+  if(catch(T_O->ivend_send_mail(({recipient}), (string)message)))
+   perror("Error sending " + type  + " note in handleorders\n");
 
 }      
 
@@ -424,20 +443,14 @@ string|mapping archive_orders(string mode, object id){
   foreach(orders_to_archive, mapping or){
 	retval+=archive_order(or->id, id);
      } 
-#if constant(Protocols.SMTP.client)
 if(v->method=="Mail Archive" && v->email!=""){
  object dns=Protocols.DNS.client();
-string server=dns->get_primary_mx(gethostname());
-if(!server) server="localhost";
-// mixed e=catch(
-  Protocols.SMTP.client(server)->simple_mail(v->email, 
-	"Archive Orders " + (orders_to_archive*", "),
-        CONFIG_ROOT["Admin Interface"]->email, retval)
- ;
-//if(e)
-//  error(e);
-//	return "An error occurred while mailing your archive request.<p>"
-//	 "Your archive request was cancelled. Please try again later.";
+ mixed e=catch(
+  T_O->ivend_send_mail(({v->email}), 
+        MIME.Message(retval, (["Subject": "Archive Orders " + (orders_to_archive*", ")]) )));
+if(e)
+	return "An error occurred while mailing your archive request.<p>"
+	 "Your archive request was cancelled. Please try again later.";
   if(id->variables->delete=="yes")
   foreach(orders_to_archive, mapping or){
 	delete_order(or->id, id);
@@ -447,7 +460,6 @@ if(!server) server="localhost";
 	"<a href=./>Click here to continue.</a>\n";
 }
 else {
-#endif
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "order" +(sizeof(orders_to_archive)==1?("_"+
 orders_to_archive[0]->id):"") + ".xml");
@@ -456,9 +468,7 @@ orders_to_archive[0]->id):"") + ".xml");
 	delete_order(or->id, id);
      } 
     return http_rxml_answer(retval, id, 0, "text/archive");
-#if constant(Protocols.SMTP.client)
     }
-#endif
    }
   else {
 
@@ -487,10 +497,8 @@ orders_to_archive[0]->id):"") + ".xml");
 	"<input type=hidden name=orderid value=" + v->orderid + ">\n"
 	"<input type=hidden name=archiveby value=" + v->archiveby +">\n"
 	"<input type=hidden name=doit value=1>\n"
-#if constant(Protocols.SMTP.client)
 	"<input type=text size=40 name=email> Email Address<br>\n"
 	"<input type=submit name=method value=\"Mail Archive\">\n"
-#endif
 	"<input type=submit name=method value=\"Download Archive\">\n"
 	"</form>";
   else retval+="<p><a href=\"./\">Click here to start over.</a>";
@@ -559,11 +567,17 @@ perror("show_orders\n");
 // perror("validating Payment\n");
 if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
   string cn;
+
 string key="";
-object privs=Privs("Reading Key File");
-if(id->misc->ivend->config->general->privatekey)
-  key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
-privs=0;
+string keyloc="";
+
+keyloc = T_O->query("storeroot");
+if(keyloc && file_stat(combine_path(keyloc, "private/key.priv")))
+{
+  object privs=Privs("Reading Key File");
+  key=Stdio.read_file(combine_path(keyloc, "private/key.priv"));
+  privs=0;
+}
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -632,7 +646,7 @@ else {
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
-	id->misc->ivend->this_object->trigger_event("rejectpayment",id,
+	T_O->trigger_event("rejectpayment",id,
 		(["orderid": id->variables->orderid]));
    send_notification(id, id->variables->orderid, "rejpay");
 
@@ -652,7 +666,7 @@ else {
    DB->query("UPDATE orders SET status=" + 
        r[0]->status + " WHERE id='" + id->variables->orderid+"'");
 
-	id->misc->ivend->this_object->trigger_event("cancelorder",id,
+	T_O->trigger_event("cancelorder",id,
 		(["orderid": id->variables->orderid]));
   }
   else return "<b>Do you really want to cancel this order?</b>"
@@ -717,7 +731,7 @@ else {
 	 +"','" + l->id + "'," + l->series + "," + l->quantity + ",'" +
 	 id->variables->tracking_id + "',NOW(),1)";
 	 DB->query(query);
-	id->misc->ivend->this_object->trigger_event("ship",id,
+	T_O->trigger_event("ship",id,
 		(["orderid": id->variables->orderid, "product_id" :
 		l->id, "series": l->series, "quantity": l->quantity]));
        }
@@ -772,7 +786,7 @@ else {
        DB->query("UPDATE orders SET status=" + 
 	 status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
-		id->misc->ivend->this_object->trigger_event("shipall",id,
+		T_O->trigger_event("shipall",id,
 		(["orderid": id->variables->orderid]));
        }
 
@@ -783,7 +797,7 @@ else {
        DB->query("UPDATE orders SET status=" + 
 	 r[0]->status + ",updated=NOW() WHERE id='" +
 	id->variables->orderid + "'"); 
-	id->misc->ivend->this_object->trigger_event("pship",id,
+	T_O->trigger_event("pship",id,
 		(["orderid": id->variables->orderid]));
      }
 
@@ -934,7 +948,7 @@ numpages + " &nbsp; " +
   foreach(r, mapping row){
     retval+="<tr>\n";
     retval+="<td> <img src=\"" + 
-	id->misc->ivend->this_object->query("mountpoint")+
+	T_O->query("mountpoint")+
 	  "ivend-image/rbutton.gif\"> "
 	"</td><td bgcolor=gray align=center> <a href=\"./?orderid="
 	+row->id+"\">"+
@@ -1000,8 +1014,6 @@ string retval="";
 	"\n\n", id);
 
 //do we need to update customer info?
-
-if(id->variables->orderid) id->misc->ivend->orderid=id->variables->orderid;
 
 if(id->variables["commitci.x"]){ // commit the lineitem change
 

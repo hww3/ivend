@@ -16,7 +16,12 @@ any shipping module, you will note a message indicating that the module
 needs to be initialized. By selecting the link that is provided, the
 module will create any shipping tables nessecary for proper operation. If
 you have used a different shipping module previously, your shipping types
-will be retained.
+will be retained. 
+
+Please note that you must have CREATE and DROP permissions for the store
+database when you initialize the shipping module. These permissions are
+only needed at the time of initialization and may be removed once the
+tables are set up.
 
 In order for this module to calculate shipping properly, you must add at
 least one shipping type, and then add one or more shipping rules to that
@@ -53,5 +58,5 @@ These tags work within the <checkout></checkout> container.
 Examples of tag usage can be found in the examples/checkout directory.
 
 
-13 April 1998
+26 April 1998
 Bill Welliver <hww3@riverweb.com>

@@ -43,12 +43,14 @@ handlers=([]);
 
 // perror(sprintf("%O\n", config));
 
-if(catch(db=iVend.db(config->general->dbhost, config->general->db,
-  config->general->dblogin, config->general->dbpassword)))
-  {
-    perror("iVend: Shipping: Error Connecting to Database.\n");
-    return;
-  }
+//if(catch(
+db=iVend.db(config->general->dbhost, config->general->db,
+  config->general->dblogin, config->general->dbpassword);
+//))
+//  {
+//    perror("iVend: Shipping: Error Connecting to Database.\n");
+//    return;
+//  }
 
 if((sizeof(db->list_tables("shipping_types")))==1)
   initialized=1;
@@ -107,14 +109,14 @@ int initialize_db(object id)
   perror("initializing shipping module!\n");
 
 if(sizeof(DB->list_tables("shipping_types"))!=1)
-  catch(DB->query("CREATE TABLE shipping_types ("
+  DB->query("CREATE TABLE shipping_types ("
   "  type int(11) DEFAULT '0' NOT NULL auto_increment,"
   "  name varchar(32) DEFAULT '' NOT NULL,"
   "  description blob,"
   "  module varchar(32),"
   "  PRIMARY KEY (type)"
-  ") "));
-start(CONFIG);
+  ") ");
+start(id->misc->ivend->config);
 return 0;
 
 }

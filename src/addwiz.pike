@@ -124,17 +124,6 @@ string|int page_3(object id){
 ;
 }
 
-string|int page_4(object id){
- return "<table width=95%>\n" + IFERROR +
-"<tr><td>Shipping Taxable? &nbsp </td><td>"
-" <var type=select name=\"shipping_taxable\" options=\"Yes,No\"></td></tr>"
-"<help><tr><td colspan=2>"
-"Should shipping charges be included in taxable goods?</td></tr>"
-"</help>"
-"</table>"
-;
-}
-
 array getstyles(object id){
 
 array s=get_dir(id->misc->ivend->this_object->query("root") +
@@ -143,7 +132,7 @@ s=s-({"CVS","README"});
 return s;
 }
 
-string|int page_5(object id){
+string|int page_4(object id){
  return "<table width=95%>\n" + IFERROR +
   "<tr><td>Store Style &nbsp; </td><td><var name=\"style\" type=\"select\"" 
   " options=\""+ (getstyles(id)*",") + "\"></td></tr>"
@@ -156,7 +145,7 @@ string|int page_5(object id){
   "</table>";
 }
 
-string|int page_6(object id){
+string|int page_5(object id){
 mapping v=id->variables;
 string retval="Click OK to perform the following tasks:<p>\n<ul>";
 retval+="<li>Create the iVend store <i>" + v->_name + "</i>.\n";

@@ -432,7 +432,8 @@ foreach(indices(config), string c)
 
 int write_config_section(string store, string section, mapping attributes){
 
- return Config.write_section(query("configdir")+store, section, attributes);
+ return Config.write_section(query("configdir") + store, section,
+	attributes);
 
 }
 
@@ -821,92 +822,6 @@ string tag_generateviews(string tag_name, mapping args,
    return retval;
 }
 
-/*
-string tag_listitems(string tag_name, mapping args,
-                     object id, mapping defines)
-
-{
-
-   string retval="";
-   string query;
-
-   if(!id->misc->ivend->page) return "no page!";
-   string extrafields="";
-   array ef=({});
-   array en=({});
-
-   if(args->fields){
-      ef=args->fields/",";
-      if(args->names)
-         en=args->names/",";
-      else en=({});
-      for(int i=0; i<sizeof(ef); i++) {
-         if(catch(en[i]) || !en[i])  en+=({ef[i]});
-         extrafields+=", " + ef[i] + " AS " + "'" + en[i] + "'"; 
-      }
-   }
-
-   if(args->type=="custom") {
-      query=args->query;
-
-   }
-   else if(args->type=="groups") {
-      query="SELECT " + KEYS->groups + " AS pid " +
-            extrafields+ " FROM groups";
-      if(!args->show)
-         query+=" WHERE status='A' ";
-
-   }
-   else {
-      query="SELECT product_id AS pid "+ extrafields+
-            " FROM product_groups,products where group_id='"+
-            id->misc->ivend->page+"'";
-
-      if(!args->show)
-         query+=" AND status='A' ";
-      if(args->limit)
-         query+=" AND " + args->limit;
-       
-      query+=" AND products." + KEYS->products +
-             "=product_id";
-
-   }
-
-   if(args->order)
-      query+=" ORDER BY " + args->order;
-
-   array r=DB->query(query);
-   if(sizeof(r)==0) return NO_PRODUCTS_AVAILABLE;
-
-   array rows=({});
-   foreach(r,mapping row){
-	array thisrow=({});
-      string t;
-      int n=0;
-      foreach(en, t){
-
-         if(n==0) {
-            thisrow+=({("<A " + (args->template?("TEMPLATE=\"" +
-                                                 args->template + "\""):"") +
-                        " HREF=\""+row->pid+".html\">"+row[t]+"</A>")});
-         }
-         else
-            thisrow+=({row[t]}); 
-         n++;
-
-      }
-      rows+=({thisrow});
-   }
-
-   if(args->title) retval+="<h2>" + args->title + "</h2>\n";
-
-   retval+=html_table(en, rows, args);
-   return retval;
-
-}
-
-*/
-
 string tag_listitems(string tag_name, mapping args, object id, mapping defines) {
   
   string retval="";
@@ -945,7 +860,7 @@ if(args->type=="custom") {
   query=args->query;
   tablename="products";
 }
-else  if(args->type=="groups") {
+else if(args->type=="groups") {
     query="SELECT " + KEYS->groups + " AS pid " +
       extrafields+ " FROM groups";
     if(!args->show)
@@ -1799,11 +1714,20 @@ id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
                   "<ul>\n"
                   "<li>Groups\n"
                   "<ul>"
-                  "<li><a href=\"admin?mode=show&type=group\">Show Groups</a>\n"
-                  "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
-                  "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
-                  "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
-                  "<li><a href=\"admin?mode=dump&type=group\">Dump Groups</a>\n"
+                  "<li><a href="+ add_pre_state(id->not_query,(<"showgroups">))
+ 		+">Show Groups</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"addgroups">))
+	+">Add New Group</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"modifygroups">))
+	+">Modify a Group</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"deletegroups">))
+	+">Delete a Group</a>\n"
+                  "<li><a href="+
+add_pre_state(id->not_query,(<"dumpgroups">))
+	+">Dump Groups</a>\n"
                   "</ul>"
                   "<li>Products\n"
                   "<ul>"

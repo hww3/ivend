@@ -10,6 +10,7 @@ constant module_type = "addin";
 array groupsearchfields=({});
 array productsearchfields=({});
 array stopwords=({});
+mapping idmappings=([]);
 
 void initialize_db(object db) {
   perror("initializing search module!\n");
@@ -26,6 +27,29 @@ return;
 
 }   
 
+void start(mapping config)
+{
+perror("start in search.\n");
+// perror(sprintf("%O\n", config));
+
+if(sizeof(stopwords)==0 && 
+	config[module_name]["stopwordfile"]!="" && 
+	file_stat(config[module_name]["stopwordfile"])){
+	perror("Reading stopwords file: " + config[module_name]["stopwordfile"]+ "...");
+stopwords=(lower_case(Stdio.read_file(config[module_name]["stopwordfile"])-"\r"))/"\n";
+stopwords-=({""});
+}
+
+if(config[module_name]->idmappingfile!="" && file_stat(config[module_name]->idmappingfile)) {
+perror("we have specified an idmapping file.\n");
+array r=Stdio.read_file(config[module_name]->idmappingfile)/"\n";
+foreach(r, string line){
+ array l=(replace(line,({" ", "\m", "\r"}),({"","",""}) ) )/"\t";
+ if(sizeof(l)==2)
+   idmappings+=([ l[0] : l[1] ]);
+	}
+}
+}
 
 mixed searchadmin_handler(string mode, object id)
 { 
@@ -101,12 +125,16 @@ perror("Building searchwords database.\n");
 string tag_searchresults(string tag_name, mapping args,
                   object id, object file, mapping defines) {
 defines=([]);
+string q="";
 string results="";
 if(!id->variables->q || !id->variables->stype)
 	return "<!-- Incorrectly configured search query or no query -->";
 if(id->variables->stype==DB->keys->products){
+if(idmappings[((id->variables->q)-" ")]) q=idmappings[((id->variables->q)-" ")];
+else q=(id->variables->q)-" ";
+  // we're searching by catalog id.
 	if(sizeof(DB->query("SELECT " + DB->keys->products + " FROM products "
-	" WHERE " + DB->keys->products + "='" + (id->variables->q-" ") + "'"))==1)
+	" WHERE " + DB->keys->products + "='" + (q) + "'"))==1)
 
 {
 
@@ -124,7 +152,68 @@ else results="No " + replace(DB->keys->products, "_", " ") + " " + upper_case(id
 }
 else {
 
+// we're searching by keyword.
+int reqflag=0;
+array k=(lower_case(id->variables->q)/" ")-({""});
+perror("found " + sizeof(k) + " words.\n");
+foreach(k, string w){
+ string nw="";
+  if(w[0..0]=="+") { nw=w[1..]; reqflag=1; }
+  else nw=w;
+  if(search(stopwords, nw)>=0) {perror("found a stopword in query.\n"); k-=({w});}
 }
+perror("found " + sizeof(k) + " searchable words.\n");
+// are we left with any good words?
+if(sizeof(k)<1) return "No searchable words supplied for search. Please try again with more specific words.";
+
+string query="SELECT id, type, sum(occ) as occ, word FROM searchwords WHERE ";
+array qp=({});
+foreach(k, string word) {
+  if(word[0..0]=="+") word=word[1..];
+  qp+=({"'" + word + "'"});
+}
+query+="word IN(" + (qp*",") + ") ";
+
+if(reqflag==1) query +=" GROUP BY id,type,word ORDER BY occ DESC";
+else query +="GROUP BY id,type ORDER BY occ DESC";
+perror("QUERY: " + query + "\n");
+array res=DB->query(query);
+if(sizeof(res)==0) return "Your search returned zero results. Please try again.";
+if(reqflag==1){
+  array i=({});
+  foreach(res, mapping row)
+    i+=({row->id});
+  }
+else // we aren't requiring words to be present...
+  {
+
+  string groupresults="";
+  string productresults="";
+  int numproducts,numgroups=0;
+  int maxocc=(int)(res[0]->occ);
+  
+  foreach(res, mapping row){ // look at each result record.
+    if(row->type=="g") {
+	if(numgroups>4) continue;
+	numgroups++;
+	mapping grow=DB->query("SELECT name, description FROM groups WHERE " + DB->keys->groups + "='" + row->id + "'")[0];
+	groupresults+="<dt><a href=\"" + T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" + grow->name + "</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><dd>" + grow->description + "</dd><p>";
+	}
+    else {
+	if(numproducts>15) continue;
+	numproducts++;
+	mapping grow=DB->query("SELECT name, description FROM products WHERE " + DB->keys->products + "='" + row->id + "'")[0];
+	productresults+="<dt><a href=\"" + T_O->query("mountpoint") + (id->misc->ivend->moveup?"": STORE+ "/") + row->id + ".html\">" + grow->name + "</a> (" +  (string)(((int)((float)(row->occ)/(float)(maxocc))*4))  +  " stars)</dt><p>";
+
+      }
+    }
+if(groupresults=="") groupresults="No groups found that match your query.";
+if(productresults=="") productresults="No products found that match your query.";
+results="<h2>Top Group Results</h2>\n" + groupresults + "<p>";
+results+="<h2>Top Product Results</h2>\n" + productresults + "\n"; 
+  }
+}
+
 return results;
 
 }
@@ -142,8 +231,8 @@ string tag_searchform(string tag_name, mapping args,
 
    string retval="<form action=\"" + action + "\">\n";
 	retval+="<input type=text name=q size=" + size +" VALUE=\"" + upper_case((id->variables->q||"")) + "\">\n";
-	retval+="<input type=radio name=stype value=key checked> Keywords "
-		"<input type=radio name=stype value=id> " + 
+	retval+="<input type=radio name=stype value=key " + (id->variables->stype=="key"|!id->variables->stype?"checked":"") + "> Keywords "
+		"<input type=radio name=stype value=id " + (id->variables->stype=="id"?"checked":"") + "> " + 
 		replace(DB->keys->products, "_", " ");
 	retval+=" <input type=submit value=\"Search\">\n";
 	retval+="</form>\n";
@@ -187,7 +276,7 @@ if(sizeof(stopwords)==0 &&
 	CONFIG_ROOT[module_name]["stopwordfile"]!="" && 
 	file_stat(CONFIG_ROOT[module_name]["stopwordfile"])){
 	perror("Reading stopwords file: " + CONFIG_ROOT[module_name]["stopwordfile"]+ "...");
-stopwords=(Stdio.read_file(CONFIG_ROOT[module_name]["stopwordfile"])-"\r")/"\n";
+stopwords=(lower_case(Stdio.read_file(CONFIG_ROOT[module_name]["stopwordfile"])-"\r"))/"\n";
 stopwords-=({""});
 
 }
@@ -200,7 +289,7 @@ foreach(indices(r), string f){
  wordstoadd+=r[f];
 }
 
-
+wordstoadd=lower_case(wordstoadd);
 
 wordstoadd=replace(wordstoadd, ({"\n", "\r", "\t"}), ({" ", " ", " "}));
 array w=wordstoadd/" ";
@@ -292,7 +381,13 @@ array query_preferences(void|object id) {
 	}) ,
 
 	({"stopwordfile", "Stop Word File", 
-	"Path to a file that contains words to exclude from search database.",
+	"Path to a file that contains words to exclude from search database. (optional but recommended)",
+	VARIABLE_STRING,
+	""
+	}),
+
+	({"idmappingfile", "Catalog ID mapping File", 
+	"Path to a file that contains mappings from one catalog number to another (optional). file format is one mapping per line, tab separated in the format: <p>SEARCHEDID<i>(tab)</i>RETURNEDID<i>(newline)</i>",
 	VARIABLE_STRING,
 	""
 	})

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.279 2000-12-22 20:37:38 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.280 2000-12-26 20:11:15 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -455,7 +455,6 @@ string|void container_procedure(string name, mapping args,
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "#define DB->keys id->misc->ivend->keys\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string tag_name, mapping "
                    "args, object id, mapping defines){\n";
@@ -468,7 +467,6 @@ string|void container_procedure(string name, mapping args,
                    "#define STORE id->misc->ivend->st\n"
                    "#define CONFIG id->misc->ivend->config->general\n"
                    "#define DB id->misc->ivend->db\n"
-                   "#define DB->keys id->misc->ivend->keys\n"
                    "inherit \"roxenlib\";\n"
                    "mixed proc(string event_name, "
                    "object|void id, mapping|void args){\n";
@@ -2560,7 +2558,7 @@ add_pre_state(id->not_query,(<"dodelete=" + type >))
 
 
              mixed find_file(string file_name, object id){
-perror("REQUEST find_file: " + file_name + "\n");
+// perror("REQUEST find_file: " + file_name + "\n");
                  id->misc["ivend"]=([]);
                  id->misc["ivendstatus"]="";
                  mixed retval;
@@ -2975,9 +2973,9 @@ mixed return_data(mixed retval, object id){
 		if(id->conf->type_from_filename(id->realfile || "index.html")
 			=="text/html") {
 // perror("DEFINES return_data preparse: " + sprintf("%O\n", id->misc->defines));
-perror("PARSE return_data: parsing rxml\n");
+// perror("PARSE return_data: parsing rxml\n");
 			retval=parse_rxml(retval, id);
-perror("PARSE return_data: done\n");
+// perror("PARSE return_data: done\n");
 }
 // perror("DEFINES return_data end: " + sprintf("%O\n", id->misc->defines));
 // perror("RETURN return_data: returning a custom answer.\n");

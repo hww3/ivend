@@ -1,3 +1,14 @@
+/* Create a DER-coded RSAPublicKey structure */
+string rsa_public_key(object rsa)
+{
+    return asn1_sequence(@ Array.map(
+    ({ 0, rsa->n, rsa->e
+    }),
+    asn1_integer))->der();   
+
+}
+
+
 /* Decode a coded RSAPublicKey structure */
 object parse_public_key(string key)
 {

@@ -2287,7 +2287,11 @@ perror(filen + "\n");
 		  }
                 }
               if(need_to_save)
-     		Config.write_section(query("configdir")+
+    
+			perror("moving backup...\n");
+                  mv(query("configdir")+ config[c]->general->config
+,query("configdir")+config[c]->general->config+"~");
+ 		Config.write_section(query("configdir")+
   			config[c]->general->config, m->module_name,
         		config[c][m->module_name]);
               }
@@ -2323,7 +2327,7 @@ perror(filen + "\n");
                                          c->dbpassword
                                        ));
 
-            if(err) perror("iVend: Error creating DB for " + c->name + ".\n");
+            if(err) perror("iVend: Error creating DB for " + c->config + ".\n");
 
                return;
 
@@ -2372,6 +2376,7 @@ perror(filen + "\n");
             else active=global->configurations->active;
 
                foreach(({"global"}) + active, string confname){
+			perror("moving backup...\n");
                   mv(query("configdir")+ confname ,query("configdir")+ confname+"~");
                if(confname=="global")
                     Stdio.write_file(query("configdir")+"global",

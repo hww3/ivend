@@ -1,4 +1,7 @@
 <procedure tag="relatedgroups">
+//
+// We are going to show all of the categories that this item is in.
+//
 array r=DB->query("SELECT product_groups.group_id,groups.name FROM "
   "groups,product_groups WHERE product_id='"
   + id->misc->ivend->page + "' AND groups.id=product_groups.group_id");
@@ -10,7 +13,10 @@ return retval;
 </procedure>
 
 <procedure tag="groupmap">
-// perror(id->misc->ivend->page + "\n");
+//
+// Show the "path" that we took to get to this group.
+// example: group > subgroup1 > subgroup2
+//
 string retval="";
 string parent;
 array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + id->misc->ivend->page +"'");
@@ -19,7 +25,6 @@ retval+="<a href=\"" + r[0]->id + ".html\">" + r[0]->name + "</a>";
 parent=r[0]->parent;
 }
 
-perror("parent: " + parent + "\n");
 while (sizeof(r)>0 && parent!="") {
 array r=DB->query("SELECT id,parent,name FROM groups WHERE id='" + parent + "'");
 if(sizeof(r)==0) continue;

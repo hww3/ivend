@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.202 1999-05-28 01:21:42 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.203 1999-05-28 02:34:00 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -620,10 +620,13 @@ int do_low_additem(object id, mixed item, mixed quantity, mixed
                  "','"+item+"',"+ quantity +","+(max+1)+",'" +
 		(args->options||"") + "','"+(time(0)+
                          (int)CONFIG->session_timeout)+"'," + price +
-                 "," + (args->autoadd||0) +")";
+                 "," + (args->autoadd||0) +"," + (args->lock||0) +")";
 
-    if(catch(DB->query(query) )) {
-        id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n");
+    if(catch(
+DB->query(query)
+ )) {
+        id->misc["ivendstatus"]+=( ERROR_ADDING_ITEM+" " +item+ ".\n" +
+DB->error());
         return 0;
     }
     else {

@@ -11,7 +11,7 @@ inherit "roxenlib";
 constant module_name = "Complex Pricing Routines";
 constant module_type = "addin";
 
-mapping complex_types=([ "Single Price": "cpsingle", 
+mapping complex_types=([ "Single Price": "single", 
 	"Buy X Get Y": "buyxgetx"]);
 
 void start(mapping config){
@@ -106,7 +106,7 @@ void cpsingle(string event, object id, mapping args){
  else {
   // add the item.
   float price=(r[0]->price||0.00);
-  mapping o;
+  mapping o=([]);
   if(id->variables->options){
    o=T_O->get_options(id, item);
   }
@@ -132,14 +132,14 @@ array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + item + "' "
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
 retval+="<table><tr>\n<td bgcolor=black><font color=white>"
-"<b>Minimum Quantity</b></td>\n";
+"<b>Quantity</b></td>\n";
 
 for(int i=0; i<sizeof(r); i++){
   if(i==sizeof(r)-1)
-   retval+="<td>" + r[i]->minimum_quantity + "+</td>\n";
+   retval+="<td align=center>" + r[i]->minimum_quantity + "+</td>\n";
   else
-   retval+="<td>" + r[i]->minimum_quantity + "-" +
-    r[i+1]->minimum_quantity + "</td>\n";  
+   retval+="<td align=center>" + r[i]->minimum_quantity + "-" +
+    ((int)(r[i+1]->minimum_quantity)-1) + "</td>\n";  
 }
 retval+="</tr>\n<tr><td bgcolor=black><font color=white>"
  "<b>Price Each</b></td>\n";
@@ -205,6 +205,7 @@ retval+="</table>\n";
 retval+="<form action=./>Add New Rule: "
   "<input type=hidden name=addnew value=1>\n"
   "<input type=hidden name=id value=\"" + v->id + "\">\n"
+  "<input type=hidden name=type value=\"" + v->type + "\">\n"
   "<select name=\"cptype\">\n"; 
 
 foreach(sort(indices(complex_types)), string t)
@@ -214,6 +215,72 @@ retval+="</select> <input type=submit value=\"Add\">\n"
   "</form>";
 }
 else { // we should be putting type handlers here.
+
+if(v->delete){
+  switch(v->cptype){
+   case "single":
+   DB->query("DELETE FROM cp_single WHERE product_id='" + v->id + "' AND "
+    "minimum_quantity=" + v->minimum_quantity );
+   if(sizeof(DB->query("SELECT * FROM cp_single WHERE product_id='" +
+v->id + "'"))<1) DB->query("DELETE FROM complex_pricing WHERE product_id='" + v->id + "' AND type='" + v->cptype + "'");
+   retval+="Rule Deleted.<br>\n";
+   break; 
+  }
+
+}
+if(v->addnew){
+ if(v->addnew=="2"){
+  switch(v->cptype){
+   case "single":
+   if(sizeof(DB->query("SELECT * FROM complex_pricing WHERE product_id='"
++ v->id + "' AND type='" + v->cptype + "'"))<1)
+   DB->query("INSERT INTO complex_pricing VALUES('" + v->id + "','single',1)");
+   DB->query("INSERT INTO cp_single VALUES('" + v->id + "'," +
+    v->minimum_quantity + "," + v->price + ")");
+   retval+="Rule Added Successfully.<br>\n";
+   break;
+
+   case "buyxgetx":
+   if(v->minimum_quantity!="" && v->price!=""){
+   DB->query("INSERT INTO complex_pricing VALUES('" + v->id + "','buyxgetx',2)");
+   DB->query("INSERT INTO cp_buyxgetx VALUES('" + v->id + "'," +
+    v->quantity_to_qualify + "," + v->quantity_to_get + ",'" +
+    v->bonus_product_id + "'," + v->price + "," + v->repeat + "," +
+    v->exclude_others + ")");
+   retval+="Rule Added Successfully.<br>\n";
+   } else retval+="You must supply a Minimum Quantity and Price!<br>\n";
+   break;
+   }
+  }
+}
+ retval+="<form action=./>"
+  "<input type=hidden name=type value=\"" + v->type + "\">\n"
+  "<input type=hidden name=cptype value=\"" + v->cptype + "\">\n"
+  "<input type=hidden name=addnew value=2>\n"
+  "<input type=hidden name=id value=\"" + v->id + "\">\n";
+
+ switch(v->cptype){
+  case "single":
+  array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + v->id +
+   "' ORDER BY minimum_quantity ASC");
+  retval+="<table><tr><th>Minimum Quantity</th><th>Price Ea.</th></tr>\n";
+  if(!r || sizeof(r)<1)
+   retval+="<tr><td colspan=3>No Rules Defined.</td></tr>\n";
+  else foreach(r, mapping row)
+   retval+="<tr><td>" + row->minimum_quantity + "</td><td>" +
+    sprintf("%.2f",(float)(row->price)) + "</td><td><font size=1>"
+    "<a href=\"./?id=" + v->id + "&type=" + v->type + "&cptype=" +
+    v->cptype + "&minimum_quantity=" + row->minimum_quantity +
+    "&delete=1\">Delete</a></font></td></tr>\n";
+   retval+="<tr><td><input type=text size=5 name=minimum_quantity>"
+    "</td><td><input type=text size=6 name=price></td><td>"
+    "<font size=1><input type=submit value=Add></font></td></tr></table>\n";
+  break;
+
+  case "buyxgetx":
+  break;
+  }
+ retval+="</form>\n";
 
 }
 

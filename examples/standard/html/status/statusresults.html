@@ -1,0 +1,44 @@
+<ivml>
+<formoutput quote=+>
+<title>iVend: Your Order Status</title>
+<body bgcolor=white text=navy>
+<img src="/ivend/ivend-image/ivendlogosm.gif"> &nbsp; 
+<img src=images/checkcart.gif> &nbsp; 
+
+<gtext fg=maroon nfont=helvetica black>Order Status</gtext><p>
+<font face=helvetica,arial size=++1>
+<p>
+<sqloutput host=bay.riverweb.com database=ivtest user=hww3
+password=pastram.
+query="SELECT DATE_FORMAT(orders.updated,'d M Y k:i') as updated,
+status.description, customer_info.zip_code, customer_info.orderid from
+status,orders,customer_info where
+customer_info.zip_code='+zipcode+' 
+and customer_info.orderid='+orderid+' and
+orders.id=customer_info.orderid and status.status=orders.status and
+status.tablename='orders'">
+<table>
+<tr><td>Order ID</td><td>ZIP Code</td><td>Status</td><td>Last Changed</td></tr>
+<tr><td>#orderid#</td><td>#zip_code#</td>
+<td>#description#</td><td>#updated#</td></tr>
+</table>
+<table>
+<sqloutput quote="|" host=bay.riverweb.com database=ivtest user=hww3
+password=pastram. query="SELECT
+shipments.tracking_id,shipments.item,products.name from
+shipments,products where
+shipments.orderid='#orderid#' and products.id=shipments.item">
+<tr><td>|tracking_number|</td><td>|name|</td></tr>
+</sqloutput>
+</table>
+</sqloutput>
+<sqlelse>Sorry, we couldn't find your order.</sqlelse>
+
+<ul>
+<li><a href="./">Return to the top.</a>
+</ul>
+<hr>
+Please direct questions or comments to &lt; <a
+href=mailto:hww3@riverweb.com>hww3@riverweb.com</a> &gt;.
+</formoutput>
+</ivml>

@@ -1,5 +1,7 @@
 Contents of examples/:
 
 standard: the standard iVend demo store.
+complex_pricing: the standard iVend demo store, with support for complex
+pricing.
 
-24 may 1998
+9 may 1999

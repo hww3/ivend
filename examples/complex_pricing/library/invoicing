@@ -1,0 +1,34 @@
+<procedure event="shipall">
+// send an invoice to the email address of billee.
+string cc_recipient="orders@foo.com";
+string note;
+note=Stdio.read_file(id->misc->ivend->config->general->root+"/notes/invoice.txt");
+if(note) {
+
+  string subject,sender, recipient;
+  sscanf(note, "%s\n%s\n%s\n%s", sender, recipient, subject, note);
+  array r=id->misc->ivend->db->query("SELECT " + recipient + " FROM "
+        " customer_info WHERE orderid='"+args->orderid+"' AND "
+                   "type=0");
+  recipient=r[0][recipient];
+//  note=replace(note,"#orderid#",(string)args->orderid);
+  subject=replace(subject,"#orderid#",(string)args->orderid);
+id->variables+=args;
+  note=parse_rxml(note, id);
+  object message=MIME.Message(note, (["MIME-Version":"1.0",
+                                     "To":recipient,
+					"cc": cc_recipient,
+                                     "X-Sender":"iVend 1.0",
+                                     "Subject":subject
+                                     ]));
+
+  if(!Commerce.Sendmail.sendmail(sender, recipient, (string)message))
+   perror("Error sending invoice note for " +
+        args->orderid + ".\n");
+  if(!Commerce.Sendmail.sendmail(sender, cc_recipient, (string)message))
+   perror("Error sending cc invoice note for " +
+        args->orderid + ".\n");
+}
+else perror("error sending invoice for order " + args->orderid +".\n");
+return;
+</procedure>

@@ -1,0 +1,14 @@
+orderguy@foo.com
+hww3@riverweb.com
+A new order has arrived.
+A new order has arrived and is awaiting action. Please go to the following
+address:
+
+<https://www.foo.com/(Orders.View_Orders)/ivend/test/admin/orders?orderid=#orderid#>
+
+to review and act on this information.
+
+Thanks,
+
+The iVend Order Guy
+orderguy@foo.com

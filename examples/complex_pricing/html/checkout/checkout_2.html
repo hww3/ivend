@@ -1,0 +1,28 @@
+<use file="../store_package">
+<page title="Checkout">
+<font size=+2>2. Billing Address</font>
+<p>
+Please provide your billing address as it appears on your Credit Card
+statement. When you are finished, click 'Continue' to proceed to the next
+page. An asterisk (*) indicates that you must provide the information
+requested. 
+<p>
+Your email address will be checked for validity after you press
+'Continue'. It may take a few moments to confirm this information. 
+<br>
+<checkout>
+<table>
+<generateform table=customer_info hide="orderid,type,updated"
+pulldown="state">
+</table>
+<input type=hidden name=orderid value="<sessionid>">
+<input type=hidden name=type value=0>	
+<input type=submit value=" Continue ">
+</checkout>
+</page>
+
+
+
+
+
+

@@ -1,0 +1,13 @@
+orderguy@foo.com
+Email_Address
+Your payment information has been invalidated.
+This is just a note to confirm that the order you recently placed has been
+shipped. You can check the details of this action by pointing your web
+browser at: http://www.foo.com/ivend/gdkj/status.  To check the status
+of your order, you'll need to know that your order number is #orderid#,
+and the ZIP Code that your order will be billed to.
+
+Thanks,
+
+The iVend Order Guy
+orderguy@foo.com

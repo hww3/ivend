@@ -1,0 +1,43 @@
+<procedure tag="ecertificate">
+string retval="";
+
+if(!(id->variables->email && id->variables->ecertificate))
+  return "You must provide both your E-Mail Address and ECertificate Number."
+    " Please go back to correct this.";
+array ec=DB->query("SELECT * FROM ecertificates WHERE ecertificate='" +
+  id->variables->ecertificate +"'");
+
+if(sizeof(ec)!=1)
+  return "Sorry, but <b>" + id->variables->ecertificate + "</b> does not "
+    "appear to be a valid ECertificate number. Please go back to correct "
+    " this information before proceeding.";
+
+if(!Commerce.Sendmail.check_address(id->variables->email))
+  return "Sorry, but we couldn't verify your email address. Please "
+    "go back to correct this information before proceeding.";
+
+if(sizeof(DB->query("SELECT * FROM redeemed_ecertificates WHERE "
+  "ecertificate='" + id->variables->ecertificate + "' AND "
+  "email='" + id->variables->email + "'"))!=0)
+  return "Sorry, but you have already redeemed your certificate.";
+
+retval+="You have chosen to redeem ECertificate #<b>" +
+id->variables->ecertificate + "</b>. This ECertificate entitles you to "
+"the following benefits:<p><blockquote>"
++ ec[0]->description + "</blockquote>We have placed a cookie in your "
+"browser that will follow you through to checkout. In order for the "
+"certificate to be properly redeemed, you must use the same computer "
+"through checkout, otherwise your certificate will be lost."
+" Additionally, your order may not reflect the presence of a redeemed "
+"ECertificate. This is normal. You will be given credit upon completion "
+"of your order.";
+
+DB->query("INSERT INTO redeemed_ecertificates VALUES('" +
+id->variables->ecertificate + "','" + id->variables->email + "','" +
+id->misc->ivend->SESSIONID + "',NOW())");
+
+retval+="<set_cookie name=ECertificate value=" +
+id->variables->ecertificate + ">";
+
+return retval;
+</procedure>

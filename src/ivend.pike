@@ -35,13 +35,15 @@ int loaded;
 object c;                       // configuration object
 object g;                       // global object   
 
+int num;
+
 mapping(string:object) modules=([]);                    // module cache
 mapping config=([]);
 mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.84 1998-07-27 16:53:04 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.85 1998-07-31 19:20:07 hww3 Exp $";
 
 array register_module(){
 
@@ -129,7 +131,7 @@ void create(){
 
 void start(){
 
-
+num=0;
  add_include_path(getmwd() + "include");
 perror("iVend: added include path: "+getmwd()+"include\n"); 
 add_module_path(getmwd()+"src");
@@ -1293,9 +1295,11 @@ void error(mixed error, object id){
 mixed handle_error(object id){
 string retval;
 
-if(id->misc->ivend->st && id->misc->ivend->config[id->misc->ivend->st])
+if(id->misc->ivend->st && id->misc->ivend->config)
   retval=Stdio.read_file(
-    id->misc->ivend->config[id->misc->ivend->st]->root+"/error.html");
+    id->misc->ivend->config->root+"/error.html");
+
+perror("error: " + retval + "\n");
 
 if(!retval) retval="<title>iVend Error</title>\n<h2>iVend Error</h2>\n"
     "<b>One or more errors have occurred. Please review the following "
@@ -1328,11 +1332,12 @@ void handle_sessionid(object id) {
 
   if(!id->variables->SESSIONID) 
     id->misc->ivend->SESSIONID=
-      "S"+(string)hash((string)time(1)+(string)random(32201));	
+      "S"+(string)hash((string)time(1)+(string)random(32201))+num;	
     else id->misc->ivend->SESSIONID=id->variables->SESSIONID;
 
   m_delete(id->variables,"SESSIONID");
 
+  num+=1;
 }
 
 mixed return_data(mixed retval, object id){

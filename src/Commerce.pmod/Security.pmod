@@ -1,35 +1,3 @@
-/* Create a DER-coded RSAPublicKey structure */
-string rsa_public_key(object rsa)
-{
-    return asn1_sequence(@ Array.map(
-    ({ 0, rsa->n, rsa->e
-    }),
-    asn1_integer))->der();   
-
-}
-
-
-/* Decode a coded RSAPublicKey structure */
-object parse_public_key(string key)
-{
-//  WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
-  array a = Standards.ASN1.decode(key)->get_asn1();
-
-//  WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
-  if (!a
-      || (a[0] != "SEQUENCE")
-      || (sizeof(a[1]) != 3)
-      || (sizeof(column(a[1], 0) - ({ "INTEGER" })))
-      || a[1][0][1])
-    return 0;
-
-  object rsa = Crypto.rsa();
-  rsa->set_public_key(a[1][1][1], a[1][2][1]);
-//  rsa->set_private_key(a[1][3][1], column(a[1][4..], 1));
-  return rsa;
-}
-
-
 string|int encrypt(string s, string key){
 
 #if !constant(_Crypto) || !constant(Crypto.rsa)
@@ -51,13 +19,11 @@ werror("Crypto not present! Doing dummy encrypt!\n");
     return 0;
     }
 
-  object rsa  = parse_public_key(part->decoded_body());
-
+  object rsa  = Standards.PKCS.RSA.parse_public_key(part->decoded_body());
+  if(rsa==0) werror("Public Key not Parsed properly.\n");
   function r = Crypto.randomness.reasonably_random()->read;
 
-  s=rsa->encrypt(
-s, 
-r);
+  s=rsa->encrypt(s, r);
 
 
 #endif /* constant(_Crypto) && constant(Crypto.rsa) */

@@ -107,13 +107,21 @@ id->misc->ivend->orderid + "'");
 if(((int)(wx[0]->status) > 1)|| id->variables->print);
 
 else if(!id->variables->edit_data || id->variables->edit_data!=type)
-  retval+="<a href=\"./?orderid="
+  d+="<a href=\"./?orderid="
         + id->misc->ivend->orderid + "&edit_data=" + type +
         "\"><img src=\"" + T_O->query("mountpoint") +
 "ivend-image/edit.gif\" alt=\"Edit\" border=0></a>\n";
+ else  {
+  d+="<input alt=\"Commit\""
+   " type=image name=\"commit_data\" value=\"" + table +
+   "\" src=\"" + T_O->query("mountpoint") +
+   "ivend-image/commit.gif\" border=0>"
+   "<input type=hidden name=commit value=\"" + type
+        + "\"></td></tr>\n";
+  } 
    if(id->variables->edit_data && id->variables->edit_data==type)
 	{
-	d+=DB->generate_form_from_db(table, ({}), id, ({}), row);
+	d+=DB->generate_form_from_db(table, ({"orderid"}), id, ({}), row);
 	}
    else 
 	{
@@ -251,14 +259,14 @@ else if(!id->variables->editli || id->variables->editli!=row->lineitem)
   } 
  }
 
-float tax=T_O->get_tax(id, id->variables->orderid);
-
+float tax=T_O->get_tax(id, id->misc->ivend->orderid);
+perror("tax: " + tax + "\n");
   retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica>Sales Tax</td>"
 	"<td align=right>" + sprintf("%.2f", tax) + "</td></tr>\n";
 
-float gt=T_O->get_grandtotal(id, id->variables->orderid);
+float gt=T_O->get_grandtotal(id, id->misc->ivend->orderid);
   retval+="<tr>\n"
 	"<td colspan=" + (sizeof(mf) + 5) + " align=right><font "
 	"face=helvetica><b>Grand Total</b></td>"

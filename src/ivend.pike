@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.266 2000-06-21 17:38:00 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.267 2000-06-23 20:15:56 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -117,7 +117,7 @@ mapping lookup=([]);
 // do we have tax exemption support?
 if(local_settings[STORE]->tax_exemption_support==TRUE){
   query="SELECT tax_exempt FROM customer_info WHERE orderid='"
-	+ orderid + "' AND type=0 AND tax_exempt IS NOT NULL";
+	+ orderid + "' AND type=0 AND (tax_exempt<>0 OR tax_exempt IS NOT NULL)";
   r=DB->query(query);
   if(sizeof(r)>0) return 0.00;
   } 
@@ -242,7 +242,7 @@ return subtotal;
 
 float get_grandtotal(object id, string orderid){
 
-// perror("get grand total " + orderid + "\n");
+ perror("get grand total " + orderid + "\n");
 float grandtotal=0.00;
 
 
@@ -252,8 +252,11 @@ array r=DB->query("SELECT SUM(value) as gt FROM lineitems "
 if(r && sizeof(r)==1) grandtotal=(float)(r[0]->gt);
 else throw(({"Unable to find order lineitems.", backtrace()}));
 
+perror("getting salestax for orderid: " + orderid + "\n");
 
-float salestax=T_O->get_tax(id, orderid);
+float salestax=get_tax(id, orderid);
+
+perror("got tax: " + salestax + " \n");
 
 if(((float)salestax)) {
   grandtotal+= (float)salestax;

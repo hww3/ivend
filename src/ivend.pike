@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.264 2000-06-06 20:03:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.265 2000-06-20 17:27:39 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -113,6 +113,14 @@ float totaltax;         // totaltax
 string locality;        // fieldname of locality
 float taxrate=0.00;
 mapping lookup=([]);
+
+// do we have tax exemption support?
+if(local_settings[c->config]->tax_exemption_support==TRUE){
+  query="SELECT tax_exempt FROM customer_info WHERE orderid='"
+	+ orderid + "' AND type=0 AND tax_exempt<>NULL";
+  r=DB->query(query);
+  if(sizeof(r)>0) return 0.00;
+  } 
 
 query="SELECT field_name FROM taxrates GROUP BY field_name"; 
 r=DB->query(query);
@@ -384,6 +392,11 @@ void get_dbinfo(mapping c){
     if(sizeof(n)>0)
         // we're doing aggregated handling charges
         local_settings[c->config]->handling_charge_aggregate=TRUE;
+    array n=s->list_fields("customer_info", "tax_exempt");
+    if(sizeof(n)>0)
+        // we're doing individual handling charges
+        local_settings[c->config]->tax_exemption_support=TRUE;
+
 /*
     if(local_settings[c->config]->pricing_model==COMPLEX_PRICING)
         perror("We're doing complex pricing.\n");

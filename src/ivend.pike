@@ -41,7 +41,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.77 1998-06-25 18:05:44 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.78 1998-07-06 19:41:57 hww3 Exp $";
 
 array register_module(){
 
@@ -704,23 +704,31 @@ mixed getsessionid(object id) {
 
 // Start of auth functions.
 
-
-int get_auth(object id, int|void i){
-if(i){	// we're login in to the main config interface.
+// we're login' in to the main config interface.
+int get_auth(object id){
 
   array(string) auth=id->realauth/":";
   if(auth[0]!=query("config_user")) return 0;
   else if(crypt(auth[1], query("config_password")))
         return 1;
   else return 0;                   
-}
-  array(string) auth=id->realauth/":";
-  if(auth[0]!=id->misc->ivend->config->config_user) return 0;
-  else if(crypt(auth[1],id->misc->ivend->config->config_password))
-        return 1;
-  else return 0;
 
 }
+
+int admin_auth(object id)
+
+{
+  array(string) auth=id->realauth/":";
+  if(catch(id->misc->ivend->db=iVend.db(
+    id->misc->ivend->config->dbhost,
+    id->misc->ivend->config->db,
+    auth[0],
+    auth[1]
+    )))
+    return 0;
+else return 1;
+}
+
 
 
 // Start of admin functions
@@ -739,7 +747,7 @@ mixed order_handler(string filename, object id){
 if(id->auth==0)
   return http_auth_required("iVend Store Orders",
 	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
+else if(!admin_auth(id)) 
   return http_auth_required("iVend Store Orders",
 	"Silly user, you need to login!");
 
@@ -771,7 +779,7 @@ mixed shipping_handler(string filename, object id){
 if(id->auth==0)
   return http_auth_required("iVend Store Shipping",
 	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
+else if(!admin_auth(id)) 
   return http_auth_required("iVend Store Shipping",
 	"Silly user, you need to login!");
 
@@ -837,7 +845,7 @@ mixed admin_handler(string filename, object id){
 if(id->auth==0)
   return http_auth_required("iVend Store Administration",
 	"Silly user, you need to login!"); 
-else if(!get_auth(id)) 
+else if(!admin_auth(id)) 
   return http_auth_required("iVend Store Administration",
 	"Silly user, you need to login!");
 
@@ -888,19 +896,15 @@ switch(id->variables->mode){
 
   case "dodelete":
 //  perror("doing delete...\n");
-  object s=iVend.db(
-    id->misc->ivend->config->dbhost,
-    id->misc->ivend->config->db,
-    id->misc->ivend->config->dblogin,
-    id->misc->ivend->config->dbpassword
-    );
   if(id->variables->confirm){
     if(id->variables->id==0 || id->variables->id=="") 
       retval+="You must select an ID to act upon!<br>";
-    else retval+=s->dodelete(id->variables->type, id->variables->id);  }
+    else retval+=id->misc->ivend->db->dodelete(id->variables->type,
+id->variables->id); }
   else {
     if(id->variables->match) {
-    mixed n=s->showmatches(id->variables->type, id->variables->id);
+    mixed n=id->misc->ivend->db->showmatches(id->variables->type,
+      id->variables->id);
     if(n)
       retval+="<form action=./admin>\n"
         + n +
@@ -909,7 +913,8 @@ switch(id->variables->mode){
     else retval+="No " + capitalize(id->variables->type) + " found.";
     }
     else {
-      mixed n=s->showdepends(id->variables->type, id->variables->id);
+      mixed n=id->misc->ivend->db->showdepends(id->variables->type,
+        id->variables->id);
       if(n){ 
         retval+="<form action=./admin>\n"
           "<input type=hidden name=mode value=dodelete>\n"
@@ -1067,6 +1072,15 @@ mixed err;
   switch(request[0]) {
     case "images":
     break;
+    case "admin":
+    return return_data(admin_handler(request*"/", id),id);
+    break;
+    case "orders":
+    return return_data(order_handler(request*"/", id),id);
+    break;
+    case "shipping":
+    return return_data(shipping_handler(request*"/", id),id);
+    break;
     default:
     err=catch(id->misc->ivend->db=iVend.db(
       id->misc->ivend->config->dbhost,
@@ -1080,9 +1094,6 @@ mixed err;
        }
 
   }
-
-// perror("REQUEST[0]: " + request[0] + "\n");
-
 
 
   switch(request[0]) {
@@ -1100,15 +1111,6 @@ mixed err;
     break;
     case "images":
     return get_image(request*"/", id);
-    break;
-    case "admin":
-    retval=admin_handler(request*"/", id);
-    break;
-    case "orders":
-    retval=order_handler(request*"/", id);
-    break;
-    case "shipping":
-    retval=shipping_handler(request*"/", id);
     break;
     default:
     retval=(handle_page(request*"/", id));
@@ -1287,7 +1289,7 @@ void handle_sessionid(object id) {
 mixed return_data(mixed retval, object id){
 
     if(sizeof(id->misc->ivend->error)>0)
-      retval=handle_error(id);
+     	 retval=handle_error(id);
 
   if(stringp(retval)){
 
@@ -1456,7 +1458,7 @@ mapping configuration_interface(array(string) request, object id){
 
 if(id->auth==0)
   return http_auth_required("iVend Configuration","Silly user, you need to login!"); 
-else if(!get_auth(id,1)) 
+else if(!get_auth(id)) 
   return http_auth_required("iVend Configuration","Silly user, you need to login!");
 
 if(!c) read_conf(); 

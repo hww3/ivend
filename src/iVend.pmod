@@ -191,6 +191,7 @@ retval+="</table>";
 return retval;
 
 }
+
 mixed addentry(object id, string referrer){
 array errors=({});
 array(mapping(string:mixed)) r=::list_fields(id->variables->table);

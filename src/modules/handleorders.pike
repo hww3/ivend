@@ -27,17 +27,11 @@ if(sizeof(r)==0) return create_panel("Payment Information", "maroon",
 	      "Unable to find Payment Info for Order ID " + 
 		   id->variables->orderid);
 
-string key=Stdio.read_file(id->misc->ivend->config->privatekey);
-
 retval="<table width=100%>";
  foreach(f, mapping field){
      if(field->name=="updated" || field->name=="type" || field->name=="orderid") continue;
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
      +"</font>\n</td>\n<td>";
-
-   if(field->name=="Card_Number" && key)
-     retval+=Commerce.Security.decrypt(r[0][field->name], key)+"\n</td></tr>\n";
-     else retval+=r[0][field->name]+"\n</td></tr>\n";
    }
 
 
@@ -380,8 +374,6 @@ string retval="";
 
   else {
 
-	string key=Stdio.read_file(id->misc->ivend->config->root+"/"+
-	  id->misc->ivend->config->privatekey);	
 	retval+=create_panel("Order Details","hunter","<table width=100%>"
 	"<tr><td><font face=helvetica>"
 	"Order ID</td><td>"+r[0]->id+"</td></tr>\n"
@@ -404,3 +396,4 @@ retval+="<p>\n" + listorder(id, s);
 return retval;
 
 }
+

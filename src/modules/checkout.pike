@@ -320,29 +320,6 @@ mixed j;
    m_delete(id->variables, "aeexclude");
  }
 
- if(args->encrypt){
-object encryptedid = id;
-
-  string key=Stdio.read_file(id->misc->ivend->config->publickey);
-
-  if(!key) {
-    perror("iVend: Could't Load Public Key! Will save data in the clear\n");
-    j=id->misc->ivend->db->addentry(id);
-
-    }  else{
-    array e=(args->encrypt-" ")/",";
-     for(int i=0; i<sizeof(e); i++){
-
-    encryptedid->variables[lower_case(e[i])]=
-      Commerce.Security.encrypt(id->variables[lower_case(e[i])],key);
-   }
-
-   j=id->misc->ivend->db->addentry(encryptedid);
-  }
-
- }
-
-else
   j=id->misc->ivend->db->addentry(id);
     
 if(arrayp(j)) id->misc->ivend->error+=j;

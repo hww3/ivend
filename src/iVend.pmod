@@ -28,6 +28,26 @@ for(int i=0; i<sizeof(entries); i++){
 return 1;
 }
 
+mapping scan_modules(string mtype, mixed config){
+
+mapping(string:string) m=([]);
+array d=get_dir(config->root+"/modules");
+d-=({"CVS"});
+string name;
+string desc;
+string type;
+foreach(d,name){
+// perror("MODULE: "+name+"\n");
+  program p=compile_file(config->root+"/modules/"+name);
+  desc=p()->module_name;
+  type=p()->module_type;
+  
+if(desc && type==mtype)
+  m+=([name:desc]);
+  }
+return m;
+}
+
 string|int genform(void|mapping config){
 
 string retval="";
@@ -60,6 +80,21 @@ for(int i=0; i<sizeof(vars); i++){
     else
       retval+="<input type=\"password\" name=\""+(vars[i]||"")+"\" value=\""+
       (config_setup[vars[i]]->default_value ||"")+"\">";
+    break;
+
+    case "module":
+      retval+="<select name=\""+ (vars[i]||"")+"\">\n";
+      string module;
+      mapping modules=
+	scan_modules(config_setup[vars[i]]->module_type,config);
+      foreach(indices(modules), module){
+	if(config[vars[i]]==module)
+	retval+="<option selected value=\""+module+"\">"
+	  +modules[module]+"\n";
+	else retval+="<option value=\""+module+"\">"
+	  +modules[module]+"\n";
+	  }
+      retval+="</select>\n";
     break;
 
     case "string":

@@ -21,8 +21,8 @@ $description=Hostname of SQL Database Server.
 
 $varname=checkout_module
 $name=Checkout Module
-$type=multiple
-$options=harris|default
+$type=module
+$module_type=checkout
 $description=Name of Checkout Module to Use.
 
 $varname=password

@@ -17,7 +17,7 @@ mapping(string:mapping(string:mixed)) config=([]) ;
 object c;			// configuration object
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.10 1998-01-23 10:22:18 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.11 1998-01-27 16:38:58 hww3 Exp $";
 
 /*
  *
@@ -123,11 +123,6 @@ string query_name()
    return sprintf("iVend 1.0  mounted on <i>%s</i>", query("mountpoint"));
 }
 
-mapping scan_checkouts(){
-
-mapping m;
-
-}
 
 mixed handle_search(object id){
 

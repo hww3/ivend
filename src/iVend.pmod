@@ -421,7 +421,6 @@ retval+="<FORM ACTION=\""+return_page+"\" "
         "<TABLE>\n";
 
 if(!record) record=([]);
-// perror(sprintf("%O",record));
 for(int i=0; i<sizeof(r);i++){          // Generate form from schema
 if(record[r[i]->name]) record[lower_case(r[i]->name)]=record[r[i]->name];
 r[i]->name=lower_case(r[i]->name);
@@ -702,7 +701,6 @@ for(int i=0; i<sizeof(pulldown); i++)
   // perror("pulldown!\n");
 }
 else pulldown=({""});
-// perror(sprintf("%O", pulldown)+"\n");
 for(int i=0; i<sizeof(r);i++){		// Generate form from schema
 
 if((r[i]->type=="string" || r[i]->type=="var string") && r[i]->length >25)
@@ -907,7 +905,7 @@ class db_handler
     int count;
     dbs -= ({0});
     if(objectp(d)) {
-werror("returning a db object...\n");
+// werror("returning a db object...\n");
       if(search(dbs, d) == -1) {
         if(sizeof(dbs)>(2*num_dbs)) {
           werror("Dropping db because of inventory...\n");
@@ -915,7 +913,7 @@ werror("returning a db object...\n");
           }
         else {
 	  dbs += ({d});
-	werror("Handler ++ ("+sizeof(dbs)+")\n");
+//	werror("Handler ++ ("+sizeof(dbs)+")\n");
 	}
         }
       else {
@@ -925,7 +923,7 @@ werror("returning a db object...\n");
     } 
 
 else {
-werror("requesting a db object...\n");
+// werror("requesting a db object...\n");
       if(!sizeof(dbs)) {
 	werror("Handler: New DB created (none left).\n");
 	d = db(host, db_name, db_user, db_password);
@@ -933,7 +931,7 @@ werror("requesting a db object...\n");
       } else {
 	d = dbs[0];
 	dbs -= ({d});
-	werror("Handler -- ("+sizeof(dbs)+")\n");
+//	werror("Handler -- ("+sizeof(dbs)+")\n");
       }
     }
     UNLOCK();

@@ -7,7 +7,7 @@ werror("Crypto not present! Doing dummy encrypt!\n");
 #else /* constant(_Crypto) && constant(Crypto.rsa) */
 
  if (!key) {
-    werror("Could not read public key.");
+    werror("Could not read public key.\n");
     return 0;
     }
 

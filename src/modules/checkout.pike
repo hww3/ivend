@@ -87,6 +87,15 @@ if(id->variables["_backup"] )
 // reserve the next order for me please...
 array typer;
 string type;
+array s;
+s=id->misc->ivend->db->query("SELECT * FROM sessions WHERE sessionid='"
+	+ id->misc->ivend->SESSIONID + "'");
+
+if(sizeof(s)==0) {
+ id->misc->ivend->error+=({"Your order appears to have been confirmed already."});
+ return "";
+  }
+
 catch(typer=id->misc->ivend->db->query("SELECT shipping_types.type," 
 "lineitems.extension FROM shipping_types,lineitems WHERE "
 "lineitems.orderid='" + id->misc->ivend->SESSIONID + "' AND "
@@ -308,14 +317,18 @@ if(id->variables["_backup"])
    return "<!-- Backing up. addentry skipped. -->\n";
 if(sizeof(id->misc->ivend->error)>0) return "<!-- Not adding data because of errors.-->";
 if((int)id->variables->shipsame==1) return "";
+if(!args->noflush)
+  id->misc->ivend->clear_oldrecord=1;
 
 if(args->encrypt){	// handle encrypting of records...
   array toencrypt=(lower_case(args->encrypt)-" ")/",";
-  string key=Stdio.read_file(id->misc->ivend->config->public_key);
+  string key;
+  key=Stdio.read_file(id->misc->ivend->config->publickey);
   foreach(toencrypt, string encrypt){
     if(id->variables[encrypt])
 	id->variables[encrypt]=
-	  Commerce.Security.encrypt(id->variables[encrypt],key);
+	  Commerce.Security.encrypt(id->variables[encrypt],key)||
+	id->variables[encrypt];
     }
 }
 
@@ -404,7 +417,7 @@ string item;
      id->misc->ivend->db->query("DELETE FROM lineitems WHERE orderid='"
 				+id->variables->orderid+"' AND lineitem='"
 				+item +"'");
-     id->misc->ivend->db->query("INSERT INTO lineitems VALUES('"+ 
+     id->misc->ivend->db->query("REPLACE INTO lineitems VALUES('"+ 
 			   id->variables->orderid + 
 			   "','" + item + "',"+ i + ",NULL)");
    }

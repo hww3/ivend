@@ -17,8 +17,8 @@ string create_panel(string name, string color, string contents){
 string|int genpayment(object id, object s){
 string retval="";
 string key="";
-if(id->misc->ivend->config->private_key)
-  key=Stdio.read_file(id->misc->ivend->config->private_key);
+if(id->misc->ivend->config->privatekey)
+  key=Stdio.read_file(id->misc->ivend->config->privatekey);
 array r=s->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");

@@ -341,10 +341,11 @@ if(!initialized) return "Uninitialized shipping module.";
 string retval="";
 array r;
 r=id->misc->ivend->db->query("SELECT * from shipping_types");
-
+int t=0;
 foreach(r, mapping row)
-retval+="<dt><input type=radio name=type value="
-  + row->type + "> <b>"+ row->name +": $<shippingcost type=" + row->type + 
+retval+="<dt><input type=radio name=type " +((t==0)?"CHECKED":("",t=1)) 
+  +" value=\"" + row->type + "\"> <b>"+ row->name + 
+  ": $<shippingcost type=" + row->type + 
   " convert></b><dd>" + row->description;
 
 

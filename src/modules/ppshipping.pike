@@ -270,6 +270,9 @@ string typename=id->misc->ivend->db->query("SELECT name FROM shipping_types "
   "WHERE type=" + id->variables->type )[0]->name;
 if(id->variables["_backup"])
    return "<!--Backing up. CalculateShipping skipped.-->\n";
+id->misc->ivend->db->query("DELETE FROM lineitems WHERE "
+	"orderid='" + id->misc->ivend->SESSIONID + "' AND "
+	"lineitem='shipping'");
 id->misc->ivend->db->query("INSERT INTO lineitems VALUES('" +
   id->misc->ivend->SESSIONID + "', 'shipping', " + charge + ",'" +
   typename + "')");
@@ -287,11 +290,12 @@ string retval="";
 array r;
 r=id->misc->ivend->db->query("SELECT * from shipping_types");
 
+int t=0;
 foreach(r, mapping row)
-retval+="<dt><input type=radio name=type value="
-  + row->type + "> <b>"+ row->name +": $<shippingcost type=" + row->type + 
-  "></b><dd>" + row->description;
-
+retval+="<dt><input type=radio name=type " + ((t==0)?"CHECKED":("",t=1))
+  +" value=\"" + row->type + "\"> <b>"+ row->name +
+  ": $<shippingcost type=" + row->type +
+  " convert></b><dd>" + row->description;      
 
 return retval;
 }

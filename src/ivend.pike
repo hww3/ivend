@@ -44,7 +44,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.89 1998-08-06 23:20:26 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.90 1998-08-12 03:26:11 hww3 Exp $";
 
 array register_module(){
 
@@ -189,8 +189,7 @@ if (catch(id->misc->ivend->SESSIONID)) return;
 if (args["_parsed"]) return;
 
 if (args->add) 
-  return "<a _parsed=1 href=\""+query("mountpoint")
-  +id->misc->ivend->st+"/"+id->misc->ivend->page+".html?SESSIONID="
+  return "<a _parsed=1 href=\"./"+id->misc->ivend->page+".html?SESSIONID="
   +id->misc->ivend->SESSIONID+"&ADDITEM="+id->misc->ivend->page+
   "\">"+contents+"</a>";
 else if(args->cart)
@@ -1013,14 +1012,30 @@ id->variables->id); }
       "<table><tr><td><input type=submit value=Show></td><td>\n";
       retval+="<td><b>Show fields:</b> ";
     array f=id->misc->ivend->db->list_fields(id->variables->type+"s");
+    array k=id->misc->ivend->db->query("SHOW INDEX FROM " + 
+	id->variables->type + "s");
+
+    string primary_key;
+
+    foreach(k, mapping key){
+
+      if(key->Key_name=="PRIMARY")
+      primary_key=key->Column_name;
+    }
 
     foreach(f, mapping field)
-      retval+="<input type=checkbox name=\"show-" + field->name +
-	"\" value=\"yes\"" + ((id->variables["show-" +
-	field->name]=="yes")?" CHECKED ":"") + ">"
-	"&nbsp;" + field->name +" &nbsp; \n"; 
+      if(field->name !=primary_key)
+        retval+="<input type=checkbox name=\"show-" + field->name +
+    	  "\" value=\"yes\"" + ((id->variables["show-" +
+	  field->name]=="yes")?" CHECKED ":"") + ">"
+	  "&nbsp;" + field->name +" &nbsp; \n"; 
+        else
+          retval+="<input type=hidden name=\"show-" + field->name +
+            "\" value=\"yes\">\n";
 
-    retval+="</td></tr></table></form>"; 
+    retval+="</td></tr></table>"
+	"<input type=hidden name=primary_key value=\"" +
+		primary_key + "\"></form>"; 
 
     string query="SELECT ";
     array fields=({});
@@ -1035,12 +1050,18 @@ id->variables->id); }
 	  + "s";
       array r=id->misc->ivend->db->query(query);
       if(sizeof(r)>0) {
-        retval+="<table>\n<tr>\n";
+        retval+="<table>\n<tr><td></td>\n";
         foreach(fields, string f)
           retval+="<td><b><font face=helvetica,arial>" + f + "</b></td>\n";
         retval+="</tr>";
         foreach(r, mapping row){
-          retval+="<tr>\n";
+          retval+="<tr>\n<td><font face=helvetica,arial size=0>"
+	    "<a href=\"./admin?mode=getmodify&type=" +
+	    id->variables->type + "&" +id->variables->primary_key + "=" +
+		row[id->variables->primary_key] + "\">Modify</a> "
+	    "&nbsp; <a href=\"./admin?mode=dodelete&type=" +
+	    id->variables->type + "&" + id->variables->primary_key + "=" + 
+		row[id->variables->primary_key] + "\">Delete</a></td>";
           foreach(fields, string fld)
             retval+="<td>" + row[fld] + "</td>\n";              
             }  

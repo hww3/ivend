@@ -195,6 +195,34 @@ return retval;
 mixed addentry(object id, string referrer){
 array errors=({});
 array(mapping(string:mixed)) r=::list_fields(id->variables->table);
+
+if(id->misc->ivend->clear_oldrecord){	// get rid of existing record.
+array index=::query("SHOW INDEX FROM " + id->variables->table );
+
+if(sizeof(index)==1 && index[0]->Non_unique=="0") {
+  perror("UNIQUE KEY ON " + id->variables->table + "\n");
+  ::query("DELETE FROM " + id->variables->table + " WHERE " +
+	index[0]->Column_name + "='" +
+	id->variables[lower_case(index[0]->Column_name)] + "'");
+  }
+
+else if(sizeof(index)>1)	// we've got keys in this table!
+  {
+  perror("MULTIPLE KEY ON " + id->variables->table + "\n");
+
+  string q="DELETE FROM " + id->variables->table + " WHERE " + 
+	index[0]->Column_name + "='" +
+	id->variables[lower_case(index[0]->Column_name)] + "' ";
+  for(int i=1; i<sizeof(index); i++)
+     q+="AND " + index[i]->Column_name + "='" + 
+	id->variables[lower_case(index[i]->Column_name)] + "' ";
+  ::query(q);
+  }
+
+else perror("Got NON-UNIQUE SINGLE FIELD KEY on " + id->variables->table +
+"\n");
+}
+
 string query="INSERT INTO "+id->variables->table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 	r[i]->name=lower_case(r[i]->name);  // lower case it all...
@@ -243,7 +271,7 @@ if (sizeof(errors)>0) return errors;
 catch(jointable=id->variables[id->variables->jointable]/"\000");
 if(jointable)
  for(int i=0; i<sizeof(jointable); i++){
-    query="INSERT INTO "
+    query="REPLACE INTO "
       + id->variables->joindest +" VALUES('"+
 	jointable[i]+ "','"
         +id->variables->id+"')";
@@ -315,7 +343,7 @@ perror(id->variables[id->variables->jointable]+"\n\n");
 + "'");
 if(jointable && sizeof(jointable)>0)
  for(int i=0; i<sizeof(jointable); i++){
-    query="INSERT INTO "
+    query="REPLACE INTO "
       + id->variables->joindest +" VALUES('"+
 	jointable[i]+ "','"
         +id->variables->id+"')";
@@ -329,7 +357,7 @@ return 1;
 string generate_query(mapping data, string table, object s){
 
 array(mapping(string:mixed)) r=s->list_fields(table);
-string query="INSERT INTO "+table+" VALUES(";
+string query="REPLACE INTO "+table+" VALUES(";
 for (int i=0; i<sizeof(r); i++){
 
  if(r[i]->type=="string" || r[i]->type=="var string" || 

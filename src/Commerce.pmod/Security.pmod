@@ -1,33 +1,22 @@
-/*
-object pub_to_rsa(string s)
+/* Decode a coded RSAPublicKey structure */
+object parse_public_key(string key)
 {
-  array a = Array.map(s/"\n" - ({ "" }), Gmp.mpz, 16);
-  return Crypto.rsa()->set_public_key(a[0], a[1]);
-}
+  WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
+  array a = Standards.ASN1.decode(key)->get_asn1();
 
-object priv_to_rsa(string s)
-{
-  array a = Array.map(s/"\n" - ({ "" }), Gmp.mpz, 16);
-  return Crypto.rsa()->set_public_key(a[0], a[1])
-    ->set_private_key(a[2]);
-}
+  WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
+  if (!a
+      || (a[0] != "SEQUENCE")
+      || (sizeof(a[1]) != 3)
+      || (sizeof(column(a[1], 0) - ({ "INTEGER" })))
+      || a[1][0][1])
+    return 0;
 
-string rsa_to_pub(object rsa)
-{
-  return sprintf("%s\n%s\n",
-		 rsa->n->digits(16),
-		 rsa->e->digits(16));
+  object rsa = Crypto.rsa();
+  rsa->set_public_key(a[1][1][1], a[1][2][1]);
+//  rsa->set_private_key(a[1][3][1], column(a[1][4..], 1));
+  return rsa;
 }
-
-string rsa_to_priv(object rsa)
-{
-  return sprintf("%s\n%s\n%s\n",
-		 rsa->n->digits(16),
-		 rsa->e->digits(16),
-		 rsa->d->digits(16));
-}
-
-*/
 
 
 string|int encrypt(string s, string key){
@@ -51,7 +40,7 @@ werror("Crypto not present! Doing dummy encrypt!\n");
     return 0;
     }
 
-  object rsa = Standards.PKCS.RSA.parse_public_key(part->decoded_body());
+  object rsa  = parse_public_key(part->decoded_body());
 
   function r = Crypto.randomness.reasonably_random()->read;
 

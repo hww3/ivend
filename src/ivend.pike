@@ -18,7 +18,7 @@ object c;			// configuration object
 mapping(string:object) modules=([]);			// module cache
 int save_status=1; 		// 1=we've saved 0=need to save.
 
-string cvs_version = "$Id: ivend.pike,v 1.33 1998-03-06 04:27:59 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.34 1998-03-07 03:38:54 hww3 Exp $";
 
 /*
  *
@@ -578,8 +578,8 @@ object s=Sql.sql(config[id->misc->ivend->st]->dbhost,
 	config[id->misc->ivend->st]->dblogin, 
 	config[id->misc->ivend->st]->dbpassword);
 
-int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID="+
-  id->misc->ivend->SESSIONID+" AND id='"+item+"'"));
+int max=sizeof(s->query("select id FROM sessions WHERE SESSIONID='"+
+  id->misc->ivend->SESSIONID+"' AND id='"+item+"'"));
 string query="INSERT INTO sessions VALUES("+ id->misc->ivend->SESSIONID+
   ",'"+item+"',1,"+(max+1)+",'Standard','"+(time(0)+
   (int)id->misc->ivend->config->session_timeout)+"')";
@@ -1108,7 +1108,6 @@ mixed find_file(string file_name, object id){
 
 
 if(file_name==""){
-
 	if(!id->variables->SESSIONID) 
 	  id->misc->ivend->SESSIONID=
         	(hash((string)time(1)+(string)random(32201)));	
@@ -1195,14 +1194,16 @@ else {
 	//
 
 #ifdef MODULE_DEBUG	
-//	retval+=dump_id(id);
+	retval+="<DUMPID>";
 #endif
+
 if(stringp(retval)){
 
 	retval=parse_rxml(retval, id);
    	return http_string_answer(retval,
 		id->conf->type_from_filename(id->realfile|| "index.html"));
 	}
+
 else return retval;
 
 }

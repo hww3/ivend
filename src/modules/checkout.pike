@@ -100,7 +100,7 @@ return ("0.00");
 
 string tag_generateform(string tag_name, mapping args,
 		     object id, mapping defines) {
- object s=iVend.db(
+ object s=(object)iVend.db(
     id->misc->ivend->config->dbhost,
     id->misc->ivend->config->db,
     id->misc->ivend->config->dblogin,
@@ -305,11 +305,11 @@ return retval;
 string|void container_checkout(string name, mapping args,
                       string contents, object id)
 {
-
+mapping tags,containers;
 if(functionp(query_tag_callers2))
- mapping tags=query_tag_callers2();
+ tags=query_tag_callers2();
 if(functionp(query_container_callers2))
-  mapping containers=query_container_callers2();
+  containers=query_container_callers2();
 string h;
 
 if(id->variables["_page"])

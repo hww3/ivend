@@ -288,13 +288,17 @@ catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
 	+ " AND (status.name!='Shipped' OR status.name!='Cancelled') "
 	" AND orders.status=status.status" );
   retval+="Found " + sizeof(orders_to_archive) + " orders"
-	" to archive. Click the button below to generate the "
+	" to archive.";
+  if(sizeof(orders_to_archive>0)
+	retval+=
+	" Click the button below to generate the "
 	" archive file.<P>"
 	"<form action=\"./\">\n"
 	"<input type=hidden name=archive value=1>\n"
 	"<input type=hidden name=days value=" + v->days + ">\n"
 	"<input type=submit name=doit value=\"Archive\">\n"
 	"</form>";
+  else retval+="<p><a href=\"./\">Click here to start over.</a>";
 
   }
  }

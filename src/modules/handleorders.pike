@@ -236,7 +236,7 @@ string|mapping archive_orders(string mode, object id){
  retval+="<form action=\"./\">\n"
 	"<input type=hidden name=archive value=1>\n";
 
- retval+="Archive all orders more than "
+ retval+="Archive all closed/cancelled orders more than "
 	"<input type=text size=3 name=days value=30> days old. "; 
 
  retval+="<input type=submit value=\"Archive\"></form>\n";
@@ -244,11 +244,17 @@ string|mapping archive_orders(string mode, object id){
 
  else {
 
-  array orders_to_archive=DB->query("SELECT * FROM orders WHERE "
-	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days );
-  retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p><pre>";
+  if(v->doit){
+  array orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
+	+ " AND (status.name!='Shipped' OR status.name!='Cancelled') "
+	" AND orders.status=status.status" );
+//  retval+="Archiving " + sizeof(orders_to_archive) + " orders.<p><pre>";
   foreach(orders_to_archive, mapping or){
-retval+="<order id=\"" + or->id + "\">\n";
+retval+="<order id=\"" + or->id + "\">\n"
+	"<created>" + or->created + "</created>\n"
+	"<updated>" + or->updated + "</updated>\n"
+	"<notes>" + or->notes + "</notes>\n"
     array tables=({"orderdata", "shipments", "customer_info",
 	"payment_info"});
     foreach(tables, string t){
@@ -261,17 +267,34 @@ retval+="<order id=\"" + or->id + "\">\n";
         foreach(fields, mapping f){
 	  retval+="<data field=\"" + f->name + "\" type=\"" + f->type +
 	    "\">" + row[f->name] + "</data>\n";
-	}
-  retval+="</record>\n";
-        }
+  	}
+    retval+="</record>\n";
+          }
       
-      }
-  retval+="</order>\n";
-    }
-  return http_string_answer(retval, "text/archive");
+        }
+    retval+="</order>\n";
+     } 
+      T_O->add_header(id, "Content-Disposition", 
+	"inline; filename=" + "orders.xml");
+    return http_rxml_answer(retval, id, 0, "text/archive");
 
+   }
+  else {
+  array orders_to_archive=DB->query("SELECT * FROM orders,status WHERE "
+	"TO_DAYS(NOW()) - TO_DAYS(updated) > " + v->days 
+	+ " AND (status.name!='Shipped' OR status.name!='Cancelled') "
+	" AND orders.status=status.status" );
+  retval+="Found " + sizeof(orders_to_archive) + " orders"
+	" to archive. Click the button below to generate the "
+	" archive file.<P>"
+	"<form action=\"./\">\n"
+	"<input type=hidden name=archive value=1>\n"
+	"<input type=hidden name=days value=" + v->days + ">\n"
+	"<input type=submit name=doit value=\"Archive\">\n"
+	"</form>";
+
+  }
  }
-
  return retval;
 }
 

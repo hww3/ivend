@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.223 1999-06-16 02:59:17 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.224 1999-06-17 22:21:52 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -2789,7 +2789,7 @@ Config.write_section(query("configdir")+
                              err=catch(db[c->config]=iVend.db_handler(
                                                          c->dbhost,
                                                          c->db,
-                                                         4,
+                                                         2,
                                                          c->dblogin,
                                                          c->dbpassword
                                                      ));

@@ -47,7 +47,7 @@ mapping global=([]);
 
 int save_status=1;              // 1=we've saved 0=need to save.    
 
-string cvs_version = "$Id: ivend.pike,v 1.102 1998-08-20 18:36:23 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.103 1998-08-21 14:40:37 hww3 Exp $";
 
 array register_module(){
 
@@ -1131,16 +1131,16 @@ id->variables->id); }
     "<li><a href=\"admin?mode=show&type=group\">Show Groups</a>\n"
     "<li><a href=\"admin?mode=add&type=group\">Add New Group</a>\n"
     "<li><a href=\"admin?mode=modify&type=group\">Modify a Group</a>\n"
-    "(Beta Test)\n"
     "<li><a href=\"admin?mode=delete&type=group\">Delete a Group</a>\n"
+    "<li><a href=\"admin?mode=dump&type=group\">Dump Groups</a>\n"
     "</ul>"
     "<li>Products\n"
     "<ul>"
     "<li><a href=\"admin?mode=show&type=product\">Show Products</a>\n"
     "<li><a href=\"admin?mode=add&type=product\">Add New Product</a>\n"
     "<li><a href=\"admin?mode=modify&type=product\">Modify a Product</a>\n"
-    "(Beta Test)\n"
     "<li><a href=\"admin?mode=delete&type=product\">Delete a Product</a>\n"
+    "<li><a href=\"admin?mode=dump&type=product\">Dump Products</a>\n"
     "</ul>"
     "</ul>\n"
     "<ul>\n"

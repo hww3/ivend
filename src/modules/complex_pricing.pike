@@ -160,22 +160,28 @@ array r=DB->query("SELECT * FROM cp_single WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<header>Quantity</header>\n";
-
+retval+="<heading>Quantity</heading>\t";
+array elements=({});
 for(int i=0; i<sizeof(r); i++){
   if(i==sizeof(r)-1)
-   retval+="<quantity>" + r[i]->minimum_quantity + "+</quantity>\n";
+   elements+=({"<quantity>" + r[i]->minimum_quantity + "+</quantity>"});
   else
-   retval+="<quantity>" + r[i]->minimum_quantity + "-" +
-    ((int)(r[i+1]->minimum_quantity)-1) + "</quantity>\n";  
+   elements+=({"<quantity>" + r[i]->minimum_quantity + "-" +
+    ((int)(r[i+1]->minimum_quantity)-1) + "</quantity>"});  
 }
-retval+="<header>Price Each</header>\n";
+retval+=elements*"\t";
+retval+="\n";
+elements=({});
+retval+="<heading>Price Each</heading>\t";
 foreach(r, mapping row){
-  retval+="<price>" + MONETARY_UNIT + sprintf("%.2f", (float)(row->price))
+  elements+=({"<price>" + MONETARY_UNIT + sprintf("%.2f",
+(float)(row->price))
 +
-"</price>\n";  
+"</price>"});
+  
 }
-
+retval+=elements*"\t";
+retval+="\n";
 return retval;
 
 }
@@ -232,12 +238,12 @@ array r=DB->query("SELECT * FROM cp_grad WHERE product_id='" + item + "' "
 
 if(!r || sizeof(r)<1) return "<!-- no pricing available...-->";
 
-retval+="<header>Quantity</header>\n";
+retval+="<heading>Quantity</heading>\n";
 
 for(int i=0; i<sizeof(r); i++){
    retval+="<quantity>" + r[i]->quantity + "</quantity>\n";  
 }
-retval+="<header>Price Each</header>\n";
+retval+="<heading>Price Each</heading>\n";
 foreach(r, mapping row){
   retval+="<price>" + MONETARY_UNIT + sprintf("%.2f",
 (float)(row->price)) + "</price>\n";  

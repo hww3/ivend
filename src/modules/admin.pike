@@ -58,7 +58,8 @@ retval+="<input type=hidden name=options value=1>\n";
   retval+="  <select name=\"" +  row->option_type + "\">\n";
     foreach(DB->query("SELECT * FROM item_options WHERE product_id='" +
       args->item + "' AND option_type='" + row->option_type + 
-      "' ORDER BY option_code " + (args->order || "ASC")), mapping row2)
+      "' ORDER BY surcharge ASC, option_code " + (args->order || "ASC")),
+	mapping row2)
         retval+="<option value=\"" + row2->option_code + "\">" +
 row2->description + 
 ((float)(row2->surcharge)!=0.00? " " + MONETARY_UNIT + (sprintf("%.2f",

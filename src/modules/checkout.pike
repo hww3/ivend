@@ -56,23 +56,37 @@ string tag_confirmorder(string tag_name, mapping args,
     id->misc->ivend->config->dbpassword
     );   
 
+// reserve the next order for me please...
+
+  s->query("INSERT INTO orders VALUES(NULL,0,NULL,0,NULL,NULL,NOW())");
+  id->misc->ivend->orderid=s->master_sql->insert_id(); // mysql only
+
+
 // get the order from sessions
 
   array r=s->query("SELECT * FROM sessions WHERE sessionid='"
 	+id->misc->ivend->SESSIONID+ "'");
 
-// and stick it into orders...
+// replace sessionid with orderid
+string query;
 
-  s->query("INSERT INTO orders VALUES(NULL,0,NULL,0,NULL,NULL,NOW())");
-  id->misc->ivend->orderid=s->master_sql->insert_id();
-
-  for(int i=0; i<sizeof(r); i++){
+mixed error= catch{  for(int i=0; i<sizeof(r); i++){
 
     r[i]->orderid=id->misc->ivend->orderid;
-    m_delete(r[i], "sessionid");
-
+    r[i]->status=0;
+    m_delete(r[i], "sessionid");    
+    m_delete(r[i], "timeout");
+    query=iVend.db()->generate_query(r[i], "orderdata", s);
+    s->query(query);
   }
+} ;
+if(!error)
+s->query("DELETE FROM sessions WHERE sessionid='"+id->misc->ivend->SESSIONID+"'");
 
+else {
+  id->misc->ivend->error+="ERROR MOVING ORDER TO CONFIRMED STATUS!";
+  return "";
+}
 // update customer info and payment info with new orderid
     
   s->query("UPDATE customer_info SET orderid='"+
@@ -82,6 +96,49 @@ string tag_confirmorder(string tag_name, mapping args,
   s->query("UPDATE payment_info SET orderid='"+
 	id->misc->ivend->orderid+"' WHERE orderid='"
 	+id->misc->ivend->SESSIONID+"'");
+
+// do we send a confirmation note? if so, do it.
+
+string note;
+note=Stdio.read_file(id->misc->ivend->config->root+"/notes/confirm.txt");
+if(note) {
+
+  perror("\n\nSENDING MESSAGE!\n");
+
+  string subject,sender, recipient;
+  sscanf(note, "%s\n%s\n%s", sender, subject, note);
+  array r=s->query("SELECT email_address from customer_info WHERE "
+		   "orderid='"+id->misc->ivend->orderid+"' AND "
+		   "type=0");
+  recipient=r[0]->email_address;
+  note=replace(note,"#orderid#",(string)id->misc->ivend->orderid);
+  
+  object message=MIME.Message(note, (["MIME-Version":"1.0",
+				     "To":recipient,
+				     "Subject":subject
+				     ]));
+
+  perror((string)message);
+
+  object f=Stdio.File();
+  f->open_socket();
+  f->connect("localhost", 25);
+
+  f->write("HELO localhost\n");
+  f->read();
+  f->write("MAIL FROM: <"+sender+">\n");
+  f->read();
+  f->write("RCPT TO: <"+ recipient+">\n");
+  f->read();
+  f->write("DATA\n");
+  f->read();
+  f->write((string)message);
+  f->write("\n.\n");
+  f->read();
+  f->write("QUIT\n");
+  f->close();
+
+}
 
 
   return retval;

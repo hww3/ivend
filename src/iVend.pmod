@@ -204,6 +204,27 @@ return 1;
 
 }
 
+string generate_query(mapping data, string table, object s){
+
+array(mapping(string:mixed)) r=s->list_fields(table);
+string query="INSERT INTO "+table+" VALUES(";
+for (int i=0; i<sizeof(r); i++){
+
+ if(r[i]->type=="string" || r[i]->type=="var string" || 
+    r[i]->type=="enum" || r[i]->type=="blob" ||
+	stringp(r[i]->name)
+	) query+="'"+data[r[i]->name]+"',";
+
+
+  else query+=(data[r[i]->name]||"NULL")+",";
+
+  }
+query=query[0..sizeof(query)-2]+")";
+
+return query;
+
+}
+
 string|int gentable(string table, string return_page, 
     string|void jointable,string|void joindest , object|void id){
 string retval="";
@@ -420,6 +441,7 @@ return capitalize(type)+" "+id+" deleted successfully.\n";
 
 void create(string|void host, string|void db, string|void user, 
 string|void password){
+if(host && db && user)
 s=Sql.sql(host,db,user,password);
 return;
 }

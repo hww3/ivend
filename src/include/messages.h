@@ -1,5 +1,8 @@
 //
 //	messages.h : translation phrases
+//	this file is a part of the iVend system
+//	copyright 1998 bill welliver
+//	hww3@riverweb.com
 //
 
 #define REQUIRED	"*"

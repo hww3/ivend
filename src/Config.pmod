@@ -18,10 +18,10 @@ mapping read(string contents){
         config[section]=([]);
     }
    if(sscanf(line,"%s=%s", attribute, value)==2) // attribute line.
-      if(config[section][attribute]) {
-        config[section][attribute]=({config[section][attribute]});
+      if(config[section][attribute] && arrayp(config[section][attribute]))
 	config[section][attribute]+=({value});
-        }
+      else if(config[section][attribute])
+	config[section][attribute]=({config[section][attribute]}) + ({value});
       else config[section][attribute]=value;
   }
 return config;

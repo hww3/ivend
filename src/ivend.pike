@@ -88,7 +88,6 @@ string getmwd(){
   catch { mwd=combine_path(combine_path(mwd, ".."), readlink(mwd)); };
   mwd=combine_path(mwd, "../");
 
-//  perror("getmwd(): "+mwd + "\n\n");
 
   return mwd;
 }
@@ -1663,24 +1662,25 @@ if(!c->load_config_defs(Stdio.read_file(query("datadir")+"ivend.cfd")));
 if(!g->load_config_defs(Stdio.read_file(query("datadir")+"global.cfd")));
 string config_file;
 
-array|int configfiles=get_dir(query("configdir"));
+config_file=Stdio.read_file(query("configdir") + "global");
+global=Config.read(config_file);
 
-if(intp(configfiles)) return 0;	// no config directory.
+if(!global->configurations)
+  return 0;
 
-configfiles-=({"CVS",".",".."});
+array configfiles=global->configurations->active;
+if(sizeof(configfiles)<1) return 0;
+
+if(stringp(configfiles)) configfiles=({configfiles});
 
 foreach(configfiles, string confname) {
-  if(search(confname, "~")>0)
-    continue;
-  config_file= Stdio.read_file(query("configdir")+
-	confname);
+perror(confname + "\n");
+  config_file= Stdio.read_file(query("configdir") + confname);
   mapping c;
   c=Config.read(config_file);
   if(c)
     config[confname]=c;
   }
-global=config["global"];
-m_delete(config,"global");
 return 0;
 }
 
@@ -1773,7 +1773,7 @@ if(!config[c]) return;
 mapping write_configuration(object id){
 string config_file="";
 
-foreach(indices(config) + ({"global"}), string confname){
+foreach(({"global"}) + global->configurations->active, string confname){
   if(confname=="global")
     config_file=Config.write(global);
   else config_file=Config.write(config[confname]);
@@ -1942,12 +1942,16 @@ if(id->variables->config && !config[id->variables->config]){
 			
   array(string) variables= indices(id->variables);
   for(int i=0; i<sizeof(variables); i++){
-				
+    id->variables->config=lower_case(id->variables->config);				
     if(!config[id->variables->config]) 
       config[id->variables->config]= (["general":([])]);
 
 config[id->variables->config]["general"]+=([variables[i]:id->variables[variables[i]]]);
-				
+	if(!global->configurations){
+		global->configurations=([]);
+		global->configurations->active=({id->variables->config});		
+		}
+	else global->configurations->active+=({id->variables->config});
 			}
 				
 				save_status=0;
@@ -2002,6 +2006,10 @@ config[id->variables->config]["general"]+=([variables[i]:id->variables[variables
 
 	if(id->variables->config_delete=="1") {
 
+	int n=search(global->configurations->active, request[1]);
+	if(n) global->configurations->active[n]="";
+	global->configurations->active-=({""});
+	
 	config=m_delete(config,request[1]);
 	save_status=0;
   mv(query("configdir")+ request[1], query("configdir") + request[1] + "~");

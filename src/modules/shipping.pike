@@ -313,7 +313,8 @@ string tag_shippingtype (string tag_name, mapping args,
 string retval;
 array r;
 string query=("SELECT extension FROM lineitems where orderid='" +
-  id->misc->ivend->SESSIONID + "' AND lineitem='shipping'");
+  (id->misc->ivend->orderid || id->misc->ivend->SESSIONID)
+  + "' AND lineitem='shipping'");
 // perror(query);
 r=DB->query(query);
 

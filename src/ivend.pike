@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.269 2000-07-25 18:13:06 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.270 2000-09-13 15:31:28 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -198,8 +198,8 @@ string is_lineitem_taxable(object id, string item, string orderid){
 CONFIG_ROOT["Default Checkout Module"]->shipping_taxable=="Yes") return
 	"Y";
   else {
-  perror(CONFIG_ROOT["Default Checkout Module"]->shipping_taxable+"\n");
-  perror("N!\n");
+//  perror(CONFIG_ROOT["Default Checkout Module"]->shipping_taxable+"\n");
+//  perror("N!\n");
  return "N";
   } 
 }
@@ -1578,7 +1578,7 @@ string container_itemoutput(string name, mapping args,
 string get_type(string page, object id){
 
     array r;
-perror(page+"\n");
+// perror(page+"\n");
     catch(r=DB->query("SELECT * FROM groups WHERE " +
                 KEYS->groups +
                 "='"+page+"'"));

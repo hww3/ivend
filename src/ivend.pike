@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.239 1999-08-24 20:04:51 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.240 1999-08-24 20:27:35 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -1033,8 +1033,9 @@ string tag_generateviews(string tag_name, mapping args,
     args->type=lower_case(args->type);
 
     string retval="";
+    array r;
     if(catch(
-    array r = DB->query("SELECT " + args->field + " FROM "
+    r = DB->query("SELECT " + args->field + " FROM "
                         + args->type + ", product_groups WHERE product_groups.product_id="
                         + args->type + "." +  KEYS[args->type] + " AND "
                         + args->type + ".status='A'"
@@ -2012,8 +2013,8 @@ if(!intp(r)){
                                                      id->variables->id,
                                                      KEYS[type+"s"]);
                              if(n)
-                                 retval+="<form name=form action=" +
-                                         add_pre_state(id->not_query,(<"dodelete=" + type>)) +">\n"
+                                 retval+="<form _parsed=1 name=form action=\"" +
+					add_pre_state(id->not_query,(<"dodelete=" + type>)) +"\">\n"
                                          + n +
                                          "<input type=hidden name=mode value=dodelete>\n"
                                          "<input type=submit value=Delete>\n</form>";
@@ -2025,9 +2026,9 @@ if(!intp(r)){
                                                       , KEYS[type+"s"],
                                                       (type=="group"?KEYS->products:0));
                              if(n){
-                                 retval+="<form name=form action=" +
+                                 retval+="<form name=form action=\"" +
                                          add_pre_state(id->not_query,(<"dodelete=" + type>))
-                                         + ">\n"
+                                         + "\">\n"
                                          "<input type=hidden name=id value=\""+id->variables[
                                              KEYS[type+"s"] ]+"\">\n"
                                          "Are you sure you want to delete the following?<p>";
@@ -2042,8 +2043,8 @@ if(!intp(r)){
                      }
 
                  case "delete":
-                     retval+="<form name=form action="+
-                             add_pre_state(id->not_query,(<"dodelete=" + type>))+">\n"
+                     retval+="<form name=form action=\""+
+                             add_pre_state(id->not_query,(<"dodelete=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=dodelete>\n"
                              +capitalize(type) + " "+
                              KEYS[type +"s"] + " to Delete:\n"
@@ -2096,7 +2097,7 @@ if(!intp(r)){
                  case "show":
                      retval+="&gt <b>Show " + capitalize(type)
                              +"</b><br>\n";
-                     retval+="<form name=form action=./>\n"
+                     retval+="<form name=form action=\"./\">\n"
                              "<input type=hidden name=mode value=show>\n"
                              "<input type=hidden name=type value="+ type + ">\n"
                              "<table><tr><td><input type=submit value=Show></td><td>\n";
@@ -2217,7 +2218,7 @@ id->variables->__criteria + "%";
                  case "modify":
                      retval+="&gt <b>Modify " + capitalize(type)
                              +"</b><br>\n";
-                     retval+="<form name=form action="+add_pre_state(id->not_query,(<"getmodify=" + type>))+">\n"
+                     retval+="<form name=form action=\""+add_pre_state(id->not_query,(<"getmodify=" + type>))+"\">\n"
                              "<input type=hidden name=mode value=getmodify>\n"
                              + capitalize(type) + " "+
                              KEYS[type+"s"] + " to Modify: \n"

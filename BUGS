@@ -47,9 +47,49 @@ To add item ABC123 and DEF456 to the cart, use the following:
 <additem item="DEF456" quantity="1" noform>
 </form>
 
-ivendlogo
-sessionid
-generateviews
+<IVENDLOGO>
+
+Displays either the iVend logo button with a link to the iVend web site or a large version of the iVend logo.
+
+ATTRIBUTES
+
+LARGE Displays a large version of the iVend logo. No link is included. (Optional)
+
+EXAMPLES
+
+The following code:
+
+<ivendlogo>
+
+Displays:
+
+||Insert photo here||
+
+
+<SESSIONID>
+
+Returns the current shopping session indentifier, used to identify the browser to the iVend system during a shopping session.
+
+ATTRIBUTES
+
+None.
+
+EXAMPLES
+
+The following code:
+
+<sessionid>
+
+Returns:
+
+S1234567890
+
+<GENERATEVIEWS>
+
+Generates Product lists that are grouped on a field in the individual product records. 
+
+ATTRIBUTES
+
 listitems
 ivstatus
 ivmg

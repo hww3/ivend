@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ -x "/usr/ucb/echo" ]
+then
+  PATH=/usr/ucb:$PATH
+fi
+
 echo 
 echo iVend 1.0 Store Creation Script
 echo
@@ -9,7 +14,7 @@ then
   default=$PWD
   echo -n Location of iVend configuration files [$default]: 
   read configdir
-  if [ -z $configdir ] 
+  if [ -z "$configdir" ] 
   then
     configdir=$default
   fi
@@ -20,7 +25,7 @@ fi
 default=$PWD
 echo -n Directory of New Store [$default]: 
 read storedir
-if [ -z $storedir ] 
+if [ -z "$storedir" ] 
 then
   storedir=$default
 fi
@@ -28,7 +33,7 @@ fi
 default="test"
 echo -n Store ID [$default]:
 read storename
-if [ -z $storename ]
+if [ -z "$storename" ]
 then
   storename=$default
 fi
@@ -36,7 +41,7 @@ fi
 default="iVend Test Store"
 echo -n Store Description [$default]:
 read storedescription
-if [ -z $storedescription ]
+if [ -z "$storedescription" ]
 then 
   storedescription=$default
 fi
@@ -44,7 +49,7 @@ fi
 default="localhost"
 echo -n Database Host [$default]:
 read dbhost
-if [ -z $dbhost ]
+if [ -z "$dbhost" ]
 then 
   dbhost=$default
 fi
@@ -52,7 +57,7 @@ fi
 default=$storename
 echo -n Database Name [$default]:
 read db
-if [ -z $db ]
+if [ -z "$db" ]
 then 
   db=$default
 fi
@@ -60,7 +65,7 @@ fi
 default=$storename
 echo -n Database User [$default]:
 read dbuser
-if [ -z $dbuser ]
+if [ -z "$dbuser" ]
 then 
   dbuser=$default
 fi
@@ -68,7 +73,7 @@ fi
 default=""
 echo -n Database User \($dbuser\) Password [$default]:
 read dbpassword
-if [ -z $dbpassword ]
+if [ -z "$dbpassword" ]
 then 
   dbpassword=$default
 fi
@@ -107,7 +112,6 @@ cat << EOF > $configdir/$storename
 \$publickey=$storedir/private/key.pub
 \$privatekey=$storedir/private/key.priv
 \$config_user=$adminuser
-\$config_password=` pike --execute=write\(crypt\(\"$adminpassword\"\)\)`
 \$db=$db
 \$dbhost=$dbhost
 \$dblogin=$dbuser

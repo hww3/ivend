@@ -47,6 +47,7 @@ int loaded;
 object c;                       // configuration object
 object g;                       // global object
 mapping paths=([]);// path registry
+mapping admin_handlers=([]);
 mapping library=([]);
 mapping actions=([]);// action storage
 mapping db=([]);// db cache
@@ -333,14 +334,72 @@ void get_entities(mapping c){
 
 }
 
+mixed register_admin_handler(string c, string mode, mixed f){
+mode=lower_case(mode);
+  if(functionp(f))
+      admin_handlers[c][mode]=f;
+   else perror("no function provided!\n");
+   return;    
+}
+
+
+mixed upsell_handler(string mode, object id){
+if(id->variables->action=="AddUpsell")
+  DB->query("INSERT INTO upsell VALUES('" + id->variables->id + "','" + 
+	id->variables->upsell + "')");
+else {
+
+  foreach(indices(id->variables), string vname)
+    if(id->variables[vname]=="Delete")
+      DB->query("DELETE FROM upsell WHERE id='" + id->variables->id + 
+	"' AND upsell='" + vname + "'"); 
+
+}
+
+string retval="<title>Upsell</title>\n"
+	"<body bgcolor=white text=navy>"
+	"<font face=helvetica, arial>";
+
+array r=DB->query("SELECT * FROM products WHERE " + KEYS->products + "='"
+	+ id->variables->id + "'");
+if(!r) return "Cannot Find Product " + id->variables->id + ".";
+  retval+= "Upsell: <b>" + r[0]->name + "</b><p>";
+
+  retval+="<form action= " + id->not_query + ">\n"
+	"<input type=hidden name=mode value=upsell>\n";
+	"<input type=hidden name=id value=" + id->variables->id + ">\n";
+	"<select name=upsell>\n";	
+  array r=DB->query("SELECT * FROM products ORDER BY " + KEYS->products);
+	foreach(r, mapping row)
+	  retval+="<option value=\"" + row[KEYS->products] + "\">"
+	    + row->name + "\n";
+  retval+="</select> <input type=submit value=AddUpsell name=action>"
+  "<p>Currently associated Upsells:<br>";
+
+  array r=DB->query("SELECT * FROM products,upsell WHERE upsell.id=" +
+	id->variables->id + " and upsell.upsell=" + KEYS->products);
+
+  foreach(r, mapping row)
+    retval+=row->name + "<input type=submit name=\"" + row[KEYS->products]
+	+ " value=Delete><br>";
+  retval+="</form>\n";
+
+return retval;
+
+}
+
+
 void start_store(string c){
 
    if(!paths[c]) paths[c]=([]);
+   if(!admin_handlers[c]) admin_handlers[c]=([]);
 
    register_path_handler(c, "images", get_image);
    register_path_handler(c, "admin", admin_handler);
    register_path_handler(c, "orders", order_handler);
    register_path_handler(c, "cart", handle_cart);
+
+   register_admin_handler(c, "upsell", upsell_handler);
 
    perror("Loading: modules ");
    load_modules(config[c]->general->config);
@@ -1412,9 +1471,6 @@ mixed getmodify(string type, string pid, object id){
       record[0]->group_id=gid;
    }
 
-   retval+="&gt <b>Modify " + capitalize(id->variables->type)
-   +"</b><br>\n";
-
    if(id->variables->type=="product")
       retval+="<table>\n"+DB->gentable("products","./admin","groups",
                                        "product_groups", id, record[0])+"</table>\n";
@@ -1426,6 +1482,65 @@ mixed getmodify(string type, string pid, object id){
    return retval;
 
 }
+
+
+int have_admin_handler(string type, object id){
+   if(!type || type=="")
+      return 0;
+type=lower_case(type);
+//   p=((p/"/")-({""}))[0];
+   if(admin_handlers[STORE][type] &&
+functionp(admin_handlers[STORE][type]))
+      //  perror("have handler for " + type + " in " + STORE + "\n");
+      return 1;  
+
+}
+
+mixed handle_admin_handler(string mode, object id){
+
+//   string np=((p/"/")-({""}))[0];
+   mixed rv;
+   rv=admin_handlers[STORE][mode](mode, id);
+   // perror(sprintf("%O\n",rv));
+   return rv;                  
+
+} 
+
+mixed open_popup(string name, string location, string mode, mapping
+options, object id){
+name=name-" ";
+string retval="";
+retval+="<SCRIPT LANGUAGE=javascript>"
+"\n"
+"function popup(name,location,w,h) {\n"
+"        mainWin=self;\n"
+"        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
+"        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
+"\n"
+"param='resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,copyhistory=yes,width='+w+',height='+h;\n"
+"        palette=window.open(location,name,param);\n"
+"        window.open('',name,param);\n"
+"        \n"
+"        if (palette!=null) palette.opener=mainWin; \n"
+"}\n"
+	"</SCRIPT>"
+	"<form target=" + lower_case(name) + 
+	" ACTION=\"" + location +"\">";
+foreach(indices(options), string o){
+
+  retval+="<input type=hidden name=\"" + o + "\" value=\"" + options[o] +
+	"\">\n";
+	}
+
+retval+="<input type=hidden name=mode value=\""  +mode + "\">"
+	"<input onclick=popup('" + lower_case(name) + "','',300,300) type=submit value=\"" + name + "\">"
+	"</form>"
+	"</TD></TR></TABLE>";
+
+return retval;
+
+}
+
 
 mixed admin_handler(string filename, object id, object this_object){
 
@@ -1548,6 +1663,11 @@ mixed admin_handler(string filename, object id, object this_object){
          break;
 
       case "getmodify":
+   retval+="&gt <b>Modify " + capitalize(id->variables->type)
+   +"</b><br>\n";
+
+	 retval+=open_popup("Upsell",
+id->not_query, "upsell" , (["id" : id->variables->id]) ,id);
 
          retval+=getmodify(id->variables->type,
                            id->variables[KEYS[id->variables->type+"s"]], id);
@@ -1639,7 +1759,10 @@ mixed admin_handler(string filename, object id, object this_object){
          break;
 
          default:
-         retval+= "<ul>\n"
+	 if(have_admin_handler(id->variables->mode, id)){
+	   retval=handle_admin_handler(id->variables->mode,id);
+	 }
+         else retval+= "<ul>\n"
                   "<li><a href=\"orders\">Orders</a>\n"
                   "</ul>\n"
                   "<ul>\n"

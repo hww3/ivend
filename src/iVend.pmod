@@ -2,6 +2,7 @@
 // #define perror(X) werror(X)
 // for translations
 
+#define KEYS id->misc->ivend->keys
 #define CONFIG id->misc->ivend->config
 
 class config {
@@ -45,7 +46,8 @@ mapping(string:string) m=([]);
         string type;
         program p;
         mixed err;
-        foreach(d,name){
+        if(d && sizeof(d))
+          foreach(d,name){
             if(name=="CVS" || file_stat(moddir+"/"+name)[1]<=0 ) continue;
             if(err=catch(p=compile_file(moddir+"/"+name)))
             { perror("iVend error: can't compile "+name+"\n" +
@@ -377,7 +379,8 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
                     q="REPLACE INTO "
                       + id->variables->joindest +" VALUES('"+
                       jointable[i]+ "','"
-                      +id->variables->id+"')";
+
++id->variables[lower_case(KEYS[id->variables->table])]+"')";
                     query(q);
                 }
         }
@@ -454,7 +457,8 @@ array(mapping(string:mixed)) r=list_fields(id->variables->table);
                     q="REPLACE INTO "
                       + id->variables->joindest +" VALUES('"+
                       jointable[i]+ "','"
-                      +id->variables->id+"')";
+
++id->variables[lower_case(KEYS[id->variables->table])]+"')";
                     query(q);
                 }
         }

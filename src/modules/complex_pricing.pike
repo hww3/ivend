@@ -24,6 +24,13 @@ if(catch(db=iVend.db(config->general->dbhost, config->general->db,
     return;
   }
 
+if(sizeof(db->list_tables("complex_pricing"))<1)
+  if(catch(db->query("CREATE TABLE complex_pricing ( "
+   "product_id varchar(16) DEFAULT '' NOT NULL, "
+   "type varchar(16) DEFAULT '' NOT NULL, "
+   "priority int(11) DEFAULT '1' NOT NULL )"))) 
+    perror("An error occurred while creating table complex_pricing.\n");
+
 if(sizeof(db->list_tables("cp_single"))<1)
   if(catch(db->query("CREATE TABLE cp_single ("
    "product_id varchar(16) not null, "

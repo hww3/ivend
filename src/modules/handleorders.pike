@@ -34,6 +34,7 @@ object privs=Privs("Reading Key File");
 if(id->misc->ivend->config->general->privatekey)
   key=Stdio.read_file(id->misc->ivend->config->general->privatekey);
 privs=0;
+// perror(key);
 array r=DB->query("SELECT payment_info.*, status.name as status from "
 	 "payment_info,status WHERE orderid=" + id->variables->orderid +
 	 " AND status.status=payment_info.status");
@@ -50,7 +51,8 @@ retval="<table width=100%>";
    retval+="<tr><td width=30%><font face=helvetica>"+ replace(field->name,"_"," ")
      +"</font>\n</td>\n<td>"+
   (r[0][field->name][0..3]=="iVEn"?
-    (Commerce.Security.decrypt(r[0][field->name],key)+"*"):r[0][field->name])
+
+(Commerce.Security.decrypt(r[0][field->name],key)+"*"):r[0][field->name])
   	+"</td></tr>\n";
  
    }
@@ -231,7 +233,7 @@ if(note) {
 }
 
 string|int delete_order(string orderid, object id){
-
+perror("doing delete_order\n");
 array orders_to_archive;
 orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
 "'");
@@ -253,7 +255,7 @@ string|int archive_order(string orderid, object id){
 string retval="";
 array orders_to_archive;
 orders_to_archive=DB->query("SELECT * FROM orders WHERE id='" + orderid +
-"'");
+  "'");
 string t;
   foreach(orders_to_archive, mapping or){
 retval+="<order id=\"" + or->id + "\">\n"
@@ -279,8 +281,8 @@ retval+="<order id=\"" + or->id + "\">\n"
       
         }
     retval+="</order>\n";
-catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
-catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
+//catch(    DB->query("DELETE FROM " + t + " WHERE orderid='" + or->id + "'"));
+//catch(    DB->query("DELETE FROM orders WHERE id='" + or->id + "'"));
 perror("archived order " + or->id + "\n");
      } 
 
@@ -304,6 +306,7 @@ string|mapping archive_orders(string mode, object id){
  retval+="<input type=radio name=archiveby value=orderid> "
 	"Archive order #"
 	"<input type=text size=5 name=orderid>.<p>";
+ retval+="<input type=checkbox name=delete value=yes checked> Delete Orders After Archiving?<p>\n";
  retval+="<input type=submit value=\"Archive\"></form>\n";
  }
 
@@ -335,6 +338,7 @@ if(!server) server="localhost";
 	gethostname(), retval)))
 	return "An error occurred while mailing your archive request.<p>"
 	 "Your archive request was cancelled. Please try again later.";
+  if(id->variables->delete=="yes")
   foreach(orders_to_archive, mapping or){
 	delete_order(or->id, id);
      } 
@@ -347,6 +351,7 @@ else {
       T_O->add_header(id, "Content-Disposition", 
 	"inline; filename=" + "order" +(sizeof(orders_to_archive)==1?("_"+
 orders_to_archive[0]->id):"") + ".xml");
+  if(id->variables->delete=="yes")
   foreach(orders_to_archive, mapping or){
 	delete_order(or->id, id);
      } 
@@ -375,6 +380,8 @@ orders_to_archive[0]->id):"") + ".xml");
 	" Click the button below to generate the "
 	" archive file.<P>"
 	"<form action=\"./\">\n"
+	"<input type=hidden name=delete value=\"" + id->variables->delete
+	 + "\">\n"
 	"<input type=hidden name=archive value=1>\n"
 	"<input type=hidden name=days value=" + v->days + ">\n"
 	"<input type=hidden name=orderid value=" + v->orderid + ">\n"
@@ -401,6 +408,7 @@ if(id->variables->orderid) status=DB->query(
       )[0]->status;
 
  if(id->variables->valpay && id->variables->orderid){
+perror("validating Payment\n");
 if(CONFIG_ROOT[module_name]->deletecard=="Yes"){
   string cn;
 string key="";
@@ -414,17 +422,26 @@ array r=DB->query("SELECT payment_info.*, status.name as status from "
 if(r[0]->Card_Number[0..3]=="iVEn"){
  cn=Commerce.Security.decrypt(r[0]->Card_Number,key);
 } else cn=r[0]->Card_Number;
-cn-=" ";
-array cn2=cn/"";
-int j=sizeof(cn2);
-for(int l=0; l<(j-4); l++)
- cn2[l]="X";
-cn=cn2*"";
+if(cn && stringp(cn)) {
+  array cn2=cn/"";
+  int j=sizeof(cn2);
+  for(int l=0; l<(j-4); l++)
+   cn2[l]="X";
+  cn=cn2*"";
+  }
    array r=DB->query(
        "SELECT status FROM status WHERE name='Validated'");
    DB->query("UPDATE payment_info SET status=" + 
        r[0]->status + ", card_number='" + cn + "'"
 	" WHERE orderid='" + id->variables->orderid+"'");
+}
+else {
+   array r=DB->query(
+       "SELECT status FROM status WHERE name='Validated'");
+   DB->query("UPDATE payment_info SET status=" + 
+       r[0]->status +
+	" WHERE orderid='" + id->variables->orderid+"'");
+
 }
    array r=DB->query(
        "SELECT status.name, orders.status from status, orders "
@@ -617,7 +634,7 @@ if(!id->variables->print)
       "SELECT status.name,payment_info.orderid from status,payment_info "
       "WHERE payment_info.orderid='" + id->variables->orderid + "' AND "
       "status.status=payment_info.status");
-if(r[0]->name!="Validated")
+if(r && sizeof(r)>0 && r[0]->name!="Validated")
    retval+="<input type=submit name=valpay value=\"Validate Payment\"> &nbsp; \n"
     "<input type=submit name=rejpay value=\"Reject Payment\"><br>\n"
     "<input type=submit name=docancel value=\"Cancel Order\"> &nbsp; ";

@@ -5,7 +5,7 @@
  *
  */
 
-string cvs_version = "$Id: ivend.pike,v 1.229 1999-07-07 21:01:29 hww3 Exp $";
+string cvs_version = "$Id: ivend.pike,v 1.230 1999-07-09 03:40:52 hww3 Exp $";
 
 #include "include/ivend.h"
 #include "include/messages.h"
@@ -315,7 +315,7 @@ string|void container_procedure(string name, mapping args,
             footer="\n}";
         }
     }
-    perror("Defining Procedure (" +type+"):  " + name + "\n");
+//    perror("Defining Procedure (" +type+"):  " + name + "\n");
     contents=header+contents+footer;
     mixed err;
     err=catch(object p=(object)clone(compile_string(contents)));
@@ -621,7 +621,7 @@ if(optstr)
              optr[0]->option_code });			
 	}
     }
-perror("options: " + (opt*"\n") + "\n");
+// perror("options: " + (opt*"\n") + "\n");
 	return (["options": opt*"\n", "surcharge": surcharge]);
 }
 
@@ -714,6 +714,7 @@ mixed container_icart(string name, mapping args, string contents, object id) {
             DB->query("DELETE FROM sessions WHERE SESSIONID='"
                       +id->misc->ivend->SESSIONID+
                       "' AND id='"+ p +"' AND series=" +s );
+perror("DELETED ITEM " + p + " SERIES " + s + "\n");
             madechange=1;
 trigger_event("deleteitem", id, (["item" : p , "series" : s]) );
         }
@@ -794,7 +795,8 @@ array r;
         if(id->misc->ivend->error)
             return YOUR_CART_IS_EMPTY +"\n<false>\n";
     }
-    retval+="<tr><th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
+    retval+="<tr>";
+//<th bgcolor=maroon><font color=white>"+ CODE +"</th>\n";
 
     foreach(en, field){
         retval+="<th bgcolor=maroon>&nbsp; <font color=white>"+field+" &nbsp; </th>\n";
@@ -809,25 +811,26 @@ array r;
             "<th bgcolor=maroon><font color=white>&nbsp; "
             + TOTAL + " &nbsp;</th><th></th></tr>\n";
     for (int i=0; i< sizeof(r); i++){
-        retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+" VALUE="+r[i]->series+">\n"
-                "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i][KEYS->products]+
-                ">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl +"/" +
-                r[i][KEYS->products] + ".html\">"
-                +r[i][ KEYS->products]+"</A> &nbsp;</TD>\n";
+     for (int j=0; j<sizeof(en); j++)
+       if(j==0) retval+="<TR><TD><INPUT TYPE=HIDDEN NAME=s"+i+ 	
+		" VALUE="+r[i]->series+">\n"
+                "<INPUT TYPE=HIDDEN NAME=p"+i+" VALUE="+r[i]->id+
+                ">&nbsp; \n<A HREF=\""+ id->misc->ivend->storeurl  +
+                r[i]->id + ".html\">"
+                +r[i][en[j]]+"</A> &nbsp;</TD>\n";
 
-        foreach(en, field){
-            //perror(field +"\n");
-            retval+="<td>"+(r[i][field] || " N/A ")+"</td>\n";
-        }
+       else retval+="<td>"+(r[i][en[j]] || " N/A ")+"</td>\n";
 
         //    r[i]->price=convert((float)r[i]->price,id);
 
 	retval+="<td align=left>";
 array o=r[i]->options/"\n";
+// perror("options:" + r[i]->options + "\n");
 foreach(o, string opt){
+perror(opt + "\n");
   array o_=opt/":";
 catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
-   "product_id='" + r[i][KEYS->products] + "' AND option_type='" +
+   "product_id='" + r[i]->id + "' AND option_type='" +
    o_[0] + "' AND option_code='" + o_[1] + "'")[0]->description +"<br>");
 }
 	retval+="</td>\n";
@@ -841,7 +844,7 @@ catch(  retval+=DB->query("SELECT description FROM item_options WHERE "
                 "<td>";
 if(r[i]->autoadd!="1")
   retval+="<input type=submit value=\"" + DELETE + "\" NAME=\"" +
-   r[i][KEYS->products] + "/" + r[i]->series + "\">";
+   r[i]->id + "/" + r[i]->series + "\">";
                 retval+="</td></tr>\n";
     }
     retval+="</table>\n<input type=hidden name=s value="+sizeof(r)+">\n"
@@ -1716,7 +1719,7 @@ mixed open_popup(string name, string location, string mode, mapping
             "        if (navigator.appVersion.lastIndexOf('Mac') != -1) h=h-200;\n"
             "        if (navigator.appVersion.lastIndexOf('Win') != -1) h=h-130;\n"
             "\n"
-	    " id=document.gentable." + KEYS[options->type + "s"] + ".value;\n"
+	    " id=document.gentable." + lower_case( KEYS[options->type + "s"]) + ".value;\n"
 	    " document.popupform" + id->misc->ivend->popup +".id.value=id;\n"
 	    " if(id==\"\") { alert('You must have an item " +
 		KEYS[options->type + "s"] + ".');\n return;\n}\n"  
@@ -2751,7 +2754,7 @@ mapping to=id->misc->defines[" _extra_heads"];
                          modules[c]+=([  m->module_name : m  ]);
                              mixed o=modules[c][m->module_name];
                              if(functionp(o->start)) {
-                                 perror("calling start() for " + m->module_name + ".\n");
+//                                 perror("calling start() for " + m->module_name + ".\n");
                                  o->start(config[c]);
                              }
                              mapping p;
@@ -2771,7 +2774,7 @@ mapping to=id->misc->defines[" _extra_heads"];
                                          config[c][m->module_name]=([]);
                                      if(!config[c][m->module_name][pref[0]]){
                                          config[c][m->module_name][pref[0]]= pref[4];
-                                         perror("found a new pref (" + m->module_name + "/" + pref[0] + "), so we need to save...\n");
+//                                         perror("found a new pref (" + m->module_name + "/" + pref[0] + "), so we need to save...\n");
                                          need_to_save=1;
                                      }
                                  }
@@ -2824,7 +2827,8 @@ Config.write_section(query("configdir")+
                                  if(sizeof(s->list_fields("sessions","autoadd"))!=1)
                                      s->query("alter table sessions add autoadd integer");
 
-if(sizeof(s->list_tables("admin_users"))!=1)
+if(sizeof(s->list_tables("admin_users"))!=1) {
+  perror("adding admin_users table...\n");
 	s->query("CREATE TABLE admin_users ("
 		"username char(16) not null primary key, "
 		"real_name char(24) not null, "
@@ -2832,6 +2836,7 @@ if(sizeof(s->list_tables("admin_users"))!=1)
 		"password char(16) not null, "
 		"level int(2) not null default 9)"
 		);
+ }
 db[c->config]->handle(s);
                              }
 

@@ -308,7 +308,7 @@ foreach(indices(r), string f){
 
 wordstoadd=lower_case(wordstoadd);
 
-wordstoadd=replace(wordstoadd, ({"\n", "\r", "\t"}), ({" ", " ", " "}));
+wordstoadd=replace(wordstoadd, ({"!", ".", "?", ",", "-", "\n", "\r", "\t", "\m"}), ({" ", " ", " ", " ", " ", " ", " ", " ", " "}));
 array w=wordstoadd/" ";
 w-=({""});
 mapping wc=([]);
